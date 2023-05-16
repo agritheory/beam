@@ -1,0 +1,18 @@
+include MANIFEST.in
+include requirements.txt
+include *.json
+include *.md
+include *.py
+include *.txt
+recursive-include beam *.css
+recursive-include beam *.csv
+recursive-include beam *.html
+recursive-include beam *.ico
+recursive-include beam *.js
+recursive-include beam *.json
+recursive-include beam *.md
+recursive-include beam *.png
+recursive-include beam *.py
+recursive-include beam *.svg
+recursive-include beam *.txt
+recursive-exclude beam *.pyc
