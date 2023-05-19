@@ -12,7 +12,7 @@ app_license = "MIT"
 
 # include js, css files in header of desk.html
 # app_include_css = "/assets/beam/css/beam.css"
-# app_include_js = "/assets/beam/js/beam.js"
+app_include_js = ["beam.bundle.js"]
 
 # include js, css files in header of web template
 # web_include_css = "/assets/beam/css/beam.css"
@@ -42,7 +42,7 @@ app_license = "MIT"
 
 # website user home page (by Role)
 # role_home_page = {
-#	"Role": "home_page"
+# 	"Role": "home_page"
 # }
 
 # Generators
@@ -54,11 +54,12 @@ app_license = "MIT"
 # Jinja
 # ----------
 
-# add methods and filters to jinja environment
-# jinja = {
-#	"methods": "beam.utils.jinja_methods",
-#	"filters": "beam.utils.jinja_filters"
-# }
+jinja = {
+	"methods": [
+		"beam.beam.scan.get_handling_unit",
+		"beam.beam.overrides.barcode_mixin.barcode128",
+	]
+}
 
 # Installation
 # ------------
@@ -83,52 +84,60 @@ app_license = "MIT"
 # Permissions evaluated in scripted ways
 
 # permission_query_conditions = {
-#	"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
+# 	"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
 # }
 #
 # has_permission = {
-#	"Event": "frappe.desk.doctype.event.event.has_permission",
+# 	"Event": "frappe.desk.doctype.event.event.has_permission",
 # }
 
 # DocType Class
 # ---------------
 # Override standard doctype classes
 
-# override_doctype_class = {
-#	"ToDo": "custom_app.overrides.CustomToDo"
-# }
+override_doctype_class = {
+	"Asset": "beam.beam.overrides.asset.CustomAsset",
+	"Delivery Note": "beam.beam.overrides.delivery_note.CustomDeliveryNote",
+	"Item": "beam.beam.overrides.item.CustomItem",
+	"Purchase Invoice": "beam.beam.overrides.purchase_invoice.CustomPurchaseInvoice",
+	"Purchase Receipt": "beam.beam.overrides.purchase_receipt.CustomPurchaseReceipt",
+	"Sales Invoice": "beam.beam.overrides.sales_invoice.CustomSalesInvoice",
+	"Stock Entry": "beam.beam.overrides.stock_entry.CustomStockEntry",
+	"Stock Reconciliation": "beam.beam.overrides.stock_reconciliation.CustomStockReconciliation",
+	"Warehouse": "beam.beam.overrides.warehouse.CustomWarehouse",
+}
 
 # Document Events
 # ---------------
 # Hook on document methods and events
 
 # doc_events = {
-#	"*": {
-#		"on_update": "method",
-#		"on_cancel": "method",
-#		"on_trash": "method"
-#	}
+# 	"*": {
+# 		"on_update": "method",
+# 		"on_cancel": "method",
+# 		"on_trash": "method"
+# 	}
 # }
 
 # Scheduled Tasks
 # ---------------
 
 # scheduler_events = {
-#	"all": [
-#		"beam.tasks.all"
-#	],
-#	"daily": [
-#		"beam.tasks.daily"
-#	],
-#	"hourly": [
-#		"beam.tasks.hourly"
-#	],
-#	"weekly": [
-#		"beam.tasks.weekly"
-#	],
-#	"monthly": [
-#		"beam.tasks.monthly"
-#	],
+# 	"all": [
+# 		"beam.tasks.all"
+# 	],
+# 	"daily": [
+# 		"beam.tasks.daily"
+# 	],
+# 	"hourly": [
+# 		"beam.tasks.hourly"
+# 	],
+# 	"weekly": [
+# 		"beam.tasks.weekly"
+# 	],
+# 	"monthly": [
+# 		"beam.tasks.monthly"
+# 	],
 # }
 
 # Testing
@@ -140,14 +149,14 @@ app_license = "MIT"
 # ------------------------------
 #
 # override_whitelisted_methods = {
-#	"frappe.desk.doctype.event.event.get_events": "beam.event.get_events"
+# 	"frappe.desk.doctype.event.event.get_events": "beam.event.get_events"
 # }
 #
 # each overriding function accepts a `data` argument;
 # generated from the base implementation of the doctype dashboard,
 # along with any modifications made in other Frappe apps
 # override_doctype_dashboards = {
-#	"Task": "beam.task.get_dashboard_data"
+# 	"Task": "beam.task.get_dashboard_data"
 # }
 
 # exempt linked doctypes from being automatically cancelled
@@ -173,29 +182,29 @@ app_license = "MIT"
 # --------------------
 
 # user_data_fields = [
-#	{
-#		"doctype": "{doctype_1}",
-#		"filter_by": "{filter_by}",
-#		"redact_fields": ["{field_1}", "{field_2}"],
-#		"partial": 1,
-#	},
-#	{
-#		"doctype": "{doctype_2}",
-#		"filter_by": "{filter_by}",
-#		"partial": 1,
-#	},
-#	{
-#		"doctype": "{doctype_3}",
-#		"strict": False,
-#	},
-#	{
-#		"doctype": "{doctype_4}"
-#	}
+# 	{
+# 		"doctype": "{doctype_1}",
+# 		"filter_by": "{filter_by}",
+# 		"redact_fields": ["{field_1}", "{field_2}"],
+# 		"partial": 1,
+# 	},
+# 	{
+# 		"doctype": "{doctype_2}",
+# 		"filter_by": "{filter_by}",
+# 		"partial": 1,
+# 	},
+# 	{
+# 		"doctype": "{doctype_3}",
+# 		"strict": False,
+# 	},
+# 	{
+# 		"doctype": "{doctype_4}"
+# 	}
 # ]
 
 # Authentication and authorization
 # --------------------------------
 
 # auth_hooks = [
-#	"beam.auth.validate"
+# 	"beam.auth.validate"
 # ]

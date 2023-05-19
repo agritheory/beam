@@ -1,0 +1,32 @@
+{
+	"custom_fields": [],
+	"custom_perms": [],
+	"doctype": "Item Barcode",
+	"property_setters": [
+		{
+			"_assign": null,
+			"_comments": null,
+			"_liked_by": null,
+			"_user_tags": null,
+			"creation": "2022-06-16 09:40:22.875922",
+			"default_value": null,
+			"doc_type": "Item Barcode",
+			"docstatus": 0,
+			"doctype_or_field": "DocField",
+			"field_name": "barcode_type",
+			"idx": 0,
+			"modified": "2022-06-16 09:40:22.875922",
+			"modified_by": "Administrator",
+			"name": "Item Barcode-barcode_type-options",
+			"owner": "Administrator",
+			"parent": null,
+			"parentfield": null,
+			"parenttype": null,
+			"property": "options",
+			"property_type": "Text",
+			"row_name": null,
+			"value": "\nEAN\nUPC-A\nCode128"
+		}
+	],
+	"sync_on_migrate": 1
+}

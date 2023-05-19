@@ -1,0 +1,21 @@
+{
+	"name": "beam",
+	"scripts": {},
+	"dependencies": {
+		"onscan.js": "^1.5.2"
+	},
+	"devDependencies": {},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/agritheory/beam.git"
+	},
+	"publishConfig": {
+		"access": "restricted"
+	},
+	"private": true,
+	"release": {
+		"branches": [
+			"version-14"
+		]
+	}
+}
