@@ -1,11 +1,15 @@
-import frappe
-import json
 import datetime
+import json
+from typing import Any, Dict, List, Optional, Union
+
+import frappe
 
 
 @frappe.whitelist()
-def scan(barcode, context=None, current_qty=None):  # str, frappe._dict, float
-	context = frappe._dict(json.loads(context)) if isinstance(context, str) else context
+def scan(
+	barcode: str, context: str | dict[str, Any] | None = None, current_qty: str | float | None = None
+) -> list[dict[str, Any]] | None:
+	context = frappe._dict(json.loads(context) if isinstance(context, str) else context)
 	barcode_doc = get_barcode_context(barcode)
 	if not barcode_doc:
 		frappe.msgprint("Barcode not found", alert=True)
@@ -16,7 +20,7 @@ def scan(barcode, context=None, current_qty=None):  # str, frappe._dict, float
 		return get_form_action(barcode_doc, context)  # TODO: add current_qty argument here
 
 
-def get_barcode_context(barcode: str):  # returns None or frappe._dict
+def get_barcode_context(barcode: str) -> frappe._dict | None:
 	item_barcode = frappe.db.get_value(
 		"Item Barcode", {"barcode": barcode}, ["parent", "parenttype"], as_dict=True
 	)
@@ -99,7 +103,7 @@ def get_handling_unit(handling_unit: str) -> frappe._dict:
 	return sl_entries[0] if len(sl_entries) == 1 else None
 
 
-def get_list_action(barcode_doc, context):
+def get_list_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[dict[str, Any]]:
 	target = barcode_doc.doc.name
 	if barcode_doc.doc.doctype == "Handling Unit":
 		if barcode_doc.doc.get("parenttype") == "Packing Slip":
@@ -113,6 +117,9 @@ def get_list_action(barcode_doc, context):
 			target = target.get("voucher_no") if target else None
 	elif barcode_doc.doc.doctype == "Asset":
 		target = barcode_doc.doc.item_code
+
+	if not target:
+		return []
 
 	listview = {
 		("Item", "Item"): [("route", "Item", "Item", target)],
@@ -201,15 +208,13 @@ def get_list_action(barcode_doc, context):
 	]
 
 
-def get_form_action(barcode_doc, context):
-	print(barcode_doc.doc)
+def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[dict[str, Any]]:
 	target = None
 	if barcode_doc.doc.doctype == "Handling Unit":
 		target = get_handling_unit(barcode_doc.doc.name)
 	elif barcode_doc.doc.doctype == "Asset":
 		target = barcode_doc.doc.item_code
 
-	print(target)
 	if not target:
 		return []
 

@@ -1,9 +1,9 @@
-import frappe
 from erpnext.accounts.doctype.sales_invoice.sales_invoice import SalesInvoice
+
 from beam.beam.overrides.handling_unit_mixin import (
 	HandlingUnitMixin,
-	patched_make_sl_entries,
 	patched_get_sl_entries,
+	patched_make_sl_entries,
 )
 
 

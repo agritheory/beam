@@ -1,10 +1,9 @@
-import frappe
 from erpnext.stock.doctype.stock_entry.stock_entry import StockEntry
+
 from beam.beam.overrides.handling_unit_mixin import (
-	patched_make_sl_entries,
-	patched_get_sl_entries,
-	split_items_according_to_handling_unit_qty,
 	assign_handling_unit,
+	patched_get_sl_entries,
+	patched_make_sl_entries,
 )
 
 

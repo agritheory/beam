@@ -1,9 +1,9 @@
-import frappe
-import uuid
-import barcode
 import base64
-import json
+import uuid
 from io import BytesIO
+
+import barcode
+import frappe
 
 
 class BarcodeMixin:
@@ -30,7 +30,7 @@ class BarcodeMixin:
 
 
 @frappe.whitelist()
-def barcode128(barcode_text):
+def barcode128(barcode_text: str) -> str:
 	if not barcode_text:
 		return ""
 	temp = BytesIO()
