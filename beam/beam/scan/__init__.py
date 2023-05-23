@@ -1,6 +1,6 @@
 import datetime
 import json
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import frappe
 
@@ -40,7 +40,7 @@ def get_handling_unit(handling_unit: str) -> frappe._dict:
 		filters={"handling_unit": handling_unit},
 		fields=[
 			"item_code",
-			"actual_qty",
+			"SUM(actual_qty) as actual_qty",
 			"handling_unit",
 			"voucher_type",
 			"voucher_no",
@@ -50,6 +50,7 @@ def get_handling_unit(handling_unit: str) -> frappe._dict:
 			"valuation_rate",
 			"warehouse",
 		],
+		group_by="handling_unit",
 		order_by="modified DESC",
 		limit=1,
 	)
