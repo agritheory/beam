@@ -381,7 +381,12 @@ operations = [
 	- Bake at 375F for 50 minutes
 	- Remove from oven""",
 	),
-	("Chill Pie Crust Op", "Refrigerator Station", "1", "- Chill pie crust for at least 30 minutes"),
+	(
+		"Chill Pie Crust Op",
+		"Refrigerator Station",
+		"1",
+		"- Chill pie crust for at least 30 minutes",
+	),
 	(
 		"Cool Pie Op",
 		"Cooling Racks Station",
@@ -642,7 +647,12 @@ boms = [
 				"time_in_mins": 10.0,
 				"workstation": "Food Prep Table 2",
 			},
-			{"batch_size": 1, "operation": "Bake Op", "time_in_mins": 50.0, "workstation": "Oven Station"},
+			{
+				"batch_size": 1,
+				"operation": "Bake Op",
+				"time_in_mins": 50.0,
+				"workstation": "Oven Station",
+			},
 			{
 				"batch_size": 1,
 				"operation": "Cool Pie Op",
@@ -678,7 +688,12 @@ boms = [
 				"time_in_mins": 10.0,
 				"workstation": "Food Prep Table 2",
 			},
-			{"batch_size": 1, "operation": "Bake Op", "time_in_mins": 50.0, "workstation": "Oven Station"},
+			{
+				"batch_size": 1,
+				"operation": "Bake Op",
+				"time_in_mins": 50.0,
+				"workstation": "Oven Station",
+			},
 			{
 				"batch_size": 1,
 				"operation": "Cool Pie Op",
@@ -714,7 +729,12 @@ boms = [
 				"time_in_mins": 10.0,
 				"workstation": "Food Prep Table 2",
 			},
-			{"batch_size": 1, "operation": "Bake Op", "time_in_mins": 50.0, "workstation": "Oven Station"},
+			{
+				"batch_size": 1,
+				"operation": "Bake Op",
+				"time_in_mins": 50.0,
+				"workstation": "Oven Station",
+			},
 			{
 				"batch_size": 1,
 				"operation": "Cool Pie Op",
@@ -735,7 +755,12 @@ boms = [
 		"uom": "Nos",
 		"items": [
 			{"item_code": "Pie Crust", "qty": 5.0, "qty_consumed_per_unit": 1.0, "uom": "Nos"},
-			{"item_code": "Ambrosia Pie Filling", "qty": 20.0, "qty_consumed_per_unit": 4.0, "uom": "Cup"},
+			{
+				"item_code": "Ambrosia Pie Filling",
+				"qty": 20.0,
+				"qty_consumed_per_unit": 4.0,
+				"uom": "Cup",
+			},
 			{"item_code": "Pie Box", "qty": 5.0, "qty_consumed_per_unit": 1.0, "uom": "Nos"},
 		],
 		"operations": [
@@ -745,7 +770,12 @@ boms = [
 				"time_in_mins": 10.0,
 				"workstation": "Food Prep Table 2",
 			},
-			{"batch_size": 1, "operation": "Bake Op", "time_in_mins": 50.0, "workstation": "Oven Station"},
+			{
+				"batch_size": 1,
+				"operation": "Bake Op",
+				"time_in_mins": 50.0,
+				"workstation": "Oven Station",
+			},
 			{
 				"batch_size": 1,
 				"operation": "Cool Pie Op",
@@ -766,11 +796,31 @@ boms = [
 		"uom": "Cup",
 		"items": [
 			{"item_code": "Sugar", "qty": 0.5, "qty_consumed_per_unit": 0.025, "uom": "Pound"},
-			{"item_code": "Cornstarch", "qty": 0.1, "qty_consumed_per_unit": 0.005, "uom": "Pound"},
+			{
+				"item_code": "Cornstarch",
+				"qty": 0.1,
+				"qty_consumed_per_unit": 0.005,
+				"uom": "Pound",
+			},
 			{"item_code": "Water", "qty": 1.25, "qty_consumed_per_unit": 0.0625, "uom": "Cup"},
-			{"item_code": "Butter", "qty": 0.313, "qty_consumed_per_unit": 0.01565, "uom": "Pound"},
-			{"item_code": "Cocoplum", "qty": 7.5, "qty_consumed_per_unit": 0.02515, "uom": "Pound"},
-			{"item_code": "Damson Plum", "qty": 7.5, "qty_consumed_per_unit": 0.02515, "uom": "Pound"},
+			{
+				"item_code": "Butter",
+				"qty": 0.313,
+				"qty_consumed_per_unit": 0.01565,
+				"uom": "Pound",
+			},
+			{
+				"item_code": "Cocoplum",
+				"qty": 7.5,
+				"qty_consumed_per_unit": 0.02515,
+				"uom": "Pound",
+			},
+			{
+				"item_code": "Damson Plum",
+				"qty": 7.5,
+				"qty_consumed_per_unit": 0.02515,
+				"uom": "Pound",
+			},
 		],
 		"operations": [
 			{
@@ -793,11 +843,31 @@ boms = [
 		"uom": "Cup",
 		"items": [
 			{"item_code": "Sugar", "qty": 0.5, "qty_consumed_per_unit": 0.025, "uom": "Pound"},
-			{"item_code": "Cornstarch", "qty": 0.1, "qty_consumed_per_unit": 0.005, "uom": "Pound"},
+			{
+				"item_code": "Cornstarch",
+				"qty": 0.1,
+				"qty_consumed_per_unit": 0.005,
+				"uom": "Pound",
+			},
 			{"item_code": "Water", "qty": 1.25, "qty_consumed_per_unit": 0.0625, "uom": "Cup"},
-			{"item_code": "Butter", "qty": 0.313, "qty_consumed_per_unit": 0.01565, "uom": "Pound"},
-			{"item_code": "Kakadu Lime", "qty": 10.0, "qty_consumed_per_unit": 0.0335, "uom": "Pound"},
-			{"item_code": "Limequat", "qty": 5.0, "qty_consumed_per_unit": 0.01675, "uom": "Pound"},
+			{
+				"item_code": "Butter",
+				"qty": 0.313,
+				"qty_consumed_per_unit": 0.01565,
+				"uom": "Pound",
+			},
+			{
+				"item_code": "Kakadu Lime",
+				"qty": 10.0,
+				"qty_consumed_per_unit": 0.0335,
+				"uom": "Pound",
+			},
+			{
+				"item_code": "Limequat",
+				"qty": 5.0,
+				"qty_consumed_per_unit": 0.01675,
+				"uom": "Pound",
+			},
 		],
 		"operations": [
 			{
@@ -820,10 +890,25 @@ boms = [
 		"uom": "Cup",
 		"items": [
 			{"item_code": "Sugar", "qty": 0.5, "qty_consumed_per_unit": 0.025, "uom": "Pound"},
-			{"item_code": "Cornstarch", "qty": 0.1, "qty_consumed_per_unit": 0.005, "uom": "Pound"},
+			{
+				"item_code": "Cornstarch",
+				"qty": 0.1,
+				"qty_consumed_per_unit": 0.005,
+				"uom": "Pound",
+			},
 			{"item_code": "Water", "qty": 1.25, "qty_consumed_per_unit": 0.0625, "uom": "Cup"},
-			{"item_code": "Butter", "qty": 0.313, "qty_consumed_per_unit": 0.01565, "uom": "Pound"},
-			{"item_code": "Gooseberry", "qty": 15.0, "qty_consumed_per_unit": 0.05025, "uom": "Pound"},
+			{
+				"item_code": "Butter",
+				"qty": 0.313,
+				"qty_consumed_per_unit": 0.01565,
+				"uom": "Pound",
+			},
+			{
+				"item_code": "Gooseberry",
+				"qty": 15.0,
+				"qty_consumed_per_unit": 0.05025,
+				"uom": "Pound",
+			},
 		],
 		"operations": [
 			{
@@ -846,8 +931,18 @@ boms = [
 		"uom": "Cup",
 		"items": [
 			{"item_code": "Sugar", "qty": 0.5, "qty_consumed_per_unit": 0.025, "uom": "Pound"},
-			{"item_code": "Cornstarch", "qty": 0.1, "qty_consumed_per_unit": 0.005, "uom": "Pound"},
-			{"item_code": "Butter", "qty": 0.313, "qty_consumed_per_unit": 0.01565, "uom": "Pound"},
+			{
+				"item_code": "Cornstarch",
+				"qty": 0.1,
+				"qty_consumed_per_unit": 0.005,
+				"uom": "Pound",
+			},
+			{
+				"item_code": "Butter",
+				"qty": 0.313,
+				"qty_consumed_per_unit": 0.01565,
+				"uom": "Pound",
+			},
 			{
 				"item_code": "Hairless Rambutan",
 				"qty": 5.0,
@@ -855,7 +950,12 @@ boms = [
 				"uom": "Pound",
 			},
 			{"item_code": "Tayberry", "qty": 2.5, "qty_consumed_per_unit": 0.0084, "uom": "Pound"},
-			{"item_code": "Cloudberry", "qty": 7.5, "qty_consumed_per_unit": 0.02515, "uom": "Pound"},
+			{
+				"item_code": "Cloudberry",
+				"qty": 7.5,
+				"qty_consumed_per_unit": 0.02515,
+				"uom": "Pound",
+			},
 			{"item_code": "Water", "qty": 1.25, "qty_consumed_per_unit": 0.0625, "uom": "Cup"},
 		],
 		"operations": [
@@ -882,7 +982,12 @@ boms = [
 			{"item_code": "Butter", "qty": 2.5, "qty_consumed_per_unit": 0.5, "uom": "Pound"},
 			{"item_code": "Ice Water", "qty": 2.5, "qty_consumed_per_unit": 0.5, "uom": "Cup"},
 			{"item_code": "Salt", "qty": 0.05, "qty_consumed_per_unit": 0.01, "uom": "Pound"},
-			{"item_code": "Parchment Paper", "qty": 5.0, "qty_consumed_per_unit": 1.0, "uom": "Nos"},
+			{
+				"item_code": "Parchment Paper",
+				"qty": 5.0,
+				"qty_consumed_per_unit": 1.0,
+				"uom": "Nos",
+			},
 			{"item_code": "Flour", "qty": 0.5, "qty_consumed_per_unit": 0.1, "uom": "Pound"},
 			{"item_code": "Pie Tin", "qty": 5.0, "qty_consumed_per_unit": 1.0, "uom": "Nos"},
 		],
