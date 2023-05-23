@@ -4,6 +4,7 @@ import datetime
 
 
 @frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
 def handling_unit_query(doctype, txt, searchfield, start=0, page_len=20, filters=None):
 	filters = frappe._dict({}) if not filters else filters
 	return frappe.db.sql(

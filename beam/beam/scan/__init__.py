@@ -31,27 +31,25 @@ def get_barcode_context(barcode: str):  # returns None or frappe._dict
 
 
 def get_handling_unit(handling_unit: str) -> frappe._dict:
-	sl_entries = frappe.db.sql(
-		"""
-		SELECT
-			`tabStock Ledger Entry`.item_code,
-			SUM(`tabStock Ledger Entry`.actual_qty) AS actual_qty,
-			`tabStock Ledger Entry`.handling_unit,
-			`tabStock Ledger Entry`.voucher_type,
-			`tabStock Ledger Entry`.voucher_no,
-			`tabStock Ledger Entry`.voucher_detail_no,
-			`tabStock Ledger Entry`.posting_date,
-			`tabStock Ledger Entry`.posting_time,
-			`tabStock Ledger Entry`.valuation_rate,
-			`tabStock Ledger Entry`.warehouse
-		FROM `tabStock Ledger Entry`
-		WHERE `tabStock Ledger Entry`.handling_unit = %(handling_unit)s
-		ORDER BY `tabStock Ledger Entry`.modified DESC
-		LIMIT 1
-	""",
-		{"handling_unit": handling_unit},
-		as_dict=True,
+	sl_entries = frappe.get_all(
+		"Stock Ledger Entry",
+		filters={"handling_unit": handling_unit},
+		fields=[
+			"item_code",
+			"actual_qty",
+			"handling_unit",
+			"voucher_type",
+			"voucher_no",
+			"voucher_detail_no",
+			"posting_date",
+			"posting_time",
+			"valuation_rate",
+			"warehouse",
+		],
+		order_by="modified DESC",
+		limit=1,
 	)
+
 	for sle in sl_entries:
 		if sle.voucher_type == "Stock Entry":
 			(
@@ -205,13 +203,15 @@ def get_list_action(barcode_doc, context):
 
 def get_form_action(barcode_doc, context):
 	print(barcode_doc.doc)
+	target = None
 	if barcode_doc.doc.doctype == "Handling Unit":
 		target = get_handling_unit(barcode_doc.doc.name)
-		target = target.get("voucher_no") if target else None
 	elif barcode_doc.doc.doctype == "Asset":
 		target = barcode_doc.doc.item_code
 
 	print(target)
+	if not target:
+		return []
 
 	frm = {
 		("Item", "Purchase Receipt"): [
