@@ -3,7 +3,6 @@ import onScan from 'onscan.js'
 const valid_doctypes = {
 	listview: [
 		'Item',
-		'Asset',
 		'Warehouse',
 		'Workstation',
 		'Handling Unit',

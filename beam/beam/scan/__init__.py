@@ -120,28 +120,18 @@ def get_list_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 		else:
 			target = get_handling_unit(barcode_doc.doc.name)
 			target = target.get("voucher_no") if target else None
-	elif barcode_doc.doc.doctype == "Asset":
-		target = barcode_doc.doc.item_code
 
 	if not target:
 		return []
 
 	listview = {
 		("Item", "Item"): [("route", "Item", "Item", target)],
-		("Asset", "Item"): [
-			("route", "Item", "Item", target),
-		],
 		("Warehouse", "Item"): [
 			("filter", "Item Default", "default_warehouse", target),
 		],
 		("Handling Unit", "Item"): [("route", "Item", "Item", target)],
-		("Item", "Asset"): [("filter", "Asset", "item_code", target)],
-		("Asset", "Asset"): [("route", "Asset", "Asset", barcode_doc.doc.name)],
 		("Warehouse", "Warehouse"): [("route", "Warehouse", "Warehouse", target)],
 		("Item", "Purchase Receipt"): [
-			("filter", "Purchase Receipt Item", "item_code", target),
-		],
-		("Asset", "Purchase Receipt"): [
 			("filter", "Purchase Receipt Item", "item_code", target),
 		],
 		("Warehouse", "Purchase Receipt"): [
@@ -151,9 +141,6 @@ def get_list_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 			("route", "Purchase Receipt", "Purchase Receipt", target)
 		],
 		("Item", "Purchase Invoice"): [
-			("filter", "Purchase Invoice Item", "item_code", target),
-		],
-		("Asset", "Purchase Invoice"): [
 			("filter", "Purchase Invoice Item", "item_code", target),
 		],
 		("Warehouse", "Purchase Invoice"): [
@@ -210,8 +197,6 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 	target = None
 	if barcode_doc.doc.doctype == "Handling Unit":
 		target = get_handling_unit(barcode_doc.doc.name)
-	elif barcode_doc.doc.doctype == "Asset":
-		target = barcode_doc.doc.item_code
 
 	if not target:
 		return []
@@ -220,16 +205,10 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 		("Item", "Purchase Receipt"): [
 			("add_or_increment", "Purchase Receipt Item", "item_code", target, target),
 		],
-		("Asset", "Purchase Receipt"): [
-			("add_or_increment", "Purchase Receipt Item", "item_code", target.item_code, target),
-		],
 		("Warehouse", "Purchase Receipt"): [
 			("set_warehouse", "Purchase Receipt Item", "warehouse", target.warehouse, target),
 		],
 		("Item", "Purchase Invoice"): [
-			("add_or_increment", "Purchase Invoice Item", "item_code", target.item_code, target),
-		],
-		("Asset", "Purchase Invoice"): [
 			("add_or_increment", "Purchase Invoice Item", "item_code", target.item_code, target),
 		],
 		("Warehouse", "Purchase Invoice"): [

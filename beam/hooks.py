@@ -96,7 +96,6 @@ jinja = {
 # Override standard doctype classes
 
 override_doctype_class = {
-	"Asset": "beam.beam.overrides.asset.CustomAsset",
 	"Delivery Note": "beam.beam.overrides.delivery_note.CustomDeliveryNote",
 	"Item": "beam.beam.overrides.item.CustomItem",
 	"Purchase Invoice": "beam.beam.overrides.purchase_invoice.CustomPurchaseInvoice",
