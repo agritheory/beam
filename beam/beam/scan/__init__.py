@@ -190,13 +190,6 @@ def get_list_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 		("Handling Unit", "Stock Reconciliation"): [
 			("route", "Stock Reconciliation", "Stock Reconciliation", target)
 		],
-		("Item", "Job Card"): [
-			("filter", "Job Card Item", "item_code", target),
-		],
-		("Warehouse", "Job Card"): [
-			("filter", "Job Card Item", "warehouse", target),
-		],
-		("Handling Unit", "Job Card"): [("route", "Job Card", "Job Card", target)],
 		("Item", "Packing Slip"): [
 			("filter", "Packing Slip Item", "item_code", target),
 		],
@@ -337,13 +330,6 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 				target.conversion_factor,
 				target,
 			),
-		],
-		("Item", "Job Card"): [
-			("add_or_increment", "Job Card Item", "item_code", target.item_code, target),
-		],
-		("Handling Unit", "Job Card"): [
-			("add_or_associate", "Job Card Item", "handling_unit", target.handling_unit, target),
-			("add_or_associate", "Job Card Item", "pulled_qty", target.stock_qty, target),
 		],
 		("Handling Unit", "Packing Slip"): [
 			(

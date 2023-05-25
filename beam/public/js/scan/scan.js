@@ -14,13 +14,11 @@ const valid_doctypes = {
 		'Sales Invoice',
 		'Stock Entry',
 		'Stock Reconciliation',
-		'Job Card',
 	],
 	frm: [
 		'Purchase Receipt',
 		'Purchase Invoice',
 		'Delivery Note',
-		'Job Card',
 		'Packing Slip',
 		'Sales Invoice',
 		'Stock Entry',
@@ -113,7 +111,7 @@ class ScanHandler {
 			return
 		}
 		barcode_context.forEach(field => {
-			if (['Job Card', 'Packing Slip'].includes(cur_frm.doc.doctype)) {
+			if (['Packing Slip'].includes(cur_frm.doc.doctype)) {
 				if (
 					!cur_frm.doc.items.some(row => {
 						return (
@@ -165,7 +163,6 @@ class ScanHandler {
 					}
 				}
 			} else {
-				// not job card
 				if (
 					!cur_frm.doc.items.some(row => {
 						return (
@@ -256,15 +253,6 @@ class ScanHandler {
 			})
 		} else {
 			for (let row of cur_frm.doc.items) {
-				if (cur_frm.doc.doctype == 'Job Card') {
-					if (
-						(row.item_code == barcode_context.item_code && row.stock_qty == barcode_context.stock_qty) ||
-						row.handling_unit == barcode_context.handling_unit
-					) {
-						frappe.model.set_value(row.doctype, row.name, 'handling_unit', barcode_context.handling_unit)
-						// frappe.model.set_value(row.doctype, row.name, "pulled_qty", barcode_context.handling_unit)
-					}
-				}
 				if (
 					(row.item_code == barcode_context.item_code && row.stock_qty == barcode_context.stock_qty) ||
 					row.handling_unit == barcode_context.handling_unit
