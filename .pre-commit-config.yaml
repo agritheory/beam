@@ -23,7 +23,7 @@ repos:
     rev: v2.34.0
     hooks:
       - id: pyupgrade
-        args: ['--py310-plus']
+        args: ['--py38-plus']
 
   - repo: https://github.com/frappe/black
     rev: 951ccf4d5bb0d692b457a5ebc4215d755618eb68

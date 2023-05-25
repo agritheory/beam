@@ -1,14 +1,16 @@
 import datetime
 import json
-from typing import Any
+from typing import Any, Optional, Union
 
 import frappe
 
 
 @frappe.whitelist()
 def scan(
-	barcode: str, context: str | dict[str, Any] | None = None, current_qty: str | float | None = None
-) -> list[dict[str, Any]] | None:
+	barcode: str,
+	context: Optional[Union[str, dict[str, Any]]] = None,
+	current_qty: Optional[Union[str, float]] = None,
+) -> Union[list[dict[str, Any]], None]:
 	context = frappe._dict(json.loads(context) if isinstance(context, str) else context)
 	barcode_doc = get_barcode_context(barcode)
 	if not barcode_doc:
@@ -20,7 +22,7 @@ def scan(
 		return get_form_action(barcode_doc, context)  # TODO: add current_qty argument here
 
 
-def get_barcode_context(barcode: str) -> frappe._dict | None:
+def get_barcode_context(barcode: str) -> Union[frappe._dict, None]:
 	item_barcode = frappe.db.get_value(
 		"Item Barcode", {"barcode": barcode}, ["parent", "parenttype"], as_dict=True
 	)
