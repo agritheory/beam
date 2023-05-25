@@ -11,15 +11,17 @@ def scan(
 	context: Optional[Union[str, dict[str, Any]]] = None,
 	current_qty: Optional[Union[str, float]] = None,
 ) -> Union[list[dict[str, Any]], None]:
-	context = frappe._dict(json.loads(context) if isinstance(context, str) else context)
+	if not context:
+		context = {}  # TODO: is this the correct assumption?
+	context_dict = frappe._dict(json.loads(context) if isinstance(context, str) else context)
 	barcode_doc = get_barcode_context(barcode)
 	if not barcode_doc:
 		frappe.msgprint("Barcode not found", alert=True)
 		return
-	if "listview" in context:
-		return get_list_action(barcode_doc, context)
-	elif "frm" in context:
-		return get_form_action(barcode_doc, context)  # TODO: add current_qty argument here
+	if "listview" in context_dict:
+		return get_list_action(barcode_doc, context_dict)
+	elif "frm" in context_dict:
+		return get_form_action(barcode_doc, context_dict)  # TODO: add current_qty argument here
 
 
 def get_barcode_context(barcode: str) -> Union[frappe._dict, None]:
