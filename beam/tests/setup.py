@@ -1,5 +1,6 @@
 import datetime
 import types
+from itertools import groupby
 
 import frappe
 from frappe.desk.page.setup_wizard.setup_wizard import setup_complete
@@ -8,6 +9,7 @@ from erpnext.accounts.doctype.account.account import update_account_number
 from erpnext.manufacturing.doctype.production_plan.production_plan import (
 	get_items_for_material_requests,
 )
+from erpnext.stock.get_item_details import get_item_details
 
 from beam.tests.fixtures import suppliers, boms, items, workstations, operations
 
@@ -71,6 +73,7 @@ def create_test_data():
 	company_address.save()
 	frappe.set_value("Company", settings.company, "tax_id", "04-1871930")
 	create_warehouses(settings)
+	setup_manufacturing_settings(settings)
 	create_workstations()
 	create_operations()
 	create_item_groups(settings)
@@ -78,7 +81,7 @@ def create_test_data():
 	create_items(settings)
 	create_boms(settings)
 	create_material_request(settings)
-	# create_production_plan(settings)
+	create_production_plan(settings)
 
 
 def create_suppliers(settings):
@@ -116,6 +119,30 @@ def create_suppliers(settings):
 			addr = frappe.get_doc("Address", existing_address)
 		addr.append("links", {"link_doctype": "Supplier", "link_name": supplier[0]})
 		addr.save()
+
+
+def setup_manufacturing_settings(settings):
+	mfg_settings = frappe.get_doc("Manufacturing Settings", "Manufacturing Settings")
+	mfg_settings.material_consumption = 1
+	mfg_settings.default_wip_warehouse = "Kitchen - APC"
+	mfg_settings.default_fg_warehouse = "Baked Goods - APC"
+	mfg_settings.overproduction_percentage_for_work_order = 5.00
+	mfg_settings.job_Card_excess_transfer = 1
+	mfg_settings.save()
+
+	if frappe.db.exists("Account", {"account_name": "Work In Progress", "company": settings.company}):
+		return
+	wip = frappe.new_doc("Account")
+	wip.account_name = "Work in Progress"
+	wip.parent_account = "1400 - Stock Assets - APC"
+	wip.account_number = "1420"
+	wip.company = settings.company
+	wip.currency = "USD"
+	wip.report_type = "Balance Sheet"
+	wip.root_type = "Asset"
+	wip.save()
+
+	frappe.set_value("Warehouse", "Kitchen - APC", "account", wip.name)
 
 
 def create_workstations():
@@ -188,7 +215,7 @@ def create_items(settings):
 		if frappe.db.exists("Item", item.get("item_code")):
 			continue
 		i = frappe.new_doc("Item")
-		i.item_code = item.get("item_code")
+		i.item_code = i.item_name = item.get("item_code")
 		i.item_group = item.get("item_group")
 		i.stock_uom = item.get("uom")
 		i.description = item.get("description")
@@ -254,7 +281,7 @@ def create_boms(settings):
 			b.append("items", {**item, "stock_uom": item.get("uom")})
 			b.items[-1].bom_no = frappe.get_value("BOM", {"item": item.get("item_code")})
 		for operation in bom.get("operations"):
-			b.append("operations", {**operation})
+			b.append("operations", {**operation, "hour_rate": 15.00})
 		b.save()
 		b.submit()
 
@@ -339,11 +366,49 @@ def create_production_plan(settings):
 	pp.save()
 	pp.submit()
 
-	pp.make_work_order()
-	wos = frappe.get_all("Work Order", {"production_plan": pp.name})
-	for wo in wos:
-		wo = frappe.get_doc("Work Order", wo)
-		wo.skip_transfer = 1
-		wo.wip_warehouse = "Kitchen - APC"
-		# can we skip job card creation?
-		# wo.submit()
+	pp.make_material_request()
+	mr = frappe.get_last_doc("Material Request")
+	mr.schedule_date = mr.transaction_date = settings.day
+	mr.save()
+	mr.submit()
+
+	for item in mr.items:
+		supplier = frappe.get_value("Item Supplier", {"parent": item.get("item_code")}, "supplier")
+		item.supplier = supplier
+
+	for supplier, _items in groupby(
+		sorted((m for m in mr.items if m.supplier), key=lambda d: d.supplier),
+		lambda x: x.get("supplier"),
+	):
+		items = list(_items)
+		if not supplier:
+			continue
+		pr = frappe.new_doc("Purchase Receipt")
+		pr.company = settings.company
+		pr.supplier = supplier
+		pr.posting_date = settings.day
+		pr.set_posting_time = 1
+		pr.buying_price_list = "Bakery Buying"
+		for item in items:
+			item_details = get_item_details(
+				{
+					"item_code": item.item_code,
+					"qty": item.qty,
+					"supplier": pr.supplier,
+					"company": pr.company,
+					"doctype": pr.doctype,
+					"currency": pr.currency,
+					"buying_price_list": pr.buying_price_list,
+				}
+			)
+			pr.append("items", {**item_details})
+		pr.save()
+
+	# pp.make_work_order()
+	# wos = frappe.get_all("Work Order", {"production_plan": pp.name})
+	# for wo in wos:
+	# 	wo = frappe.get_doc("Work Order", wo)
+	# 	wo.skip_transfer = 1
+	# 	wo.wip_warehouse = "Kitchen - APC"
+	# can we skip job card creation?
+	# wo.submit()
