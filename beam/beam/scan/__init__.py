@@ -38,7 +38,7 @@ def get_barcode_context(barcode: str) -> Union[frappe._dict, None]:
 	)
 
 
-def get_handling_unit(handling_unit: str) -> frappe._dict:
+def get_handling_unit(handling_unit: str) -> Union[frappe._dict, None]:
 	sl_entries = frappe.get_all(
 		"Stock Ledger Entry",
 		filters={"handling_unit": handling_unit},
@@ -59,38 +59,29 @@ def get_handling_unit(handling_unit: str) -> frappe._dict:
 		limit=1,
 	)
 
+	if len(sl_entries) != 1:
+		return
+
 	for sle in sl_entries:
 		if sle.voucher_type == "Stock Entry":
-			(
-				sle.uom,
-				sle.qty,
-				sle.conversion_factor,
-				sle.stock_uom,
-				sle.row_no,
-				sle.item_name,
-			) = frappe.db.get_value(
-				"Stock Entry Detail",
-				sle.voucher_detail_no,
-				["uom", "qty", "conversion_factor", "stock_uom", "idx", "item_name"],
-			)
-			sle.stock_qty = sle.actual_qty
-			sle.qty = sle.actual_qty / sle.conversion_factor
+			child_doctype = "Stock Entry Detail"
 		else:
-			(
-				sle.uom,
-				sle.qty,
-				sle.conversion_factor,
-				sle.stock_uom,
-				sle.row_no,
-				sle.item_name,
-			) = frappe.db.get_value(
-				f"{sle.voucher_type} Item",
-				sle.voucher_detail_no,
-				["uom", "qty", "conversion_factor", "stock_uom", "idx", "item_name"],
-			)
-			sle.stock_qty = sle.actual_qty
-			sle.qty = sle.actual_qty / sle.conversion_factor
+			child_doctype = f"{sle.voucher_type} Item"
 
+		(
+			sle.uom,
+			sle.qty,
+			sle.conversion_factor,
+			sle.stock_uom,
+			sle.row_no,
+			sle.item_name,
+		) = frappe.db.get_value(
+			child_doctype,
+			sle.voucher_detail_no,
+			["uom", "qty", "conversion_factor", "stock_uom", "idx", "item_name"],
+		)
+		sle.stock_qty = sle.actual_qty
+		sle.qty = sle.actual_qty / sle.conversion_factor
 		sle.conversion_factor = frappe.get_value(
 			"UOM Conversion Detail",
 			{"parent": sle.item_code, "uom": sle.uom},
@@ -105,7 +96,7 @@ def get_handling_unit(handling_unit: str) -> frappe._dict:
 		sle.pop("posting_time")
 		sle.pop("voucher_detail_no")
 
-	return sl_entries[0] if len(sl_entries) == 1 else None
+	return sl_entries[0]
 
 
 def get_list_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[dict[str, Any]]:
