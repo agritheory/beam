@@ -48,3 +48,10 @@ bench update
 bench migrate
 bench build
 ```
+
+Setup test data
+```shell
+bench execute 'beam.tests.setup.before_test'
+# for complete reset to run before tests:
+bench reinstall --yes --admin-password admin --mariadb-root-password admin && bench execute 'beam.tests.setup.before_test'
+```

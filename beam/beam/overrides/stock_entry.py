@@ -15,7 +15,9 @@ class CustomStockEntry(StockEntry):
 		super().on_cancel()
 
 	def before_submit(self):
-		super().before_submit()
+		if hasattr(StockEntry, "before_submit"):
+			super().before_submit()
+		self.assign_handling_units()
 
 	def assign_handling_units(self):
 		if self.purpose not in ("Material Receipt", "Manufacture", "Repack"):

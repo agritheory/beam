@@ -3,15 +3,15 @@ import types
 from itertools import groupby
 
 import frappe
-from frappe.desk.page.setup_wizard.setup_wizard import setup_complete
-from erpnext.setup.utils import enable_all_roles_and_domains, set_defaults_for_tests
 from erpnext.accounts.doctype.account.account import update_account_number
 from erpnext.manufacturing.doctype.production_plan.production_plan import (
 	get_items_for_material_requests,
 )
+from erpnext.setup.utils import enable_all_roles_and_domains, set_defaults_for_tests
 from erpnext.stock.get_item_details import get_item_details
+from frappe.desk.page.setup_wizard.setup_wizard import setup_complete
 
-from beam.tests.fixtures import suppliers, boms, items, workstations, operations
+from beam.tests.fixtures import boms, items, operations, suppliers, workstations
 
 
 def before_test():
@@ -81,7 +81,7 @@ def create_test_data():
 	create_items(settings)
 	create_boms(settings)
 	create_material_request(settings)
-	create_production_plan(settings)
+	# create_production_plan(settings)
 
 
 def create_suppliers(settings):
@@ -136,6 +136,18 @@ def setup_manufacturing_settings(settings):
 	wip.account_name = "Work in Progress"
 	wip.parent_account = "1400 - Stock Assets - APC"
 	wip.account_number = "1420"
+	wip.company = settings.company
+	wip.currency = "USD"
+	wip.report_type = "Balance Sheet"
+	wip.root_type = "Asset"
+	wip.save()
+
+	if frappe.db.exists("Account", {"account_name": "Work In Progress", "company": settings.company}):
+		return
+	wip = frappe.new_doc("Account")
+	wip.account_name = "Standard Costing Reconciliation"
+	wip.parent_account = "1400 - Stock Assets - APC"
+	wip.account_number = "1430"
 	wip.company = settings.company
 	wip.currency = "USD"
 	wip.report_type = "Balance Sheet"
@@ -403,12 +415,18 @@ def create_production_plan(settings):
 			)
 			pr.append("items", {**item_details})
 		pr.save()
+		pr.submit()
 
-	# pp.make_work_order()
-	# wos = frappe.get_all("Work Order", {"production_plan": pp.name})
-	# for wo in wos:
-	# 	wo = frappe.get_doc("Work Order", wo)
-	# 	wo.skip_transfer = 1
-	# 	wo.wip_warehouse = "Kitchen - APC"
-	# can we skip job card creation?
-	# wo.submit()
+	pp.make_work_order()
+	wos = frappe.get_all("Work Order", {"production_plan": pp.name})
+	for wo in wos:
+		wo = frappe.get_doc("Work Order", wo)
+		wo.wip_warehouse = "Kitchen - APC"
+		wo.save()
+		wo.submit()
+		job_cards = frappe.get_all("Job Card", {"work_order": wo.name})
+		for job_card in job_cards:
+			job_card = frappe.get_doc("Job Card", job_card)
+			job_card.time_logs[0].completed_qty = wo.qty
+			job_card.save()
+			job_card.submit()
