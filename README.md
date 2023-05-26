@@ -59,3 +59,16 @@ To run mypy
 source env/bin/activate
 mypy ./apps/beam/beam --ignore-missing-imports
 ```
+
+### Printer Server setup
+```shell
+sudo apt-get install gcc cups python3-dev libcups2-dev -y
+# for development it helps to have the CUPS PDF printer installed
+# sudo apt-get -y install printer-driver-cups-pdf
+
+bench pip install pycups
+sudo usermod -a -G lpadmin {username} # the "frappe" user in most installations
+```
+Go to `{server URL or localhost}:631` to access the CUPS web interface
+Configuration on a remote server will take extra steps to secure:
+https://askubuntu.com/questions/23936/how-do-you-administer-cups-remotely-using-the-web-interface
