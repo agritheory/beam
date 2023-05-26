@@ -46,7 +46,6 @@ function custom_print_button(frm) {
 					fieldname: 'printer_setting',
 					fieldtype: 'Link',
 					options: 'Network Printer Settings',
-					default: 'Shipping',
 				},
 				{
 					label: __('Printer Format'),
