@@ -22,13 +22,11 @@ bench use {{ site name }}
 ```
 Download the ERPNext app, its prerequisite Payments, and the HR module
 ```
-bench get-app payments
 bench get-app erpnext --branch version-14
 ```
 Download this application and install all apps
 ```
 bench get-app beam git@github.com:agritheory/beam.git
-bench install-app erpnext approvals
 ```
 Set developer mode in `site_config.json`
 ```
