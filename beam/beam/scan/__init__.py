@@ -17,11 +17,12 @@ def scan(
 	barcode_doc = get_barcode_context(barcode)
 	if not barcode_doc:
 		frappe.msgprint("Barcode not found", alert=True)
-		return
+		return None  # mypy asked for this
 	if "listview" in context_dict:
 		return get_list_action(barcode_doc, context_dict)
 	elif "frm" in context_dict:
 		return get_form_action(barcode_doc, context_dict)  # TODO: add current_qty argument here
+	return None  # mypy asked for this
 
 
 def get_barcode_context(barcode: str) -> Union[frappe._dict, None]:
@@ -29,7 +30,7 @@ def get_barcode_context(barcode: str) -> Union[frappe._dict, None]:
 		"Item Barcode", {"barcode": barcode}, ["parent", "parenttype"], as_dict=True
 	)
 	if not item_barcode:
-		return
+		return None  # mypy asked for this
 	return frappe._dict(
 		{
 			"doc": frappe.get_doc(item_barcode.parenttype, item_barcode.parent),
@@ -60,7 +61,7 @@ def get_handling_unit(handling_unit: str) -> Union[frappe._dict, None]:
 	)
 
 	if len(sl_entries) != 1:
-		return
+		return None  # mypy asked for this
 
 	for sle in sl_entries:
 		if sle.voucher_type == "Stock Entry":
@@ -181,7 +182,7 @@ def get_list_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 
 	return [
 		{"action": l[0], "doctype": l[1], "field": l[2], "target": l[3]}
-		for l in listview.get(barcode_doc.doc.doctype, {}).get(context.listview, [])
+		for l in listview.get(barcode_doc.doc.doctype, {}).get(context.listview, [])  # type: ignore
 	]
 
 

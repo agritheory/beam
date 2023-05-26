@@ -55,3 +55,9 @@ bench execute 'beam.tests.setup.before_test'
 # for complete reset to run before tests:
 bench reinstall --yes --admin-password admin --mariadb-root-password admin && bench execute 'beam.tests.setup.before_test'
 ```
+
+To run mypy
+```shell
+source env/bin/activate
+mypy ./apps/beam/beam --ignore-missing-imports
+```
