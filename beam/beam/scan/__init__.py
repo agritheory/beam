@@ -119,72 +119,135 @@ def get_list_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 
 	listview = {
 		"Handling Unit": {
-			"Delivery Note": [("route", "Delivery Note", "Delivery Note", target)],
-			"Item": [("route", "Item", "Item", target)],
-			"Packing Slip": [("route", "Packing Slip", "Packing Slip", target)],
-			"Purchase Invoice": [("route", "Purchase Invoice", "Purchase Invoice", target)],
-			"Purchase Receipt": [("route", "Purchase Receipt", "Purchase Receipt", target)],
-			"Sales Invoice": [("route", "Sales Invoice", "Sales Invoice", target)],
-			"Stock Entry": [("route", "Stock Entry", "Stock Entry", target)],
-			"Stock Reconciliation": [("route", "Stock Reconciliation", "Stock Reconciliation", target)],
+			"Delivery Note": [
+				{"action": "route", "doctype": "Delivery Note", "field": "Delivery Note", "target": target}
+			],
+			"Item": [{"action": "route", "doctype": "Item", "field": "Item", "target": target}],
+			"Packing Slip": [
+				{"action": "route", "doctype": "Packing Slip", "field": "Packing Slip", "target": target}
+			],
+			"Purchase Invoice": [
+				{
+					"action": "route",
+					"doctype": "Purchase Invoice",
+					"field": "Purchase Invoice",
+					"target": target,
+				}
+			],
+			"Purchase Receipt": [
+				{
+					"action": "route",
+					"doctype": "Purchase Receipt",
+					"field": "Purchase Receipt",
+					"target": target,
+				}
+			],
+			"Sales Invoice": [
+				{"action": "route", "doctype": "Sales Invoice", "field": "Sales Invoice", "target": target}
+			],
+			"Stock Entry": [
+				{"action": "route", "doctype": "Stock Entry", "field": "Stock Entry", "target": target}
+			],
+			"Stock Reconciliation": [
+				{
+					"action": "route",
+					"doctype": "Stock Reconciliation",
+					"field": "Stock Reconciliation",
+					"target": target,
+				}
+			],
 		},
 		"Item": {
 			"Delivery Note": [
-				("filter", "Delivery Note Item", "item_code", target),
+				{"action": "filter", "doctype": "Delivery Note Item", "field": "item_code", "target": target},
 			],
-			"Item": [("route", "Item", "Item", target)],
+			"Item": [{"action": "route", "doctype": "Item", "field": "Item", "target": target}],
 			"Packing Slip": [
-				("filter", "Packing Slip Item", "item_code", target),
+				{"action": "filter", "doctype": "Packing Slip Item", "field": "item_code", "target": target},
 			],
 			"Purchase Invoice": [
-				("filter", "Purchase Invoice Item", "item_code", target),
+				{
+					"action": "filter",
+					"doctype": "Purchase Invoice Item",
+					"field": "item_code",
+					"target": target,
+				},
 			],
 			"Purchase Receipt": [
-				("filter", "Purchase Receipt Item", "item_code", target),
+				{
+					"action": "filter",
+					"doctype": "Purchase Receipt Item",
+					"field": "item_code",
+					"target": target,
+				},
 			],
 			"Sales Invoice": [
-				("filter", "Sales Invoice Item", "item_code", target),
+				{"action": "filter", "doctype": "Sales Invoice Item", "field": "item_code", "target": target},
 			],
 			"Stock Entry": [
-				("filter", "Stock Entry Detail", "item_code", target),
+				{"action": "filter", "doctype": "Stock Entry Detail", "field": "item_code", "target": target},
 			],
 			"Stock Reconciliation": [
-				("filter", "Stock Reconciliation Item", "item_code", target),
+				{
+					"action": "filter",
+					"doctype": "Stock Reconciliation Item",
+					"field": "item_code",
+					"target": target,
+				},
 			],
 		},
 		"Warehouse": {
 			"Delivery Note": [
-				("filter", "Delivery Note Item", "warehouse", target),
+				{"action": "filter", "doctype": "Delivery Note Item", "field": "warehouse", "target": target},
 			],
 			"Item": [
-				("filter", "Item Default", "default_warehouse", target),
+				{
+					"action": "filter",
+					"doctype": "Item Default",
+					"field": "default_warehouse",
+					"target": target,
+				},
 			],
 			"Packing Slip": [
-				("filter", "Packing Slip Item", "warehouse", target),
+				{"action": "filter", "doctype": "Packing Slip Item", "field": "warehouse", "target": target},
 			],
 			"Purchase Invoice": [
-				("filter", "Purchase Invoice Item", "warehouse", target),
+				{
+					"action": "filter",
+					"doctype": "Purchase Invoice Item",
+					"field": "warehouse",
+					"target": target,
+				},
 			],
 			"Purchase Receipt": [
-				("filter", "Purchase Receipt Item", "warehouse", target),
+				{
+					"action": "filter",
+					"doctype": "Purchase Receipt Item",
+					"field": "warehouse",
+					"target": target,
+				},
 			],
 			"Sales Invoice": [
-				("filter", "Sales Invoice Item", "warehouse", target),
+				{"action": "filter", "doctype": "Sales Invoice Item", "field": "warehouse", "target": target},
 			],
 			"Stock Entry": [
-				("filter", "Stock Entry Detail", "warehouse", target),
+				{"action": "filter", "doctype": "Stock Entry Detail", "field": "warehouse", "target": target},
 			],
 			"Stock Reconciliation": [
-				("filter", "Stock Reconciliation Item", "warehouse", target),
+				{
+					"action": "filter",
+					"doctype": "Stock Reconciliation Item",
+					"field": "warehouse",
+					"target": target,
+				},
 			],
-			"Warehouse": [("route", "Warehouse", "Warehouse", target)],
+			"Warehouse": [
+				{"action": "route", "doctype": "Warehouse", "field": "Warehouse", "target": target}
+			],
 		},
 	}
 
-	return [
-		{"action": l[0], "doctype": l[1], "field": l[2], "target": l[3]}
-		for l in listview.get(barcode_doc.doc.doctype, {}).get(context.listview, [])  # type: ignore
-	]
+	return listview.get(barcode_doc.doc.doctype, {}).get(context.listview, [])  # type: ignore
 
 
 def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[dict[str, Any]]:
@@ -207,149 +270,242 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 	frm = {
 		"Handling Unit": {
 			"Delivery Note": [
-				(
-					"add_or_associate",
-					"Delivery Note Item",
-					"handling_unit",
-					target.handling_unit,
-					target,
-				),
-				("add_or_associate", "Delivery Note Item", "rate", target.rate, target),
+				{
+					"action": "add_or_associate",
+					"doctype": "Delivery Note Item",
+					"field": "handling_unit",
+					"target": target.handling_unit,
+					"context": target,
+				},
+				{
+					"action": "add_or_associate",
+					"doctype": "Delivery Note Item",
+					"field": "rate",
+					"target": target.rate,
+					"context": target,
+				},
 			],
 			"Packing Slip": [
-				(
-					"add_or_associate",
-					"Packing Slip Item",
-					"handling_unit",
-					target.handling_unit,
-					target,
-				),
-				("add_or_associate", "Packing Slip Item", "rate", target.rate, target),
-				("add_or_associate", "Packing Slip Item", "pulled_quantity", target.qty, target),
-				("add_or_associate", "Packing Slip Item", "stock_qty", target.stock_qty, target),
-				(
-					"add_or_associate",
-					"Packing Slip Item",
-					"conversion_factor",
-					target.conversion_factor,
-					target,
-				),
-				("add_or_associate", "Packing Slip Item", "warehouse", target.warehouse, target),
+				{
+					"action": "add_or_associate",
+					"doctype": "Packing Slip Item",
+					"field": "conversion_factor",
+					"target": target.conversion_factor,
+					"context": target,
+				},
+				{
+					"action": "add_or_associate",
+					"doctype": "Packing Slip Item",
+					"field": "handling_unit",
+					"target": target.handling_unit,
+					"context": target,
+				},
+				{
+					"action": "add_or_associate",
+					"doctype": "Packing Slip Item",
+					"field": "pulled_quantity",
+					"target": target.qty,
+					"context": target,
+				},
+				{
+					"action": "add_or_associate",
+					"doctype": "Packing Slip Item",
+					"field": "rate",
+					"target": target.rate,
+					"context": target,
+				},
+				{
+					"action": "add_or_associate",
+					"doctype": "Packing Slip Item",
+					"field": "stock_qty",
+					"target": target.stock_qty,
+					"context": target,
+				},
+				{
+					"action": "add_or_associate",
+					"doctype": "Packing Slip Item",
+					"field": "warehouse",
+					"target": target.warehouse,
+					"context": target,
+				},
 			],
 			"Purchase Invoice": [
-				(
-					"add_or_associate",
-					"Purchase Invoice Item",
-					"handling_unit",
-					target.handling_unit,
-					target,
-				),
+				{
+					"action": "add_or_associate",
+					"doctype": "Purchase Invoice Item",
+					"field": "handling_unit",
+					"target": target.handling_unit,
+					"context": target,
+				},
 			],
 			"Sales Invoice": [
-				(
-					"add_or_associate",
-					"Sales Invoice Item",
-					"handling_unit",
-					target.handling_unit,
-					target,
-				),
+				{
+					"action": "add_or_associate",
+					"doctype": "Sales Invoice Item",
+					"field": "handling_unit",
+					"target": target.handling_unit,
+					"context": target,
+				},
 			],
 			"Stock Entry": [
-				(
-					"add_or_associate",
-					"Stock Entry Detail",
-					"handling_unit",
-					target.handling_unit,
-					target,
-				),
-				(
-					"add_or_associate",
-					"Stock Entry Detail",
-					"basic_rate",
-					target.valuation_rate,
-					target,
-				),
-				("add_or_associate", "Stock Entry Detail", "s_warehouse", target.warehouse, target),
-				("add_or_associate", "Stock Entry Detail", "transfer_qty", target.stock_qty, target),
-				(
-					"add_or_associate",
-					"Stock Entry Detail",
-					"conversion_factor",
-					target.conversion_factor,
-					target,
-				),
+				{
+					"action": "add_or_associate",
+					"doctype": "Stock Entry Detail",
+					"field": "basic_rate",
+					"target": target.valuation_rate,
+					"context": target,
+				},
+				{
+					"action": "add_or_associate",
+					"doctype": "Stock Entry Detail",
+					"field": "conversion_factor",
+					"target": target.conversion_factor,
+					"context": target,
+				},
+				{
+					"action": "add_or_associate",
+					"doctype": "Stock Entry Detail",
+					"field": "handling_unit",
+					"target": target.handling_unit,
+					"context": target,
+				},
+				{
+					"action": "add_or_associate",
+					"doctype": "Stock Entry Detail",
+					"field": "s_warehouse",
+					"target": target.warehouse,
+					"context": target,
+				},
+				{
+					"action": "add_or_associate",
+					"doctype": "Stock Entry Detail",
+					"field": "transfer_qty",
+					"target": target.stock_qty,
+					"context": target,
+				},
 			],
 			"Stock Reconciliation": [
-				(
-					"add_or_associate",
-					"Stock Reconciliation Item",
-					"handling_unit",
-					target.handling_unit,
-					target,
-				),
+				{
+					"action": "add_or_associate",
+					"doctype": "Stock Reconciliation Item",
+					"field": "handling_unit",
+					"target": target.handling_unit,
+					"context": target,
+				},
 			],
 		},
 		"Item": {
 			"Delivery Note": [
-				("add_or_increment", "Delivery Note Item", "item_code", target.item_code, target),
+				{
+					"action": "add_or_increment",
+					"doctype": "Delivery Note Item",
+					"field": "item_code",
+					"target": target.item_code,
+					"context": target,
+				},
 			],
 			"Purchase Invoice": [
-				("add_or_increment", "Purchase Invoice Item", "item_code", target.item_code, target),
+				{
+					"action": "add_or_increment",
+					"doctype": "Purchase Invoice Item",
+					"field": "item_code",
+					"target": target.item_code,
+					"context": target,
+				},
 			],
 			"Purchase Receipt": [
-				("add_or_increment", "Purchase Receipt Item", "item_code", target, target),
+				{
+					"action": "add_or_increment",
+					"doctype": "Purchase Receipt Item",
+					"field": "item_code",
+					"target": target.item_code,
+					"context": target,
+				},
 			],
 			"Sales Invoice": [
-				("add_or_increment", "Sales Invoice Item", "item_code", target.item_code, target),
+				{
+					"action": "add_or_increment",
+					"doctype": "Sales Invoice Item",
+					"field": "item_code",
+					"target": target.item_code,
+					"context": target,
+				},
 			],
 			"Stock Entry": [
-				("add_or_increment", "Stock Entry Detail", "item_code", target.item_code, target),
+				{
+					"action": "add_or_increment",
+					"doctype": "Stock Entry Detail",
+					"field": "item_code",
+					"target": target.item_code,
+					"context": target,
+				},
 			],
 			"Stock Reconciliation": [
-				(
-					"add_or_increment",
-					"Stock Reconciliation Item",
-					"item_code",
-					target.item_code,
-					target,
-				),
+				{
+					"action": "add_or_increment",
+					"doctype": "Stock Reconciliation Item",
+					"field": "item_code",
+					"target": target.item_code,
+					"context": target,
+				},
 			],
 		},
 		"Warehouse": {
 			"Delivery Note": [
-				("set_warehouse", "Delivery Note Item", "warehouse", target.warehouse, target),
+				{
+					"action": "set_warehouse",
+					"doctype": "Delivery Note Item",
+					"field": "warehouse",
+					"target": target.warehouse,
+					"context": target,
+				},
 			],
 			"Purchase Invoice": [
-				("set_warehouse", "Purchase Invoice Item", "warehouse", target.warehouse, target),
+				{
+					"action": "set_warehouse",
+					"doctype": "Purchase Invoice Item",
+					"field": "warehouse",
+					"target": target.warehouse,
+					"context": target,
+				},
 			],
 			"Purchase Receipt": [
-				("set_warehouse", "Purchase Receipt Item", "warehouse", target.warehouse, target),
+				{
+					"action": "set_warehouse",
+					"doctype": "Purchase Receipt Item",
+					"field": "warehouse",
+					"target": target.warehouse,
+					"context": target,
+				},
 			],
 			"Sales Invoice": [
-				("set_warehouse", "Sales Invoice Item", "warehouse", target.warehouse, target),
+				{
+					"action": "set_warehouse",
+					"doctype": "Sales Invoice Item",
+					"field": "warehouse",
+					"target": target.warehouse,
+					"context": target,
+				},
 			],
 			"Stock Entry": [
-				("set_warehouse", "Stock Entry", "warehouse", target.warehouse, target),
+				{
+					"action": "set_warehouse",
+					"doctype": "Stock Entry",
+					"field": "warehouse",
+					"target": target.warehouse,
+					"context": target,
+				},
 			],
 			"Stock Reconciliation": [
-				(
-					"set_warehouse",
-					"Stock Reconciliation Item",
-					"warehouse",
-					target.warehouse,
-					target,
-				),
+				{
+					"action": "set_warehouse",
+					"doctype": "Stock Reconciliation Item",
+					"field": "warehouse",
+					"target": target.warehouse,
+					"context": target,
+				},
 			],
 		},
 	}
 
-	return [
-		{
-			"action": l[0],
-			"doctype": l[1],
-			"field": l[2],
-			"target": l[3],
-			"context": l[4],
-		}
-		for l in frm.get(barcode_doc.doc.doctype, {}).get(context.frm, [])
-	]
+	return frm.get(barcode_doc.doc.doctype, {}).get(context.frm, [])
