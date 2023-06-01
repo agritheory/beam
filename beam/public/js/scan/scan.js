@@ -238,25 +238,25 @@ class ScanHandler {
 		if (
 			!cur_frm.doc.items.some(row => {
 				return (
-					(row.item_code == barcode_context.item_code && row.stock_qty == barcode_context.stock_qty) ||
-					row.handling_unit == barcode_context.handling_unit
+					(row.item_code == barcode_context.context.item_code && !row.handling_unit) ||
+					row.barcode == barcode_context.context.barcode
 				)
 			})
 		) {
 			if (!cur_frm.doc.items.length || !cur_frm.doc.items[0].item_code) {
 				cur_frm.doc.items = []
 			}
-			let row = cur_frm.add_child('items', barcode_context)
-			frappe.ui.form.handlers[cur_frm.fields_dict.items.df.options].uom.map(r => {
+			let row = cur_frm.add_child('items', barcode_context.context)
+			frappe.ui.form.handlers[cur_frm.fields_dict.items.df.options].uom?.map(r => {
 				r(cur_frm, row.doctype, row.name)
 			})
 		} else {
 			for (let row of cur_frm.doc.items) {
 				if (
-					(row.item_code == barcode_context.item_code && row.stock_qty == barcode_context.stock_qty) ||
-					row.handling_unit == barcode_context.handling_unit
+					(row.item_code == barcode_context.context.item_code && !row.handling_unit) ||
+					row.barcode == barcode_context.context.barcode
 				) {
-					frappe.model.set_value(row.doctype, row.name, 'handling_unit', barcode_context.handling_unit)
+					frappe.model.set_value(row.doctype, row.name, 'qty', row.qty + 1)
 				}
 			}
 		}

@@ -3,6 +3,7 @@ import json
 from typing import Any, Optional, Union
 
 import frappe
+from erpnext.stock.get_item_details import get_item_details
 
 
 @frappe.whitelist()
@@ -165,7 +166,7 @@ def get_list_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 				("filter", "Purchase Invoice Item", "warehouse", target),
 			],
 			"Purchase Receipt": [
-				("filter", "Accepted Warehouse (Purchase Receipt Item)", target),
+				("filter", "Purchase Receipt Item", "warehouse", target),
 			],
 			"Sales Invoice": [
 				("filter", "Sales Invoice Item", "warehouse", target),
@@ -190,6 +191,15 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 	target = None
 	if barcode_doc.doc.doctype == "Handling Unit":
 		target = get_handling_unit(barcode_doc.doc.name)
+	elif barcode_doc.doc.doctype == "Item":
+		target = get_item_details(
+			{
+				"doctype": context.frm,
+				"item_code": barcode_doc.doc.name,
+				"company": frappe.defaults.get_user_default("Company"),
+				"currency": frappe.defaults.get_user_default("Currency"),
+			}
+		)
 
 	if not target:
 		return []
