@@ -74,7 +74,7 @@ jobs:
 
       - name: Find JSON changes
         id: changed-json
-        uses: tj-actions/changed-files@v23.1
+        uses: tj-actions/changed-files@v36
         with:
           files: |
             **/*.json
