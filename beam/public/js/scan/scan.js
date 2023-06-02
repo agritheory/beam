@@ -246,10 +246,7 @@ class ScanHandler {
 			if (!cur_frm.doc.items.length || !cur_frm.doc.items[0].item_code) {
 				cur_frm.doc.items = []
 			}
-			let row = cur_frm.add_child('items', barcode_context.context)
-			frappe.ui.form.handlers[cur_frm.fields_dict.items.df.options].uom?.map(r => {
-				r(cur_frm, row.doctype, row.name)
-			})
+			cur_frm.add_child('items', barcode_context.context)
 		} else {
 			for (let row of cur_frm.doc.items) {
 				if (

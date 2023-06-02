@@ -255,14 +255,22 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 	if barcode_doc.doc.doctype == "Handling Unit":
 		target = get_handling_unit(barcode_doc.doc.name)
 	elif barcode_doc.doc.doctype == "Item":
-		target = get_item_details(
-			{
-				"doctype": context.frm,
-				"item_code": barcode_doc.doc.name,
-				"company": frappe.defaults.get_user_default("Company"),
-				"currency": frappe.defaults.get_user_default("Currency"),
-			}
-		)
+		if context.frm == "Stock Entry":
+			# TODO: ERPNext internally uses the `get_item_details` function in the Stock Entry controller
+			# based on the SE's purpose; figure out a way to use that (maybe fetch current doc to call,
+			# or write a custom method)
+			pass
+		else:
+			# the base `get_item_details` cannot handle doctypes whose items table name doesn't have
+			# "Item" in it, which will fail for Stock Entry
+			target = get_item_details(
+				{
+					"doctype": context.frm,
+					"item_code": barcode_doc.doc.name,
+					"company": frappe.defaults.get_user_default("Company"),
+					"currency": frappe.defaults.get_user_default("Currency"),
+				}
+			)
 
 	if not target:
 		return []
