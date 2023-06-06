@@ -80,6 +80,7 @@ class ScanHandler {
 		} else if (route[0] == 'Form' && valid_doctypes.frm.includes(route[1])) {
 			return {
 				frm: route[1],
+				doc: cur_frm.doc,
 			}
 		}
 	}
@@ -127,11 +128,6 @@ class ScanHandler {
 					row.source_warehouse = field.context.warehouse
 					if (cur_frm.doc.operation && cur_frm.doc.operation.includes('Mixing - ')) row.required_qty = row.stock_qty = 0
 					else row.required_qty = existing_row ? existing_row.required_qty : 0
-					if (frappe.ui.form.handlers[row.doctype] && frappe.ui.form.handlers[row.doctype].uom) {
-						frappe.ui.form.handlers[row.doctype].uom.map(r => {
-							r(cur_frm, row.doctype, row.name)
-						})
-					}
 					cur_frm.refresh_field('items')
 				} else {
 					let duplicate_row = null
@@ -173,12 +169,7 @@ class ScanHandler {
 					if (!cur_frm.doc.items.length || !cur_frm.doc.items[0].item_code) {
 						cur_frm.doc.items = []
 					}
-					let row = cur_frm.add_child('items', field.context)
-					if (frappe.ui.form.handlers[row.doctype] && frappe.ui.form.handlers[row.doctype].uom) {
-						frappe.ui.form.handlers[row.doctype].uom.map(r => {
-							r(cur_frm, row.doctype, row.name)
-						})
-					}
+					cur_frm.add_child('items', field.context)
 				} else {
 					for (let row of cur_frm.doc.items) {
 						if (

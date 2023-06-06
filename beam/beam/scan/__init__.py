@@ -3,6 +3,7 @@ import json
 from typing import Any, Optional, Union
 
 import frappe
+from erpnext.stock.doctype.stock_entry.stock_entry import StockEntry
 from erpnext.stock.get_item_details import get_item_details
 
 
@@ -255,12 +256,7 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 	if barcode_doc.doc.doctype == "Handling Unit":
 		target = get_handling_unit(barcode_doc.doc.name)
 	elif barcode_doc.doc.doctype == "Item":
-		if context.frm == "Stock Entry":
-			# TODO: ERPNext internally uses the `get_item_details` function in the Stock Entry controller
-			# based on the SE's purpose; figure out a way to use that (maybe fetch current doc to call,
-			# or write a custom method)
-			pass
-		else:
+		if context.frm != "Stock Entry":
 			# the base `get_item_details` cannot handle doctypes whose items table name doesn't have
 			# "Item" in it, which will fail for Stock Entry
 			target = get_item_details(
@@ -271,6 +267,16 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 					"currency": frappe.defaults.get_user_default("Currency"),
 				}
 			)
+		else:
+			stock_entry = StockEntry(frappe._dict(context.doc))
+			if not stock_entry.stock_entry_type:
+				stock_entry.purpose = "Material Transfer"
+				stock_entry.set_stock_entry_type()
+			target = stock_entry.get_item_details({"item_code": barcode_doc.doc.name})
+			target.item_code = barcode_doc.doc.name
+			target.barcode = barcode_doc.barcode
+			# only required for first scan, since quantity by default is zero
+			target.qty = 1
 
 	if not target:
 		return []
