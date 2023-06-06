@@ -237,7 +237,11 @@ class ScanHandler {
 			if (!cur_frm.doc.items.length || !cur_frm.doc.items[0].item_code) {
 				cur_frm.doc.items = []
 			}
-			cur_frm.add_child('items', barcode_context.context)
+			const row = cur_frm.add_child('items', barcode_context.context)
+			// a first-time scan of an item in Stock Entry does not automatically set the rate, so run it manually
+			if (cur_frm.doc.doctype == 'Stock Entry') {
+				cur_frm.events.set_basic_rate(cur_frm, row.doctype, row.name)
+			}
 		} else {
 			for (let row of cur_frm.doc.items) {
 				if (
