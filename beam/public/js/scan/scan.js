@@ -123,11 +123,10 @@ class ScanHandler {
 					if (!cur_frm.doc.items.length || !cur_frm.doc.items[0].item_code) {
 						cur_frm.doc.items = []
 					}
-					let existing_row = cur_frm.doc.items.find(val => val.item_code == field.context.item_code)
-					let row = cur_frm.add_child('items', field.context)
+					const existing_row = cur_frm.doc.items.find(val => val.item_code == field.context.item_code)
+					const row = cur_frm.add_child('items', field.context)
 					row.source_warehouse = field.context.warehouse
-					if (cur_frm.doc.operation && cur_frm.doc.operation.includes('Mixing - ')) row.required_qty = row.stock_qty = 0
-					else row.required_qty = existing_row ? existing_row.required_qty : 0
+					row.required_qty = existing_row ? existing_row.required_qty : 0
 					cur_frm.refresh_field('items')
 				} else {
 					let duplicate_row = null
