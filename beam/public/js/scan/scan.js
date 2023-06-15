@@ -80,6 +80,7 @@ class ScanHandler {
 		} else if (route[0] == 'Form' && valid_doctypes.frm.includes(route[1])) {
 			return {
 				frm: route[1],
+				doc: cur_frm.doc,
 			}
 		}
 	}
@@ -122,16 +123,10 @@ class ScanHandler {
 					if (!cur_frm.doc.items.length || !cur_frm.doc.items[0].item_code) {
 						cur_frm.doc.items = []
 					}
-					let existing_row = cur_frm.doc.items.find(val => val.item_code == field.context.item_code)
-					let row = cur_frm.add_child('items', field.context)
+					const existing_row = cur_frm.doc.items.find(val => val.item_code == field.context.item_code)
+					const row = cur_frm.add_child('items', field.context)
 					row.source_warehouse = field.context.warehouse
-					if (cur_frm.doc.operation && cur_frm.doc.operation.includes('Mixing - ')) row.required_qty = row.stock_qty = 0
-					else row.required_qty = existing_row ? existing_row.required_qty : 0
-					if (frappe.ui.form.handlers[row.doctype] && frappe.ui.form.handlers[row.doctype].uom) {
-						frappe.ui.form.handlers[row.doctype].uom.map(r => {
-							r(cur_frm, row.doctype, row.name)
-						})
-					}
+					row.required_qty = existing_row ? existing_row.required_qty : 0
 					cur_frm.refresh_field('items')
 				} else {
 					let duplicate_row = null
@@ -173,12 +168,7 @@ class ScanHandler {
 					if (!cur_frm.doc.items.length || !cur_frm.doc.items[0].item_code) {
 						cur_frm.doc.items = []
 					}
-					let row = cur_frm.add_child('items', field.context)
-					if (frappe.ui.form.handlers[row.doctype] && frappe.ui.form.handlers[row.doctype].uom) {
-						frappe.ui.form.handlers[row.doctype].uom.map(r => {
-							r(cur_frm, row.doctype, row.name)
-						})
-					}
+					cur_frm.add_child('items', field.context)
 				} else {
 					for (let row of cur_frm.doc.items) {
 						if (
@@ -238,25 +228,26 @@ class ScanHandler {
 		if (
 			!cur_frm.doc.items.some(row => {
 				return (
-					(row.item_code == barcode_context.item_code && row.stock_qty == barcode_context.stock_qty) ||
-					row.handling_unit == barcode_context.handling_unit
+					(row.item_code == barcode_context.context.item_code && !row.handling_unit) ||
+					row.barcode == barcode_context.context.barcode
 				)
 			})
 		) {
 			if (!cur_frm.doc.items.length || !cur_frm.doc.items[0].item_code) {
 				cur_frm.doc.items = []
 			}
-			let row = cur_frm.add_child('items', barcode_context)
-			frappe.ui.form.handlers[cur_frm.fields_dict.items.df.options].uom.map(r => {
-				r(cur_frm, row.doctype, row.name)
-			})
+			const row = cur_frm.add_child('items', barcode_context.context)
+			// a first-time scan of an item in Stock Entry does not automatically set the rate, so run it manually
+			if (cur_frm.doc.doctype == 'Stock Entry') {
+				cur_frm.events.set_basic_rate(cur_frm, row.doctype, row.name)
+			}
 		} else {
 			for (let row of cur_frm.doc.items) {
 				if (
-					(row.item_code == barcode_context.item_code && row.stock_qty == barcode_context.stock_qty) ||
-					row.handling_unit == barcode_context.handling_unit
+					(row.item_code == barcode_context.context.item_code && !row.handling_unit) ||
+					row.barcode == barcode_context.context.barcode
 				) {
-					frappe.model.set_value(row.doctype, row.name, 'handling_unit', barcode_context.handling_unit)
+					frappe.model.set_value(row.doctype, row.name, 'qty', row.qty + 1)
 				}
 			}
 		}
