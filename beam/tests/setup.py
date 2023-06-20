@@ -81,7 +81,7 @@ def create_test_data():
 	create_items(settings)
 	create_boms(settings)
 	create_material_request(settings)
-	# create_production_plan(settings)
+	create_production_plan(settings)
 
 
 def create_suppliers(settings):
@@ -386,16 +386,21 @@ def create_production_plan(settings):
 
 	for item in mr.items:
 		supplier = frappe.get_value("Item Supplier", {"parent": item.get("item_code")}, "supplier")
-		item.supplier = supplier
+		item.supplier = supplier or "No Supplier"
 
 	for supplier, _items in groupby(
 		sorted((m for m in mr.items if m.supplier), key=lambda d: d.supplier),
 		lambda x: x.get("supplier"),
 	):
 		items = list(_items)
-		if not supplier:
+		if supplier == "No Supplier":
+			# make a stock entry here?
 			continue
-		pr = frappe.new_doc("Purchase Receipt")
+		if supplier == "Freedom Provisions":
+			pr = frappe.new_doc("Purchase Invoice")
+			pr.update_stock = 1
+		else:
+			pr = frappe.new_doc("Purchase Receipt")
 		pr.company = settings.company
 		pr.supplier = supplier
 		pr.posting_date = settings.day
@@ -415,7 +420,7 @@ def create_production_plan(settings):
 			)
 			pr.append("items", {**item_details})
 		pr.save()
-		pr.submit()
+		# pr.submit() # don't submit - needed to test handling unit generation
 
 	pp.make_work_order()
 	wos = frappe.get_all("Work Order", {"production_plan": pp.name})

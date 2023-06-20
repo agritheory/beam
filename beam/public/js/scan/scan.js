@@ -46,13 +46,10 @@ function waitForElement(selector) {
 waitForElement('[data-route]').then(element => {
 	let observer = new MutationObserver(() => {
 		new ScanHandler()
-		// console.log(window.scanHandler.scanner.scannerDetectionData)
 	})
 	const config = { attributes: true, childList: false, characterData: true }
 	observer.observe(element, config)
 })
-
-// document.dispatchEvent(new Event('scan', {data: {sCode: "3767127653309169910", iQty: 1}}))
 
 class ScanHandler {
 	constructor() {
@@ -175,7 +172,6 @@ class ScanHandler {
 							(row.item_code == field.context.item_code && row.stock_qty == field.context.stock_qty) ||
 							row.handling_unit == field.context.handling_unit
 						) {
-							// if ((row.item_code == handling_unit.item_code && row.stock_qty == handling_unit.stock_qty) || row.handling_unit == handling_unit.handling_unit) {
 							frappe.model.set_value(row.doctype, row.name, field.field, field.target)
 						}
 					}
