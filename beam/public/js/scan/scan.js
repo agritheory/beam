@@ -121,26 +121,12 @@ class ScanHandler {
 				}
 				cur_frm.add_child('items', field.context)
 			} else {
-				if (
-					!cur_frm.doc.items.some(row => {
-						return (
-							(row.item_code == field.context.item_code && row.stock_qty == field.context.stock_qty) ||
-							row.handling_unit == field.context.handling_unit
-						)
-					})
-				) {
-					if (!cur_frm.doc.items.length || !cur_frm.doc.items[0].item_code) {
-						cur_frm.doc.items = []
-					}
-					cur_frm.add_child('items', field.context)
-				} else {
-					for (let row of cur_frm.doc.items) {
-						if (
-							(row.item_code == field.context.item_code && row.stock_qty == field.context.stock_qty) ||
-							row.handling_unit == field.context.handling_unit
-						) {
-							frappe.model.set_value(row.doctype, row.name, field.field, field.target)
-						}
+				for (let row of cur_frm.doc.items) {
+					if (
+						(row.item_code == field.context.item_code && row.stock_qty == field.context.stock_qty) ||
+						row.handling_unit == field.context.handling_unit
+					) {
+						frappe.model.set_value(row.doctype, row.name, field.field, field.target)
 					}
 				}
 			}
