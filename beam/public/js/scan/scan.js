@@ -108,72 +108,25 @@ class ScanHandler {
 			return
 		}
 		barcode_context.forEach(field => {
-			if (['Packing Slip'].includes(cur_frm.doc.doctype)) {
-				if (
-					!cur_frm.doc.items.some(row => {
-						return (
-							(row.item_code == field.context.item_code && !row.handling_unit) ||
-							row.handling_unit == field.context.handling_unit
-						)
-					})
-				) {
-					if (!cur_frm.doc.items.length || !cur_frm.doc.items[0].item_code) {
-						cur_frm.doc.items = []
-					}
-					const existing_row = cur_frm.doc.items.find(val => val.item_code == field.context.item_code)
-					const row = cur_frm.add_child('items', field.context)
-					row.source_warehouse = field.context.warehouse
-					row.required_qty = existing_row ? existing_row.required_qty : 0
-					cur_frm.refresh_field('items')
-				} else {
-					let duplicate_row = null
-					for (let row of cur_frm.doc.items) {
-						if (
-							(row.item_code == field.context.item_code && !row.handling_unit) ||
-							row.handling_unit == field.context.handling_unit
-						) {
-							frappe.model.set_value(row.doctype, row.name, field.field, field.target)
-							// if doctype is packing slip and user scanned handling unit
-							// update handling unit's itemcode qty with handling unit qty and
-							// create row with remaining qty annd without handling unit
-							if (cur_frm.doc.doctype === 'Packing Slip' && field.field === 'handling_unit') {
-								duplicate_row = { ...row }
-								duplicate_row.qty -= field.context.qty
-								if (duplicate_row.qty <= 0) {
-									return
-								}
-								duplicate_row.handling_unit = null
-								duplicate_row.name = null
-								frappe.model.set_value(row.doctype, row.name, 'qty', field.context.qty)
-							}
-						}
-					}
-					if (duplicate_row) {
-						cur_frm.add_child('items', duplicate_row)
-						cur_frm.refresh_field('items')
-					}
+			if (
+				!cur_frm.doc.items.some(row => {
+					return (
+						(row.item_code == field.context.item_code && row.stock_qty == field.context.stock_qty) ||
+						row.handling_unit == field.context.handling_unit
+					)
+				})
+			) {
+				if (!cur_frm.doc.items.length || !cur_frm.doc.items[0].item_code) {
+					cur_frm.doc.items = []
 				}
+				cur_frm.add_child('items', field.context)
 			} else {
-				if (
-					!cur_frm.doc.items.some(row => {
-						return (
-							(row.item_code == field.context.item_code && row.stock_qty == field.context.stock_qty) ||
-							row.handling_unit == field.context.handling_unit
-						)
-					})
-				) {
-					if (!cur_frm.doc.items.length || !cur_frm.doc.items[0].item_code) {
-						cur_frm.doc.items = []
-					}
-					cur_frm.add_child('items', field.context)
-				} else {
-					for (let row of cur_frm.doc.items) {
-						if (
-							(row.item_code == field.context.item_code && row.stock_qty == field.context.stock_qty) ||
-							row.handling_unit == field.context.handling_unit
-						) {
-							frappe.model.set_value(row.doctype, row.name, field.field, field.target)
-						}
+				for (let row of cur_frm.doc.items) {
+					if (
+						(row.item_code == field.context.item_code && row.stock_qty == field.context.stock_qty) ||
+						row.handling_unit == field.context.handling_unit
+					) {
+						frappe.model.set_value(row.doctype, row.name, field.field, field.target)
 					}
 				}
 			}
