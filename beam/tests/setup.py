@@ -246,6 +246,8 @@ def create_items(settings):
 		)
 		if i.is_purchase_item and item.get("supplier"):
 			i.append("supplier_items", {"supplier": item.get("supplier")})
+		if i.item_code == "Water":
+			i.maintain_stock = 0
 		i.save()
 		if item.get("item_price"):
 			ip = frappe.new_doc("Item Price")

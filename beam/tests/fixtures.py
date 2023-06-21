@@ -359,10 +359,11 @@ items = [
 	{
 		"item_code": "Water",
 		"uom": "Cup",
-		"item_price": 0.05,
+		"item_price": 0.00,
 		"description": "Water",
 		"item_group": "Ingredients",
 		"default_warehouse": "Kitchen - APC",
+		"supplier": "Freedom Provisions",
 	},
 ]
 

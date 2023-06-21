@@ -184,15 +184,3 @@ def test_item_scan_from_form_view():
 	assert scan[0].get("field") == "item_code"
 	assert scan[0].get("target") == "Butter"
 	# TODO: add assertions that show harmonization with get_item_details
-
-
-@pytest.mark.skip()
-def test_handling_unit_scan_from_list_view_for_route():
-	# purchase receipt listview
-	pass
-
-
-@pytest.mark.skip()
-def test_handling_unit_scan_from_form_view():
-	# purchase receipt listview
-	pass
