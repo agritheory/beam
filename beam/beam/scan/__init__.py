@@ -41,7 +41,7 @@ def get_barcode_context(barcode: str) -> Union[frappe._dict, None]:
 	)
 
 
-def get_handling_unit(handling_unit: str) -> Union[frappe._dict, None]:
+def get_handling_unit(handling_unit: str) -> frappe._dict:
 	sl_entries = frappe.get_all(
 		"Stock Ledger Entry",
 		filters={"handling_unit": handling_unit},
@@ -49,13 +49,9 @@ def get_handling_unit(handling_unit: str) -> Union[frappe._dict, None]:
 			"item_code",
 			"SUM(actual_qty) as actual_qty",
 			"handling_unit",
-			"voucher_type",
 			"voucher_no",
-			"voucher_detail_no",
 			"posting_date",
 			"posting_time",
-			"valuation_rate",
-			"warehouse",
 		],
 		group_by="handling_unit",
 		order_by="modified DESC",
@@ -63,43 +59,28 @@ def get_handling_unit(handling_unit: str) -> Union[frappe._dict, None]:
 	)
 
 	if len(sl_entries) != 1:
-		return None  # mypy asked for this
+		return frappe._dict()
 
-	for sle in sl_entries:
-		if sle.voucher_type == "Stock Entry":
-			child_doctype = "Stock Entry Detail"
-		else:
-			child_doctype = f"{sle.voucher_type} Item"
+	entry = sl_entries[0]
+	entry.posting_datetime = (
+		datetime.datetime(entry.posting_date.year, entry.posting_date.month, entry.posting_date.day)
+		+ entry.posting_time
+	)
 
-		(
-			sle.uom,
-			sle.qty,
-			sle.conversion_factor,
-			sle.stock_uom,
-			sle.row_no,
-			sle.item_name,
-		) = frappe.db.get_value(
-			child_doctype,
-			sle.voucher_detail_no,
-			["uom", "qty", "conversion_factor", "stock_uom", "idx", "item_name"],
-		)
-		sle.stock_qty = sle.actual_qty
-		sle.qty = sle.actual_qty / sle.conversion_factor
-		sle.conversion_factor = frappe.get_value(
-			"UOM Conversion Detail",
-			{"parent": sle.item_code, "uom": sle.uom},
-			"conversion_factor",
-		)
-		sle.posting_datetime = (
-			datetime.datetime(sle.posting_date.year, sle.posting_date.month, sle.posting_date.day)
-			+ sle.posting_time
-		)
-		sle.user = frappe.session.user
-		sle.pop("posting_date")
-		sle.pop("posting_time")
-		sle.pop("voucher_detail_no")
+	return entry
 
-	return sl_entries[0]
+
+def get_stock_entry_item_details(doc: dict, item_code: str) -> frappe._dict:
+	# the base `get_item_details` cannot handle doctypes whose items table name doesn't have
+	# "Item" in it, which will fail for Stock Entry
+	stock_entry = StockEntry(frappe._dict(doc))
+	if not stock_entry.stock_entry_type:
+		stock_entry.purpose = "Material Transfer"
+		stock_entry.set_stock_entry_type()
+	target = stock_entry.get_item_details({"item_code": item_code})
+	target.item_code = item_code
+	target.qty = 1  # only required for first scan, since quantity by default is zero
+	return target
 
 
 def get_list_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[dict[str, Any]]:
@@ -254,11 +235,33 @@ def get_list_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[dict[str, Any]]:
 	target = None
 	if barcode_doc.doc.doctype == "Handling Unit":
-		target = get_handling_unit(barcode_doc.doc.name)
+		hu_details = get_handling_unit(barcode_doc.doc.name)
+		if context.frm == "Stock Entry":
+			target = get_stock_entry_item_details(context.doc, hu_details.item_code)
+		else:
+			target = get_item_details(
+				{
+					"doctype": context.frm,
+					"item_code": hu_details.item_code,
+					"company": frappe.defaults.get_user_default("Company"),
+					"currency": frappe.defaults.get_user_default("Currency"),
+				}
+			)
+		target.update(
+			{
+				"handling_unit": hu_details.handling_unit,
+				"voucher_no": hu_details.voucher_no,
+				"stock_qty": hu_details.actual_qty,
+				"qty": hu_details.actual_qty / target.conversion_factor
+				if target.conversion_factor
+				else hu_details.actual_qty,
+				"posting_datetime": hu_details.posting_datetime,
+			}
+		)
 	elif barcode_doc.doc.doctype == "Item":
-		if context.frm != "Stock Entry":
-			# the base `get_item_details` cannot handle doctypes whose items table name doesn't have
-			# "Item" in it, which will fail for Stock Entry
+		if context.frm == "Stock Entry":
+			target = get_stock_entry_item_details(context.doc, barcode_doc.doc.name)
+		else:
 			target = get_item_details(
 				{
 					"doctype": context.frm,
@@ -267,16 +270,7 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 					"currency": frappe.defaults.get_user_default("Currency"),
 				}
 			)
-		else:
-			stock_entry = StockEntry(frappe._dict(context.doc))
-			if not stock_entry.stock_entry_type:
-				stock_entry.purpose = "Material Transfer"
-				stock_entry.set_stock_entry_type()
-			target = stock_entry.get_item_details({"item_code": barcode_doc.doc.name})
-			target.item_code = barcode_doc.doc.name
-			target.barcode = barcode_doc.barcode
-			# only required for first scan, since quantity by default is zero
-			target.qty = 1
+		target.barcode = barcode_doc.barcode
 
 	if not target:
 		return []
