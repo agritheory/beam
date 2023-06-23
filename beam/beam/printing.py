@@ -49,7 +49,7 @@ def print_by_server(
 				# file_path = f"{get_bench_path()}/sites{get_files_path()[1:]}/{name}{random_string(10).upper()}.txt"
 				# use this technique for production
 				file_path = os.path.join("/", "tmp", f"frappe-zpl-{frappe.generate_hash()}.txt")
-				Path(file_path).write_text(output)
+			Path(file_path).write_text(output)
 		else:
 			output = PdfFileWriter()
 			output = frappe.get_print(
