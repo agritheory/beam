@@ -168,3 +168,61 @@ def test_stock_entry_for_manufacture():
 		assert row.transfer_qty == sle.actual_qty  # AKA stock_qty in every other doctype
 		assert row.item_code == sle.item_code
 		assert row.t_warehouse == sle.warehouse  # target warehouse
+
+
+def test_stock_entry_material_receipt():
+	submit_all_purchase_receipts()
+	se = frappe.new_doc("Stock Entry")
+	se.stock_entry_type = se.purpose = "Material Receipt"
+	se.append(
+		"items",
+		{
+			"item_code": "Water",
+			"t_warehouse": "Kitchen - APC",
+			"qty": 1000,
+			"basic_rate": 0.0,
+			"allow_zero_valuation_rate": 1,
+		},
+	)
+	se.append(
+		"items",
+		{
+			"item_code": "Flour",
+			"t_warehouse": "Storeroom - APC",
+			"qty": 100,
+			"basic_rate": 0.66,
+		},
+	)
+
+	for row in se.get("items"):
+		hu = frappe.get_value("Purchase Receipt Item", {"item_code": row.item_code}, "handling_unit")
+		if not hu:
+			hu = frappe.get_value("Purchase Invoice Item", {"item_code": row.item_code}, "handling_unit")
+		scan = frappe.call(
+			"beam.beam.scan.scan",
+			**{
+				"barcode": str(hu),
+				"context": {"frm": "Stock Entry", "doc": se.as_dict()},
+				"current_qty": row.qty,
+			}
+		)
+		assert scan[0]["action"] == "add_or_associate"
+		row.handling_unit = scan[0]["context"].get(
+			"handling_unit"
+		)  # simulates the effect of 'associate'
+	se.save()
+	for row in se.items:
+		if not frappe.get_value("Item", row.item_code, "is_stock_item"):
+			continue
+		sle = frappe.get_doc("Stock Ledger Entry", {"handling_unit": row.handling_unit})
+		assert row.item_code == sle.item_code
+		assert row.t_warehouse == sle.warehouse  # target warehouse
+
+	se.submit()
+	for row in se.items:
+		if not frappe.get_value("Item", row.item_code, "is_stock_item"):
+			continue
+		sle = frappe.get_doc("Stock Ledger Entry", {"handling_unit": row.handling_unit})
+		assert row.transfer_qty == sle.actual_qty  # AKA stock_qty in every other doctype
+		assert row.item_code == sle.item_code
+		assert row.t_warehouse == sle.warehouse  # target warehouse
