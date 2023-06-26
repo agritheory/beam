@@ -1,10 +1,10 @@
 import onScan from 'onscan.js'
 
+//  refactor to use boot instead
 const valid_doctypes = {
 	listview: [
 		'Item',
 		'Warehouse',
-		'Workstation',
 		'Handling Unit',
 		'Packing Slip',
 		'Purchase Receipt',
