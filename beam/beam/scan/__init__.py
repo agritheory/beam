@@ -127,6 +127,14 @@ def get_list_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 			"Putaway Rule": [
 				{"action": "filter", "doctype": "Putaway Rule", "field": "item_code", "target": target},
 			],
+			"Quality Inspection": [
+				{
+					"action": "filter",
+					"doctype": "Quality Inspection",
+					"field": "handling_unit",
+					"target": target,
+				},
+			],
 			"Sales Invoice": [
 				{"action": "route", "doctype": "Sales Invoice", "field": "Sales Invoice", "target": target}
 			],
@@ -171,6 +179,9 @@ def get_list_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 			],
 			"Putaway Rule": [
 				{"action": "filter", "doctype": "Putaway Rule", "field": "item_code", "target": target},
+			],
+			"Quality Inspection": [
+				{"action": "filter", "doctype": "Quality Inspection", "field": "item_code", "target": target},
 			],
 			"Sales Invoice": [
 				{"action": "filter", "doctype": "Sales Invoice Item", "field": "item_code", "target": target},
@@ -250,7 +261,7 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 		hu_details = get_handling_unit(barcode_doc.doc.name)
 		if context.frm == "Stock Entry":
 			target = get_stock_entry_item_details(context.doc, hu_details.item_code)
-		if context.frm in ("Putaway Rule", "Warranty Claim"):
+		if context.frm in ("Putaway Rule", "Warranty Claim", "Item Price", "Quality Inspection"):
 			target = frappe._dict(
 				{
 					"doctype": context.frm,
@@ -280,7 +291,7 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 	elif barcode_doc.doc.doctype == "Item":
 		if context.frm == "Stock Entry":
 			target = get_stock_entry_item_details(context.doc, barcode_doc.doc.name)
-		if context.frm in ("Putaway Rule", "Warranty Claim"):
+		if context.frm in ("Putaway Rule", "Warranty Claim", "Item Price", "Quality Inspection"):
 			target = frappe._dict(
 				{
 					"doctype": context.frm,
@@ -316,6 +327,15 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 					"doctype": "Delivery Note Item",
 					"field": "rate",
 					"target": target.rate,
+					"context": target,
+				},
+			],
+			"Item Price": [
+				{
+					"action": "set_item_code_and_handling_unit",
+					"doctype": "Item Price",
+					"field": "item_code",
+					"target": target.item_code,
 					"context": target,
 				},
 			],
@@ -378,6 +398,22 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 					"doctype": "Putaway Rule",
 					"field": "item_code",
 					"target": target.item_code,
+					"context": target,
+				},
+			],
+			"Quality Inspection": [
+				{
+					"action": "set_item_code_and_handling_unit",
+					"doctype": "Quality Inspection",
+					"field": "item_code",
+					"target": target.item_code,
+					"context": target,
+				},
+				{
+					"action": "set_item_code_and_handling_unit",
+					"doctype": "Quality Inspection",
+					"field": "handling_unit",
+					"target": target.handling_unit,
 					"context": target,
 				},
 			],
@@ -463,6 +499,15 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 					"context": target,
 				},
 			],
+			"Item Price": [
+				{
+					"action": "set_item_code_and_handling_unit",
+					"doctype": "Item Price",
+					"field": "item_code",
+					"target": target.item_code,
+					"context": target,
+				},
+			],
 			"Purchase Invoice": [
 				{
 					"action": "add_or_increment",
@@ -485,6 +530,15 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 				{
 					"action": "set_item_code_and_handling_unit",
 					"doctype": "Putaway Rule",
+					"field": "item_code",
+					"target": target.item_code,
+					"context": target,
+				},
+			],
+			"Quality Inspection": [
+				{
+					"action": "set_item_code_and_handling_unit",
+					"doctype": "Quality Inspection",
 					"field": "item_code",
 					"target": target.item_code,
 					"context": target,

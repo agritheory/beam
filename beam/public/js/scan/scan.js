@@ -29,6 +29,7 @@ const valid_doctypes = {
 		'Warranty Claim',
 		'Quality Inspection',
 		'Putaway Rule',
+		'Item Price',
 	],
 }
 
