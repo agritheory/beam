@@ -73,6 +73,47 @@ def test_stock_entry_material_receipt():
 		assert row.t_warehouse == sle.warehouse  # target warehouse
 
 
+def test_stock_entry_repack():
+	submit_all_purchase_receipts()
+	se = frappe.new_doc("Stock Entry")
+	se.stock_entry_type = se.purpose = "Repack"
+	se.append(
+		"items",
+		{
+			"item_code": "Parchment Paper",
+			"qty": 1,
+			"uom": "Box",
+			"conversion_factor": 100,
+			"stock_qty": 100,
+			"s_warehouse": "Storeroom - APC",
+		},
+	)
+	se.append(
+		"items",
+		{
+			"item_code": "Parchment Paper",
+			"uom": "Nos",
+			"qty": 100,
+			"t_warehouse": "Storeroom - APC",
+		},
+	)
+	se.save()
+	se.submit()
+	for row in se.items:
+		sle = frappe.get_doc("Stock Ledger Entry", {"handling_unit": row.handling_unit})
+		assert row.item_code == sle.item_code
+		if row.is_finished_item:
+			assert row.transfer_qty == sle.actual_qty
+			assert row.t_warehouse == sle.warehouse
+		else:
+			assert row.transfer_qty == -(sle.actual_qty)
+			assert row.s_warehouse == sle.warehouse
+
+	hu = get_handling_unit(se.items[-1].handling_unit)
+	assert hu.uom == "Box"
+	assert hu.actual_qty == 1
+
+
 def test_stock_entry_material_transfer():
 	submit_all_purchase_receipts()
 	se = frappe.new_doc("Stock Entry")

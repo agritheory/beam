@@ -41,33 +41,93 @@ def get_barcode_context(barcode: str) -> Union[frappe._dict, None]:
 	)
 
 
+# def get_handling_unit(handling_unit: str) -> frappe._dict:
+# 	sl_entries = frappe.get_all(
+# 		"Stock Ledger Entry",
+# 		filters={"handling_unit": handling_unit},
+# 		fields=[
+# 			"item_code",
+# 			"SUM(actual_qty) as actual_qty",
+# 			"handling_unit",
+# 			"voucher_no",
+# 			"posting_date",
+# 			"posting_time",
+# 			"stock_uom",
+# 		],
+# 		group_by="handling_unit",
+# 		order_by="modified DESC",
+# 		limit=1,
+# 	)
+
+
+# 	if len(sl_entries) != 1:
+# 		return frappe._dict()
+
+# 	entry = sl_entries[0]
+# 	entry.posting_datetime = (
+# 		datetime.datetime(entry.posting_date.year, entry.posting_date.month, entry.posting_date.day)
+# 		+ entry.posting_time
+# 	)
+
+# 	return entry
+
+
 def get_handling_unit(handling_unit: str) -> frappe._dict:
 	sl_entries = frappe.get_all(
 		"Stock Ledger Entry",
 		filters={"handling_unit": handling_unit},
 		fields=[
 			"item_code",
-			"SUM(actual_qty) as actual_qty",
+			"SUM(actual_qty) AS stock_qty",
 			"handling_unit",
 			"voucher_no",
 			"posting_date",
 			"posting_time",
+			"stock_uom",
 		],
 		group_by="handling_unit",
-		order_by="modified DESC",
+		order_by="posting_date DESC",
 		limit=1,
 	)
+	if len(sl_entries) == 1:
+		sle = sl_entries[0]
+	else:
+		return
 
-	if len(sl_entries) != 1:
-		return frappe._dict()
+	if sle.voucher_type == "Stock Entry":
+		_sle = frappe.db.get_value(
+			"Stock Entry Detail",
+			sle.voucher_detail_no,
+			["uom", "qty", "conversion_factor", "stock_uom", "idx", "item_name"],
+		)
+		if _sle:
+			sle.update({**_sle})
+			sle.qty = sle.stock_qty / sle.conversion_factor
+	else:
+		_sle = frappe.db.get_value(
+			f"{sle.voucher_type} Item",
+			sle.voucher_detail_no,
+			["uom", "qty", "conversion_factor", "stock_uom", "idx", "item_name"],
+		)
+		if _sle:
+			sle.update({**_sle})
+			sle.qty = sle.stock_qty / sle.conversion_factor
 
-	entry = sl_entries[0]
-	entry.posting_datetime = (
-		datetime.datetime(entry.posting_date.year, entry.posting_date.month, entry.posting_date.day)
-		+ entry.posting_time
+	sle.conversion_factor = frappe.get_value(
+		"UOM Conversion Detail",
+		{"parent": sle.item_code, "uom": sle.uom},
+		"conversion_factor",
 	)
+	sle.posting_datetime = (
+		datetime.datetime(sle.posting_date.year, sle.posting_date.month, sle.posting_date.day)
+		+ sle.posting_time
+	)
+	sle.user = frappe.session.user
+	sle.pop("posting_date")
+	sle.pop("posting_time")
+	sle.pop("voucher_detail_no")
 
-	return entry
+	return sle
 
 
 def get_stock_entry_item_details(doc: dict, item_code: str) -> frappe._dict:
