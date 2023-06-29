@@ -19,4 +19,19 @@ def after_install():
 	for custom_field in frappe.get_all("Custom Field", {"label": "Target Handling Unit"}):
 		frappe.set_value("Custom Field", custom_field, "hidden", 1)
 
-	# hide on Job Card, maybe others also
+	# hide handling unit on Job Card, Item Price and Putaway Rule
+	for custom_field in frappe.get_all(
+		"Custom Field",
+		{
+			"label": "Handling Unit",
+			"dt": [
+				"in",
+				[
+					"Job Card",
+					"Item Price",
+					"Putaway Rule",
+				],
+			],
+		},
+	):
+		frappe.set_value("Custom Field", custom_field, "hidden", 1)

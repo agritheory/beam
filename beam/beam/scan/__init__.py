@@ -124,6 +124,9 @@ def get_list_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 					"target": target,
 				}
 			],
+			"Putaway Rule": [
+				{"action": "filter", "doctype": "Putaway Rule", "field": "item_code", "target": target},
+			],
 			"Sales Invoice": [
 				{"action": "route", "doctype": "Sales Invoice", "field": "Sales Invoice", "target": target}
 			],
@@ -144,6 +147,9 @@ def get_list_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 				{"action": "filter", "doctype": "Delivery Note Item", "field": "item_code", "target": target},
 			],
 			"Item": [{"action": "route", "doctype": "Item", "field": "Item", "target": target}],
+			"Item Price": [
+				{"action": "filter", "doctype": "Item Price", "field": "item_code", "target": target},
+			],
 			"Packing Slip": [
 				{"action": "filter", "doctype": "Packing Slip Item", "field": "item_code", "target": target},
 			],
@@ -163,6 +169,9 @@ def get_list_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 					"target": target,
 				},
 			],
+			"Putaway Rule": [
+				{"action": "filter", "doctype": "Putaway Rule", "field": "item_code", "target": target},
+			],
 			"Sales Invoice": [
 				{"action": "filter", "doctype": "Sales Invoice Item", "field": "item_code", "target": target},
 			],
@@ -176,6 +185,9 @@ def get_list_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 					"field": "item_code",
 					"target": target,
 				},
+			],
+			"Warranty Claim": [
+				{"action": "filter", "doctype": "Warranty Claim", "field": "item_code", "target": target},
 			],
 		},
 		"Warehouse": {

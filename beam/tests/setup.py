@@ -11,7 +11,7 @@ from erpnext.setup.utils import enable_all_roles_and_domains, set_defaults_for_t
 from erpnext.stock.get_item_details import get_item_details
 from frappe.desk.page.setup_wizard.setup_wizard import setup_complete
 
-from beam.tests.fixtures import boms, items, operations, suppliers, workstations
+from beam.tests.fixtures import boms, customers, items, operations, suppliers, workstations
 
 
 def before_test():
@@ -78,6 +78,7 @@ def create_test_data():
 	create_operations()
 	create_item_groups(settings)
 	create_suppliers(settings)
+	create_customers(settings)
 	create_items(settings)
 	create_boms(settings)
 	create_material_request(settings)
@@ -119,6 +120,16 @@ def create_suppliers(settings):
 			addr = frappe.get_doc("Address", existing_address)
 		addr.append("links", {"link_doctype": "Supplier", "link_name": supplier[0]})
 		addr.save()
+
+
+def create_customers(settings):
+	for customer_name in customers:
+		customer = frappe.new_doc("Customer")
+		customer.customer_name = customer_name
+		customer.customer_group = "Commercial"
+		customer.customer_type = "Company"
+		customer.territory = "United States"
+		customer.save()
 
 
 def setup_manufacturing_settings(settings):
@@ -247,7 +258,7 @@ def create_items(settings):
 		if i.is_purchase_item and item.get("supplier"):
 			i.append("supplier_items", {"supplier": item.get("supplier")})
 		if i.item_code == "Water":
-			i.maintain_stock = 0
+			i.is_stock_item = 0
 		i.save()
 		if item.get("item_price"):
 			ip = frappe.new_doc("Item Price")

@@ -2,6 +2,8 @@ import frappe
 import pytest
 from erpnext.manufacturing.doctype.work_order.work_order import make_stock_entry
 
+from beam.beam.scan import get_handling_unit
+
 
 # utility function
 def submit_all_purchase_receipts():
@@ -46,22 +48,48 @@ def test_purchase_invoice():
 				assert row.handling_unit == None
 
 
-@pytest.mark.skip()
-def test_subcontracting():
-	# Use pie crust
-	# create purchase order
-	# create subcontracting
-	# create and test generation of handling units on subcontracting receipt
-	pass
+def test_stock_entry_material_receipt():
+	submit_all_purchase_receipts()
+	se = frappe.new_doc("Stock Entry")
+	se.stock_entry_type = se.purpose = "Material Receipt"
+	se.append(
+		"items",
+		{
+			"item_code": "Ambrosia Pie",
+			"qty": 15,
+			"t_warehouse": "Baked Goods - APC",
+			"basic_rate": frappe.get_value("Item Price", {"item_code": "Ambrosia Pie"}, "price_list_rate"),
+		},
+	)
+	se.append(
+		"items",
+		{
+			"item_code": "Ice Water",
+			"qty": 1000000000,
+			"t_warehouse": "Refrigerator - APC",
+			"basic_rate": 0,
+			"allow_zero_valuation_rate": 1,
+		},
+	)
+	se.save()
+	se.submit()
+	for row in se.items:
+		if not frappe.get_value("Item", row.item_code, "is_stock_item"):
+			continue
+
+		sle = frappe.get_doc("Stock Ledger Entry", {"handling_unit": row.handling_unit})
+		assert row.transfer_qty == sle.actual_qty  # AKA stock_qty in every other doctype
+		assert row.item_code == sle.item_code
+		assert row.t_warehouse == sle.warehouse  # target warehouse
 
 
 def test_stock_entry_material_transfer():
 	submit_all_purchase_receipts()
-	# simulate scanning
 	se = frappe.new_doc("Stock Entry")
 	se.stock_entry_type = se.purpose = "Material Transfer"
 
 	hu = frappe.get_value("Purchase Receipt Item", {"item_code": "Cocoplum"}, "handling_unit")
+	# simulate scanning
 	scan = frappe.call(
 		"beam.beam.scan.scan",
 		**{"barcode": str(hu), "context": {"frm": "Stock Entry", "doc": se.as_dict()}, "current_qty": 1}
@@ -168,3 +196,97 @@ def test_stock_entry_for_manufacture():
 			assert row.transfer_qty == sle.actual_qty  # AKA stock_qty in every other doctype
 			assert row.item_code == sle.item_code
 			assert row.t_warehouse == sle.warehouse  # target warehouse
+
+
+def test_delivery_note():
+	se = frappe.new_doc("Stock Entry")
+	se.stock_entry_type = se.purpose = "Material Receipt"
+	se.append(
+		"items",
+		{
+			"item_code": "Ambrosia Pie",
+			"qty": 30,
+			"t_warehouse": "Baked Goods - APC",
+			"basic_rate": frappe.get_value("Item Price", {"item_code": "Ambrosia Pie"}, "price_list_rate"),
+		},
+	)
+	se.save()
+	se.submit()
+	handling_unit = se.items[0].handling_unit
+
+	dn = frappe.new_doc("Delivery Note")
+	dn.customer = "Almacs Food Group"
+	scan = frappe.call(
+		"beam.beam.scan.scan",
+		**{
+			"barcode": str(handling_unit),
+			"context": {"frm": dn.doctype, "doc": dn.as_dict()},
+			"current_qty": 1,
+		}
+	)
+	dn.append(
+		"items",
+		{
+			**scan[0]["context"],
+			"qty": 5,
+		},
+	)
+	dn.save()
+	dn.submit()
+	# assert net qty on handling unit above
+	hu = get_handling_unit(handling_unit)
+	assert hu.item_code == dn.items[0].item_code
+	assert hu.actual_qty == 25  # 30 from stock entry less 5 from delivery note
+	assert hu.item_code == dn.items[0].item_code
+
+
+def test_sales_invoice():
+	se = frappe.new_doc("Stock Entry")
+	se.stock_entry_type = se.purpose = "Material Receipt"
+	se.append(
+		"items",
+		{
+			"item_code": "Ambrosia Pie",
+			"qty": 30,
+			"t_warehouse": "Baked Goods - APC",
+			"basic_rate": frappe.get_value("Item Price", {"item_code": "Ambrosia Pie"}, "price_list_rate"),
+		},
+	)
+	se.save()
+	se.submit()
+	handling_unit = se.items[0].handling_unit
+
+	si = frappe.new_doc("Sales Invoice")
+	si.update_stock = 1
+	si.customer = "Almacs Food Group"
+	scan = frappe.call(
+		"beam.beam.scan.scan",
+		**{
+			"barcode": str(handling_unit),
+			"context": {"frm": si.doctype, "doc": si.as_dict()},
+			"current_qty": 1,
+		}
+	)
+	si.append(
+		"items",
+		{
+			**scan[0]["context"],
+			"qty": 10,
+		},
+	)
+	si.save()
+	si.submit()
+	# assert net qty on handling unit above
+	hu = get_handling_unit(handling_unit)
+	assert hu.item_code == si.items[0].item_code
+	assert hu.actual_qty == 20  # 30 from stock entry less 10 from stock entry
+	assert hu.item_code == si.items[0].item_code
+
+
+@pytest.mark.skip()
+def test_subcontracting():
+	# Use pie crust
+	# create purchase order
+	# create subcontracting
+	# create and test generation of handling units on subcontracting receipt
+	pass
