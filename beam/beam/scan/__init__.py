@@ -88,7 +88,10 @@ def get_list_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 	if barcode_doc.doc.doctype == "Handling Unit":
 		if barcode_doc.doc.get("parenttype") == "Packing Slip":
 			target = barcode_doc.doc.parent
-		elif context.get("listview") == "Packing Slip" and barcode_doc.doc.parenttype != "Packing Slip":
+		elif (
+			context.get("listview") == "Packing Slip"
+			and barcode_doc.doc.get("parenttype") != "Packing Slip"
+		):
 			target = frappe.db.get_value(
 				"Packing Slip Item", {"handling_unit": barcode_doc.doc.name}, "parent"
 			)
@@ -261,7 +264,7 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 		hu_details = get_handling_unit(barcode_doc.doc.name)
 		if context.frm == "Stock Entry":
 			target = get_stock_entry_item_details(context.doc, hu_details.item_code)
-		if context.frm in ("Putaway Rule", "Warranty Claim", "Item Price", "Quality Inspection"):
+		elif context.frm in ("Putaway Rule", "Warranty Claim", "Item Price", "Quality Inspection"):
 			target = frappe._dict(
 				{
 					"doctype": context.frm,
@@ -291,7 +294,7 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 	elif barcode_doc.doc.doctype == "Item":
 		if context.frm == "Stock Entry":
 			target = get_stock_entry_item_details(context.doc, barcode_doc.doc.name)
-		if context.frm in ("Putaway Rule", "Warranty Claim", "Item Price", "Quality Inspection"):
+		elif context.frm in ("Putaway Rule", "Warranty Claim", "Item Price", "Quality Inspection"):
 			target = frappe._dict(
 				{
 					"doctype": context.frm,
@@ -503,6 +506,15 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 				{
 					"action": "set_item_code_and_handling_unit",
 					"doctype": "Item Price",
+					"field": "item_code",
+					"target": target.item_code,
+					"context": target,
+				},
+			],
+			"Packing Slip": [
+				{
+					"action": "add_or_increment",
+					"doctype": "Packing Slip Item",
 					"field": "item_code",
 					"target": target.item_code,
 					"context": target,
