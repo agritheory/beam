@@ -15,6 +15,8 @@ const valid_doctypes = {
 		'Stock Reconciliation',
 		'Item Price',
 		'Putaway Rule',
+		'Warranty Claim',
+		'Quality Inspection',
 	],
 	frm: [
 		'Purchase Receipt',
@@ -24,6 +26,9 @@ const valid_doctypes = {
 		'Sales Invoice',
 		'Stock Entry',
 		'Stock Reconciliation',
+		'Warranty Claim',
+		'Quality Inspection',
+		'Putaway Rule',
 	],
 }
 
@@ -205,12 +210,8 @@ class ScanHandler {
 		cur_frm.refresh_field('items')
 	}
 	set_item_code_and_handling_unit(barcode_context) {
-		if (barcode_context.length > 0) {
-			barcode_context = barcode_context[0]
-		} else {
-			return
-		}
-		cur_frm.set_value('item_code', barcode_context.target)
-		cur_frm.set_value('handling_unit', barcode_context.target)
+		barcode_context.forEach(action => {
+			cur_frm.set_value(action.field, action.target)
+		})
 	}
 }
