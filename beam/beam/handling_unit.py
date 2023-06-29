@@ -13,15 +13,16 @@ for scrap and finished goods items
 @frappe.whitelist()
 def generate_handling_units(doc, method=None):
 	if doc.doctype == "Purchase Invoice" and not doc.update_stock:
-		return
+		return doc
 	if doc.doctype == "Stock Entry" and doc.purpose not in (
 		"Material Receipt",
 		"Manufacture",
 		"Repack",
 	):
-		return
+		return doc
 	for row in doc.items:
-		# get stock item
+		if not frappe.get_value("Item", row.item_code, "is_stock_item"):
+			continue
 		if row.get("handling_unit"):
 			continue
 		if doc.doctype == "Stock Entry" and not (
@@ -31,3 +32,4 @@ def generate_handling_units(doc, method=None):
 		handling_unit = frappe.new_doc("Handling Unit")
 		handling_unit.save()
 		row.handling_unit = handling_unit.name
+	return doc

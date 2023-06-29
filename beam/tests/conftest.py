@@ -21,5 +21,5 @@ def db_instance():
 
 	frappe.init(site=currentsite, sites_path=sites)
 	frappe.connect()
-	frappe.db.commit = MagicMock()
+	# frappe.db.commit = MagicMock()
 	yield frappe.db

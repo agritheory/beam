@@ -66,6 +66,7 @@ jinja = {
 
 # before_install = "beam.install.before_install"
 after_install = "beam.install.after_install"
+after_migrate = "beam.install.after_migrate"
 
 # Uninstallation
 # ------------
@@ -111,17 +112,17 @@ doc_events = {
 		]
 	},
 	"Purchase Receipt": {
-		"on_submit": [
+		"before_submit": [
 			"beam.beam.handling_unit.generate_handling_units",
 		],
 	},
 	"Purchase Invoice": {
-		"on_submit": [
+		"before_submit": [
 			"beam.beam.handling_unit.generate_handling_units",
 		],
 	},
 	"Stock Entry": {
-		"on_submit": [
+		"before_submit": [
 			"beam.beam.handling_unit.generate_handling_units",
 		],
 	},
