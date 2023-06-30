@@ -97,25 +97,20 @@ def get_handling_unit(handling_unit: str) -> frappe._dict:
 		return
 
 	if sle.voucher_type == "Stock Entry":
-		_sle = frappe.db.get_value(
-			"Stock Entry Detail",
-			sle.voucher_detail_no,
-			["uom", "qty", "conversion_factor", "stock_uom", "idx", "item_name"],
-			as_dict=True
-		)
-		if _sle:
-			sle.update({**_sle})
-			sle.qty = sle.stock_qty / sle.conversion_factor
+		child_doctype = "Stock Entry Detail"
 	else:
-		_sle = frappe.db.get_value(
-			f"{sle.voucher_type} Item",
-			sle.voucher_detail_no,
-			["uom", "qty", "conversion_factor", "stock_uom", "idx", "item_name"],
-			as_dict=True
-		)
-		if _sle:
-			sle.update({**_sle})
-			sle.qty = sle.stock_qty / sle.conversion_factor
+		child_doctype = f"{sle.voucher_type} Item",
+
+	_sle = frappe.db.get_value(
+		child_doctype,
+		sle.voucher_detail_no,
+		["uom", "qty", "conversion_factor", "stock_uom", "idx", "item_name"],
+		as_dict=True
+	)
+
+	if _sle:
+		sle.update({**_sle})
+		sle.qty = sle.stock_qty / sle.conversion_factor
 
 	sle.conversion_factor = frappe.get_value(
 		"UOM Conversion Detail",
