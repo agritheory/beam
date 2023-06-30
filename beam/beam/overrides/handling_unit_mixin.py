@@ -27,9 +27,10 @@ class HandlingUnitMixin:
 
 	def assign_handling_units(self):
 		for row in self.items:
-			handling_unit = frappe.new_doc("Handling Unit")
-			handling_unit.save()
-			row.handling_unit = handling_unit.name
+			if frappe.get_value("Item", row.item_code, "is_stock_item"):
+				handling_unit = frappe.new_doc("Handling Unit")
+				handling_unit.save()
+				row.handling_unit = handling_unit.name
 
 
 def assign_handling_unit(self):

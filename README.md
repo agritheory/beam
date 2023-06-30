@@ -54,10 +54,11 @@ bench execute 'beam.tests.setup.before_test'
 bench reinstall --yes --admin-password admin --mariadb-root-password admin && bench execute 'beam.tests.setup.before_test'
 ```
 
-To run mypy
+To run mypy and pytest
 ```shell
 source env/bin/activate
 mypy ./apps/beam/beam --ignore-missing-imports
+pytest ./apps/beam/beam/tests -s --disable-warnings
 ```
 
 ### Printer Server setup

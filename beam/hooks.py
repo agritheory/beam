@@ -57,7 +57,7 @@ app_include_js = ["beam.bundle.js"]
 jinja = {
 	"methods": [
 		"beam.beam.scan.get_handling_unit",
-		"beam.beam.overrides.barcode_mixin.barcode128",
+		"beam.beam.barcodes.barcode128",
 	]
 }
 
@@ -65,7 +65,8 @@ jinja = {
 # ------------
 
 # before_install = "beam.install.before_install"
-# after_install = "beam.install.after_install"
+after_install = "beam.install.after_install"
+after_migrate = "beam.install.after_migrate"
 
 # Uninstallation
 # ------------
@@ -95,28 +96,37 @@ jinja = {
 # ---------------
 # Override standard doctype classes
 
-override_doctype_class = {
-	"Delivery Note": "beam.beam.overrides.delivery_note.CustomDeliveryNote",
-	"Item": "beam.beam.overrides.item.CustomItem",
-	"Purchase Invoice": "beam.beam.overrides.purchase_invoice.CustomPurchaseInvoice",
-	"Purchase Receipt": "beam.beam.overrides.purchase_receipt.CustomPurchaseReceipt",
-	"Sales Invoice": "beam.beam.overrides.sales_invoice.CustomSalesInvoice",
-	"Stock Entry": "beam.beam.overrides.stock_entry.CustomStockEntry",
-	"Stock Reconciliation": "beam.beam.overrides.stock_reconciliation.CustomStockReconciliation",
-	"Warehouse": "beam.beam.overrides.warehouse.CustomWarehouse",
-}
-
 # Document Events
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+doc_events = {
+	"Item": {
+		"validate": [
+			"beam.beam.barcodes.create_beam_barcode",
+		]
+	},
+	"Warehouse": {
+		"validate": [
+			"beam.beam.barcodes.create_beam_barcode",
+		]
+	},
+	"Purchase Receipt": {
+		"before_submit": [
+			"beam.beam.handling_unit.generate_handling_units",
+		],
+	},
+	"Purchase Invoice": {
+		"before_submit": [
+			"beam.beam.handling_unit.generate_handling_units",
+		],
+	},
+	"Stock Entry": {
+		"before_submit": [
+			"beam.beam.handling_unit.generate_handling_units",
+		],
+	},
+}
 
 # Scheduled Tasks
 # ---------------
