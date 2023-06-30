@@ -348,10 +348,10 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 			{
 				"handling_unit": hu_details.handling_unit,
 				"voucher_no": hu_details.voucher_no,
-				"stock_qty": hu_details.actual_qty,
-				"qty": hu_details.actual_qty / target.conversion_factor
+				"stock_qty": hu_details.stock_qty,
+				"qty": hu_details.stock_qty / target.conversion_factor
 				if target.conversion_factor
-				else hu_details.actual_qty,
+				else hu_details.stock_qty,
 				"posting_datetime": hu_details.posting_datetime,
 			}
 		)
