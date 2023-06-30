@@ -272,7 +272,7 @@ def test_delivery_note():
 	# assert net qty on handling unit above
 	hu = get_handling_unit(handling_unit)
 	assert hu.item_code == dn.items[0].item_code
-	assert hu.actual_qty == 25  # 30 from stock entry less 5 from delivery note
+	assert hu.stock_qty == 25  # 30 from stock entry less 5 from delivery note
 	assert hu.item_code == dn.items[0].item_code
 
 
@@ -315,7 +315,7 @@ def test_sales_invoice():
 	# assert net qty on handling unit above
 	hu = get_handling_unit(handling_unit)
 	assert hu.item_code == si.items[0].item_code
-	assert hu.actual_qty == 20  # 30 from stock entry less 10 from stock entry
+	assert hu.stock_qty == 20  # 30 from stock entry less 10 from stock entry
 	assert hu.item_code == si.items[0].item_code
 
 
@@ -371,7 +371,7 @@ def test_packing_slip():
 		assert row.stock_qty == -(sle.actual_qty)  # AKA stock_qty in every other doctype
 		assert row.item_code == sle.item_code
 		assert row.warehouse == sle.warehouse  # target warehouse
-		assert hu.actual_qty == 0
+		assert hu.stock_qty == 0
 
 
 @pytest.mark.skip()
