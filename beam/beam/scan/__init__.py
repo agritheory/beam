@@ -84,6 +84,8 @@ def get_handling_unit(handling_unit: str) -> frappe._dict:
 			"posting_date",
 			"posting_time",
 			"stock_uom",
+			"voucher_type",
+			"voucher_detail_no",
 		],
 		group_by="handling_unit",
 		order_by="posting_date DESC",
@@ -99,6 +101,7 @@ def get_handling_unit(handling_unit: str) -> frappe._dict:
 			"Stock Entry Detail",
 			sle.voucher_detail_no,
 			["uom", "qty", "conversion_factor", "stock_uom", "idx", "item_name"],
+			as_dict=True
 		)
 		if _sle:
 			sle.update({**_sle})
@@ -108,6 +111,7 @@ def get_handling_unit(handling_unit: str) -> frappe._dict:
 			f"{sle.voucher_type} Item",
 			sle.voucher_detail_no,
 			["uom", "qty", "conversion_factor", "stock_uom", "idx", "item_name"],
+			as_dict=True
 		)
 		if _sle:
 			sle.update({**_sle})
