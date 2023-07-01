@@ -1,11 +1,9 @@
-from unittest.mock import MagicMock, patch
-
 import frappe
 import pytest
 
 
 @pytest.mark.skip()
-def test_hooks_override(monkeypatch):
+def test_beam_frm_hooks_override(monkeypatch):
 	hooks = frappe.get_hooks()
 	hooks["beam_frm"] = {
 		"Item": {
@@ -26,7 +24,7 @@ def test_hooks_override(monkeypatch):
 		}
 	}
 
-	monkeypatch.setattr(frappe, "get_hooks", lambda x: hooks)
+	monkeypatch.setattr(frappe, "get_hooks", hooks)
 
 	item_barcode = frappe.get_value("Item Barcode", {"parent": "Kaduka Key Lime Pie"}, "barcode")
 	dn = frappe.new_doc("Delivery Note")
@@ -47,3 +45,34 @@ def test_hooks_override(monkeypatch):
 	assert scan[1].get("doctype") == "Delivery Note Item"
 	assert scan[1].get("field") == "uom"
 	assert scan[1].get("target") == "Nos"
+
+
+@pytest.mark.skip()
+def test_beam_listview_hooks_override(monkeypatch):
+	hooks = frappe.get_hooks()
+
+	# not sure this is a test case that actually makes sense
+	hooks["beam_listview"] = {
+		"Item": {
+			"Delivery Note": [
+				{"action": "filter", "doctype": "Delivery Note Item", "field": "item_code"},
+				{"action": "filter", "doctype": "Packed Item", "field": "item_code"},
+			],
+		}
+	}
+
+	monkeypatch.setattr(frappe, "get_hooks", hooks)
+
+	item_barcode = frappe.get_value("Item Barcode", {"parent": "Kaduka Key Lime Pie"}, "barcode")
+	scan = frappe.call(
+		"beam.beam.scan.scan",
+		**{"barcode": str(item_barcode), "context": {"listview": "Delivery Note"}, "current_qty": 1}
+	)
+	assert scan[0].get("action") == "filter"
+	assert scan[0].get("doctype") == "Delivery Note Item"
+	assert scan[0].get("field") == "item_code"
+	assert scan[0].get("target") == "Kaduka Key Lime Pie"
+	assert scan[1].get("action") == "filter"
+	assert scan[1].get("doctype") == "Packed Item"
+	assert scan[1].get("field") == "item_code"
+	assert scan[1].get("target") == "Kaduka Key Lime Pie"

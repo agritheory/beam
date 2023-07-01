@@ -255,6 +255,22 @@ def get_list_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 		},
 	}
 
+	beam_override = frappe.get_hooks("beam_listview")
+
+	if beam_override:
+		override_doctype = beam_override.get(barcode_doc.doc.doctype)
+		if override_doctype:
+			override_action = override_doctype.get(context.frm)
+			if override_action:
+				for action in override_action:
+					action["context"] = target
+					if "." in action.get("target"):
+						serialized_target = action.get("target").split(".")
+						action["target"] = target.get(serialized_target[1])
+					else:
+						action["target"] = target
+				return override_action
+
 	return listview.get(barcode_doc.doc.doctype, {}).get(context.listview, [])  # type: ignore
 
 
