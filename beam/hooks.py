@@ -217,3 +217,24 @@ doc_events = {
 # auth_hooks = [
 # 	"beam.auth.validate"
 # ]
+
+# beam_frm = {
+# 	'Item': {
+# 		'Delivery Note': [
+# 			{
+# 				"action": "add_or_increment",
+# 				"doctype": "Delivery Note Item",
+# 				"field": "item_code",
+# 				"target": 'target.item_code',
+# 				"context": 'target',
+# 			},
+# 			{
+# 				"action": "add_or_increment",
+# 				"doctype": "Delivery Note Item",
+# 				"field": "uom",
+# 				"target": 'target.uom',
+# 				"context": "target",
+# 			},
+# 		]
+# 	}
+# }
