@@ -74,6 +74,10 @@ after_migrate = "beam.install.after_migrate"
 # before_uninstall = "beam.uninstall.before_uninstall"
 # after_uninstall = "beam.uninstall.after_uninstall"
 
+# Boot
+extend_bootinfo = "beam.beam.boot.boot_session"
+
+
 # Desk Notifications
 # ------------------
 # See frappe.core.notifications.get_notification_config
@@ -217,3 +221,40 @@ doc_events = {
 # auth_hooks = [
 # 	"beam.auth.validate"
 # ]
+
+beam_frm = {
+	"Item": {
+		"Delivery Note": [
+			{
+				"action": "add_or_increment",
+				"doctype": "Delivery Note Item",
+				"field": "item_code",
+				"target": "target.item_code",
+				"context": "target",
+			},
+			{
+				"action": "add_or_increment",
+				"doctype": "Delivery Note Item",
+				"field": "uom",
+				"target": "target.uom",
+				"context": "target",
+			},
+		]
+	}
+}
+
+beam_listview = {
+	"Item": {
+		"Item": [
+			{
+				"action": "show_message",
+				"doctype": "Item",
+				"field": "item_code",
+				"target": "target.item_code",
+				"context": "target",
+			},
+		]
+	}
+}
+
+beam_client = {"show_message": "beam.show_message"}

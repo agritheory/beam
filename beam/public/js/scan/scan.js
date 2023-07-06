@@ -1,38 +1,5 @@
 import onScan from 'onscan.js'
 
-//  refactor to use boot instead
-const valid_doctypes = {
-	listview: [
-		'Item',
-		'Warehouse',
-		'Handling Unit',
-		'Packing Slip',
-		'Purchase Receipt',
-		'Purchase Invoice',
-		'Delivery Note',
-		'Sales Invoice',
-		'Stock Entry',
-		'Stock Reconciliation',
-		'Item Price',
-		'Putaway Rule',
-		'Warranty Claim',
-		'Quality Inspection',
-	],
-	frm: [
-		'Purchase Receipt',
-		'Purchase Invoice',
-		'Delivery Note',
-		'Packing Slip',
-		'Sales Invoice',
-		'Stock Entry',
-		'Stock Reconciliation',
-		'Warranty Claim',
-		'Quality Inspection',
-		'Putaway Rule',
-		'Item Price',
-	],
-}
-
 function waitForElement(selector) {
 	return new Promise(resolve => {
 		if (document.querySelector(selector)) {
@@ -77,12 +44,17 @@ class ScanHandler {
 		}
 	}
 	reduceContext() {
+		if (!frappe.boot.beam_doctypes) {
+			frappe.xcall('beam.beam.scan.config.get_scan_doctypes').then(r => {
+				frappe.boot.beam = r
+			})
+		}
 		const route = frappe.get_route()
-		if (route[0] == 'List' && valid_doctypes.listview.includes(route[1])) {
+		if (route[0] == 'List' && frappe.boot.beam.listview.includes(route[1])) {
 			return {
 				listview: route[1],
 			}
-		} else if (route[0] == 'Form' && valid_doctypes.frm.includes(route[1])) {
+		} else if (route[0] == 'Form' && frappe.boot.beam.frm.includes(route[1])) {
 			return {
 				frm: route[1],
 				doc: cur_frm.doc,
@@ -94,7 +66,12 @@ class ScanHandler {
 			const context = this.reduceContext()
 			frappe.xcall('beam.beam.scan.scan', { barcode: sCode, context: context, current_qty: iQty }).then(r => {
 				if (r && r.length) {
-					resolve(this[String(r[0].action)](r))
+					if (Object.keys(frappe.boot.beam.client).includes(r[0].action)) {
+						let path = frappe.boot.beam.client[r[0].action][0]
+						resolve(path.split('.').reduce((o, i) => o[i], window)(r)) // calls (first) custom built callback registered in hooks
+					} else {
+						resolve(this[String(r[0].action)](r)) // TODO: this only calls the first function
+					}
 				}
 				// TODO: else error
 			})
