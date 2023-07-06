@@ -87,6 +87,7 @@ def get_list_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 	target = barcode_doc.doc.name
 	if barcode_doc.doc.doctype == "Handling Unit":
 		if barcode_doc.doc.get("parenttype") == "Packing Slip":
+			# TODO: is this check correct and/or required?
 			target = barcode_doc.doc.parent
 		elif (
 			context.get("listview") == "Packing Slip"
@@ -102,159 +103,6 @@ def get_list_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 	if not target:
 		return []
 
-	listview = {
-		"Handling Unit": {
-			"Delivery Note": [
-				{"action": "route", "doctype": "Delivery Note", "field": "Delivery Note", "target": target}
-			],
-			"Item": [{"action": "route", "doctype": "Item", "field": "Item", "target": target}],
-			"Packing Slip": [
-				{"action": "route", "doctype": "Packing Slip", "field": "Packing Slip", "target": target}
-			],
-			"Purchase Invoice": [
-				{
-					"action": "route",
-					"doctype": "Purchase Invoice",
-					"field": "Purchase Invoice",
-					"target": target,
-				}
-			],
-			"Purchase Receipt": [
-				{
-					"action": "route",
-					"doctype": "Purchase Receipt",
-					"field": "Purchase Receipt",
-					"target": target,
-				}
-			],
-			"Putaway Rule": [
-				{"action": "filter", "doctype": "Putaway Rule", "field": "item_code", "target": target},
-			],
-			"Quality Inspection": [
-				{
-					"action": "filter",
-					"doctype": "Quality Inspection",
-					"field": "handling_unit",
-					"target": target,
-				},
-			],
-			"Sales Invoice": [
-				{"action": "route", "doctype": "Sales Invoice", "field": "Sales Invoice", "target": target}
-			],
-			"Stock Entry": [
-				{"action": "route", "doctype": "Stock Entry", "field": "Stock Entry", "target": target}
-			],
-			"Stock Reconciliation": [
-				{
-					"action": "route",
-					"doctype": "Stock Reconciliation",
-					"field": "Stock Reconciliation",
-					"target": target,
-				}
-			],
-		},
-		"Item": {
-			"Delivery Note": [
-				{"action": "filter", "doctype": "Delivery Note Item", "field": "item_code", "target": target},
-			],
-			"Item": [{"action": "route", "doctype": "Item", "field": "Item", "target": target}],
-			"Item Price": [
-				{"action": "filter", "doctype": "Item Price", "field": "item_code", "target": target},
-			],
-			"Packing Slip": [
-				{"action": "filter", "doctype": "Packing Slip Item", "field": "item_code", "target": target},
-			],
-			"Purchase Invoice": [
-				{
-					"action": "filter",
-					"doctype": "Purchase Invoice Item",
-					"field": "item_code",
-					"target": target,
-				},
-			],
-			"Purchase Receipt": [
-				{
-					"action": "filter",
-					"doctype": "Purchase Receipt Item",
-					"field": "item_code",
-					"target": target,
-				},
-			],
-			"Putaway Rule": [
-				{"action": "filter", "doctype": "Putaway Rule", "field": "item_code", "target": target},
-			],
-			"Quality Inspection": [
-				{"action": "filter", "doctype": "Quality Inspection", "field": "item_code", "target": target},
-			],
-			"Sales Invoice": [
-				{"action": "filter", "doctype": "Sales Invoice Item", "field": "item_code", "target": target},
-			],
-			"Stock Entry": [
-				{"action": "filter", "doctype": "Stock Entry Detail", "field": "item_code", "target": target},
-			],
-			"Stock Reconciliation": [
-				{
-					"action": "filter",
-					"doctype": "Stock Reconciliation Item",
-					"field": "item_code",
-					"target": target,
-				},
-			],
-			"Warranty Claim": [
-				{"action": "filter", "doctype": "Warranty Claim", "field": "item_code", "target": target},
-			],
-		},
-		"Warehouse": {
-			"Delivery Note": [
-				{"action": "filter", "doctype": "Delivery Note Item", "field": "warehouse", "target": target},
-			],
-			"Item": [
-				{
-					"action": "filter",
-					"doctype": "Item Default",
-					"field": "default_warehouse",
-					"target": target,
-				},
-			],
-			"Packing Slip": [
-				{"action": "filter", "doctype": "Packing Slip Item", "field": "warehouse", "target": target},
-			],
-			"Purchase Invoice": [
-				{
-					"action": "filter",
-					"doctype": "Purchase Invoice Item",
-					"field": "warehouse",
-					"target": target,
-				},
-			],
-			"Purchase Receipt": [
-				{
-					"action": "filter",
-					"doctype": "Purchase Receipt Item",
-					"field": "warehouse",
-					"target": target,
-				},
-			],
-			"Sales Invoice": [
-				{"action": "filter", "doctype": "Sales Invoice Item", "field": "warehouse", "target": target},
-			],
-			"Stock Entry": [
-				{"action": "filter", "doctype": "Stock Entry Detail", "field": "warehouse", "target": target},
-			],
-			"Stock Reconciliation": [
-				{
-					"action": "filter",
-					"doctype": "Stock Reconciliation Item",
-					"field": "warehouse",
-					"target": target,
-				},
-			],
-			"Warehouse": [
-				{"action": "route", "doctype": "Warehouse", "field": "Warehouse", "target": target}
-			],
-		},
-	}
-
 	beam_override = frappe.get_hooks("beam_listview")
 
 	if beam_override:
@@ -267,7 +115,12 @@ def get_list_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 					action["target"] = target
 				return override_action
 
-	return listview.get(barcode_doc.doc.doctype, {}).get(context.listview, [])  # type: ignore
+	actions = listview.get(barcode_doc.doc.doctype, {}).get(context.listview, [])
+	for action in actions:
+		action["context"] = target
+		action["target"] = target
+
+	return actions
 
 
 def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[dict[str, Any]]:
@@ -327,342 +180,6 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 	if not target:
 		return []
 
-	frm = {
-		"Handling Unit": {
-			"Delivery Note": [
-				{
-					"action": "add_or_associate",
-					"doctype": "Delivery Note Item",
-					"field": "handling_unit",
-					"target": target.handling_unit,
-					"context": target,
-				},
-				{
-					"action": "add_or_associate",
-					"doctype": "Delivery Note Item",
-					"field": "rate",
-					"target": target.rate,
-					"context": target,
-				},
-			],
-			"Item Price": [
-				{
-					"action": "set_item_code_and_handling_unit",
-					"doctype": "Item Price",
-					"field": "item_code",
-					"target": target.item_code,
-					"context": target,
-				},
-			],
-			"Packing Slip": [
-				{
-					"action": "add_or_associate",
-					"doctype": "Packing Slip Item",
-					"field": "conversion_factor",
-					"target": target.conversion_factor,
-					"context": target,
-				},
-				{
-					"action": "add_or_associate",
-					"doctype": "Packing Slip Item",
-					"field": "handling_unit",
-					"target": target.handling_unit,
-					"context": target,
-				},
-				{
-					"action": "add_or_associate",
-					"doctype": "Packing Slip Item",
-					"field": "pulled_quantity",
-					"target": target.qty,
-					"context": target,
-				},
-				{
-					"action": "add_or_associate",
-					"doctype": "Packing Slip Item",
-					"field": "rate",
-					"target": target.rate,
-					"context": target,
-				},
-				{
-					"action": "add_or_associate",
-					"doctype": "Packing Slip Item",
-					"field": "stock_qty",
-					"target": target.stock_qty,
-					"context": target,
-				},
-				{
-					"action": "add_or_associate",
-					"doctype": "Packing Slip Item",
-					"field": "warehouse",
-					"target": target.warehouse,
-					"context": target,
-				},
-			],
-			"Purchase Invoice": [
-				{
-					"action": "add_or_associate",
-					"doctype": "Purchase Invoice Item",
-					"field": "handling_unit",
-					"target": target.handling_unit,
-					"context": target,
-				},
-			],
-			"Putaway Rule": [
-				{
-					"action": "set_item_code_and_handling_unit",
-					"doctype": "Putaway Rule",
-					"field": "item_code",
-					"target": target.item_code,
-					"context": target,
-				},
-			],
-			"Quality Inspection": [
-				{
-					"action": "set_item_code_and_handling_unit",
-					"doctype": "Quality Inspection",
-					"field": "item_code",
-					"target": target.item_code,
-					"context": target,
-				},
-				{
-					"action": "set_item_code_and_handling_unit",
-					"doctype": "Quality Inspection",
-					"field": "handling_unit",
-					"target": target.handling_unit,
-					"context": target,
-				},
-			],
-			"Sales Invoice": [
-				{
-					"action": "add_or_associate",
-					"doctype": "Sales Invoice Item",
-					"field": "handling_unit",
-					"target": target.handling_unit,
-					"context": target,
-				},
-			],
-			"Stock Entry": [
-				{
-					"action": "add_or_associate",
-					"doctype": "Stock Entry Detail",
-					"field": "basic_rate",
-					"target": target.valuation_rate,
-					"context": target,
-				},
-				{
-					"action": "add_or_associate",
-					"doctype": "Stock Entry Detail",
-					"field": "conversion_factor",
-					"target": target.conversion_factor,
-					"context": target,
-				},
-				{
-					"action": "add_or_associate",
-					"doctype": "Stock Entry Detail",
-					"field": "handling_unit",
-					"target": target.handling_unit,
-					"context": target,
-				},
-				{
-					"action": "add_or_associate",
-					"doctype": "Stock Entry Detail",
-					"field": "s_warehouse",
-					"target": target.warehouse,
-					"context": target,
-				},
-				{
-					"action": "add_or_associate",
-					"doctype": "Stock Entry Detail",
-					"field": "transfer_qty",
-					"target": target.stock_qty,
-					"context": target,
-				},
-			],
-			"Stock Reconciliation": [
-				{
-					"action": "add_or_associate",
-					"doctype": "Stock Reconciliation Item",
-					"field": "handling_unit",
-					"target": target.handling_unit,
-					"context": target,
-				},
-			],
-			"Warranty Claim": [
-				{
-					"action": "set_item_code_and_handling_unit",
-					"doctype": "Warranty Claim",
-					"field": "item_code",
-					"target": target.item_code,
-					"context": target,
-				},
-				{
-					"action": "set_item_code_and_handling_unit",
-					"doctype": "Warranty Claim",
-					"field": "handling_unit",
-					"target": target.handling_unit,
-					"context": target,
-				},
-			],
-		},
-		"Item": {
-			"Delivery Note": [
-				{
-					"action": "add_or_increment",
-					"doctype": "Delivery Note Item",
-					"field": "item_code",
-					"target": target.item_code,
-					"context": target,
-				},
-			],
-			"Item Price": [
-				{
-					"action": "set_item_code_and_handling_unit",
-					"doctype": "Item Price",
-					"field": "item_code",
-					"target": target.item_code,
-					"context": target,
-				},
-			],
-			"Packing Slip": [
-				{
-					"action": "add_or_increment",
-					"doctype": "Packing Slip Item",
-					"field": "item_code",
-					"target": target.item_code,
-					"context": target,
-				},
-			],
-			"Purchase Invoice": [
-				{
-					"action": "add_or_increment",
-					"doctype": "Purchase Invoice Item",
-					"field": "item_code",
-					"target": target.item_code,
-					"context": target,
-				},
-			],
-			"Purchase Receipt": [
-				{
-					"action": "add_or_increment",
-					"doctype": "Purchase Receipt Item",
-					"field": "item_code",
-					"target": target.item_code,
-					"context": target,
-				},
-			],
-			"Putaway Rule": [
-				{
-					"action": "set_item_code_and_handling_unit",
-					"doctype": "Putaway Rule",
-					"field": "item_code",
-					"target": target.item_code,
-					"context": target,
-				},
-			],
-			"Quality Inspection": [
-				{
-					"action": "set_item_code_and_handling_unit",
-					"doctype": "Quality Inspection",
-					"field": "item_code",
-					"target": target.item_code,
-					"context": target,
-				},
-			],
-			"Sales Invoice": [
-				{
-					"action": "add_or_increment",
-					"doctype": "Sales Invoice Item",
-					"field": "item_code",
-					"target": target.item_code,
-					"context": target,
-				},
-			],
-			"Stock Entry": [
-				{
-					"action": "add_or_increment",
-					"doctype": "Stock Entry Detail",
-					"field": "item_code",
-					"target": target.item_code,
-					"context": target,
-				},
-			],
-			"Stock Reconciliation": [
-				{
-					"action": "add_or_increment",
-					"doctype": "Stock Reconciliation Item",
-					"field": "item_code",
-					"target": target.item_code,
-					"context": target,
-				},
-			],
-			"Warranty Claim": [
-				{
-					"action": "set_item_code_and_handling_unit",
-					"doctype": "Warranty Claim",
-					"field": "item_code",
-					"target": target.item_code,
-					"context": target,
-				},
-			],
-		},
-		"Warehouse": {
-			"Delivery Note": [
-				{
-					"action": "set_warehouse",
-					"doctype": "Delivery Note Item",
-					"field": "warehouse",
-					"target": target.warehouse,
-					"context": target,
-				},
-			],
-			"Purchase Invoice": [
-				{
-					"action": "set_warehouse",
-					"doctype": "Purchase Invoice Item",
-					"field": "warehouse",
-					"target": target.warehouse,
-					"context": target,
-				},
-			],
-			"Purchase Receipt": [
-				{
-					"action": "set_warehouse",
-					"doctype": "Purchase Receipt Item",
-					"field": "warehouse",
-					"target": target.warehouse,
-					"context": target,
-				},
-			],
-			"Sales Invoice": [
-				{
-					"action": "set_warehouse",
-					"doctype": "Sales Invoice Item",
-					"field": "warehouse",
-					"target": target.warehouse,
-					"context": target,
-				},
-			],
-			"Stock Entry": [
-				{
-					"action": "set_warehouse",
-					"doctype": "Stock Entry",
-					"field": "warehouse",
-					"target": target.warehouse,
-					"context": target,
-				},
-			],
-			"Stock Reconciliation": [
-				{
-					"action": "set_warehouse",
-					"doctype": "Stock Reconciliation Item",
-					"field": "warehouse",
-					"target": target.warehouse,
-					"context": target,
-				},
-			],
-		},
-	}
-
 	beam_override = frappe.get_hooks("beam_frm")
 
 	if beam_override:
@@ -679,4 +196,503 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 						action["target"] = target
 				return override_action
 
-	return frm.get(barcode_doc.doc.doctype, {}).get(context.frm, [])
+	actions = frm.get(barcode_doc.doc.doctype, {}).get(context.frm, [])
+	for action in actions:
+		action["context"] = target
+		if isinstance(action.get("target"), str) and "." in action.get("target"):
+			serialized_target = action.get("target").split(".")
+			action["target"] = target.get(serialized_target[1])
+		else:
+			action["target"] = target
+
+	return actions
+
+
+listview = {
+	"Handling Unit": {
+		"Delivery Note": [
+			{"action": "route", "doctype": "Delivery Note", "field": "Delivery Note", "target": "target"}
+		],
+		"Item": [{"action": "route", "doctype": "Item", "field": "Item", "target": "target"}],
+		"Packing Slip": [
+			{"action": "route", "doctype": "Packing Slip", "field": "Packing Slip", "target": "target"}
+		],
+		"Purchase Invoice": [
+			{
+				"action": "route",
+				"doctype": "Purchase Invoice",
+				"field": "Purchase Invoice",
+				"target": "target",
+			}
+		],
+		"Purchase Receipt": [
+			{
+				"action": "route",
+				"doctype": "Purchase Receipt",
+				"field": "Purchase Receipt",
+				"target": "target",
+			}
+		],
+		"Putaway Rule": [
+			{"action": "filter", "doctype": "Putaway Rule", "field": "item_code", "target": "target"},
+		],
+		"Quality Inspection": [
+			{
+				"action": "filter",
+				"doctype": "Quality Inspection",
+				"field": "handling_unit",
+				"target": "target",
+			},
+		],
+		"Sales Invoice": [
+			{"action": "route", "doctype": "Sales Invoice", "field": "Sales Invoice", "target": "target"}
+		],
+		"Stock Entry": [
+			{"action": "route", "doctype": "Stock Entry", "field": "Stock Entry", "target": "target"}
+		],
+		"Stock Reconciliation": [
+			{
+				"action": "route",
+				"doctype": "Stock Reconciliation",
+				"field": "Stock Reconciliation",
+				"target": "target",
+			}
+		],
+	},
+	"Item": {
+		"Delivery Note": [
+			{"action": "filter", "doctype": "Delivery Note Item", "field": "item_code", "target": "target"},
+		],
+		"Item": [{"action": "route", "doctype": "Item", "field": "Item", "target": "target"}],
+		"Item Price": [
+			{"action": "filter", "doctype": "Item Price", "field": "item_code", "target": "target"},
+		],
+		"Packing Slip": [
+			{"action": "filter", "doctype": "Packing Slip Item", "field": "item_code", "target": "target"},
+		],
+		"Purchase Invoice": [
+			{
+				"action": "filter",
+				"doctype": "Purchase Invoice Item",
+				"field": "item_code",
+				"target": "target",
+			},
+		],
+		"Purchase Receipt": [
+			{
+				"action": "filter",
+				"doctype": "Purchase Receipt Item",
+				"field": "item_code",
+				"target": "target",
+			},
+		],
+		"Putaway Rule": [
+			{"action": "filter", "doctype": "Putaway Rule", "field": "item_code", "target": "target"},
+		],
+		"Quality Inspection": [
+			{"action": "filter", "doctype": "Quality Inspection", "field": "item_code", "target": "target"},
+		],
+		"Sales Invoice": [
+			{"action": "filter", "doctype": "Sales Invoice Item", "field": "item_code", "target": "target"},
+		],
+		"Stock Entry": [
+			{"action": "filter", "doctype": "Stock Entry Detail", "field": "item_code", "target": "target"},
+		],
+		"Stock Reconciliation": [
+			{
+				"action": "filter",
+				"doctype": "Stock Reconciliation Item",
+				"field": "item_code",
+				"target": "target",
+			},
+		],
+		"Warranty Claim": [
+			{"action": "filter", "doctype": "Warranty Claim", "field": "item_code", "target": "target"},
+		],
+	},
+	"Warehouse": {
+		"Delivery Note": [
+			{"action": "filter", "doctype": "Delivery Note Item", "field": "warehouse", "target": "target"},
+		],
+		"Item": [
+			{
+				"action": "filter",
+				"doctype": "Item Default",
+				"field": "default_warehouse",
+				"target": "target",
+			},
+		],
+		"Packing Slip": [
+			{"action": "filter", "doctype": "Packing Slip Item", "field": "warehouse", "target": "target"},
+		],
+		"Purchase Invoice": [
+			{
+				"action": "filter",
+				"doctype": "Purchase Invoice Item",
+				"field": "warehouse",
+				"target": "target",
+			},
+		],
+		"Purchase Receipt": [
+			{
+				"action": "filter",
+				"doctype": "Purchase Receipt Item",
+				"field": "warehouse",
+				"target": "target",
+			},
+		],
+		"Sales Invoice": [
+			{"action": "filter", "doctype": "Sales Invoice Item", "field": "warehouse", "target": "target"},
+		],
+		"Stock Entry": [
+			{"action": "filter", "doctype": "Stock Entry Detail", "field": "warehouse", "target": "target"},
+		],
+		"Stock Reconciliation": [
+			{
+				"action": "filter",
+				"doctype": "Stock Reconciliation Item",
+				"field": "warehouse",
+				"target": "target",
+			},
+		],
+		"Warehouse": [
+			{"action": "route", "doctype": "Warehouse", "field": "Warehouse", "target": "target"}
+		],
+	},
+}
+
+frm = {
+	"Handling Unit": {
+		"Delivery Note": [
+			{
+				"action": "add_or_associate",
+				"doctype": "Delivery Note Item",
+				"field": "handling_unit",
+				"target": "target.handling_unit",
+				"context": "target",
+			},
+			{
+				"action": "add_or_associate",
+				"doctype": "Delivery Note Item",
+				"field": "rate",
+				"target": "target.rate",
+				"context": "target",
+			},
+		],
+		"Item Price": [
+			{
+				"action": "set_item_code_and_handling_unit",
+				"doctype": "Item Price",
+				"field": "item_code",
+				"target": "target.item_code",
+				"context": "target",
+			},
+		],
+		"Packing Slip": [
+			{
+				"action": "add_or_associate",
+				"doctype": "Packing Slip Item",
+				"field": "conversion_factor",
+				"target": "target.conversion_factor",
+				"context": "target",
+			},
+			{
+				"action": "add_or_associate",
+				"doctype": "Packing Slip Item",
+				"field": "handling_unit",
+				"target": "target.handling_unit",
+				"context": "target",
+			},
+			{
+				"action": "add_or_associate",
+				"doctype": "Packing Slip Item",
+				"field": "pulled_quantity",
+				"target": "target.qty",
+				"context": "target",
+			},
+			{
+				"action": "add_or_associate",
+				"doctype": "Packing Slip Item",
+				"field": "rate",
+				"target": "target.rate",
+				"context": "target",
+			},
+			{
+				"action": "add_or_associate",
+				"doctype": "Packing Slip Item",
+				"field": "stock_qty",
+				"target": "target.stock_qty",
+				"context": "target",
+			},
+			{
+				"action": "add_or_associate",
+				"doctype": "Packing Slip Item",
+				"field": "warehouse",
+				"target": "target.warehouse",
+				"context": "target",
+			},
+		],
+		"Purchase Invoice": [
+			{
+				"action": "add_or_associate",
+				"doctype": "Purchase Invoice Item",
+				"field": "handling_unit",
+				"target": "target.handling_unit",
+				"context": "target",
+			},
+		],
+		"Putaway Rule": [
+			{
+				"action": "set_item_code_and_handling_unit",
+				"doctype": "Putaway Rule",
+				"field": "item_code",
+				"target": "target.item_code",
+				"context": "target",
+			},
+		],
+		"Quality Inspection": [
+			{
+				"action": "set_item_code_and_handling_unit",
+				"doctype": "Quality Inspection",
+				"field": "item_code",
+				"target": "target.item_code",
+				"context": "target",
+			},
+			{
+				"action": "set_item_code_and_handling_unit",
+				"doctype": "Quality Inspection",
+				"field": "handling_unit",
+				"target": "target.handling_unit",
+				"context": "target",
+			},
+		],
+		"Sales Invoice": [
+			{
+				"action": "add_or_associate",
+				"doctype": "Sales Invoice Item",
+				"field": "handling_unit",
+				"target": "target.handling_unit",
+				"context": "target",
+			},
+		],
+		"Stock Entry": [
+			{
+				"action": "add_or_associate",
+				"doctype": "Stock Entry Detail",
+				"field": "basic_rate",
+				"target": "target.valuation_rate",
+				"context": "target",
+			},
+			{
+				"action": "add_or_associate",
+				"doctype": "Stock Entry Detail",
+				"field": "conversion_factor",
+				"target": "target.conversion_factor",
+				"context": "target",
+			},
+			{
+				"action": "add_or_associate",
+				"doctype": "Stock Entry Detail",
+				"field": "handling_unit",
+				"target": "target.handling_unit",
+				"context": "target",
+			},
+			{
+				"action": "add_or_associate",
+				"doctype": "Stock Entry Detail",
+				"field": "s_warehouse",
+				"target": "target.warehouse",
+				"context": "target",
+			},
+			{
+				"action": "add_or_associate",
+				"doctype": "Stock Entry Detail",
+				"field": "transfer_qty",
+				"target": "target.stock_qty",
+				"context": "target",
+			},
+		],
+		"Stock Reconciliation": [
+			{
+				"action": "add_or_associate",
+				"doctype": "Stock Reconciliation Item",
+				"field": "handling_unit",
+				"target": "target.handling_unit",
+				"context": "target",
+			},
+		],
+		"Warranty Claim": [
+			{
+				"action": "set_item_code_and_handling_unit",
+				"doctype": "Warranty Claim",
+				"field": "item_code",
+				"target": "target.item_code",
+				"context": "target",
+			},
+			{
+				"action": "set_item_code_and_handling_unit",
+				"doctype": "Warranty Claim",
+				"field": "handling_unit",
+				"target": "target.handling_unit",
+				"context": "target",
+			},
+		],
+	},
+	"Item": {
+		"Delivery Note": [
+			{
+				"action": "add_or_increment",
+				"doctype": "Delivery Note Item",
+				"field": "item_code",
+				"target": "target.item_code",
+				"context": "target",
+			},
+		],
+		"Item Price": [
+			{
+				"action": "set_item_code_and_handling_unit",
+				"doctype": "Item Price",
+				"field": "item_code",
+				"target": "target.item_code",
+				"context": "target",
+			},
+		],
+		"Packing Slip": [
+			{
+				"action": "add_or_increment",
+				"doctype": "Packing Slip Item",
+				"field": "item_code",
+				"target": "target.item_code",
+				"context": "target",
+			},
+		],
+		"Purchase Invoice": [
+			{
+				"action": "add_or_increment",
+				"doctype": "Purchase Invoice Item",
+				"field": "item_code",
+				"target": "target.item_code",
+				"context": "target",
+			},
+		],
+		"Purchase Receipt": [
+			{
+				"action": "add_or_increment",
+				"doctype": "Purchase Receipt Item",
+				"field": "item_code",
+				"target": "target.item_code",
+				"context": "target",
+			},
+		],
+		"Putaway Rule": [
+			{
+				"action": "set_item_code_and_handling_unit",
+				"doctype": "Putaway Rule",
+				"field": "item_code",
+				"target": "target.item_code",
+				"context": "target",
+			},
+		],
+		"Quality Inspection": [
+			{
+				"action": "set_item_code_and_handling_unit",
+				"doctype": "Quality Inspection",
+				"field": "item_code",
+				"target": "target.item_code",
+				"context": "target",
+			},
+		],
+		"Sales Invoice": [
+			{
+				"action": "add_or_increment",
+				"doctype": "Sales Invoice Item",
+				"field": "item_code",
+				"target": "target.item_code",
+				"context": "target",
+			},
+		],
+		"Stock Entry": [
+			{
+				"action": "add_or_increment",
+				"doctype": "Stock Entry Detail",
+				"field": "item_code",
+				"target": "target.item_code",
+				"context": "target",
+			},
+		],
+		"Stock Reconciliation": [
+			{
+				"action": "add_or_increment",
+				"doctype": "Stock Reconciliation Item",
+				"field": "item_code",
+				"target": "target.item_code",
+				"context": "target",
+			},
+		],
+		"Warranty Claim": [
+			{
+				"action": "set_item_code_and_handling_unit",
+				"doctype": "Warranty Claim",
+				"field": "item_code",
+				"target": "target.item_code",
+				"context": "target",
+			},
+		],
+	},
+	"Warehouse": {
+		"Delivery Note": [
+			{
+				"action": "set_warehouse",
+				"doctype": "Delivery Note Item",
+				"field": "warehouse",
+				"target": "target.warehouse",
+				"context": "target",
+			},
+		],
+		"Purchase Invoice": [
+			{
+				"action": "set_warehouse",
+				"doctype": "Purchase Invoice Item",
+				"field": "warehouse",
+				"target": "target.warehouse",
+				"context": "target",
+			},
+		],
+		"Purchase Receipt": [
+			{
+				"action": "set_warehouse",
+				"doctype": "Purchase Receipt Item",
+				"field": "warehouse",
+				"target": "target.warehouse",
+				"context": "target",
+			},
+		],
+		"Sales Invoice": [
+			{
+				"action": "set_warehouse",
+				"doctype": "Sales Invoice Item",
+				"field": "warehouse",
+				"target": "target.warehouse",
+				"context": "target",
+			},
+		],
+		"Stock Entry": [
+			{
+				"action": "set_warehouse",
+				"doctype": "Stock Entry",
+				"field": "warehouse",
+				"target": "target.warehouse",
+				"context": "target",
+			},
+		],
+		"Stock Reconciliation": [
+			{
+				"action": "set_warehouse",
+				"doctype": "Stock Reconciliation Item",
+				"field": "warehouse",
+				"target": "target.warehouse",
+				"context": "target",
+			},
+		],
+	},
+}

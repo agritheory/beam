@@ -5,7 +5,7 @@ from frappe import get_hooks
 from beam.tests.conftest import monkeymodule
 
 
-@pytest.fixture(scope="module", autouse=False)
+@pytest.fixture()
 def patch_frappe_get_hooks(monkeymodule, *args, **kwargs):
 	def patched_hooks(*args, **kwargs):
 		hooks = get_hooks(*args, **kwargs)
