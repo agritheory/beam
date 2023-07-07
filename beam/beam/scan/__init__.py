@@ -47,27 +47,54 @@ def get_handling_unit(handling_unit: str) -> frappe._dict:
 		filters={"handling_unit": handling_unit},
 		fields=[
 			"item_code",
-			"SUM(actual_qty) as actual_qty",
+			"SUM(actual_qty) AS stock_qty",
 			"handling_unit",
 			"voucher_no",
 			"posting_date",
 			"posting_time",
+			"stock_uom",
+			"voucher_type",
+			"voucher_detail_no",
 		],
 		group_by="handling_unit",
-		order_by="modified DESC",
+		order_by="posting_date DESC",
 		limit=1,
 	)
+	if len(sl_entries) == 1:
+		sle = sl_entries[0]
+	else:
+		return
 
-	if len(sl_entries) != 1:
-		return frappe._dict()
+	if sle.voucher_type == "Stock Entry":
+		child_doctype = "Stock Entry Detail"
+	else:
+		child_doctype = f"{sle.voucher_type} Item"
 
-	entry = sl_entries[0]
-	entry.posting_datetime = (
-		datetime.datetime(entry.posting_date.year, entry.posting_date.month, entry.posting_date.day)
-		+ entry.posting_time
+	_sle = frappe.db.get_value(
+		child_doctype,
+		sle.voucher_detail_no,
+		["uom", "qty", "conversion_factor", "stock_uom", "idx", "item_name"],
+		as_dict=True,
 	)
 
-	return entry
+	if _sle:
+		sle.update({**_sle})
+		sle.stock_qty = sle.stock_qty / sle.conversion_factor
+
+	sle.conversion_factor = frappe.get_value(
+		"UOM Conversion Detail",
+		{"parent": sle.item_code, "uom": sle.uom},
+		"conversion_factor",
+	)
+	sle.posting_datetime = (
+		datetime.datetime(sle.posting_date.year, sle.posting_date.month, sle.posting_date.day)
+		+ sle.posting_time
+	)
+	sle.user = frappe.session.user
+	sle.pop("posting_date")
+	sle.pop("posting_time")
+	sle.pop("voucher_detail_no")
+	return sle
 
 
 def get_stock_entry_item_details(doc: dict, item_code: str) -> frappe._dict:
@@ -149,10 +176,10 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 			{
 				"handling_unit": hu_details.handling_unit,
 				"voucher_no": hu_details.voucher_no,
-				"stock_qty": hu_details.actual_qty,
-				"qty": hu_details.actual_qty / target.conversion_factor
+				"stock_qty": hu_details.stock_qty,
+				"qty": hu_details.stock_qty / target.conversion_factor
 				if target.conversion_factor
-				else hu_details.actual_qty,
+				else hu_details.stock_qty,
 				"posting_datetime": hu_details.posting_datetime,
 			}
 		)

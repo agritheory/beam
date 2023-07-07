@@ -73,6 +73,54 @@ def test_stock_entry_material_receipt():
 		assert row.t_warehouse == sle.warehouse  # target warehouse
 
 
+def test_stock_entry_repack():
+	submit_all_purchase_receipts()
+	pr_hu = frappe.get_value(
+		"Purchase Receipt Item", {"item_code": "Parchment Paper"}, "handling_unit"
+	)
+	pr_hu = get_handling_unit(pr_hu)
+	assert pr_hu.uom == "Box"
+	assert pr_hu.stock_qty == 1
+
+	se = frappe.new_doc("Stock Entry")
+	se.stock_entry_type = se.purpose = "Repack"
+	se.append(
+		"items",
+		{
+			"item_code": "Parchment Paper",
+			"qty": 1,
+			"uom": "Box",
+			"conversion_factor": 100,
+			"stock_qty": 100,
+			"s_warehouse": "Storeroom - APC",
+		},
+	)
+	se.append(
+		"items",
+		{
+			"item_code": "Parchment Paper",
+			"uom": "Nos",
+			"qty": 100,
+			"t_warehouse": "Storeroom - APC",
+		},
+	)
+	se.save()
+	se.submit()
+	for row in se.items:
+		sle = frappe.get_doc("Stock Ledger Entry", {"handling_unit": row.handling_unit})
+		assert row.item_code == sle.item_code
+		if row.is_finished_item:
+			assert row.transfer_qty == sle.actual_qty
+			assert row.t_warehouse == sle.warehouse
+		else:
+			assert row.transfer_qty == -(sle.actual_qty)
+			assert row.s_warehouse == sle.warehouse
+
+	hu = get_handling_unit(se.items[-1].handling_unit)
+	assert hu.uom == "Nos"
+	assert hu.stock_qty == 100
+
+
 def test_stock_entry_material_transfer():
 	submit_all_purchase_receipts()
 	se = frappe.new_doc("Stock Entry")
@@ -231,7 +279,7 @@ def test_delivery_note():
 	# assert net qty on handling unit above
 	hu = get_handling_unit(handling_unit)
 	assert hu.item_code == dn.items[0].item_code
-	assert hu.actual_qty == 25  # 30 from stock entry less 5 from delivery note
+	assert hu.stock_qty == 25  # 30 from stock entry less 5 from delivery note
 	assert hu.item_code == dn.items[0].item_code
 
 
@@ -274,7 +322,7 @@ def test_sales_invoice():
 	# assert net qty on handling unit above
 	hu = get_handling_unit(handling_unit)
 	assert hu.item_code == si.items[0].item_code
-	assert hu.actual_qty == 20  # 30 from stock entry less 10 from stock entry
+	assert hu.stock_qty == 20  # 30 from stock entry less 10 from stock entry
 	assert hu.item_code == si.items[0].item_code
 
 
@@ -330,7 +378,7 @@ def test_packing_slip():
 		assert row.stock_qty == -(sle.actual_qty)  # AKA stock_qty in every other doctype
 		assert row.item_code == sle.item_code
 		assert row.warehouse == sle.warehouse  # target warehouse
-		assert hu.actual_qty == 0
+		assert hu.stock_qty == 0
 
 
 @pytest.mark.skip()
