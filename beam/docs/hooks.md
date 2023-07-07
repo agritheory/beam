@@ -15,6 +15,7 @@ beam_listview = {
 			{"action": "filter", "doctype": "Delivery Note Item", "field": "item_code"},
 			{"action": "filter", "doctype": "Packed Item", "field": "item_code"}
 		],
+	}
 }
 
 beam_frm = {
@@ -36,7 +37,7 @@ beam_frm = {
 	}
 }
 ```
-To add a custom javascript function, add the following hook to your apps' hooks.py
+To add a custom javascript function, add the following hook to your apps' hooks.py. An example implementation is available in the source code. 
 
 ```python
 beam_client = {

@@ -11,7 +11,6 @@ def get_scan_doctypes():
 	hooked_listview = frappe.get_hooks("beam_listview")
 	hooked_frm = frappe.get_hooks("beam_frm")
 	beam_client = frappe.get_hooks("beam_client")
-	print(beam_client)
 
 	for key, values in listview.items():
 		scannable_doctypes.add(key)
