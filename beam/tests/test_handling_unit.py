@@ -75,6 +75,13 @@ def test_stock_entry_material_receipt():
 
 def test_stock_entry_repack():
 	submit_all_purchase_receipts()
+	pr_hu = frappe.get_value(
+		"Purchase Receipt Item", {"item_code": "Parchment Paper"}, "handling_unit"
+	)
+	pr_hu = get_handling_unit(pr_hu)
+	assert pr_hu.uom == "Box"
+	assert pr_hu.stock_qty == 1
+
 	se = frappe.new_doc("Stock Entry")
 	se.stock_entry_type = se.purpose = "Repack"
 	se.append(

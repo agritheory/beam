@@ -79,7 +79,7 @@ def get_handling_unit(handling_unit: str) -> frappe._dict:
 
 	if _sle:
 		sle.update({**_sle})
-		sle.qty = sle.stock_qty / sle.conversion_factor
+		sle.stock_qty = sle.stock_qty / sle.conversion_factor
 
 	sle.conversion_factor = frappe.get_value(
 		"UOM Conversion Detail",
