@@ -10,7 +10,7 @@ from pypika import Order
 def handling_unit_query(doctype, txt, searchfield, start=0, page_len=20, filters=None):
 	filters = frappe._dict({}) if not filters else filters
 	stock_ledger_entry = frappe.qb.DocType("Stock Ledger Entry")
-	result = (
+	return (
 		frappe.qb.from_(stock_ledger_entry)
 		.select(stock_ledger_entry.handling_unit)
 		.where(stock_ledger_entry.item_code == filters.get("item_code"))
