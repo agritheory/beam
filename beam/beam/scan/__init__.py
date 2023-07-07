@@ -99,13 +99,13 @@ def get_handling_unit(handling_unit: str) -> frappe._dict:
 	if sle.voucher_type == "Stock Entry":
 		child_doctype = "Stock Entry Detail"
 	else:
-		child_doctype = f"{sle.voucher_type} Item",
+		child_doctype = f"{sle.voucher_type} Item"
 
 	_sle = frappe.db.get_value(
 		child_doctype,
 		sle.voucher_detail_no,
 		["uom", "qty", "conversion_factor", "stock_uom", "idx", "item_name"],
-		as_dict=True
+		as_dict=True,
 	)
 
 	if _sle:
