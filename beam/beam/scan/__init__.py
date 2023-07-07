@@ -94,7 +94,6 @@ def get_handling_unit(handling_unit: str) -> frappe._dict:
 	sle.pop("posting_date")
 	sle.pop("posting_time")
 	sle.pop("voucher_detail_no")
-
 	return sle
 
 
