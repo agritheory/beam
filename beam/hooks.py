@@ -66,7 +66,7 @@ jinja = {
 
 # before_install = "beam.install.before_install"
 after_install = "beam.install.after_install"
-after_migrate = "beam.install.after_migrate"
+after_migrate = "beam.install.after_install"
 
 # Uninstallation
 # ------------
