@@ -110,8 +110,8 @@ def test_stock_entry_repack():
 			assert row.s_warehouse == sle.warehouse
 
 	hu = get_handling_unit(se.items[-1].handling_unit)
-	assert hu.uom == "Box"
-	assert hu.stock_qty == 1
+	assert hu.uom == "Nos"
+	assert hu.stock_qty == 100
 
 
 def test_stock_entry_material_transfer():

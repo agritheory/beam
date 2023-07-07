@@ -41,37 +41,6 @@ def get_barcode_context(barcode: str) -> Union[frappe._dict, None]:
 	)
 
 
-# def get_handling_unit(handling_unit: str) -> frappe._dict:
-# 	sl_entries = frappe.get_all(
-# 		"Stock Ledger Entry",
-# 		filters={"handling_unit": handling_unit},
-# 		fields=[
-# 			"item_code",
-# 			"SUM(actual_qty) as actual_qty",
-# 			"handling_unit",
-# 			"voucher_no",
-# 			"posting_date",
-# 			"posting_time",
-# 			"stock_uom",
-# 		],
-# 		group_by="handling_unit",
-# 		order_by="modified DESC",
-# 		limit=1,
-# 	)
-
-
-# 	if len(sl_entries) != 1:
-# 		return frappe._dict()
-
-# 	entry = sl_entries[0]
-# 	entry.posting_datetime = (
-# 		datetime.datetime(entry.posting_date.year, entry.posting_date.month, entry.posting_date.day)
-# 		+ entry.posting_time
-# 	)
-
-# 	return entry
-
-
 def get_handling_unit(handling_unit: str) -> frappe._dict:
 	sl_entries = frappe.get_all(
 		"Stock Ledger Entry",
