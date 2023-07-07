@@ -74,6 +74,10 @@ after_migrate = "beam.install.after_migrate"
 # before_uninstall = "beam.uninstall.before_uninstall"
 # after_uninstall = "beam.uninstall.after_uninstall"
 
+# Boot
+extend_bootinfo = "beam.beam.boot.boot_session"
+
+
 # Desk Notifications
 # ------------------
 # See frappe.core.notifications.get_notification_config
