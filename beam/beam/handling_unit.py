@@ -18,6 +18,7 @@ def generate_handling_units(doc, method=None):
 		"Material Receipt",
 		"Manufacture",
 		"Repack",
+		"Send to Subcontractor",
 	):
 		return doc
 	for row in doc.items:

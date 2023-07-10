@@ -1,4 +1,4 @@
-# Extending Beam with custom hooks
+# Extending Beam With Custom Hooks
 
 Beam can be extended by adding configurations to your application's `hooks.py`.
 

@@ -6,7 +6,7 @@
 
 # Stock Entry
 
-## Material Transfer for Manufacture, Material Transfer, Send to Contractor
+## Material Transfer for Manufacture and Material Transfer
 
 In a case where the entire quantity associated with a Handling Unit is moved from one warehouse to another, that Handling Unit is reused.
 
@@ -21,6 +21,23 @@ In a case where less than the total quantity associated with a Handling Unit is 
 | ---------------- | ------------------ | -------------- | --------------:|
 | Cocoplum         | Storeroom          |            123 |         -20 Ea |
 | Cocoplum         | Work In Progress   |            456 |          20 Ea |
+
+
+## Send to Contractor
+
+In a case where the entire quantity associated with a Handling Unit is moved from one warehouse to another, that Handling Unit is reused.
+
+| Item             | Warehouse               | Handling Unit  |       Quantity |
+| ---------------- | ----------------------- | -------------- | --------------:|
+| Cocoplum         | Storeroom               |            123 |         -40 Ea |
+| Cocoplum         | Subcontractor Warehouse |            123 |          40 Ea |
+
+In a case where less than the total quantity associated with a Handling Unit is moved from one warehouse to another, a new handling unit is generated for the new units. Subsequent scans or lookups of the original handling (123) unit will return the remainder or net quantity.
+
+| Item             | Warehouse               | Handling Unit  |       Quantity |
+| ---------------- | ----------------------- | -------------- | --------------:|
+| Cocoplum         | Storeroom               |            123 |         -20 Ea |
+| Cocoplum         | Subcontractor Warehouse |            789 |          20 Ea |
 
 ## Repack and Manufacture
 
@@ -61,3 +78,4 @@ In the case of Material Receipt, a new Handling Unit is generated for each item.
 | Item             | Warehouse          | Handling Unit  |       Quantity |
 | ---------------- | ------------------ | -------------- | --------------:|
 | Cocoplum         | Storeroom          |            123 |          20 Ea |
+
