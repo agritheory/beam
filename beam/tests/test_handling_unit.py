@@ -381,6 +381,60 @@ def test_packing_slip():
 		assert hu.stock_qty == 0
 
 
+def test_test_stock_entry_for_send_to_subcontractor():
+	submit_all_purchase_receipts()
+	se = frappe.new_doc("Stock Entry")
+	se.stock_entry_type = se.purpose = "Send to Subcontractor"
+
+	hu = frappe.get_value("Purchase Invoice Item", {"item_code": "Flour"}, "handling_unit")
+	# simulate scanning
+	scan = frappe.call(
+		"beam.beam.scan.scan",
+		**{"barcode": str(hu), "context": {"frm": "Stock Entry", "doc": se.as_dict()}, "current_qty": 1}
+	)
+	assert scan[0]["action"] == "add_or_associate"
+	se.append(
+		"items",
+		{
+			**scan[0]["context"],
+			"qty": 30,
+			"s_warehouse": "Storeroom - APC",
+			"t_warehouse": "Kitchen - APC",
+		},
+	)
+	se.save()
+
+	for row in se.items:
+		if not frappe.get_value("Item", row.item_code, "is_stock_item"):
+			continue
+		sle = frappe.get_doc("Stock Ledger Entry", {"handling_unit": row.handling_unit})
+		assert row.item_code == sle.item_code
+		assert row.s_warehouse == sle.warehouse  # source warehouse
+
+	se.submit()
+	for row in se.items:
+		if not frappe.get_value("Item", row.item_code, "is_stock_item"):
+			continue
+		sle = frappe.get_doc("Stock Ledger Entry", {"handling_unit": row.handling_unit})
+		assert -(row.transfer_qty) == sle.actual_qty
+		assert row.item_code == sle.item_code
+		assert row.s_warehouse == sle.warehouse  # source warehouse
+		hu = get_handling_unit(row.handling_unit)
+		assert hu.stock_qty == 55  # net quantity; 85 - 30
+
+		sle = frappe.get_doc(
+			"Stock Ledger Entry", {"handling_unit": row.to_handling_unit}
+		)  # target handling unit
+		assert row.transfer_qty == sle.actual_qty
+		assert row.item_code == sle.item_code
+		assert row.t_warehouse == sle.warehouse  # target warehouse
+
+		hu = get_handling_unit(row.to_handling_unit)
+		assert hu.stock_qty == 30
+
+	se.cancel()
+
+
 @pytest.mark.skip()
 def test_subcontracting():
 	# Use pie crust

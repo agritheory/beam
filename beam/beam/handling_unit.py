@@ -24,13 +24,23 @@ def generate_handling_units(doc, method=None):
 	for row in doc.items:
 		if not frappe.get_value("Item", row.item_code, "is_stock_item"):
 			continue
+
+		if doc.doctype == "Stock Entry" and doc.purpose == "Send to Subcontractor" and row.handling_unit:
+			handling_unit = frappe.new_doc("Handling Unit")
+			handling_unit.save()
+			row.to_handling_unit = handling_unit.name
+			continue
+
 		if row.get("handling_unit"):
 			continue
+
 		if doc.doctype == "Stock Entry" and not (
 			any([row.is_finished_item, doc.purpose == "Material Receipt", row.is_scrap_item])
 		):
 			continue
+
 		handling_unit = frappe.new_doc("Handling Unit")
 		handling_unit.save()
 		row.handling_unit = handling_unit.name
+
 	return doc
