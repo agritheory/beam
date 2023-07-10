@@ -1,12 +1,10 @@
 import textwrap
 from pathlib import Path
 
-import frappe
-
-from beam.beam.scan import frm, listview
-
 
 def generate_matrix():
+	from beam.beam.scan import frm, listview
+
 	output = "# Listview Actions\n"
 	output += "| Scanned Doctype | Listview              | Action | Target |\n"
 	output += "|-----------------|-----------------------|--------|--------|\n"
