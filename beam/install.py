@@ -2,7 +2,7 @@ import frappe
 
 
 def after_install():
-	print("Setting up Inventory Dimension")
+	print("Setting up Handling Unit Inventory Dimension")
 	if frappe.db.exists("Inventory Dimension", "Handling Unit"):
 		return
 	huid = frappe.new_doc("Inventory Dimension")
@@ -15,23 +15,13 @@ def after_install():
 	for custom_field in frappe.get_all("Custom Field", {"label": "Source Handling Unit"}):
 		frappe.set_value("Custom Field", custom_field, "label", "Handling Unit")
 
-	# hide target fields - not applicable to handling units
-	for custom_field in frappe.get_all("Custom Field", {"label": "Target Handling Unit"}):
-		frappe.set_value("Custom Field", custom_field, "hidden", 1)
-
-	# hide handling unit on Job Card, Item Price and Putaway Rule
+	# hide target fields
 	for custom_field in frappe.get_all(
-		"Custom Field",
-		{
-			"label": "Handling Unit",
-			"dt": [
-				"in",
-				[
-					"Job Card",
-					"Item Price",
-					"Putaway Rule",
-				],
-			],
-		},
+		"Custom Field", {"label": "Target Handling Unit"}, ["name", "dt"]
 	):
-		frappe.set_value("Custom Field", custom_field, "hidden", 1)
+		if custom_field.dt == "Stock Entry Detail":
+			frappe.set_value("Custom Field", custom_field, "read_only", 1)
+		elif custom_field.dt == "Purchase Invoice Item":
+			frappe.set_value("Custom Field", custom_field, "label", "Handling Unit")
+		else:
+			frappe.set_value("Custom Field", custom_field, "hidden", 1)
