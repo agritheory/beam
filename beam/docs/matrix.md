@@ -34,6 +34,7 @@
 |Warehouse|Warehouse|route|Warehouse|
 
  --- 
+
 # Form Actions
 | Scanned Doctype | Form                  | Action | Target |
 |-----------------|-----------------------|--------|--------|
@@ -69,4 +70,10 @@
 |Item|Sales Invoice|add_or_increment|item_code|
 |Item|Stock Entry|add_or_increment|item_code|
 |Item|Stock Reconciliation|add_or_increment|item_code|
-
+|Item|Warranty Claim|set_item_code_and_handling_unit|item_code|
+|Warehouse|Delivery Note|set_warehouse|warehouse|
+|Warehouse|Purchase Invoice|set_warehouse|warehouse|
+|Warehouse|Purchase Receipt|set_warehouse|warehouse|
+|Warehouse|Sales Invoice|set_warehouse|warehouse|
+|Warehouse|Stock Entry|set_warehouse|warehouse|
+|Warehouse|Stock Reconciliation|set_warehouse|warehouse|
