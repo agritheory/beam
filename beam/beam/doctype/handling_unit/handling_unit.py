@@ -1,6 +1,7 @@
-import frappe
-import uuid
 import datetime
+import uuid
+
+import frappe
 from frappe.model.document import Document
 
 
@@ -14,4 +15,5 @@ class HandlingUnit(Document):
 		barcode.barcode_type = "Code128"
 		barcode.barcode = self.name
 		barcode.parent = self.name
+		barcode.flags.ignore_permissions = True
 		barcode.save()
