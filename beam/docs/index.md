@@ -27,6 +27,12 @@ Installation instructions can be found in the [project readme](https://github.co
 
 Beam can be extended with custom hooks both on the server side and in the client. Read more about customization [here](./hooks.md)
 
+## Print Server Integration
+
+Beam offers the ability to print to raw input printers like Zebra printers directly from the browser. Also included are several debugging and example print formats. For more details about configuring this, see the [print server](./print_server.md) section. 
+
 ## Roadmap and Planned Features
 
 Feature requests, support requests and bug reports can be made via [GitHub Issues](https://github.com/agritheory/beam/issues).
+
+To test the scanning functionality without actually having a hardware scanner, see the [testing](./testing.md) section.
