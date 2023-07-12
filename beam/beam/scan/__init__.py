@@ -238,17 +238,17 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 listview = {
 	"Handling Unit": {
 		"Delivery Note": [
-			{"action": "route", "doctype": "Delivery Note", "field": "Delivery Note", "target": "target"}
+			{"action": "filter", "doctype": "Delivery Note", "field": "name", "target": "target"}
 		],
 		"Item": [{"action": "route", "doctype": "Item", "field": "Item", "target": "target"}],
 		"Packing Slip": [
-			{"action": "route", "doctype": "Packing Slip", "field": "Packing Slip", "target": "target"}
+			{"action": "filter", "doctype": "Packing Slip", "field": "name", "target": "target"}
 		],
 		"Purchase Invoice": [
 			{
-				"action": "route",
+				"action": "filter",
 				"doctype": "Purchase Invoice",
-				"field": "Purchase Invoice",
+				"field": "name",
 				"target": "target",
 			}
 		],
@@ -272,16 +272,16 @@ listview = {
 			},
 		],
 		"Sales Invoice": [
-			{"action": "route", "doctype": "Sales Invoice", "field": "Sales Invoice", "target": "target"}
+			{"action": "filter", "doctype": "Sales Invoice", "field": "name", "target": "target"}
 		],
 		"Stock Entry": [
-			{"action": "route", "doctype": "Stock Entry", "field": "Stock Entry", "target": "target"}
+			{"action": "filter", "doctype": "Stock Entry", "field": "name", "target": "target"}
 		],
 		"Stock Reconciliation": [
 			{
-				"action": "route",
+				"action": "filter",
 				"doctype": "Stock Reconciliation",
-				"field": "Stock Reconciliation",
+				"field": "name",
 				"target": "target",
 			}
 		],
