@@ -37,9 +37,11 @@ beam_frm = {
 	}
 }
 ```
-To add a custom javascript function, add the following hook to your apps' hooks.py. An example implementation is available in the source code. 
+To add a custom JavaScript function, add the following hook to your application's `hooks.py`. An example implementation is available in the source code. 
 
 ```python
+# hooks.py
+
 beam_client = {
 	"show_message": "custom_app.show_message"
 }

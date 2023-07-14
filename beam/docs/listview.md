@@ -5,7 +5,7 @@ The result of scanning a barcode in the listview depends on several factors:
  - Is the barcode recognized?
  - What doctype is it associated with?
 
-For example, when an Item is scanned while viewing the Item list, the user is routed to record for that Item:
+For example, when an Item is scanned while viewing the Item list, the user is routed to the record for that Item:
 
 | Scanned Doctype | Listview              | Action | Target |
 |-----------------|-----------------------|--------|--------|
