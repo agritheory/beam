@@ -451,3 +451,68 @@ def create_production_plan(settings):
 			job_card.time_logs[0].completed_qty = wo.qty
 			job_card.save()
 			job_card.submit()
+
+
+def create_purchase_receipt(settings):
+	pr = frappe.new_doc("Purchase Receipt")
+	pr.company = settings.company
+	pr.supplier = "Unity Bakery Supply"
+	pr.posting_date = settings.day
+	pr.set_posting_time = 1
+	pr.buying_price_list = "Bakery Buying"
+	pr.append(
+		"items",
+		{
+			"item_code": "Damson Plum",
+			"qty": 10,
+		},
+	)
+	pr.append(
+		"items",
+		{
+			"item_code": "Gooseberry",
+			"qty": 10,
+		},
+	)
+	pr.save()
+	pr.submit()
+	return pr
+
+
+def create_purchase_invoice(settings):
+	pi = frappe.new_doc("Purchase Invoice")
+	pi.update_stock = 1
+	pi.company = settings.company
+	pi.supplier = "Chelsea Fruit Co"
+	pi.posting_date = settings.day
+	pi.set_posting_time = 1
+	pi.buying_price_list = "Bakery Buying"
+	pi.append(
+		"items",
+		{
+			"item_code": "Kakadu Lime",
+			"qty": 20,
+		},
+	)
+	pi.append(
+		"items",
+		{
+			"item_code": "Tayberry",
+			"qty": 20,
+		},
+	)
+	pi.append(
+		"items",
+		{
+			"item_code": "Limequat",
+			"qty": 10,
+		},
+	)
+	pi.save()
+	pi.submit()
+	return pi
+
+
+def traceability(settings):
+	pr = create_purchase_receipt(settings)
+	pi = create_purchase_invoice(settings)
