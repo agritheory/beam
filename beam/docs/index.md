@@ -4,11 +4,19 @@ Beam is a general purpose 2D barcode scanning application for ERPNext.
 
 ## What does this application do?
 
-Beam allows a user to scan a 2D barcode from either a listview or a form view, then helps enter data that would otherwise require a lot of keystrokes. Unlike ERPNext's built-in barcode scanning, Beam expects the user to have a hardware barcode scanner connected to their device.
+Beam allows a user to scan a 2D barcode from either a listview or a form view, then helps enter data that would otherwise require numerous keystrokes. Unlike ERPNext's built-in barcode scanning, Beam expects the user to have a hardware barcode scanner connected to their device.
 
-For example, if the user scans a barcode associated with an Item in the Item listview, it will take them to that item's record. Read more about [how scanning in listviews works](./listview.md).
+For example, if the user scans a barcode associated with an Item in the Item listview, it will take them to that item's record.
 
-If the user scans an Item in a Delivery Note, it will populate everything it knows about that item, just as it would if they were to type in the item code. If they scan that item again, it will increment the last row with that item in it.
+The following screen shot shows the outcome of simulating a scan from the browser's console using a barcode associated with the Stores warehouse. The browser automatically navigates to that warehouse page.
+
+![Screen shot of the Stores warehouse page with the browser's console showing code for a simulation scan of a barcode associated with the warehouse.](./assets/listview_wh_navigation.png)
+
+Read more about [how scanning in listviews works](./listview.md).
+
+If the user scans an Item in a Delivery Note, it will populate everything it knows about that item, just as it would if they were to type in the item code. If they scan that item again, it will increment the last row with that item in it. The following screen shot shows a row for the Cloudberry item added in a new Delivery Note after simulating a scan from the browser's console of that item's Handling Unit barcode.
+
+![Screen shot of a new Delivery Note with a row for Cloudberry automatically added and populated after simulating a scan of its barcode from the browser's console.](./assets/form_view_delivery_note.png)
 
 Read more about [how scanning in form views works](./form.md).
 

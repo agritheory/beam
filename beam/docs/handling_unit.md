@@ -4,7 +4,9 @@ A Handling Unit is an abstraction for tracking quantities of items that are move
 
 By assigning a unique ID to the handling unit, it is possible to capture via scanner the item, net quantity, unit of measure and timestamp of the previous transaction, and then act upon that information in context, according to the [decision matrix](./matrix.md). Beam adds a new doctype, Handling Unit, to implement this functionality in ERPNext.
 
-# Listviews
+![Screen shot of the Handling Unit doctype listview. The list shows several new Handling Units that were created for items received via a Purchase Receipt.](./assets/handling_unit_list.png)
+
+## Listviews
 Generally scanning a Handling Unit in a list view will filter to show all the transactions of the doctype with the appropriate Handling Unit.
 
 ## Purchase Receipt 
@@ -22,7 +24,7 @@ For Purchase Invoices with "Update Stock" checked, Handling Units are generated 
 | ---------------- | ------------------ | -------------- | --------------:|
 | Cocoplum         | Storeroom          |            123 |          40 Ea |
 
-When "Update Stock" is _not_ checked, they can be scanned to facilitate data entry but do not affect the Stock Ledger.
+When "Update Stock" is _not_ checked, they can be scanned to facilitate data entry but there's no effect in the Stock Ledger.
 
 ## Delivery Note
 For Delivery Note, Handling Units are consumed. In the case where less than the total quantity associated with the Handling Unit is being delivered, the existing handling unit will refer to the remaining (net) quantity.
@@ -49,7 +51,11 @@ Stock Ledger or subsequent transaction
 | ---------------- | ------------------ | -------------- | --------------:|
 | Cocoplum         | Storeroom          |            123 |          5 Ea |
 
-When "Update Stock" is _not_ checked, they can be scanned to facilitate data entry but do not affect the Stock Ledger.
+When "Update Stock" is _not_ checked, they can be scanned to facilitate data entry but there's no effect in the Stock Ledger.
+
+The following screen shot shows the stock ledger for the Cloudberry item. The first row shows the receipt of 60 pounds of the fruit via a Purchase Receipt, and the second row is after the sale of 25 pounds via a Sales Invoice that had 'update stock'. Note that both transactions reference the same Handling Unit.
+
+![Screen shot of the stock ledger tracking the receipt and a sales of the Cloudberry item.](./assets/stock_ledger_after_sale.png)
 
 ## Stock Entry
 
@@ -68,7 +74,6 @@ In a case where less than the total quantity associated with a Handling Unit is 
 | ---------------- | ------------------ | -------------- | --------------:|
 | Cocoplum         | Storeroom          |            123 |         -20 Ea |
 | Cocoplum         | Work In Progress   |            456 |          20 Ea |
-
 
 ### Send to Contractor
 
@@ -125,3 +130,9 @@ In the case of Material Receipt, a new Handling Unit is generated for each item.
 | Item             | Warehouse          | Handling Unit  |       Quantity |
 | ---------------- | ------------------ | -------------- | --------------:|
 | Cocoplum         | Storeroom          |            123 |          20 Ea |
+
+## Warehouses
+
+Handling Units are assigned to stock items but one or more barcodes may be associated with a warehouse. The user can navigate to a given warehouse, add a row to the Barcodes table, then manually enter the code, type, and optionally the UOM.
+
+![Screen shot of the warehouse page for Stores showing a Barcodes table. There is one barcode associated with this warehouse that is Code128 type.](./assets/warehouse_barcodes.png)
