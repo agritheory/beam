@@ -126,8 +126,21 @@ doc_events = {
 		],
 	},
 	"Stock Entry": {
+		"validate": [
+			"beam.beam.handling_unit.validate_handling_units_overconsumption",
+		],
 		"before_submit": [
 			"beam.beam.handling_unit.generate_handling_units",
+		],
+	},
+	"Sales Invoice": {
+		"validate": [
+			"beam.beam.handling_unit.validate_handling_units_overconsumption",
+		],
+	},
+	"Delivery Note": {
+		"validate": [
+			"beam.beam.handling_unit.validate_handling_units_overconsumption",
 		],
 	},
 }

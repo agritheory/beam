@@ -442,3 +442,65 @@ def test_subcontracting():
 	# create subcontracting
 	# create and test generation of handling units on subcontracting receipt
 	pass
+
+
+@pytest.mark.xfail()
+def test_handling_units_overconsumption():
+	se = frappe.new_doc("Stock Entry")
+	se.stock_entry_type = se.purpose = "Material Receipt"
+	se.append(
+		"items",
+		{
+			"item_code": "Butter",
+			"qty": 5,
+			"t_warehouse": "Refrigerator - APC",
+			"basic_rate": frappe.get_value("Item Price", {"item_code": "Butter"}, "price_list_rate"),
+		},
+	)
+	se.save()
+	se.submit()
+	handling_unit_1 = se.items[0].handling_unit
+
+	hu = get_handling_unit(handling_unit_1)
+	assert hu.stock_qty == 5
+
+	se = frappe.new_doc("Stock Entry")
+	se.stock_entry_type = se.purpose = "Material Receipt"
+	se.append(
+		"items",
+		{
+			"item_code": "Butter",
+			"qty": 10,
+			"t_warehouse": "Refrigerator - APC",
+			"basic_rate": frappe.get_value("Item Price", {"item_code": "Butter"}, "price_list_rate"),
+		},
+	)
+	se.save()
+	se.submit()
+	handling_unit_2 = se.items[0].handling_unit
+
+	hu = get_handling_unit(handling_unit_2)
+	assert hu.stock_qty == 10
+
+	se = frappe.new_doc("Stock Entry")
+	se.stock_entry_type = se.purpose = "Material Issue"
+	scan = frappe.call(
+		"beam.beam.scan.scan",
+		**{
+			"barcode": str(handling_unit_1),
+			"context": {"frm": se.doctype, "doc": se.as_dict()},
+			"current_qty": 1,
+		}
+	)
+	se.append(
+		"items",
+		{
+			**scan[0]["context"],
+		},
+	)
+
+	assert se.items[0].qty == 5
+
+	se.items[0].s_warehouse = "Refrigerator - APC"
+	se.items[0].qty = 8
+	se.save()

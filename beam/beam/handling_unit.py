@@ -1,4 +1,7 @@
 import frappe
+from frappe import _
+
+from beam.beam.scan import get_handling_unit
 
 """
 Handling Units will be generated in the following cases:
@@ -42,5 +45,35 @@ def generate_handling_units(doc, method=None):
 		handling_unit = frappe.new_doc("Handling Unit")
 		handling_unit.save()
 		row.handling_unit = handling_unit.name
+
+	return doc
+
+
+@frappe.whitelist()
+def validate_handling_units_overconsumption(doc, method=None):
+	if doc.doctype == "Sales Invoice" and not doc.update_stock:
+		return doc
+
+	if doc.doctype == "Stock Entry" and doc.purpose not in (
+		"Material Issue",
+		"Material Transfer",
+		"Material Transfer for Manufacture",
+		"Manufacture",
+		"Repack",
+		"Send to Subcontractor",
+		"Material Consumption for Manufacture",
+	):
+		return doc
+
+	for row in doc.get("items"):
+		if not hasattr(row, "handling_unit") or not row.handling_unit:
+			continue
+
+		hu = get_handling_unit(row.handling_unit)
+
+		if hu.stock_qty < row.qty:
+			frappe.throw(
+				_(f"Row #{row.idx}: the Handling Unit for Item {row.item_code} has qty of {hu.stock_qty}.")
+			)
 
 	return doc
