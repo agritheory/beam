@@ -130,9 +130,3 @@ In the case of Material Receipt, a new Handling Unit is generated for each item.
 | Item             | Warehouse          | Handling Unit  |       Quantity |
 | ---------------- | ------------------ | -------------- | --------------:|
 | Cocoplum         | Storeroom          |            123 |          20 Ea |
-
-## Warehouses
-
-Handling Units are assigned to stock items but one or more barcodes may be associated with a warehouse. The user can navigate to a given warehouse, add a row to the Barcodes table, then manually enter the code, type, and optionally the UOM.
-
-![Screen shot of the warehouse page for Stores showing a Barcodes table. There is one barcode associated with this warehouse that is Code128 type.](./assets/warehouse_barcodes.png)

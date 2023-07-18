@@ -7,4 +7,4 @@ There are several steps to get a print server connected in ERPNext. First, the `
 
 Next, the user must create a new Network Printer Settings document and fill in the information.
 
-![Screen shot of the Network Printer Settings document fields, including Name, Printer Namem Server IP, and Port.](./assets/network_printer_settings.png)
+![Screen shot of the Network Printer Settings document fields, including Name, Printer Name, Server IP, and Port.](./assets/network_printer_settings.png)

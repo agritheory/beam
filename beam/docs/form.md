@@ -1,4 +1,4 @@
-## Form
+# Form
 
 The result of scanning a barcode in the form depends on several factors:
 

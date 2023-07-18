@@ -1,4 +1,4 @@
-## Listview
+# Listview
 
 The result of scanning a barcode in the listview depends on several factors:
 

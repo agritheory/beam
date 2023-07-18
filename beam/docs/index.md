@@ -22,7 +22,7 @@ Read more about [how scanning in form views works](./form.md).
 
 ## What is a Handling Unit?
 
-A handling unit is the combination of a container, any packaging material, and the items wihin or on it. This could be a pallet of raw materials used in a manufacturing process, a crate containing several other handling units, or an entire warehouse.
+A handling unit is the combination of a container, any packaging material, and the items within or on it. This could be a pallet of raw materials used in a manufacturing process, a crate containing several other handling units, or a delivery vehicle transporting .
 
 Handling units have unique, scannable identification numbers that are used in any stock transaction involving the items contained within the unit. The ID allows the user to reference everything about the stock transaction, saved from previous transactions.
 
@@ -36,6 +36,12 @@ Beam comes packed with features, but can be extended with custom hooks both on t
 
 - [Installation](https://github.com/agritheory/beam)
 - [Customization](./hooks.md)
+
+## Warehouses
+
+Warehouses may also have unique barcodes associated with them. The user can navigate to a given warehouse, add a row to the Barcodes table, then manually enter the code, type, and optionally the UOM.
+
+![Screen shot of the warehouse page for Stores showing a Barcodes table. There is one barcode associated with this warehouse that is Code128 type.](./assets/warehouse_barcodes.png)
 
 ## Print Server Integration
 
