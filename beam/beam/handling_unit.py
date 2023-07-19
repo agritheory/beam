@@ -50,8 +50,11 @@ def generate_handling_units(doc, method=None):
 
 
 @frappe.whitelist()
-def validate_handling_units_overconsumption(doc, method=None):
+def validate_handling_unit_overconsumption(doc, method=None):
 	if doc.doctype == "Sales Invoice" and not doc.update_stock:
+		return doc
+
+	if doc.doctype == "Purchase Receipt" and not doc.is_return:
 		return doc
 
 	if doc.doctype == "Stock Entry" and doc.purpose not in (
@@ -71,7 +74,7 @@ def validate_handling_units_overconsumption(doc, method=None):
 
 		hu = get_handling_unit(row.handling_unit)
 
-		if hu.stock_qty < row.qty:
+		if hu.stock_qty < abs(row.qty):
 			frappe.throw(
 				_(f"Row #{row.idx}: the Handling Unit for Item {row.item_code} has qty of {hu.stock_qty}.")
 			)
