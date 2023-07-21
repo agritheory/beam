@@ -30,4 +30,14 @@ frappe.query_reports['Handling Unit Traceability'] = {
 			},
 		},
 	],
+	formatter: function (value, row, column, data, default_formatter) {
+		value = default_formatter(value, row, column, data)
+
+		if (column.fieldname == 'actual_qty' && data && data.actual_qty > 0) {
+			value = "<span style='color:green'>" + value + '</span>'
+		} else if (column.fieldname == 'actual_qty' && data && data.actual_qty < 0) {
+			value = "<span style='color:red'>" + value + '</span>'
+		}
+		return value
+	},
 }
