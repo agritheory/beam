@@ -79,9 +79,9 @@ def validate_handling_unit_overconsumption(doc, method=None):
 
 		hu = get_handling_unit(row.handling_unit)
 
-		# if abs(hu.stock_qty - row.stock_qty) < frappe.get_precision(row.doctype, qty_field):
-		# 	frappe.throw(
-		# 		_(f"Row #{row.idx}: the Handling Unit for Item {row.item_code} has qty of {hu.stock_qty}.")
-		# 	)
+		if abs(hu.stock_qty - row.stock_qty) < frappe.get_precision(row.doctype, qty_field):
+			frappe.throw(
+				_(f"Row #{row.idx}: the Handling Unit for Item {row.item_code} has qty of {hu.stock_qty}.")
+			)
 
 	return doc
