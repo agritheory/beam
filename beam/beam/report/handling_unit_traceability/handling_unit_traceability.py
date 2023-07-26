@@ -6,6 +6,27 @@ from frappe import _
 from frappe.query_builder import DocType
 
 
+def get_stock_ledger_entries_hu(handling_unit):
+	stock_ledger_entry = DocType("Stock Ledger Entry")
+	return (
+		frappe.qb.from_(stock_ledger_entry)
+		.select(
+			stock_ledger_entry.name,
+			stock_ledger_entry.creation,
+			stock_ledger_entry.company,
+			stock_ledger_entry.voucher_type,
+			stock_ledger_entry.voucher_no,
+			stock_ledger_entry.voucher_detail_no,
+			stock_ledger_entry.handling_unit,
+			stock_ledger_entry.warehouse,
+			stock_ledger_entry.actual_qty,
+			stock_ledger_entry.item_code,
+		)
+		.where(stock_ledger_entry.handling_unit == handling_unit)
+		.orderby("creation", frappe.qb.desc)
+	).run(as_dict=True)
+
+
 def execute(filters=None):
 	if not any([filters.handling_unit, filters.delivery_note, filters.sales_invoice]):
 		return
@@ -27,75 +48,59 @@ def execute(filters=None):
 		handling_units = [filters.handling_unit]
 
 	for handling_unit in handling_units:
-		stock_ledger_entry = DocType("Stock Ledger Entry")
-		data = []
 
 		results = get_stock_ledger_entries_hu(handling_unit)
-		data += results
+
+		hu_results = []
+		hu_results += results
 
 		for result in results:
 			if result["voucher_type"] != "Stock Entry":
 				continue
 
-			previous_hu = frappe.get_all(
+			previous_handling_units = frappe.get_all(
 				"Stock Entry Detail",
 				filters={"parent": result["voucher_no"], "handling_unit": ("not in", handling_unit)},
 				pluck="handling_unit",
 			)
 
-			for uh in previous_hu:
-				stock_entries_previous = get_stock_ledger_entries_hu(uh)
-				data += stock_entries_previous
+			for previous_handling_unit in previous_handling_units:
+				previous_stock_entries = get_stock_ledger_entries_hu(previous_handling_unit)
+				hu_results += previous_stock_entries
 
-				for sep in stock_entries_previous:
-					if sep["voucher_type"] == "Stock Entry":
-						work_order_name = frappe.db.get_values(sep["voucher_type"], sep["voucher_no"], "work_order")
-						if work_order_name:
-							work_order = frappe.get_doc("Work Order", work_order_name)
-							if work_order.name not in work_orders:
-								work_orders[work_order.name] = {
-									"creation": work_order.creation,
-									"voucher_type": work_order.doctype,
-									"voucher_no": work_order.name,
-								}
+				for previous_stock_entry in previous_stock_entries:
+					if previous_stock_entry["voucher_type"] != "Stock Entry":
+						continue
 
-		for key, value in work_orders.items():
-			data.append(value)
+					work_order_name = frappe.db.get_value(
+						previous_stock_entry["voucher_type"], previous_stock_entry["voucher_no"], "work_order"
+					)
+					if work_order_name:
+						work_order = frappe.get_doc("Work Order", work_order_name)
+						if work_order.name not in work_orders:
+							work_orders[work_order.name] = hu_results
 
-	data = sorted(data, key=lambda d: d["creation"], reverse=True)
+	for work_order, rows in work_orders.items():
+
+		rows = sorted(rows, key=lambda r: r["creation"])
+		data.append({"indent": 0, "work_order": work_order})
+
+		for row in rows:
+			row["indent"] = 1
+			data.append(row)
+
 	return get_columns(), data
-
-
-def get_stock_ledger_entries_hu(handling_unit):
-	stock_ledger_entry = DocType("Stock Ledger Entry")
-	return (
-		frappe.qb.from_(stock_ledger_entry)
-		.select(
-			stock_ledger_entry.name,
-			stock_ledger_entry.creation,
-			stock_ledger_entry.company,
-			stock_ledger_entry.voucher_type,
-			stock_ledger_entry.voucher_no,
-			stock_ledger_entry.voucher_detail_no,
-			stock_ledger_entry.handling_unit,
-			stock_ledger_entry.warehouse,
-			stock_ledger_entry.actual_qty,
-		)
-		.where(stock_ledger_entry.handling_unit == handling_unit)
-		.orderby("creation", frappe.qb.desc)
-	).run(as_dict=True)
 
 
 def get_columns():
 	return [
-		{"label": _("Creation"), "fieldname": "creation", "fieldtype": "Data", "width": 220},
-		# {
-		# 	"label": _("Stock Ledger Entry"),
-		# 	"fieldname": "name",
-		# 	"fieldtype": 'Link',
-		# 	'options': "Stock Ledger Entry",
-		# 	"width": 180
-		# },
+		{
+			"label": _("Work Order"),
+			"fieldname": "work_order",
+			"fieldtype": "Link",
+			"options": "Work Order",
+			"width": 220,
+		},
 		{"label": _("Voucher Type"), "fieldname": "voucher_type", "fieldtype": "Data", "width": 150},
 		{
 			"label": _("Voucher No"),
@@ -103,6 +108,20 @@ def get_columns():
 			"fieldtype": "Dynamic Link",
 			"options": "voucher_type",
 			"width": 180,
+		},
+		# {
+		# 	"label": _("Stock Ledger Entry"),
+		# 	"fieldname": "name",
+		# 	"fieldtype": 'Link',
+		# 	'options': "Stock Ledger Entry",
+		# 	"width": 180
+		# },
+		{
+			"label": _("Item Code"),
+			"fieldname": "item_code",
+			"fieldtype": "Link",
+			"options": "Item",
+			"width": 120,
 		},
 		{
 			"label": _("Qty"),

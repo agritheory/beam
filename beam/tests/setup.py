@@ -453,66 +453,53 @@ def create_production_plan(settings):
 			job_card.submit()
 
 
-def create_purchase_receipt(settings):
+def traceability(settings):
+	# Work Order
+	wo = frappe.new_doc("Work Order")
+	wo.production_item = boms[0].get("item")
+	wo.bom_no = frappe.get_doc("BOM", {"item": boms[0].get("item")}).name
+	wo.qty = 10
+	wo.save()
+	wo.submit()
+
+	# Purchase Receipt
 	pr = frappe.new_doc("Purchase Receipt")
 	pr.company = settings.company
 	pr.supplier = "Unity Bakery Supply"
 	pr.posting_date = settings.day
 	pr.set_posting_time = 1
 	pr.buying_price_list = "Bakery Buying"
-	pr.append(
-		"items",
-		{
-			"item_code": "Damson Plum",
-			"qty": 10,
-		},
-	)
-	pr.append(
-		"items",
-		{
-			"item_code": "Gooseberry",
-			"qty": 10,
-		},
-	)
+
+	for item in wo.required_items:
+		pr.append(
+			"items",
+			{
+				"item_code": item.item_code,
+				"qty": item.required_qty,
+			},
+		)
 	pr.save()
 	pr.submit()
-	return pr
 
+	# Stock Entry - Material Transfer for Manufacture
+	se = frappe.new_doc("Stock Entry")
+	se.stock_entry_type = se.purpose = "Material Transfer for Manufacture"
+	for item in pr.items:
+		scan = frappe.call(
+			"beam.beam.scan.scan",
+			**{"barcode": str(item.handling_unit), "context": {"frm": "Stock Entry", "doc": se.as_dict()}},
+		)
+		se.append(
+			"items",
+			{
+				**scan[0]["context"],
+				"s_warehouse": item.warehouse,
+				"t_warehouse": "Baked Goods - APC",
+			},
+		)
+	se.save()
+	se.submit()
 
-def create_purchase_invoice(settings):
-	pi = frappe.new_doc("Purchase Invoice")
-	pi.update_stock = 1
-	pi.company = settings.company
-	pi.supplier = "Chelsea Fruit Co"
-	pi.posting_date = settings.day
-	pi.set_posting_time = 1
-	pi.buying_price_list = "Bakery Buying"
-	pi.append(
-		"items",
-		{
-			"item_code": "Kakadu Lime",
-			"qty": 20,
-		},
-	)
-	pi.append(
-		"items",
-		{
-			"item_code": "Tayberry",
-			"qty": 20,
-		},
-	)
-	pi.append(
-		"items",
-		{
-			"item_code": "Limequat",
-			"qty": 10,
-		},
-	)
-	pi.save()
-	pi.submit()
-	return pi
+	# Stock Entry - Manufacture
 
-
-def traceability(settings):
-	pr = create_purchase_receipt(settings)
-	pi = create_purchase_invoice(settings)
+	# Delivery Note
