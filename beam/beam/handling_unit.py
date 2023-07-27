@@ -9,6 +9,7 @@ Handling Units will be generated in the following cases:
 - On all inventoriable items in a Purchase Invoice marked "Updated Stock"
 - On all inventoriable items in Stock Entries of type "Material Receipt"
 - On all inventoriable items in Stock Entries of type "Manufacture" or "Repack"
+- On inventoriable items in Stock Entries of type "Material Transfer" or "Material Transfer for Manufacture" when the transfer_qty is less than original HU qty
 for scrap and finished goods items
 """
 
@@ -22,6 +23,8 @@ def generate_handling_units(doc, method=None):
 		"Manufacture",
 		"Repack",
 		"Send to Subcontractor",
+		"Material Transfer",
+		"Material Transfer for Manufacture",
 	):
 		return doc
 	for row in doc.items:
@@ -35,6 +38,14 @@ def generate_handling_units(doc, method=None):
 			continue
 
 		if row.get("handling_unit"):
+			hu = get_handling_unit(row.get("handling_unit"))
+			qty_field = "transfer_qty" if doc.doctype == "Stock Entry" else "stock_qty"
+			precision = int(frappe.get_precision(row.doctype, qty_field))
+			# If qty is less than Handling Unit stock_qty (within precision number of decimals accuracy), create new Handling Unit for qty
+			if hu.stock_qty - row.get(qty_field) > 1 / (10**precision):
+				handling_unit = frappe.new_doc("Handling Unit")
+				handling_unit.save()
+				row.to_handling_unit = handling_unit.name
 			continue
 
 		if doc.doctype == "Stock Entry" and not (
@@ -69,7 +80,7 @@ def validate_handling_unit_overconsumption(doc, method=None):
 		return doc
 
 	if doc.doctype == "Stock Entry":
-		qty_field = "actual_qty"
+		qty_field = "transfer_qty"
 	else:
 		qty_field = "stock_qty"
 
@@ -79,7 +90,9 @@ def validate_handling_unit_overconsumption(doc, method=None):
 
 		hu = get_handling_unit(row.handling_unit)
 
-		if abs(hu.stock_qty - row.stock_qty) < frappe.get_precision(row.doctype, qty_field):
+		# If qty is greater than Handling Unit stock_qty (within precision number of decimals accuracy), throw overconsumption error
+		precision = int(frappe.get_precision(row.doctype, qty_field))
+		if row.get(qty_field) - hu.stock_qty > 1 / (10**precision):
 			frappe.throw(
 				_(f"Row #{row.idx}: the Handling Unit for Item {row.item_code} has qty of {hu.stock_qty}.")
 			)
