@@ -38,23 +38,19 @@ def execute(filters=None):
 		handling_units = frappe.get_all(
 			"Delivery Note Item", filters={"parent": filters.delivery_note}, pluck="handling_unit"
 		)
-
 	if filters.sales_invoice:
 		handling_units = frappe.get_all(
 			"Sales Invoice Item", filters={"parent": filters.sales_invoice}, pluck="handling_unit"
 		)
-
 	if filters.handling_unit:
 		handling_units = [filters.handling_unit]
 
 	for handling_unit in handling_units:
-
-		results = get_stock_ledger_entries_hu(handling_unit)
-
 		hu_results = []
-		hu_results += results
 
-		for result in results:
+		for result in get_stock_ledger_entries_hu(handling_unit):
+			hu_results.append(result)
+
 			if result["voucher_type"] != "Stock Entry":
 				continue
 
@@ -81,14 +77,12 @@ def execute(filters=None):
 							work_orders[work_order.name] = hu_results
 
 	for work_order, rows in work_orders.items():
-
 		rows = sorted(rows, key=lambda r: r["creation"])
 		data.append({"indent": 0, "work_order": work_order})
 
 		for row in rows:
 			row["indent"] = 1
 			data.append(row)
-
 	return get_columns(), data
 
 
@@ -109,13 +103,6 @@ def get_columns():
 			"options": "voucher_type",
 			"width": 180,
 		},
-		# {
-		# 	"label": _("Stock Ledger Entry"),
-		# 	"fieldname": "name",
-		# 	"fieldtype": 'Link',
-		# 	'options': "Stock Ledger Entry",
-		# 	"width": 180
-		# },
 		{
 			"label": _("Item Code"),
 			"fieldname": "item_code",
