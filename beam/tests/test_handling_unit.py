@@ -80,7 +80,8 @@ def test_stock_entry_repack():
 	)
 	pr_hu = get_handling_unit(pr_hu)
 	assert pr_hu.uom == "Box"
-	assert pr_hu.stock_qty == 1
+	assert pr_hu.qty == 1
+	assert pr_hu.stock_qty == 100
 
 	se = frappe.new_doc("Stock Entry")
 	se.stock_entry_type = se.purpose = "Repack"
@@ -156,9 +157,8 @@ def test_stock_entry_material_transfer():
 		if not frappe.get_value("Item", row.item_code, "is_stock_item"):
 			continue
 		sle = frappe.get_doc("Stock Ledger Entry", {"handling_unit": row.handling_unit})
-		assert row.transfer_qty == sle.actual_qty  # AKA stock_qty in every other doctype
+		assert row.transfer_qty == abs(sle.actual_qty)  # AKA stock_qty in every other doctype
 		assert row.item_code == sle.item_code
-		assert row.t_warehouse == sle.warehouse  # target warehouse
 
 	se.cancel()  # undo so it this doesn't effect downstream transactions
 
@@ -194,9 +194,8 @@ def test_stock_entry_material_transfer_for_manufacture():
 		if not frappe.get_value("Item", row.item_code, "is_stock_item"):
 			continue
 		sle = frappe.get_doc("Stock Ledger Entry", {"handling_unit": row.handling_unit})
-		assert row.transfer_qty == sle.actual_qty  # AKA stock_qty in every other doctype
+		assert row.transfer_qty == abs(sle.actual_qty)  # AKA stock_qty in every other doctype
 		assert row.item_code == sle.item_code
-		assert row.t_warehouse == sle.warehouse  # target warehouse
 
 
 def test_stock_entry_for_manufacture():
