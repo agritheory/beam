@@ -505,26 +505,33 @@ def traceability(settings):
 	se.submit()
 
 	# Stock Entry - Manufacture
-	se = frappe.new_doc("Stock Entry")
-	se.stock_entry_type = se.purpose = "Manufacture"
-	se.work_order = wo.name
-	for item in pr.items:
+	sem = frappe.new_doc("Stock Entry")
+	sem.stock_entry_type = se.purpose = "Manufacture"
+	sem.work_order = wo.name
+	sem.fg_completed_qty = wo.qty
+	for item in se.items:
 		scan = frappe.call(
 			"beam.beam.scan.scan",
 			**{"barcode": str(item.handling_unit), "context": {"frm": "Stock Entry", "doc": se.as_dict()}},
 		)
-		se.append(
+		sem.append(
+			"items",
+			{**scan[0]["context"], "s_warehouse": "Baked Goods - APC", "conversion_factor": 1},
+		)
+		sem.append(
 			"items",
 			{
-				**scan[0]["context"],
-				"s_warehouse": "Baked Goods - APC",
+				"item_code": boms[0].get("item"),
+				"is_finished_item": 1,
+				"qty": wo.qty,
+				"t_warehouse": "Storeroom - APC",
+				"conversion_factor": 1,
+				"allow_zero_valuation_rate": 1,
 			},
 		)
-		se.append(
-			"items", {"item_code": boms[0].get("item"), "qty": wo.qty, "t_warehouse": "Storeroom - APC"}
-		)
-	se.save()
-	se.submit()
+	sem.set_missing_values()
+	sem.save()
+	sem.submit()
 
 	# Delivery Note
 	dn = frappe.get_doc("Delivery Note")
