@@ -51,6 +51,7 @@ def generate_handling_units(doc, method=None):
 
 @frappe.whitelist()
 def validate_handling_unit_overconsumption(doc, method=None):
+	return
 	if doc.doctype == "Sales Invoice" and not doc.update_stock:
 		return doc
 

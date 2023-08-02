@@ -469,6 +469,7 @@ def traceability(settings):
 	pr.posting_date = settings.day
 	pr.set_posting_time = 1
 	pr.buying_price_list = "Bakery Buying"
+	pr.set_warehouse = "Refrigerator - APC"
 
 	for item in wo.required_items:
 		pr.append(
@@ -478,12 +479,14 @@ def traceability(settings):
 				"qty": item.required_qty,
 			},
 		)
+	pr.set_missing_values()
 	pr.save()
 	pr.submit()
 
 	# Stock Entry - Material Transfer for Manufacture
 	se = frappe.new_doc("Stock Entry")
 	se.stock_entry_type = se.purpose = "Material Transfer for Manufacture"
+	se.work_order = wo.name
 	for item in pr.items:
 		scan = frappe.call(
 			"beam.beam.scan.scan",
@@ -493,13 +496,52 @@ def traceability(settings):
 			"items",
 			{
 				**scan[0]["context"],
-				"s_warehouse": item.warehouse,
+				"s_warehouse": "Refrigerator - APC",
 				"t_warehouse": "Baked Goods - APC",
 			},
 		)
+	se.set_missing_values()
 	se.save()
 	se.submit()
 
 	# Stock Entry - Manufacture
+	se = frappe.new_doc("Stock Entry")
+	se.stock_entry_type = se.purpose = "Manufacture"
+	se.work_order = wo.name
+	for item in pr.items:
+		scan = frappe.call(
+			"beam.beam.scan.scan",
+			**{"barcode": str(item.handling_unit), "context": {"frm": "Stock Entry", "doc": se.as_dict()}},
+		)
+		se.append(
+			"items",
+			{
+				**scan[0]["context"],
+				"s_warehouse": "Baked Goods - APC",
+			},
+		)
+		se.append(
+			"items", {"item_code": boms[0].get("item"), "qty": wo.qty, "t_warehouse": "Storeroom - APC"}
+		)
+	se.save()
+	se.submit()
 
 	# Delivery Note
+	dn = frappe.get_doc("Delivery Note")
+	dn.customer = customers[0]
+	dn.posting_date = settings.day
+	dn.company = settings.company
+	dn.set_warehouse = "Storeroom - APC"
+	scan = frappe.call(
+		"beam.beam.scan.scan",
+		**{"barcode": str(item.handling_unit), "context": {"frm": "Delivery Note", "doc": dn.as_dict()}},
+	)
+	se.append(
+		"items",
+		{
+			**scan[0]["context"],
+		},
+	)
+	dn.set_missing_values()
+	dn.save()
+	dn.submit()
