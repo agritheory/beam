@@ -47,6 +47,7 @@ def before_test():
 
 
 def create_test_data():
+	print(f"In setup create_test_data. Defaults: {frappe.defaults.get_defaults().get('company')}")
 	settings = frappe._dict(
 		{
 			"day": datetime.date(

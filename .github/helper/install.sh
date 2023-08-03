@@ -52,7 +52,8 @@ bench start &> bench_run_logs.txt &
 CI=Yes &
 bench --site test_site reinstall --yes --admin-password admin
 
-bench --site test_site install-app erpnext beam
+# bench --site test_site install-app erpnext beam
+echo "POST COMMENTED INSTALL-SITE LINE"
 bench setup requirements --dev
 
 bench start &> bench_run_logs.txt &
