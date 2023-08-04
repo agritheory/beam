@@ -503,47 +503,54 @@ def traceability(settings):
 	se.set_missing_values()
 	se.save()
 	se.submit()
+	frappe.db.commit()
 
 	# Stock Entry - Manufacture
 	sem = frappe.new_doc("Stock Entry")
 	sem.stock_entry_type = se.purpose = "Manufacture"
 	sem.work_order = wo.name
 	sem.fg_completed_qty = wo.qty
+	sem.from_warehouse = "Baked Goods - APC"
+	sem.to_warehouse = "Storeroom - APC"
 	for item in se.items:
 		scan = frappe.call(
 			"beam.beam.scan.scan",
-			**{"barcode": str(item.handling_unit), "context": {"frm": "Stock Entry", "doc": se.as_dict()}},
+			**{"barcode": str(item.handling_unit), "context": {"frm": "Stock Entry", "doc": sem.as_dict()}},
 		)
 		sem.append(
 			"items",
 			{**scan[0]["context"], "s_warehouse": "Baked Goods - APC", "conversion_factor": 1},
 		)
-		sem.append(
-			"items",
-			{
-				"item_code": boms[0].get("item"),
-				"is_finished_item": 1,
-				"qty": wo.qty,
-				"t_warehouse": "Storeroom - APC",
-				"conversion_factor": 1,
-				"allow_zero_valuation_rate": 1,
-			},
-		)
+	sem.append(
+		"items",
+		{
+			"item_code": boms[0].get("item"),
+			"is_finished_item": 1,
+			"qty": wo.qty,
+			"t_warehouse": "Storeroom - APC",
+			"conversion_factor": 1,
+			"allow_zero_valuation_rate": 1,
+		},
+	)
 	sem.set_missing_values()
 	sem.save()
+	sem.fg_completed_qty = wo.qty
 	sem.submit()
 
 	# Delivery Note
-	dn = frappe.get_doc("Delivery Note")
+	dn = frappe.new_doc("Delivery Note")
 	dn.customer = customers[0]
 	dn.posting_date = settings.day
 	dn.company = settings.company
 	dn.set_warehouse = "Storeroom - APC"
+	sed_hu = frappe.get_value(
+		"Stock Entry Detail", {"item_code": boms[0].get("item")}, "handling_unit"
+	)
 	scan = frappe.call(
 		"beam.beam.scan.scan",
-		**{"barcode": str(item.handling_unit), "context": {"frm": "Delivery Note", "doc": dn.as_dict()}},
+		**{"barcode": str(sed_hu), "context": {"frm": "Delivery Note", "doc": dn.as_dict()}},
 	)
-	se.append(
+	dn.append(
 		"items",
 		{
 			**scan[0]["context"],
