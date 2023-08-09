@@ -503,7 +503,6 @@ def traceability(settings):
 	se.set_missing_values()
 	se.save()
 	se.submit()
-	frappe.db.commit()
 
 	# Stock Entry - Manufacture
 	sem = frappe.new_doc("Stock Entry")
