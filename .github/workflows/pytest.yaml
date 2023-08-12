@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - version-14
-      - py_sem_rel_14  # TODO: remove after testing
   pull_request:
     branches:
       - version-14
@@ -46,7 +45,7 @@ jobs:
         with:
           node-version: 14
           check-latest: true
-          cache: 'yarn'  # Should replace `Get yarn cache directory path` and `yarn-cache` steps
+          cache: 'yarn'  # Replaces `Get yarn cache directory path` and `yarn-cache` steps
     
       # Uncomment if running locally, remove after local testing (already available in github actions environment)
       # - name: Install Yarn
