@@ -458,7 +458,7 @@ def test_subcontracting():
 
 
 @pytest.mark.xfail()
-def test_handling_units_overconsumption():
+def test_handling_units_overconsumption_in_material_transfer_stock_entry():
 	se = frappe.new_doc("Stock Entry")
 	se.stock_entry_type = se.purpose = "Material Receipt"
 	se.append(
@@ -517,3 +517,40 @@ def test_handling_units_overconsumption():
 	se.items[0].s_warehouse = "Refrigerator - APC"
 	se.items[0].qty = 8
 	se.save()
+
+
+@pytest.mark.xfail()
+def test_handling_units_overconsumption_in_delivery_note():
+	se = frappe.new_doc("Stock Entry")
+	se.stock_entry_type = se.purpose = "Material Receipt"
+	se.append(
+		"items",
+		{
+			"item_code": "Ambrosia Pie",
+			"qty": 30,
+			"t_warehouse": "Baked Goods - APC",
+			"basic_rate": frappe.get_value("Item Price", {"item_code": "Ambrosia Pie"}, "price_list_rate"),
+		},
+	)
+	se.save()
+	se.submit()
+	handling_unit = se.items[0].handling_unit
+
+	dn = frappe.new_doc("Delivery Note")
+	dn.customer = "Almacs Food Group"
+	scan = frappe.call(
+		"beam.beam.scan.scan",
+		**{
+			"barcode": str(handling_unit),
+			"context": {"frm": dn.doctype, "doc": dn.as_dict()},
+			"current_qty": 1,
+		}
+	)
+	dn.append(
+		"items",
+		{
+			**scan[0]["context"],
+			"qty": 35,
+		},
+	)
+	dn.save()
