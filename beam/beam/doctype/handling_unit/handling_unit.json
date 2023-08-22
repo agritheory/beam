@@ -13,12 +13,15 @@
   {
    "fieldname": "handling_unit_name",
    "fieldtype": "Data",
-   "label": "Handling Unit Name"
+   "label": "Handling Unit Name",
+   "no_copy": 1,
+   "set_only_once": 1,
+   "unique": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-07-11 17:22:17.852534",
+ "modified": "2023-08-22 15:04:08.773589",
  "modified_by": "Administrator",
  "module": "BEAM",
  "name": "Handling Unit",

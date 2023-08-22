@@ -63,29 +63,25 @@ def get_handling_unit(handling_unit: str) -> frappe._dict:
 	if len(sl_entries) == 1:
 		sle = sl_entries[0]
 	else:
-		return
+		return  # no entries exist
 
-	if sle.voucher_type == "Stock Entry":
-		child_doctype = "Stock Entry Detail"
-	else:
-		child_doctype = f"{sle.voucher_type} Item"
+	child_doctype = (
+		"Stock Entry Detail" if sle.voucher_type == "Stock Entry" else f"{sle.voucher_type} Item"
+	)
 
-	_sle = frappe.db.get_value(
+	item = frappe.db.get_value(
 		child_doctype,
 		sle.voucher_detail_no,
-		["uom", "qty", "conversion_factor", "stock_uom", "idx", "item_name"],
+		["uom", "qty", "conversion_factor", "idx", "item_name"],
 		as_dict=True,
 	)
 
-	if _sle:
-		sle.update({**_sle})
-		sle.stock_qty = sle.stock_qty / sle.conversion_factor
+	if item:
+		sle.update({**item})
+		sle.qty = (
+			sle.stock_qty / sle.conversion_factor
+		)  # use conversion factor based on transaction not current conversion factor
 
-	sle.conversion_factor = frappe.get_value(
-		"UOM Conversion Detail",
-		{"parent": sle.item_code, "uom": sle.uom},
-		"conversion_factor",
-	)
 	sle.posting_datetime = (
 		datetime.datetime(sle.posting_date.year, sle.posting_date.month, sle.posting_date.day)
 		+ sle.posting_time

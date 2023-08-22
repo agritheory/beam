@@ -49,7 +49,9 @@ def before_test():
 def create_test_data():
 	settings = frappe._dict(
 		{
-			"day": datetime.date(int(frappe.defaults.get_defaults().get("fiscal_year")), 1, 1),
+			"day": datetime.date(
+				int(frappe.defaults.get_defaults().get("fiscal_year", datetime.datetime.now().year)), 1, 1
+			),
 			"company": frappe.defaults.get_defaults().get("company"),
 			"company_account": frappe.get_value(
 				"Account",
@@ -81,8 +83,12 @@ def create_test_data():
 	create_customers(settings)
 	create_items(settings)
 	create_boms(settings)
-	create_material_request(settings)
-	create_production_plan(settings)
+	prod_plan_from_doc = "Sales Order"
+	if prod_plan_from_doc == "Sales Order":
+		create_sales_order(settings)
+	else:
+		create_material_request(settings)
+	create_production_plan(settings, prod_plan_from_doc)
 
 
 def create_suppliers(settings):
@@ -257,8 +263,6 @@ def create_items(settings):
 		)
 		if i.is_purchase_item and item.get("supplier"):
 			i.append("supplier_items", {"supplier": item.get("supplier")})
-		if i.item_code == "Water":
-			i.is_stock_item = 0
 		if i.item_code == "Parchment Paper":
 			i.append("uoms", {"uom": "Box", "conversion_factor": 100})
 			i.purchase_uom = "Box"
@@ -272,6 +276,31 @@ def create_items(settings):
 			ip.valid_from = "2018-1-1"
 			ip.price_list_rate = item.get("item_price")
 			ip.save()
+
+	water = frappe.new_doc("Stock Entry")
+	water.stock_entry_type = water.purpose = "Material Receipt"
+	water.append(
+		"items",
+		{
+			"item_code": "Water",
+			"qty": 10000000,
+			"t_warehouse": "Refrigerator - APC",
+			"basic_rate": 0.0,
+			"allow_zero_valuation_rate": 1,
+		},
+	)
+	water.append(
+		"items",
+		{
+			"item_code": "Ice Water",
+			"qty": 10000000,
+			"t_warehouse": "Refrigerator - APC",
+			"basic_rate": 0.0,
+			"allow_zero_valuation_rate": 1,
+		},
+	)
+	water.save()
+	water.submit()
 
 
 def create_warehouses(settings):
@@ -312,6 +341,53 @@ def create_boms(settings):
 			b.append("operations", {**operation, "hour_rate": 15.00})
 		b.save()
 		b.submit()
+
+
+def create_sales_order(settings):
+	so = frappe.new_doc("Sales Order")
+	so.transaction_date = settings.day
+	so.customer = customers[0]
+	so.order_type = "Sales"
+	so.currency = "USD"
+	so.selling_price_list = "Bakery Wholesale"
+	so.append(
+		"items",
+		{
+			"item_code": "Ambrosia Pie",
+			"delivery_date": so.transaction_date,
+			"qty": 40,
+			"warehouse": "Baked Goods - APC",
+		},
+	)
+	so.append(
+		"items",
+		{
+			"item_code": "Double Plum Pie",
+			"delivery_date": so.transaction_date,
+			"qty": 40,
+			"warehouse": "Baked Goods - APC",
+		},
+	)
+	so.append(
+		"items",
+		{
+			"item_code": "Gooseberry Pie",
+			"delivery_date": so.transaction_date,
+			"qty": 10,
+			"warehouse": "Baked Goods - APC",
+		},
+	)
+	so.append(
+		"items",
+		{
+			"item_code": "Kaduka Key Lime Pie",
+			"delivery_date": so.transaction_date,
+			"qty": 10,
+			"warehouse": "Baked Goods - APC",
+		},
+	)
+	so.save()
+	so.submit()
 
 
 def create_material_request(settings):
@@ -359,19 +435,29 @@ def create_material_request(settings):
 	mr.submit()
 
 
-def create_production_plan(settings):
+def create_production_plan(settings, prod_plan_from_doc):
 	pp = frappe.new_doc("Production Plan")
 	pp.posting_date = settings.day
 	pp.company = settings.company
-	pp.get_items_from = "Material Request"
-	pp.append(
-		"material_requests",
-		{
-			"material_request": frappe.get_last_doc("Material Request").name,
-		},
-	)
 	pp.combine_sub_items = 1
-	pp.get_mr_items()
+	if prod_plan_from_doc == "Sales Order":
+		pp.get_items_from = "Sales Order"
+		pp.append(
+			"sales_orders",
+			{
+				"sales_order": frappe.get_last_doc("Sales Order").name,
+			},
+		)
+		pp.get_items()
+	else:
+		pp.get_items_from = "Material Request"
+		pp.append(
+			"material_requests",
+			{
+				"material_request": frappe.get_last_doc("Material Request").name,
+			},
+		)
+		pp.get_mr_items()
 	for item in pp.po_items:
 		item.planned_start_date = settings.day
 	pp.get_sub_assembly_items()
