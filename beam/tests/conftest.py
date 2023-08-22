@@ -29,6 +29,7 @@ def monkeymodule():
 @pytest.fixture(scope="session", autouse=True)
 def db_instance():
 	frappe.logger = _get_logger
+  
 	currentsite = "test_site"
 	sites = Path(get_bench_path()) / "sites"
 	if (sites / "currentsite.txt").is_file():

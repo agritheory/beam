@@ -263,8 +263,6 @@ def create_items(settings):
 		)
 		if i.is_purchase_item and item.get("supplier"):
 			i.append("supplier_items", {"supplier": item.get("supplier")})
-		if i.item_code == "Water":
-			i.is_stock_item = 0
 		if i.item_code == "Parchment Paper":
 			i.append("uoms", {"uom": "Box", "conversion_factor": 100})
 			i.purchase_uom = "Box"
@@ -278,6 +276,31 @@ def create_items(settings):
 			ip.valid_from = "2018-1-1"
 			ip.price_list_rate = item.get("item_price")
 			ip.save()
+
+	water = frappe.new_doc("Stock Entry")
+	water.stock_entry_type = water.purpose = "Material Receipt"
+	water.append(
+		"items",
+		{
+			"item_code": "Water",
+			"qty": 10000000,
+			"t_warehouse": "Refrigerator - APC",
+			"basic_rate": 0.0,
+			"allow_zero_valuation_rate": 1,
+		},
+	)
+	water.append(
+		"items",
+		{
+			"item_code": "Ice Water",
+			"qty": 10000000,
+			"t_warehouse": "Refrigerator - APC",
+			"basic_rate": 0.0,
+			"allow_zero_valuation_rate": 1,
+		},
+	)
+	water.save()
+	water.submit()
 
 
 def create_warehouses(settings):
