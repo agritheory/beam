@@ -339,6 +339,9 @@ def create_boms(settings):
 			b.items[-1].bom_no = frappe.get_value("BOM", {"item": item.get("item_code")})
 		for operation in bom.get("operations"):
 			b.append("operations", {**operation, "hour_rate": 15.00})
+		if bom.get("scrap_items"):
+			for scrap_item in bom.get("scrap_items"):
+				b.append("scrap_items", {**scrap_item})
 		b.save()
 		b.submit()
 
