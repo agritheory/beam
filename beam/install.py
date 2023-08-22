@@ -19,9 +19,7 @@ def after_install():
 	for custom_field in frappe.get_all(
 		"Custom Field", {"label": "Target Handling Unit"}, ["name", "dt"]
 	):
-		if custom_field.dt == "Stock Entry Detail":
-			frappe.set_value("Custom Field", custom_field, "read_only", 1)
-		elif custom_field.dt == "Purchase Invoice Item":
+		if custom_field.dt == "Purchase Invoice Item":
 			frappe.set_value("Custom Field", custom_field, "label", "Handling Unit")
 		else:
-			frappe.set_value("Custom Field", custom_field, "hidden", 1)
+			frappe.set_value("Custom Field", custom_field, "read_only", 1)
