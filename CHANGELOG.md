@@ -2,6 +2,19 @@
 
 
 
+## v14.4.0 (2023-08-22)
+
+### Chore
+
+* chore: make HU PK immutable ([`a493326`](https://github.com/agritheory/beam/commit/a493326f5ac0560b9b1264cd954cad66f8e05b8f))
+
+### Unknown
+
+* Merge pull request #50 from agritheory/issue_12
+
+Traceability Reporting ([`cd58dbf`](https://github.com/agritheory/beam/commit/cd58dbff78105e01e5b61ad59ecd1e6f63414263))
+
+
 ## v14.3.1 (2023-08-22)
 
 ### Chore
@@ -24,13 +37,33 @@
 
 * ci: migrate to python semantic release ([`f5fc8e9`](https://github.com/agritheory/beam/commit/f5fc8e9dba79ac0374694317f0cca5f0ec4b97ba))
 
+### Feature
+
+* feat: wip traceability ([`6622be9`](https://github.com/agritheory/beam/commit/6622be975bc439870733b1e95a3c05a31203eff6))
+
+* feat: wip traceability setup data ([`79a892f`](https://github.com/agritheory/beam/commit/79a892f9e3391f9f77a06cdcc2818ecb5b65d86c))
+
+* feat: clean up code ([`dca239d`](https://github.com/agritheory/beam/commit/dca239d275edb07f5df35590db7072a4733c7d9b))
+
+* feat: report improvement, wip script to populate test data ([`e50eb73`](https://github.com/agritheory/beam/commit/e50eb730cc1358e460f612782cb6d49eb7871ca4))
+
+* feat: WIP handling unit traceability ([`293a6d4`](https://github.com/agritheory/beam/commit/293a6d4764442e37b991e684f98fe703efe4b2e0))
+
+* feat: WIP handling unit traceability ([`a613424`](https://github.com/agritheory/beam/commit/a6134246adfcbdcc1f348a479f9c087832341cae))
+
 ### Fix
+
+* fix: remove setup script ([`cfa28a0`](https://github.com/agritheory/beam/commit/cfa28a0ac4d48937ed6c636543f9e6d68b5f9a1d))
 
 * fix: update overconsumption logic to be sensitive to inbound/ outbound transfers ([`8ea7b2a`](https://github.com/agritheory/beam/commit/8ea7b2a12c40ff7002b330a2a3f83788c5632852))
 
 * fix: update overconsumption validation ([`f6d69c0`](https://github.com/agritheory/beam/commit/f6d69c0ad08f9743f6b3dcee0c35f43e56bed846))
 
+* fix: remove unwanted changes ([`aee11b4`](https://github.com/agritheory/beam/commit/aee11b409df30b264fa8f0f389f1baebd8bc3438))
+
 ### Unknown
+
+* Merge branch &#39;version-14&#39; of github.com:agritheory/beam into issue_12 ([`1a6216a`](https://github.com/agritheory/beam/commit/1a6216a54720a7555be20dc8744aa28fee624095))
 
 * Merge pull request #56 from agritheory/fix_overconsumption
 
@@ -45,6 +78,10 @@ ci: add test workflow, migrate to Python semantic release ([`52ed795`](https://g
 * Merge pull request #54 from agritheory/test_data_fixes
 
 chore: update test date for erpnext codebase changes ([`a5a7ede`](https://github.com/agritheory/beam/commit/a5a7ede47b63b19d5d36732337562dc488b1f2b7))
+
+* fix ([`478783e`](https://github.com/agritheory/beam/commit/478783e376d511c19b7a971d6de1ed464b429c2f))
+
+* Merge branch &#39;version-14&#39; of github.com:agritheory/beam into issue_12 ([`25f88d8`](https://github.com/agritheory/beam/commit/25f88d8c2ea86d0aba025c9b890623294fa2ef48))
 
 
 ## v14.3.0 (2023-07-21)
@@ -83,6 +120,8 @@ docs: document features - first pass ([`fb5b7ac`](https://github.com/agritheory/
 ### Feature
 
 * feat: Validate handling unit overconsumption ([`bf34994`](https://github.com/agritheory/beam/commit/bf349947a39954388e2f513d898ef07dc58776a5))
+
+* feat: wip report ([`6df65eb`](https://github.com/agritheory/beam/commit/6df65ebd1831f75b04725bdac196170cd74d8402))
 
 * feat: update listview action ([`549810a`](https://github.com/agritheory/beam/commit/549810a74eb16ca97dd7ed941b194fef75a09729))
 
