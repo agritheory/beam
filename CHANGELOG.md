@@ -2,6 +2,19 @@
 
 
 
+## v14.5.0 (2023-08-23)
+
+### Feature
+
+* feat: Add setting on the BOM Scrap Item to toggle if Handling Unit should be created for scrap ([`d3567d3`](https://github.com/agritheory/beam/commit/d3567d3e3a96612d1018d50ab0695273c3a4840d))
+
+### Unknown
+
+* Merge pull request #59 from agritheory/bom_scrap_config
+
+Add setting on the BOM Scrap Item to toggle if Handling Unit should be created for scrap ([`6a1dec3`](https://github.com/agritheory/beam/commit/6a1dec3b82f964aef0cb726d7ed7f7f3ee43c953))
+
+
 ## v14.4.0 (2023-08-22)
 
 ### Chore
