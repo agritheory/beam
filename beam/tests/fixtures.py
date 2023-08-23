@@ -560,6 +560,10 @@ boms = [
 				"workstation": "Range Station",
 			},
 		],
+		"scrap_items": [
+			{"item_code": "Kakadu Lime", "stock_qty": 1.0, "stock_uom": "Pound", "create_handling_unit": 1},
+			{"item_code": "Limequat", "stock_qty": 0.5, "stock_uom": "Pound", "create_handling_unit": 0},
+		],
 	},
 	{
 		"item": "Gooseberry Pie Filling",

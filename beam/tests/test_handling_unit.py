@@ -210,7 +210,9 @@ def test_stock_entry_for_manufacture():
 	se = make_stock_entry(wo, "Manufacture", 40)
 	# simulate scanning
 	for row in se.get("items"):
-		if row.is_finished_item:  # finished item handling unit will be generated and wouldn't be scanned
+		if (
+			row.is_finished_item or row.is_scrap_item
+		):  # finished and scrap items' handling units will be generated and wouldn't be scanned
 			continue
 		hu = frappe.get_value(
 			"Stock Entry Detail", {"parent": se_tfm, "item_code": row.item_code}, "handling_unit"
@@ -230,13 +232,26 @@ def test_stock_entry_for_manufacture():
 	for row in _se.items:
 		if not frappe.get_value("Item", row.item_code, "is_stock_item"):
 			continue
-		sle = frappe.get_doc("Stock Ledger Entry", {"handling_unit": row.handling_unit})
-		if not row.is_finished_item:
+		sle = frappe.get_doc(
+			"Stock Ledger Entry", {"voucher_detail_no": row.name, "handling_unit": row.handling_unit}
+		)
+		if not row.is_finished_item and not row.is_scrap_item:
 			assert row.transfer_qty == -(sle.actual_qty)  # AKA stock_qty in every other doctype
 			assert row.item_code == sle.item_code
-			assert row.s_warehouse == sle.warehouse  # target warehouse
+			assert row.s_warehouse == sle.warehouse  # source/ warehouse
+			assert sle.handling_unit == row.handling_unit
+		elif row.is_scrap_item:
+			assert row.transfer_qty == sle.actual_qty
+			assert row.item_code == sle.item_code
+			create_handling_unit = frappe.get_value(
+				"BOM Scrap Item", {"item_code": row.item_code, "parent": _se.bom_no}, "create_handling_unit"
+			)
+			if create_handling_unit:
+				assert row.handling_unit == sle.handling_unit
+			else:
+				assert row.handling_unit == None
 		else:
-			assert row.transfer_qty == sle.actual_qty  # AKA stock_qty in every other doctype
+			assert row.transfer_qty == sle.actual_qty
 			assert row.item_code == sle.item_code
 			assert row.t_warehouse == sle.warehouse  # target warehouse
 

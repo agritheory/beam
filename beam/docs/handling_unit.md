@@ -57,6 +57,11 @@ The following screen shot shows the stock ledger for the Cloudberry item. The fi
 
 ![Screen shot of the stock ledger tracking the receipt and a sales of the Cloudberry item.](./assets/stock_ledger_after_sale.png)
 
+## BOM Scrap Item
+In a Manufacturing Stock Entry, scrap items can be toggled to create a handling unit corresponding with their scrap quantity. This can be changed after a BOM is submitted.
+
+![Screen shot of BOM scrap items showing configuration](./assets/bom_scrap_item.png)
+
 ## Stock Entry
 
 ### Material Transfer for Manufacture and Material Transfer
