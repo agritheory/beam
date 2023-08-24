@@ -2,6 +2,21 @@
 
 
 
+## v14.5.1 (2023-08-24)
+
+### Fix
+
+* fix: get_form_action ([`d3fb02f`](https://github.com/agritheory/beam/commit/d3fb02f514adefa1552bb78dd27f108bd9ec1913))
+
+* fix: get_form_action ([`a046349`](https://github.com/agritheory/beam/commit/a0463498225cce65c89766da2f9897a7d76bb51f))
+
+### Unknown
+
+* Merge pull request #61 from agritheory/issue_60
+
+[object Object] bug in Stock Entry ([`23047d9`](https://github.com/agritheory/beam/commit/23047d9f3f974907b03cd9859b1d8795a247cfb5))
+
+
 ## v14.5.0 (2023-08-23)
 
 ### Feature
