@@ -2,7 +2,34 @@
 
 
 
+## v14.6.0 (2023-08-24)
+
+### Documentation
+
+* docs: conform capitalization ([`82957c4`](https://github.com/agritheory/beam/commit/82957c43556478f680efa6cc9f8900f6006986f3))
+
+### Unknown
+
+* Merge pull request #58 from agritheory/issue_36
+
+feat: no copy for hu fields, hide hu field based configured doctypes ([`faf3d70`](https://github.com/agritheory/beam/commit/faf3d70572c26e9830b10be29d5001d9a30d01f0))
+
+* Merge pull request #62 from agritheory/trace_docs
+
+docs: add handling unit traceability report ([`4d03dd1`](https://github.com/agritheory/beam/commit/4d03dd1e4d9fd596f3ea7895b72d21cf3a8e8734))
+
+
 ## v14.5.1 (2023-08-24)
+
+### Chore
+
+* chore: fix item typo ([`b25cefe`](https://github.com/agritheory/beam/commit/b25cefed02341050542ddd394668c4186f720a53))
+
+### Documentation
+
+* docs: add hu traceability screen shot ([`bbec680`](https://github.com/agritheory/beam/commit/bbec680b286839a823f10ac57949262ad64a201b))
+
+* docs: add traceability report ([`d95a34a`](https://github.com/agritheory/beam/commit/d95a34aaa20f57328900dcaa29bedd4700863880))
 
 ### Fix
 
@@ -28,6 +55,8 @@
 * Merge pull request #59 from agritheory/bom_scrap_config
 
 Add setting on the BOM Scrap Item to toggle if Handling Unit should be created for scrap ([`6a1dec3`](https://github.com/agritheory/beam/commit/6a1dec3b82f964aef0cb726d7ed7f7f3ee43c953))
+
+* Merge branch &#39;version-14&#39; of github.com:agritheory/beam into issue_36 ([`4fe6190`](https://github.com/agritheory/beam/commit/4fe619052d6df0f0f4eaff899a45f60d170e79de))
 
 
 ## v14.4.0 (2023-08-22)
@@ -119,6 +148,8 @@ chore: update test date for erpnext codebase changes ([`a5a7ede`](https://github
 * docs: move warehouse section, fix formatting and spelling ([`058ccba`](https://github.com/agritheory/beam/commit/058ccba8484caf8510274372d25c972840b013ef))
 
 ### Feature
+
+* feat: no copy for hu fields, hide hu field based configured doctypes ([`ac62bd8`](https://github.com/agritheory/beam/commit/ac62bd8547123512dbca35506f9b293097684618))
 
 * feat: rename function, add purchase return case ([`fbad47a`](https://github.com/agritheory/beam/commit/fbad47ab8dc6d724835bea2910489cb79dee92cd))
 
