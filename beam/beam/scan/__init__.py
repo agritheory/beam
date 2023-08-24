@@ -216,8 +216,6 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 					if "." in action.get("target"):
 						serialized_target = action.get("target").split(".")
 						action["target"] = target.get(serialized_target[1])
-					else:
-						action["target"] = target
 				return override_action
 
 	actions = frm.get(barcode_doc.doc.doctype, {}).get(context.frm, [])
