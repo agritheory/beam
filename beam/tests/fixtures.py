@@ -250,9 +250,9 @@ items = [
 		"supplier": "Chelsea Fruit Co",
 	},
 	{
-		"item_code": "Kakadu Lime",
+		"item_code": "Kaduka Lime",
 		"uom": "Pound",
-		"description": "Kakadu Lime",
+		"description": "Kaduka Lime",
 		"item_group": "Ingredients",
 		"item_price": 13.38,
 		"default_warehouse": "Storeroom - APC",
@@ -543,7 +543,7 @@ boms = [
 			{"item_code": "Cornstarch", "qty": 0.1, "qty_consumed_per_unit": 0.005, "uom": "Pound"},
 			{"item_code": "Water", "qty": 1.25, "qty_consumed_per_unit": 0.0625, "uom": "Cup"},
 			{"item_code": "Butter", "qty": 0.313, "qty_consumed_per_unit": 0.01565, "uom": "Pound"},
-			{"item_code": "Kakadu Lime", "qty": 10.0, "qty_consumed_per_unit": 0.0335, "uom": "Pound"},
+			{"item_code": "Kaduka Lime", "qty": 10.0, "qty_consumed_per_unit": 0.0335, "uom": "Pound"},
 			{"item_code": "Limequat", "qty": 5.0, "qty_consumed_per_unit": 0.01675, "uom": "Pound"},
 		],
 		"operations": [
@@ -561,7 +561,7 @@ boms = [
 			},
 		],
 		"scrap_items": [
-			{"item_code": "Kakadu Lime", "stock_qty": 1.0, "stock_uom": "Pound", "create_handling_unit": 1},
+			{"item_code": "Kaduka Lime", "stock_qty": 1.0, "stock_uom": "Pound", "create_handling_unit": 1},
 			{"item_code": "Limequat", "stock_qty": 0.5, "stock_uom": "Pound", "create_handling_unit": 0},
 		],
 	},
