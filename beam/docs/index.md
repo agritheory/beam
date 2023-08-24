@@ -22,9 +22,9 @@ Read more about [how scanning in form views works](./form.md).
 
 ## What is a Handling Unit?
 
-A handling unit is the combination of a container, any packaging material, and the items within or on it. This could be a pallet of raw materials used in a manufacturing process, a crate containing several other handling units, or a delivery vehicle transporting .
+A handling unit is the combination of a container, any packaging material, and the items within or on it. This could be a pallet of raw materials used in a manufacturing process, a crate containing several other handling units, or a delivery vehicle transporting the crates and pallets.
 
-Handling units have unique, scannable identification numbers that are used in any stock transaction involving the items contained within the unit. The ID allows the user to reference everything about the stock transaction, saved from previous transactions.
+Handling units have unique, scannable identification numbers that are used in any stock transaction involving the items contained within the unit. The ID allows the user to reference everything about the stock transaction, saved from previous transactions. It also enables you to track the handling unit throughout its life cycle. The Beam application includes a [Handling Unit Traceability report](./hu_traceability_report.md) to summarize the transactions, related documents, quantities, and warehouses that involved a given handling unit.
 
 A handling unit is generated when materials are received or created in the manufacturing process.
 
