@@ -93,6 +93,13 @@ def print_handling_units(
 		# only print output / scrap items from Stock Entry
 		if doctype == "Stock Entry" and not row.get("t_warehouse"):
 			continue
+		# if one of the transfer types, use the 'to_handling_unit' field instead
+		if doctype == "Stock Entry" and doc.get("purpose") in (
+			"Material Transfer",
+			"Send to Subcontractor",
+			"Material Transfer for Manufacture",
+		):
+			handling_unit = frappe.get_doc("Handling Unit", row.get("to_handling_unit"))
 		else:
 			handling_unit = frappe.get_doc("Handling Unit", row.get("handling_unit"))
 		print_by_server(

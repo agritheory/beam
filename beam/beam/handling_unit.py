@@ -34,6 +34,12 @@ def generate_handling_units(doc, method=None):
 			precision_denominator = 1 / pow(100, frappe.get_precision(row.doctype, "actual_qty"))
 			hu = get_handling_unit(row.handling_unit)
 			# transfer the entire handling unit's quantity
+			print(
+				hu.stock_qty,
+				row.actual_qty,
+				abs(hu.stock_qty - row.actual_qty) == 0.0,
+				abs(hu.stock_qty - row.actual_qty) < precision_denominator,
+			)
 			if abs(hu.stock_qty - row.actual_qty) == 0.0 or (
 				abs(hu.stock_qty - row.actual_qty) < precision_denominator
 			):
