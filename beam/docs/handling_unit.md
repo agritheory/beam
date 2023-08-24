@@ -27,7 +27,7 @@ For Purchase Invoices with "Update Stock" checked, Handling Units are generated 
 When "Update Stock" is _not_ checked, they can be scanned to facilitate data entry but there's no effect in the Stock Ledger.
 
 ## Delivery Note
-For Delivery Note, Handling Units are consumed. In the case where less than the total quantity associated with the Handling Unit is being delivered, the existing handling unit will refer to the remaining (net) quantity.
+For Delivery Note, Handling Units are consumed. In the case where less than the total quantity associated with the Handling Unit is being delivered, the existing Handling Unit will refer to the remaining (net) quantity.
 
 | Item             | Warehouse          | Handling Unit  |       Quantity |
 | ---------------- | ------------------ | -------------- | --------------:|
@@ -40,7 +40,7 @@ Stock Ledger or subsequent transaction
 
 
 ## Sales Invoice
-For a Sales Invoice where "Update Stock" is checked, Handling Units are consumed. In the case where less than the total quantity associated with the Handling Unit is being delivered, the existing handling unit will refer to the remaining (net) quantity.
+For a Sales Invoice where "Update Stock" is checked, Handling Units are consumed. In the case where less than the total quantity associated with the Handling Unit is being delivered, the existing Handling Unit will refer to the remaining (net) quantity.
 
 | Item             | Warehouse          | Handling Unit  |       Quantity |
 | ---------------- | ------------------ | -------------- | --------------:|
@@ -58,7 +58,7 @@ The following screen shot shows the stock ledger for the Cloudberry item. The fi
 ![Screen shot of the stock ledger tracking the receipt and a sales of the Cloudberry item.](./assets/stock_ledger_after_sale.png)
 
 ## BOM Scrap Item
-In a Manufacturing Stock Entry, scrap items can be toggled to create a handling unit corresponding with their scrap quantity. This can be changed after a BOM is submitted.
+In a Manufacturing Stock Entry, scrap items can be toggled to create a Handling Unit corresponding with their scrap quantity. This can be changed after a BOM is submitted.
 
 ![Screen shot of BOM scrap items showing configuration](./assets/bom_scrap_item.png)
 
@@ -73,7 +73,7 @@ In a case where the entire quantity associated with a Handling Unit is moved fro
 | Cocoplum         | Storeroom          |            123 |         -40 Ea |
 | Cocoplum         | Work In Progress   |            123 |          40 Ea |
 
-In a case where less than the total quantity associated with a Handling Unit is moved from one warehouse to another, a new handling unit is generated for the new units. Subsequent scans or lookups of the original handling unit (123) will return the remainder or net quantity.
+In a case where less than the total quantity associated with a Handling Unit is moved from one warehouse to another, a new Handling Unit is generated for the new units. Subsequent scans or lookups of the original Handling Unit (123) will return the remainder or net quantity.
 
 | Item             | Warehouse          | Handling Unit  |       Quantity |
 | ---------------- | ------------------ | -------------- | --------------:|
@@ -89,7 +89,7 @@ In a case where the entire quantity associated with a Handling Unit is moved fro
 | Cocoplum         | Storeroom               |            123 |         -40 Ea |
 | Cocoplum         | Subcontractor Warehouse |            123 |          40 Ea |
 
-In a case where less than the total quantity associated with a Handling Unit is moved from one warehouse to another, a new handling unit is generated for the new units. Subsequent scans or lookups of the original handling unit (123) will return the remainder or net quantity.
+In a case where less than the total quantity associated with a Handling Unit is moved from one warehouse to another, a new Handling Unit is generated for the new units. Subsequent scans or lookups of the original Handling Unit (123) will return the remainder or net quantity.
 
 | Item             | Warehouse               | Handling Unit  |       Quantity |
 | ---------------- | ----------------------- | -------------- | --------------:|
@@ -106,7 +106,7 @@ In the case of a Repack, Material Issue or Material Consumption for Manufacture,
 | Cocoplum         | Storeroom          |            789 |    1 Box of 40 |
 
 
-In a case where less than the total quantity associated with a Handling Unit is consumed, subsequent scans or lookups of the original handling unit (123) will return the remainder or net quantity.
+In a case where less than the total quantity associated with a Handling Unit is consumed, subsequent scans or lookups of the original Handling Unit (123) will return the remainder or net quantity.
 
 | Item             | Warehouse          | Handling Unit  |       Quantity |
 | ---------------- | ------------------ | -------------- | --------------:|
@@ -114,7 +114,7 @@ In a case where less than the total quantity associated with a Handling Unit is 
 | Cocoplum Puree   | Work In Progress   |            012 |        1 liter |
 | Cocoplum         | Scrap              |                |           1 Ea |
 
-A feature is planned to allow setting the BOM Scrap Item to toggle if a handling unit should be created.
+A feature is planned to allow setting the BOM Scrap Item to toggle if a Handling Unit should be created.
 
 ### Material Issue, Material Consumption for Manufacture
 
