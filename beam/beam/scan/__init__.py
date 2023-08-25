@@ -55,6 +55,7 @@ def get_handling_unit(handling_unit: str) -> frappe._dict:
 			"stock_uom",
 			"voucher_type",
 			"voucher_detail_no",
+			"warehouse",
 		],
 		group_by="handling_unit",
 		order_by="posting_date DESC",

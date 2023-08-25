@@ -116,7 +116,7 @@ doc_events = {
 		]
 	},
 	"Purchase Receipt": {
-		"on_submit": [
+		"before_submit": [
 			"beam.beam.handling_unit.generate_handling_units",
 		],
 		"validate": [
@@ -124,7 +124,7 @@ doc_events = {
 		],
 	},
 	"Purchase Invoice": {
-		"on_submit": [
+		"before_submit": [
 			"beam.beam.handling_unit.generate_handling_units",
 		],
 	},
@@ -132,7 +132,7 @@ doc_events = {
 		"validate": [
 			"beam.beam.handling_unit.validate_handling_unit_overconsumption",
 		],
-		"on_submit": [
+		"before_submit": [
 			"beam.beam.handling_unit.generate_handling_units",
 		],
 	},
