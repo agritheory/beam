@@ -57,22 +57,20 @@ The following screen shot shows the stock ledger for the Cloudberry item. The fi
 
 ![Screen shot of the stock ledger tracking the receipt and a sales of the Cloudberry item.](./assets/stock_ledger_after_sale.png)
 
-## BOM Scrap Item
-In a Manufacturing Stock Entry, scrap items can be toggled to create a Handling Unit corresponding with their scrap quantity. This can be changed after a BOM is submitted.
-
-![Screen shot of BOM scrap items showing configuration](./assets/bom_scrap_item.png)
-
 ## Stock Entry
 
 ### Send to Contractor, Material Transfer for Manufacture and Material Transfer
 When material is transferred from one warehouse to another, it will generate a new Handling Unit, even if the entire Handling Unit is being transferred. In a case where less than the total quantity associated with a Handling Unit is moved from one warehouse to another, a new Handling Unit is generated for the new units. Subsequent scans or lookups of the original Handling Unit (123) will return the remainder or net quantity.
 
+| Item             | Warehouse               | Handling Unit  |       Quantity |
+| ---------------- | ----------------------- | -------------- | --------------:|
+| Cocoplum         | Storeroom               |            123 |         -40 Ea |
+| Cocoplum         | Subcontractor Warehouse |            456 |          40 Ea |
 
 | Item             | Warehouse          | Handling Unit  |       Quantity |
 | ---------------- | ------------------ | -------------- | --------------:|
-| Cocoplum         | Storeroom          |            123 |         -40 Ea |
-| Cocoplum         | Work In Progress   |            456 |          40 Ea |
-
+| Cocoplum         | Storeroom          |            123 |         -20 Ea |
+| Cocoplum         | Work In Progress   |            456 |          20 Ea |
 
 
 ### Repack and Manufacture
