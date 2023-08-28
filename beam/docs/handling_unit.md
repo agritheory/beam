@@ -96,7 +96,6 @@ In a Manufacturing or Repack Stock Entry, scrap items can be toggled to create a
 
 ![Screen shot of BOM scrap items showing configuration](./assets/bom_scrap_item.png)
 
-
 ### Material Issue, Material Consumption for Manufacture
 
 In both these cases, there is no offsetting movement or creation of items.
