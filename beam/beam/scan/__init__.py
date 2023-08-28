@@ -41,7 +41,7 @@ def get_barcode_context(barcode: str) -> Union[frappe._dict, None]:
 	)
 
 
-def get_handling_unit(handling_unit: str) -> frappe._dict:
+def get_handling_unit(handling_unit: str, parent_doctype: Optional[str] = None) -> frappe._dict:
 	sl_entries = frappe.get_all(
 		"Stock Ledger Entry",
 		filters={"handling_unit": handling_unit},
@@ -69,10 +69,18 @@ def get_handling_unit(handling_unit: str) -> frappe._dict:
 		"Stock Entry Detail" if sle.voucher_type == "Stock Entry" else f"{sle.voucher_type} Item"
 	)
 
+	child_fields = ["uom", "qty", "conversion_factor", "idx", "item_name"]
+
+	if parent_doctype == "Packing Slip" and child_doctype in [
+		"Delivery Note Item",
+		"Sales Invoice Item",
+	]:
+		child_fields.append("dn_detail")
+
 	item = frappe.db.get_value(
 		child_doctype,
 		sle.voucher_detail_no,
-		["uom", "qty", "conversion_factor", "idx", "item_name"],
+		child_fields,
 		as_dict=True,
 	)
 
@@ -149,7 +157,7 @@ def get_list_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[dict[str, Any]]:
 	target = None
 	if barcode_doc.doc.doctype == "Handling Unit":
-		hu_details = get_handling_unit(barcode_doc.doc.name)
+		hu_details = get_handling_unit(barcode_doc.doc.name, context.frm)
 		if context.frm == "Stock Entry":
 			target = get_stock_entry_item_details(context.doc, hu_details.item_code)
 		elif context.frm in ("Putaway Rule", "Warranty Claim", "Item Price", "Quality Inspection"):
