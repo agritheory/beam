@@ -413,15 +413,13 @@ def test_stock_entry_material_transfer():
 		sle = frappe.get_doc("Stock Ledger Entry", {"handling_unit": row.handling_unit})
 		hu = get_handling_unit(str(row.handling_unit))
 		assert row.transfer_qty == abs(sle.actual_qty)
-		assert hu.stock_qty == 95  # net qty
+		assert hu.stock_qty == 100  # restored qty
 		assert row.item_code == sle.item_code
 		assert row.s_warehouse == sle.warehouse  # source warehouse
 
 		tsle = frappe.get_doc("Stock Ledger Entry", {"handling_unit": row.to_handling_unit})
 		hu = get_handling_unit(str(row.to_handling_unit))
-		assert row.transfer_qty == abs(tsle.actual_qty)
-		assert hu.stock_qty == 5
-		assert row.t_warehouse == tsle.warehouse  # target warehouse
+		assert hu == None  # no handling units found as transaction was cancelled
 
 
 def test_stock_entry_for_send_to_subcontractor():
