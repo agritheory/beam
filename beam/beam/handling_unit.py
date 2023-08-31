@@ -31,17 +31,9 @@ def generate_handling_units(doc, method=None):
 			in ("Material Transfer", "Send to Subcontractor", "Material Transfer for Manufacture")
 			and row.handling_unit
 		):
-			precision_denominator = 1 / pow(100, frappe.get_precision(row.doctype, "actual_qty"))
-			hu = get_handling_unit(row.handling_unit)
-			# transfer the entire handling unit's quantity
-			if abs(hu.stock_qty - row.actual_qty) == 0.0 or (
-				abs(hu.stock_qty - row.actual_qty) < precision_denominator
-			):
-				row.to_handling_unit = row.handling_unit
-			else:  # transfer less than the entire handling unit's quantity, generate an new HU
-				handling_unit = frappe.new_doc("Handling Unit")
-				handling_unit.save()
-				row.to_handling_unit = handling_unit.name
+			handling_unit = frappe.new_doc("Handling Unit")
+			handling_unit.save()
+			row.to_handling_unit = handling_unit.name
 			continue
 
 		if doc.doctype == "Stock Entry" and doc.purpose == "Manufacture" and row.is_scrap_item:

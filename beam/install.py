@@ -24,7 +24,8 @@ def after_install():
 		if custom_field.dt == "Purchase Invoice Item":
 			frappe.set_value("Custom Field", custom_field, "label", "Handling Unit")
 		else:
-			frappe.set_value("Custom Field", custom_field, "hidden", 1)
+			frappe.set_value("Custom Field", custom_field, "read_only", 1)
+			frappe.set_value("Custom Field", custom_field["name"], "no_copy", 1)
 
 	frm_doctypes = get_scan_doctypes()["frm"]
 
@@ -36,3 +37,4 @@ def after_install():
 			and custom_field["dt"].replace(" Item", "").replace(" Detail", "") not in frm_doctypes
 		):
 			frappe.set_value("Custom Field", custom_field["name"], "read_only", 1)
+			frappe.set_value("Custom Field", custom_field["name"], "no_copy", 1)
