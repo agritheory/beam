@@ -2,6 +2,45 @@
 
 
 
+## v14.7.0 (2023-08-31)
+
+### Chore
+
+* chore: fix item typo ([`b3da188`](https://github.com/agritheory/beam/commit/b3da18892dc99b3b9b6425f848139c76bcd7514f))
+
+### Documentation
+
+* docs: update HU docs w/ net qty details ([`20e25e7`](https://github.com/agritheory/beam/commit/20e25e72b9d5acb4286319227d41c39224722162))
+
+* docs: conform capitalization ([`9810f08`](https://github.com/agritheory/beam/commit/9810f085140662f92ea525def8ce7a1b88262c74))
+
+* docs: add hu traceability screen shot ([`e1bf5d2`](https://github.com/agritheory/beam/commit/e1bf5d218a00ac60520622d10fdcce60dc3bf7f4))
+
+* docs: add traceability report ([`ccf6e27`](https://github.com/agritheory/beam/commit/ccf6e2781851eaed92ab1bb3279dd646677e0c8d))
+
+* docs: update HU docs w/ net qty details ([`2c82e97`](https://github.com/agritheory/beam/commit/2c82e970171d182967485bd93102dce38bb757ee))
+
+### Feature
+
+* feat: no copy for hu fields, hide hu field based configured doctypes ([`1d89434`](https://github.com/agritheory/beam/commit/1d894348f4cfd921f75971ee44563af51e2d3cc8))
+
+### Fix
+
+* fix: get_form_action ([`ad217d9`](https://github.com/agritheory/beam/commit/ad217d9e9e65dafefded92a9d5bf79537f81d543))
+
+* fix: get_form_action ([`e142f1e`](https://github.com/agritheory/beam/commit/e142f1ecd39067dff4980006b46efe8f1a1cfae4))
+
+* fix: make all transfers use a new handling unit ([`397614b`](https://github.com/agritheory/beam/commit/397614bfd188fb503831d7e9dac7f85d1cb19899))
+
+### Unknown
+
+* Merge pull request #63 from agritheory/net_qty_fix
+
+Net qty fix ([`3fdf19d`](https://github.com/agritheory/beam/commit/3fdf19dfba4e9b301db021a9ff2f63d8471e8598))
+
+* Merge branch &#39;version-14&#39; into net_qty_fix ([`d2fd37e`](https://github.com/agritheory/beam/commit/d2fd37ec53783fd42f1bfe97be4ce110fcaca7c0))
+
+
 ## v14.6.0 (2023-08-24)
 
 ### Documentation
@@ -42,6 +81,8 @@ docs: add handling unit traceability report ([`4d03dd1`](https://github.com/agri
 * Merge pull request #61 from agritheory/issue_60
 
 [object Object] bug in Stock Entry ([`23047d9`](https://github.com/agritheory/beam/commit/23047d9f3f974907b03cd9859b1d8795a247cfb5))
+
+* wip: better net qty logic ([`cad8178`](https://github.com/agritheory/beam/commit/cad8178f03377f8308a9a2f83ecaca099b3e6865))
 
 
 ## v14.5.0 (2023-08-23)
