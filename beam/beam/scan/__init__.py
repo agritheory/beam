@@ -70,13 +70,7 @@ def get_handling_unit(handling_unit: str, parent_doctype: Optional[str] = None) 
 		"Stock Entry Detail" if sle.voucher_type == "Stock Entry" else f"{sle.voucher_type} Item"
 	)
 
-	child_fields = ["uom", "qty", "conversion_factor", "idx", "item_name"]
-
-	if parent_doctype == "Packing Slip" and child_doctype in [
-		"Delivery Note Item",
-		"Sales Invoice Item",
-	]:
-		child_fields.append("dn_detail")
+	child_fields = ["uom", "qty", "conversion_factor", "idx", "item_name", "name"]
 
 	item = frappe.db.get_value(
 		child_doctype,
@@ -84,6 +78,13 @@ def get_handling_unit(handling_unit: str, parent_doctype: Optional[str] = None) 
 		child_fields,
 		as_dict=True,
 	)
+
+	if parent_doctype == "Packing Slip":
+		delivery_note_item = frappe.get_all(
+			"Delivery Note Item", {"handling_unit": handling_unit, "docstatus": 0}, pluck="name"
+		)
+		if delivery_note_item:
+			sle.dn_detail = delivery_note_item[0]
 
 	if item:
 		sle.update({**item})
@@ -186,6 +187,7 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 				if target.conversion_factor
 				else hu_details.stock_qty,
 				"posting_datetime": hu_details.posting_datetime,
+				"dn_detail": hu_details.dn_detail,
 			}
 		)
 	elif barcode_doc.doc.doctype == "Item":
@@ -457,6 +459,13 @@ frm = {
 				"doctype": "Packing Slip Item",
 				"field": "warehouse",
 				"target": "target.warehouse",
+				"context": "target",
+			},
+			{
+				"action": "add_or_associate",
+				"doctype": "Packing Slip Item",
+				"field": "dn_detail",
+				"target": "target.dn_detail",
 				"context": "target",
 			},
 		],
