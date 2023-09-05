@@ -66,6 +66,7 @@ class ScanHandler {
 			const context = this.reduceContext()
 			frappe.xcall('beam.beam.scan.scan', { barcode: sCode, context: context, current_qty: iQty }).then(r => {
 				if (r && r.length) {
+					console.log(r)
 					if (Object.keys(frappe.boot.beam.client).includes(r[0].action)) {
 						let path = frappe.boot.beam.client[r[0].action][0]
 						resolve(path.split('.').reduce((o, i) => o[i], window)(r)) // calls (first) custom built callback registered in hooks
