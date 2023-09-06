@@ -2,6 +2,23 @@
 
 
 
+## v14.8.0 (2023-09-06)
+
+### Feature
+
+* feat: dn_detail in packing slip ([`e7010d0`](https://github.com/agritheory/beam/commit/e7010d09109d392c5610552a1be0ae84425c3ed4))
+
+### Fix
+
+* fix: remove log ([`06af179`](https://github.com/agritheory/beam/commit/06af179152fb76e5fbfd616ac81fd5778c6338b6))
+
+### Unknown
+
+* Merge pull request #64 from agritheory/issue_57
+
+Scans in Packing Slip form should also return and set dn_detail ([`6651f00`](https://github.com/agritheory/beam/commit/6651f00b3166c946f82a60981d1e0dc177014301))
+
+
 ## v14.7.0 (2023-08-31)
 
 ### Chore
@@ -21,6 +38,8 @@
 * docs: update HU docs w/ net qty details ([`2c82e97`](https://github.com/agritheory/beam/commit/2c82e970171d182967485bd93102dce38bb757ee))
 
 ### Feature
+
+* feat: parent_doctype arg in get_handling_unit ([`4b8a223`](https://github.com/agritheory/beam/commit/4b8a22321d7c69f9df91d81d27696dda725f0fbc))
 
 * feat: no copy for hu fields, hide hu field based configured doctypes ([`1d89434`](https://github.com/agritheory/beam/commit/1d894348f4cfd921f75971ee44563af51e2d3cc8))
 
