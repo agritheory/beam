@@ -41,7 +41,7 @@ def get_barcode_context(barcode: str) -> Union[frappe._dict, None]:
 	)
 
 
-def get_handling_unit(handling_unit: str) -> frappe._dict:
+def get_handling_unit(handling_unit: str, parent_doctype: Optional[str] = None) -> frappe._dict:
 	sl_entries = frappe.get_all(
 		"Stock Ledger Entry",
 		filters={"handling_unit": handling_unit},
@@ -73,9 +73,16 @@ def get_handling_unit(handling_unit: str) -> frappe._dict:
 	item = frappe.db.get_value(
 		child_doctype,
 		sle.voucher_detail_no,
-		["uom", "qty", "conversion_factor", "idx", "item_name"],
+		["uom", "qty", "conversion_factor", "idx", "item_name", "name"],
 		as_dict=True,
 	)
+
+	if parent_doctype == "Packing Slip":
+		delivery_note_item = frappe.get_all(
+			"Delivery Note Item", {"handling_unit": handling_unit, "docstatus": 0}, pluck="name"
+		)
+		if delivery_note_item:
+			sle.dn_detail = delivery_note_item[0]
 
 	if item:
 		sle.update({**item})
@@ -150,7 +157,7 @@ def get_list_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[dict[str, Any]]:
 	target = None
 	if barcode_doc.doc.doctype == "Handling Unit":
-		hu_details = get_handling_unit(barcode_doc.doc.name)
+		hu_details = get_handling_unit(barcode_doc.doc.name, context.frm)
 		if context.frm == "Stock Entry":
 			target = get_stock_entry_item_details(context.doc, hu_details.item_code)
 		elif context.frm in ("Putaway Rule", "Warranty Claim", "Item Price", "Quality Inspection"):
@@ -178,6 +185,7 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 				if target.conversion_factor
 				else hu_details.stock_qty,
 				"posting_datetime": hu_details.posting_datetime,
+				"dn_detail": hu_details.dn_detail,
 			}
 		)
 	elif barcode_doc.doc.doctype == "Item":
@@ -449,6 +457,13 @@ frm = {
 				"doctype": "Packing Slip Item",
 				"field": "warehouse",
 				"target": "target.warehouse",
+				"context": "target",
+			},
+			{
+				"action": "add_or_associate",
+				"doctype": "Packing Slip Item",
+				"field": "dn_detail",
+				"target": "target.dn_detail",
 				"context": "target",
 			},
 		],

@@ -348,9 +348,9 @@ def test_packing_slip():
 		"items",
 		{
 			**scan[0]["context"],
-			"dn_detail": dn.items[0].name,  # TODO: this value should be returned and set here
 		},
 	)
+	assert ps.items[0].dn_detail == dn.items[0].name
 	ps.save()
 	ps.submit()
 	# assert no SL entries
