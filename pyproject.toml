@@ -1,7 +1,7 @@
 [project]
 name = "beam"
 authors = [
-    { name = "AgriTheory", email = "support@agritheory.com"}
+    { name = "AgriTheory", email = "support@agritheory.dev"}
 ]
 description = "Barcode Scanning for ERPNext"
 requires-python = ">=3.10"
