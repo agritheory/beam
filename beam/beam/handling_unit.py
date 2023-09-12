@@ -127,18 +127,10 @@ def get_handling_units_for_recombine(doc: str) -> list:
 	handling_unit_pairs = []
 	for row in doc.items:
 		print(row.item_code, row.to_handling_unit, row.handling_unit)
-		if row.to_handling_unit:
-			handling_unit_pairs.append(
-				(
-					get_handling_unit(row.handling_unit),
-					get_handling_unit(row.to_handling_unit),
-				)
+		handling_unit_pairs.append(
+			(
+				get_handling_unit(row.handling_unit),
+				get_handling_unit(row.to_handling_unit),
 			)
-		else:
-			handling_unit_pairs.append(
-				(
-					get_handling_unit(row.handling_unit),
-					get_handling_unit(row.handling_unit),
-				)
-			)
+		)
 	return handling_unit_pairs
