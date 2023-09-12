@@ -1,15 +1,12 @@
+import json
+
 import frappe
 from erpnext.stock.stock_ledger import NegativeStockError
 
 from beam.beam.scan import get_handling_unit
 
 """
-Handling Units will be generated in the following cases:
-- On all inventoriable items in a Purchase Receipt
-- On all inventoriable items in a Purchase Invoice marked "Updated Stock"
-- On all inventoriable items in Stock Entries of type "Material Receipt"
-- On all inventoriable items in Stock Entries of type "Manufacture" or "Repack"
-for scrap and finished goods items
+See docs/handling_unit.md
 """
 
 
@@ -122,3 +119,26 @@ def validate_handling_unit_overconsumption(doc, method=None):
 			)
 
 	return doc
+
+
+@frappe.whitelist()
+def get_handling_units_for_recombine(doc: str) -> list:
+	doc = frappe.get_doc(**json.loads(doc)) if isinstance(doc, str) else doc
+	handling_unit_pairs = []
+	for row in doc.items:
+		print(row.item_code, row.to_handling_unit, row.handling_unit)
+		if row.to_handling_unit:
+			handling_unit_pairs.append(
+				(
+					get_handling_unit(row.handling_unit),
+					get_handling_unit(row.to_handling_unit),
+				)
+			)
+		else:
+			handling_unit_pairs.append(
+				(
+					get_handling_unit(row.handling_unit),
+					get_handling_unit(row.handling_unit),
+				)
+			)
+	return handling_unit_pairs
