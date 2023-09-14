@@ -211,7 +211,19 @@ def test_cancellation_of_stock_entry_material_transfer_for_manufacture():
 		assert row.t_warehouse == sle.warehouse  # target warehouse
 		if hu.stock_qty != abs(sle.actual_qty):
 			assert row.handling_unit != row.to_handling_unit
+		frappe.call(
+			"beam.beam.overrides.stock_entry.set_rows_to_recombine",
+			{"docname": se.name, "to_recombine": [_se.items[0].name]},
+		)
+		_se.reload_doc()
 		_se.cancel()
+		for row in _se.items:
+			if row.recombine_on_cancel:
+				hu = get_handling_unit(row.to_handling_unit)
+				assert hu == None
+			else:
+				hu = get_handling_unit(row.to_handling_unit)
+				assert hu.qty > 0
 
 
 def test_stock_entry_for_manufacture():
