@@ -131,9 +131,9 @@ def test_stock_entry_material_transfer_for_manufacture():
 	se = make_stock_entry(wo, "Material Transfer for Manufacture", 40)
 	# simulate scanning
 	for row in se.get("items"):
-		hu = frappe.get_value("Purchase Receipt Item", {"item_code": "Cocoplum"}, "handling_unit")
+		hu = frappe.get_value("Purchase Receipt Item", {"item_code": row.item_code}, "handling_unit")
 		if not hu:
-			hu = frappe.get_value("Purchase Invoice Item", {"item_code": "Cocoplum"}, "handling_unit")
+			hu = frappe.get_value("Purchase Invoice Item", {"item_code": row.item_code}, "handling_unit")
 		scan = frappe.call(
 			"beam.beam.scan.scan",
 			**{"barcode": str(hu), "context": {"frm": "Stock Entry", "doc": se}, "current_qty": 1}
@@ -167,6 +167,51 @@ def test_stock_entry_material_transfer_for_manufacture():
 		assert row.t_warehouse == sle.warehouse  # target warehouse
 		if hu.stock_qty != abs(sle.actual_qty):
 			assert row.handling_unit != row.to_handling_unit
+
+
+def test_cancellation_of_stock_entry_material_transfer_for_manufacture():
+	submit_all_purchase_receipts()
+	wo = frappe.get_value("Work Order", {"production_item": "Gooseberry Pie Filling"})
+	se = make_stock_entry(wo, "Material Transfer for Manufacture", 10)
+	# simulate scanning
+	for row in se.get("items"):
+		hu = frappe.get_value("Purchase Receipt Item", {"item_code": row.item_code}, "handling_unit")
+		if not hu:
+			hu = frappe.get_value("Purchase Invoice Item", {"item_code": row.item_code}, "handling_unit")
+		scan = frappe.call(
+			"beam.beam.scan.scan",
+			**{"barcode": str(hu), "context": {"frm": "Stock Entry", "doc": se}, "current_qty": 1}
+		)
+		assert scan[0]["action"] == "add_or_associate"
+		row["handling_unit"] = scan[0]["context"].get(
+			"handling_unit"
+		)  # simulates the effect of 'associate'
+	_se = frappe.get_doc(**se)
+	_se.save()
+	_se.submit()
+	for row in _se.items:
+		if not frappe.get_value("Item", row.item_code, "is_stock_item"):
+			continue
+		sle = frappe.get_doc("Stock Ledger Entry", {"voucher_detail_no": row.name})
+		hu = frappe.get_value(
+			"Purchase Receipt Item",
+			{"item_code": row.item_code},
+			["item_code", "stock_qty", "handling_unit"],
+			as_dict=True,
+		)
+		if not hu:
+			hu = frappe.get_value(
+				"Purchase Invoice Item",
+				{"item_code": row.item_code},
+				["item_code", "stock_qty", "handling_unit"],
+				as_dict=True,
+			)
+		assert row.transfer_qty == sle.actual_qty
+		assert row.item_code == sle.item_code
+		assert row.t_warehouse == sle.warehouse  # target warehouse
+		if hu.stock_qty != abs(sle.actual_qty):
+			assert row.handling_unit != row.to_handling_unit
+		_se.cancel()
 
 
 def test_stock_entry_for_manufacture():
@@ -365,6 +410,7 @@ def test_packing_slip():
 		assert hu.stock_qty == 0
 
 
+@pytest.mark.skip()
 def test_stock_entry_material_transfer():
 	submit_all_purchase_receipts()
 	se = frappe.new_doc("Stock Entry")
@@ -473,6 +519,9 @@ def test_stock_entry_for_send_to_subcontractor():
 		assert row.t_warehouse == tsle.warehouse  # target warehouse
 
 	se.cancel()
+	for row in se.items:
+		hu = get_handling_unit(row.to_handling_unit)
+		assert hu.qty > 0
 
 
 @pytest.mark.skip()

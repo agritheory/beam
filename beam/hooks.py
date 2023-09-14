@@ -99,6 +99,10 @@ extend_bootinfo = "beam.beam.boot.boot_session"
 # DocType Class
 # ---------------
 # Override standard doctype classes
+override_doctype_class = {
+	"Stock Entry": "beam.beam.overrides.stock_entry.BEAMStockEntry",
+}
+
 
 # Document Events
 # ---------------

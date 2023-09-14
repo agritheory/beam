@@ -119,18 +119,3 @@ def validate_handling_unit_overconsumption(doc, method=None):
 			)
 
 	return doc
-
-
-@frappe.whitelist()
-def get_handling_units_for_recombine(doc: str) -> list:
-	doc = frappe.get_doc(**json.loads(doc)) if isinstance(doc, str) else doc
-	handling_unit_pairs = []
-	for row in doc.items:
-		print(row.item_code, row.to_handling_unit, row.handling_unit)
-		handling_unit_pairs.append(
-			(
-				get_handling_unit(row.handling_unit),
-				get_handling_unit(row.to_handling_unit),
-			)
-		)
-	return handling_unit_pairs
