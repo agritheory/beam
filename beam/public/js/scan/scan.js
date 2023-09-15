@@ -95,6 +95,18 @@ class ScanHandler {
 		barcode_context.forEach(field => {
 			if (
 				!cur_frm.doc.items.some(row => {
+					if (
+						cur_frm.doc.doctype == 'Stock Entry' &&
+						[
+							'Send to Subcontractor',
+							'Material Transfer for Manufacture',
+							'Material Transfer',
+							'Material Receipt',
+							'Manufacture',
+						].includes(cur_frm.doc.stock_entry_type)
+					) {
+						return row.item_code == field.context.item_code || row.handling_unit
+					}
 					return (
 						(row.item_code == field.context.item_code && row.stock_qty == field.context.stock_qty) ||
 						row.handling_unit == field.context.handling_unit
@@ -104,14 +116,38 @@ class ScanHandler {
 				if (!cur_frm.doc.items.length || !cur_frm.doc.items[0].item_code) {
 					cur_frm.doc.items = []
 				}
-				cur_frm.add_child('items', field.context)
+				let child = cur_frm.add_child('items', field.context)
+				if (cur_frm.doc.doctype == 'Stock Entry') {
+					frappe.model.set_value(child.doctype, child.name, 's_warehouse', field.context.warehouse)
+				}
 			} else {
 				for (let row of cur_frm.doc.items) {
+					if (
+						cur_frm.doc.doctype == 'Stock Entry' &&
+						[
+							'Send to Subcontractor',
+							'Material Transfer for Manufacture',
+							'Material Transfer',
+							'Material Receipt',
+							'Manufacture',
+						].includes(cur_frm.doc.stock_entry_type) &&
+						row.item_code == field.context.item_code &&
+						!row.handling_unit
+					) {
+						frappe.model.set_value(row.doctype, row.name, field.field, field.target)
+						continue
+					}
 					if (
 						(row.item_code == field.context.item_code && row.stock_qty == field.context.stock_qty) ||
 						row.handling_unit == field.context.handling_unit
 					) {
-						frappe.model.set_value(row.doctype, row.name, field.field, field.target)
+						if (cur_frm.doc.doctype == 'Stock Entry') {
+							if ((field.field = 'basic_rate')) {
+								cur_frm.events.set_basic_rate(cur_frm, row.doctype, row.name)
+							} else {
+								frappe.model.set_value(row.doctype, row.name, field.field, field.target)
+							}
+						}
 					}
 				}
 			}
@@ -124,14 +160,14 @@ class ScanHandler {
 		} else {
 			return
 		}
-		const source_warehouses = [
-			'Send to Subcontractor',
-			'Material Consumption for Manufacture',
-			'Material Issue',
+		const source_warehouses = ['Material Consumption for Manufacture', 'Material Issue']
+		const target_warehouses = ['Material Receipt', 'Manufacture']
+		const both_warehouses = [
 			'Material Transfer for Manufacture',
+			'Material Transfer',
+			'Send to Subcontractor',
+			'Repack',
 		]
-		const target_warehouses = ['Material Transfer', 'Material Receipt', 'Manufacture']
-		const both_warehouses = ['Repack']
 		if (barcode_context.doctype == 'Stock Entry' && source_warehouses.includes(cur_frm.doc.stock_entry_type)) {
 			cur_frm.set_value('from_warehouse', barcode_context.target)
 			for (let row of cur_frm.doc.items) {

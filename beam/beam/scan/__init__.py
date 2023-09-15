@@ -160,6 +160,7 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 		hu_details = get_handling_unit(barcode_doc.doc.name, context.frm)
 		if context.frm == "Stock Entry":
 			target = get_stock_entry_item_details(context.doc, hu_details.item_code)
+			target.warehouse = hu_details.warehouse
 		elif context.frm in ("Putaway Rule", "Warranty Claim", "Item Price", "Quality Inspection"):
 			target = frappe._dict(
 				{

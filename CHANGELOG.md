@@ -2,6 +2,17 @@
 
 
 
+## v14.8.1 (2023-09-13)
+
+### Ci
+
+* ci: update release action user and email (#68) ([`08bc19b`](https://github.com/agritheory/beam/commit/08bc19bd58d55a4389858b1fed94edfbf8de68f1))
+
+### Fix
+
+* fix: handle stock entry warehouse correctly, fix scan in transfer sto… (#69) ([`886d8c6`](https://github.com/agritheory/beam/commit/886d8c6438c34f252f7da27553ddeb6ecf857470))
+
+
 ## v14.8.0 (2023-09-06)
 
 ### Feature
