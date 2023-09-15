@@ -75,7 +75,7 @@ async function show_handling_unit_recombine_dialog(frm) {
 				let to_recombine = dialog.fields_dict.handling_units.grid.get_selected_children().map(row => {
 					return row.row_name
 				})
-				dialog.close()
+				dialog.hide()
 				return resolve(to_recombine)
 			},
 			primary_action_label: __('Cancel and Recombine'),
