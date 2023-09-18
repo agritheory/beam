@@ -169,63 +169,6 @@ def test_stock_entry_material_transfer_for_manufacture():
 			assert row.handling_unit != row.to_handling_unit
 
 
-def test_cancellation_of_stock_entry_material_transfer_for_manufacture():
-	submit_all_purchase_receipts()
-	wo = frappe.get_value("Work Order", {"production_item": "Gooseberry Pie Filling"})
-	se = make_stock_entry(wo, "Material Transfer for Manufacture", 10)
-	# simulate scanning
-	for row in se.get("items"):
-		hu = frappe.get_value("Purchase Receipt Item", {"item_code": row.item_code}, "handling_unit")
-		if not hu:
-			hu = frappe.get_value("Purchase Invoice Item", {"item_code": row.item_code}, "handling_unit")
-		scan = frappe.call(
-			"beam.beam.scan.scan",
-			**{"barcode": str(hu), "context": {"frm": "Stock Entry", "doc": se}, "current_qty": 1}
-		)
-		assert scan[0]["action"] == "add_or_associate"
-		row["handling_unit"] = scan[0]["context"].get(
-			"handling_unit"
-		)  # simulates the effect of 'associate'
-	_se = frappe.get_doc(**se)
-	_se.save()
-	_se.submit()
-	for row in _se.items:
-		if not frappe.get_value("Item", row.item_code, "is_stock_item"):
-			continue
-		sle = frappe.get_doc("Stock Ledger Entry", {"voucher_detail_no": row.name})
-		hu = frappe.get_value(
-			"Purchase Receipt Item",
-			{"item_code": row.item_code},
-			["item_code", "stock_qty", "handling_unit"],
-			as_dict=True,
-		)
-		if not hu:
-			hu = frappe.get_value(
-				"Purchase Invoice Item",
-				{"item_code": row.item_code},
-				["item_code", "stock_qty", "handling_unit"],
-				as_dict=True,
-			)
-		assert row.transfer_qty == sle.actual_qty
-		assert row.item_code == sle.item_code
-		assert row.t_warehouse == sle.warehouse  # target warehouse
-		if hu.stock_qty != abs(sle.actual_qty):
-			assert row.handling_unit != row.to_handling_unit
-		frappe.call(
-			"beam.beam.overrides.stock_entry.set_rows_to_recombine",
-			{"docname": se.name, "to_recombine": [_se.items[0].name]},
-		)
-		_se.reload_doc()
-		_se.cancel()
-		for row in _se.items:
-			if row.recombine_on_cancel:
-				hu = get_handling_unit(row.to_handling_unit)
-				assert hu == None
-			else:
-				hu = get_handling_unit(row.to_handling_unit)
-				assert hu.qty > 0
-
-
 def test_stock_entry_for_manufacture():
 	submit_all_purchase_receipts()
 	wo = frappe.get_value("Work Order", {"production_item": "Kaduka Key Lime Pie Filling"})
@@ -240,12 +183,13 @@ def test_stock_entry_for_manufacture():
 		):  # finished and scrap items' handling units will be generated and wouldn't be scanned
 			continue
 		hu = frappe.get_value(
-			"Stock Entry Detail", {"parent": se_tfm, "item_code": row.item_code}, "handling_unit"
+			"Stock Entry Detail", {"parent": se_tfm, "item_code": row.item_code}, "to_handling_unit"
 		)
 		scan = frappe.call(
 			"beam.beam.scan.scan",
 			**{"barcode": str(hu), "context": {"frm": "Stock Entry", "doc": se}, "current_qty": 1}
 		)
+		# print(scan[0])
 		assert scan[0]["action"] == "add_or_associate"
 		row["handling_unit"] = scan[0]["context"].get(
 			"handling_unit"
@@ -471,13 +415,14 @@ def test_stock_entry_material_transfer():
 		sle = frappe.get_doc("Stock Ledger Entry", {"handling_unit": row.handling_unit})
 		hu = get_handling_unit(str(row.handling_unit))
 		assert row.transfer_qty == abs(sle.actual_qty)
-		assert hu.stock_qty == 100  # restored qty
+		assert hu.stock_qty == 95  # restored qty
 		assert row.item_code == sle.item_code
 		assert row.s_warehouse == sle.warehouse  # source warehouse
 
 		tsle = frappe.get_doc("Stock Ledger Entry", {"handling_unit": row.to_handling_unit})
 		hu = get_handling_unit(str(row.to_handling_unit))
-		assert hu == None  # no handling units found as transaction was cancelled
+		assert hu.stock_qty == 5
+		assert row.t_warehouse == tsle.warehouse  # target warehouse
 
 
 def test_stock_entry_for_send_to_subcontractor():

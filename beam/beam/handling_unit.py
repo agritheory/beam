@@ -85,8 +85,8 @@ def validate_handling_unit_overconsumption(doc, method=None):
 		if doc.doctype == "Stock Entry":
 			# incoming
 			if row.get("s_warehouse") and not row.get("t_warehouse"):
-				if abs(hu.stock_qty - row.get(qty_field)) != 0.0 and (
-					hu.stock_qty - row.get(qty_field) < precision_denominator
+				if abs(row.get(qty_field) - hu.stock_qty) != 0.0 and (
+					(row.get(qty_field) - hu.stock_qty) < precision_denominator
 				):
 					error = True
 			# outgoing
