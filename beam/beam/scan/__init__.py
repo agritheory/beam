@@ -86,6 +86,8 @@ def get_handling_unit(handling_unit: str, parent_doctype: Optional[str] = None) 
 
 	if item:
 		sle.update({**item})
+		if child_doctype == "Purchase Receipt Item":
+			sle.stock_qty = item.qty
 		sle.qty = (
 			sle.stock_qty / sle.conversion_factor
 		)  # use conversion factor based on transaction not current conversion factor
