@@ -1,15 +1,12 @@
+import json
+
 import frappe
 from erpnext.stock.stock_ledger import NegativeStockError
 
 from beam.beam.scan import get_handling_unit
 
 """
-Handling Units will be generated in the following cases:
-- On all inventoriable items in a Purchase Receipt
-- On all inventoriable items in a Purchase Invoice marked "Updated Stock"
-- On all inventoriable items in Stock Entries of type "Material Receipt"
-- On all inventoriable items in Stock Entries of type "Manufacture" or "Repack"
-for scrap and finished goods items
+See docs/handling_unit.md
 """
 
 
@@ -88,8 +85,8 @@ def validate_handling_unit_overconsumption(doc, method=None):
 		if doc.doctype == "Stock Entry":
 			# incoming
 			if row.get("s_warehouse") and not row.get("t_warehouse"):
-				if abs(hu.stock_qty - row.get(qty_field)) != 0.0 and (
-					hu.stock_qty - row.get(qty_field) < precision_denominator
+				if abs(row.get(qty_field) - hu.stock_qty) != 0.0 and (
+					(row.get(qty_field) - hu.stock_qty) < precision_denominator
 				):
 					error = True
 			# outgoing

@@ -73,6 +73,10 @@ When material is transferred from one warehouse to another, it will generate a n
 | Cocoplum         | Work In Progress   |            456 |          20 Ea |
 
 
+When cancelling a Stock Entry, the user will be given an option to re-combine or let handling units remain tracked separately.
+
+![Screen shot of the recombine dialog](./assets/recombine.png)
+
 ### Repack and Manufacture
 
 In the case of a Repack, Material Issue or Material Consumption for Manufacture, a new Handling Unit is generated for the new quantities. 
