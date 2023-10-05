@@ -2,6 +2,13 @@
 
 
 
+## v14.8.3 (2023-10-05)
+
+### Fix
+
+* fix: validate customizations (#76) ([`5c04b77`](https://github.com/agritheory/beam/commit/5c04b77cb567067a8f396f244e47550f2f0f91f6))
+
+
 ## v14.8.2 (2023-10-04)
 
 ### Fix
