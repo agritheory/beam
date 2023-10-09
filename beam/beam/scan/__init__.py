@@ -44,7 +44,7 @@ def get_barcode_context(barcode: str) -> Union[frappe._dict, None]:
 def get_handling_unit(handling_unit: str, parent_doctype: Optional[str] = None) -> frappe._dict:
 	sl_entries = frappe.get_all(
 		"Stock Ledger Entry",
-		filters={"handling_unit": handling_unit},
+		filters={"handling_unit": handling_unit, "is_cancelled": 0},
 		fields=[
 			"item_code",
 			"SUM(actual_qty) AS stock_qty",

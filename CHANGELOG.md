@@ -2,6 +2,28 @@
 
 
 
+## v14.8.3 (2023-10-05)
+
+### Fix
+
+* fix: validate customizations (#76) ([`5c04b77`](https://github.com/agritheory/beam/commit/5c04b77cb567067a8f396f244e47550f2f0f91f6))
+
+
+## v14.8.2 (2023-10-04)
+
+### Fix
+
+* fix: check for existence of item group before membership (#77) ([`b062e79`](https://github.com/agritheory/beam/commit/b062e79d33a0561f1ef3c78a5629976567364fa9))
+
+### Unknown
+
+* Cancelled SLEs ignored by `get_handling_unit` (#67)
+
+Co-authored-by: github-actions &lt;github-actions@github.com&gt;
+Co-authored-by: fproldan &lt;franciscoproldan@gmail.com&gt;
+Co-authored-by: Heather Kusmierz &lt;heather.kusmierz@gmail.com&gt; ([`65632de`](https://github.com/agritheory/beam/commit/65632deb328a3f9d69f0c64c97b536b89fb52d6d))
+
+
 ## v14.8.1 (2023-09-13)
 
 ### Ci

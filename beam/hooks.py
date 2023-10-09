@@ -29,7 +29,7 @@ app_include_js = ["beam.bundle.js"]
 # page_js = {"page" : "public/js/file.js"}
 
 # include js in doctype views
-# doctype_js = {"doctype" : "public/js/doctype.js"}
+doctype_js = {"Stock Entry": "public/js/stock_entry_custom.js"}
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
@@ -99,6 +99,10 @@ extend_bootinfo = "beam.beam.boot.boot_session"
 # DocType Class
 # ---------------
 # Override standard doctype classes
+override_doctype_class = {
+	"Stock Entry": "beam.beam.overrides.stock_entry.BEAMStockEntry",
+}
+
 
 # Document Events
 # ---------------
