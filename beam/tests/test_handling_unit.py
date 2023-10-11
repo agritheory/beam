@@ -27,7 +27,7 @@ def test_purchase_receipt_handling_unit_generation():
 			if row.rejected_qty:
 				assert row.rejected_qty + row.qty == row.received_qty
 				hu = get_handling_unit(row.handling_unit)
-				assert hu.qty == row.stock_qty
+				assert hu.stock_qty == row.stock_qty
 
 
 def test_purchase_invoice():
