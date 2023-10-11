@@ -24,6 +24,10 @@ def test_purchase_receipt_handling_unit_generation():
 		pr.submit()
 		for row in pr.items:
 			assert isinstance(row.handling_unit, str)
+			if row.rejected_qty:
+				assert row.rejected_qty + row.qty == row.received_qty
+				hu = get_handling_unit(row.handling_unit)
+				assert hu.stock_qty == row.stock_qty
 
 
 def test_purchase_invoice():

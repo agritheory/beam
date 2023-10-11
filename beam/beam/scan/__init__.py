@@ -70,10 +70,15 @@ def get_handling_unit(handling_unit: str, parent_doctype: Optional[str] = None) 
 		"Stock Entry Detail" if sle.voucher_type == "Stock Entry" else f"{sle.voucher_type} Item"
 	)
 
+	child_doctype_fields = ["uom", "qty", "conversion_factor", "idx", "item_name", "name"]
+
+	if child_doctype == "Purchase Receipt Item":
+		child_doctype_fields.append("stock_qty")
+
 	item = frappe.db.get_value(
 		child_doctype,
 		sle.voucher_detail_no,
-		["uom", "qty", "conversion_factor", "idx", "item_name", "name"],
+		child_doctype_fields,
 		as_dict=True,
 	)
 

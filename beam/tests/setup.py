@@ -89,6 +89,7 @@ def create_test_data():
 	else:
 		create_material_request(settings)
 	create_production_plan(settings, prod_plan_from_doc)
+	create_purchase_receipt_for_received_qty_test(settings)
 
 
 def create_suppliers(settings):
@@ -540,3 +541,31 @@ def create_production_plan(settings, prod_plan_from_doc):
 			job_card.time_logs[0].completed_qty = wo.qty
 			job_card.save()
 			job_card.submit()
+
+
+def create_purchase_receipt_for_received_qty_test(settings):
+	pr = frappe.new_doc("Purchase Receipt")
+	pr.company = settings.company
+	pr.supplier = "Freedom Provisions"
+	pr.posting_date = settings.day
+	pr.set_posting_time = 1
+	pr.buying_price_list = "Bakery Buying"
+	item = frappe.get_doc("Item", "Gooseberry")
+	pr.append(
+		"items",
+		{
+			"item_code": item.item_code,
+			"warehouse": "Refrigerator - APC",
+			"rejected_warehouse": "Storeroom - APC",
+			"received_qty": 15,
+			"rejected_qty": 5,
+			"qty": 10,
+			"rate": 5,
+			"supplier": pr.supplier,
+			"company": pr.company,
+			"doctype": pr.doctype,
+			"currency": pr.currency,
+			"buying_price_list": pr.buying_price_list,
+		},
+	)
+	pr.save()
