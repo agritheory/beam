@@ -1,0 +1,3 @@
+FROM certbot/certbot:latest
+# certonly --reinstall --webroot --webroot-path=/var/www/certbot --email ... --agree-tos --no-eff-email -d ...
+CMD ["while true; do sleep 86400; done"]

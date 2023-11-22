@@ -1,0 +1,15 @@
+:80 {
+        redir https://{host}{uri}
+}
+
+:443 {
+        route /.well-known/acme-challenge/* {
+                # uri strip_prefix /.well-known/acme-challenge/
+                root * /var/www/html
+                file_server
+        }
+
+        # <PROD> tls /etc/letsencrypt/live/.../fullchain.pem /etc/letsencrypt/live/.../privkey.pem
+        # <LOCAL> tls internal
+        reverse_proxy / cups:631
+}
