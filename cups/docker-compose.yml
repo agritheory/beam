@@ -19,25 +19,25 @@ services:
     networks:
       - network
 
-  # caddy:
-  #   container_name: ${DOCKER_CADDY_SERVICE_NAME}
-  #   build:
-  #     context: .
-  #     dockerfile: Caddy.Dockerfile
-  #   ports:
-  #     - "${DOCKER_CADDY_SERVICE_HTTP_PORT}:80"
-  #     - "${DOCKER_CADDY_SERVICE_HTTPS_PORT}:443"
-  #   volumes:
-  #     - ./Caddyfile:/etc/caddy/Caddyfile
-  #     # - cert:/etc/caddy
-  #     - ./etc/letsencrypt:/etc/letsencrypt
-  #     - ./certbot/data:/var/www/certbot
-  #   depends_on:
-  #     - cups
-  #     # - certbot
-  #     # - certbot-2
-  #   networks:
-  #     - network
+  caddy:
+    container_name: ${DOCKER_CADDY_SERVICE_NAME}
+    build:
+      context: .
+      dockerfile: Caddy.Dockerfile
+    ports:
+      - "${DOCKER_CADDY_SERVICE_HTTP_PORT}:80"
+      - "${DOCKER_CADDY_SERVICE_HTTPS_PORT}:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - cert:/etc/caddy
+      - ./etc/letsencrypt:/etc/letsencrypt
+      - ./certbot/data:/var/www/certbot
+    depends_on:
+      - cups
+      # - certbot
+      # - certbot-2
+    networks:
+      - network
 
   certbot-2:
     build:
@@ -76,9 +76,9 @@ services:
   #     - ./etc/letsencrypt:/etc/letsencrypt
   #     - ./certbot/data:/var/www/certbot
 
-# volumes:
-  # cert: null
-  # certbot-data: null
+volumes:
+  cert: null
+  certbot-data: null
 
 networks:
   network:
