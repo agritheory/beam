@@ -2,12 +2,7 @@ FROM caddy:2.7.5-alpine AS base
 
 RUN apk update \
     && apk add --no-cache \
-        certbot \
-        nss-tools
-
-RUN mkdir -p \
-        /var/www/certs \
-        /var/www/html/.well-known/acme-challenge
+        certbot
 
 COPY \
         Caddyfile.ssl \
@@ -30,4 +25,5 @@ CMD [\
 FROM base AS production
 
 COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 ENTRYPOINT "/entrypoint.sh"

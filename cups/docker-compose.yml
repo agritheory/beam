@@ -9,8 +9,6 @@ services:
       args:
         CUPS_ADMIN_USER: ${CUPS_ADMIN_USER}
         CUPS_ADMIN_PASSWORD: ${CUPS_ADMIN_PASSWORD}
-    ports:
-      - "631:631"
     environment:
       CUPS_ADMIN: ${CUPS_ADMIN_USER}
       CUPS_ADMIN_PASS: ${CUPS_ADMIN_PASSWORD}

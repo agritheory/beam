@@ -1,8 +1,11 @@
 #!/bin/sh
-set -e
+# set -e
 
 # Generate and validate the certificate for the first time.
-if [ -z "$(ls -A /var/www/certs)" ]; then
+if [ ! -d /var/www/certs ] || [ -z "$(ls -A /var/www/certs)" ]; then
+    mkdir /var/www/certs
+    mkdir -p /var/www/html/.well-known/acme-challenge
+
     caddy run --config /etc/caddy/Caddyfile.not_ssl > caddy.log 2>&1 &
     echo $! > caddy.pid
 
@@ -10,7 +13,7 @@ if [ -z "$(ls -A /var/www/certs)" ]; then
     cp /etc/letsencrypt/live/"$CERTBOT_DOMAIN"/fullchain.pem /var/www/certs/fullchain.pem
     cp /etc/letsencrypt/live/"$CERTBOT_DOMAIN"/privkey.pem /var/www/certs/privkey.pem
 
-    kill -SIGINT $(cat caddy.pid)
+    kill -SIGINT "$(cat caddy.pid)"
     rm caddy.pid
 fi
 

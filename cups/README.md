@@ -35,13 +35,19 @@ docker compose up --remove-orphans -d
 Stop the containers:
 ```sh
 prefix="$(grep -E '^DOCKER_NAME_PREFIX=' .env | cut -d '=' -f2)" \
-  && docker kill $(docker ps --format="{{.Names}}" | grep "$prefix")
+  && docker kill $(docker ps --format="{{.Names}}" | grep "$prefix") || true
 ```
 
 Delete everything related to containers (requires a prior STOP):
 ```sh
 prefix="$(grep -E '^DOCKER_NAME_PREFIX=' .env | cut -d '=' -f2)" \
-  && docker rm $(docker ps -a --format="{{.Names}}" | grep "$prefix") || true \
-  && docker volume rm $(docker volume ls --format="{{.Name}}" | grep "$prefix") || true \
-  && docker network rm $(docker network ls --format="{{.Name}}" | grep "$prefix") || true
+  && # Delete containers:
+     docker rm $(docker ps -a --format="{{.Names}}" | grep "$prefix") || true \
+  && # Delete volumes:
+     docker volume rm $(docker volume ls --format="{{.Name}}" | grep "$prefix") || true \
+  && # Delete bind mounts:
+     awk '/volumes:/ { while (getline > 0) { if ($1 ~ /^-/) { split($2, parts, ":"); if (parts[1] ~ /^\.\//) { print parts[1] } } else { break } } }' docker-compose.yml \
+     | xargs -I {} sudo rm -rf {} \
+  && # Delete networks:
+     docker network rm $(docker network ls --format="{{.Name}}" | grep "$prefix") || true
 ```
