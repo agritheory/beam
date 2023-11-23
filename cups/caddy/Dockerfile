@@ -11,8 +11,7 @@ COPY \
     /etc/caddy/
 
 RUN cd /etc/caddy \
-    && sed -i "s/<DOMAIN>/${DOMAIN}/g" Caddyfile.* \
-    && caddy fmt --overwrite
+    && sed -i "s/<DOMAIN>/${DOMAIN}/g" Caddyfile.*
 
 FROM base AS localhost
 
