@@ -1,5 +1,5 @@
 #!/bin/sh
-# set -e
+set -e
 
 # Generate and validate the certificate for the first time.
 if [ ! -d /var/www/certs ] || [ -z "$(ls -A /var/www/certs)" ]; then
