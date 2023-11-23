@@ -37,4 +37,3 @@ services:
 networks:
   network:
     name: ${DOCKER_NAME_PREFIX}_${DOCKER_NETWORK_NAME}
-    external: true
