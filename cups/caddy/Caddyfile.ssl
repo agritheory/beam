@@ -1,0 +1,8 @@
+https://<DOMAIN>:443 {
+        route /.well-known/acme-challenge/* {
+                root * /var/www/html
+                file_server
+        }
+        reverse_proxy * cups:631
+        tls /var/www/certs/fullchain.pem /var/www/certs/privkey.pem
+}

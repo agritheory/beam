@@ -34,4 +34,7 @@ USER $CUPS_ADMIN_USER
 
 COPY --chown=root:lp cupsd.conf /etc/cups/cupsd.conf
 
-CMD ["/usr/sbin/cupsd", "-f"]
+CMD [\
+    "/usr/sbin/cupsd", \
+    "-f" \
+]

@@ -1,0 +1,8 @@
+http://localhost:80 {
+        reverse_proxy * cups:631
+}
+
+https://localhost:443 {
+        redir http://{host}{uri}
+        tls internal
+}

@@ -1,0 +1,7 @@
+http://<DOMAIN>:80 {
+        route /.well-known/acme-challenge/* {
+                root * /var/www/html
+                file_server
+        }
+        reverse_proxy * cups:631
+}
