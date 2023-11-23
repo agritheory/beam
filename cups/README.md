@@ -7,7 +7,7 @@ Caddy (with TLS) + CUPS.
 
 ```sh
 cp .env.example .env
-docker network create "$(grep -E '^DOCKER_NETWORK_NAME=' .env | cut -d '=' -f2)"
+docker network create "$(grep -E '^DOCKER_NAME_PREFIX=' .env | cut -d '=' -f2)"_"$(grep -E '^DOCKER_NETWORK_NAME=' .env | cut -d '=' -f2)"
 docker compose build
 ```
 

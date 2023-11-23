@@ -2,7 +2,7 @@ version: "3"
 
 services:
   cups:
-    container_name: ${DOCKER_CUPS_SERVICE_NAME}
+    container_name: ${DOCKER_NAME_PREFIX}_${DOCKER_CUPS_SERVICE_NAME}
     build:
       context: .
       dockerfile: Cups.Dockerfile
@@ -20,7 +20,7 @@ services:
       - network
 
   caddy:
-    container_name: ${DOCKER_CADDY_SERVICE_NAME}
+    container_name: ${DOCKER_NAME_PREFIX}_${DOCKER_CADDY_SERVICE_NAME}
     build:
       context: .
       dockerfile: Caddy.Dockerfile
@@ -34,47 +34,8 @@ services:
       - ./certbot/data:/var/www/certbot
     depends_on:
       - cups
-      # - certbot
-      # - certbot-2
     networks:
       - network
-
-  certbot-2:
-    build:
-      context: .
-      dockerfile: Certbot.Dockerfile
-    environment:
-      - CERTBOT_DOMAIN=${DOMAIN}
-    # depends_on:
-    #   - nginx
-    volumes:
-      - ./etc/letsencrypt:/etc/letsencrypt
-      - ./certbot/data:/var/www/certbot
-    networks:
-      - network
-
-  # nginx:
-  #   container_name: nginx
-  #   image: nginx:latest
-  #   ports:
-  #     - "${DOCKER_CADDY_SERVICE_HTTP_PORT}:80"
-  #   volumes:
-  #     - ./etc/nginx/templates-initiate:/etc/nginx/templates
-  #     - ./etc/letsencrypt:/etc/letsencrypt
-  #     - ./certbot/data:/var/www/certbot
-  #   networks:
-  #     - network
-
-  # certbot:
-  #   container_name: certbot
-  #   image: certbot/certbot:latest
-  #   depends_on:
-  #     - nginx
-  #   # command: certonly --reinstall --webroot --webroot-path=/var/www/certbot --email test@test.com --agree-tos --no-eff-email -d test.com
-  #   command: sleep 60
-  #   volumes:
-  #     - ./etc/letsencrypt:/etc/letsencrypt
-  #     - ./certbot/data:/var/www/certbot
 
 volumes:
   cert: null
@@ -82,5 +43,5 @@ volumes:
 
 networks:
   network:
-    name: ${DOCKER_NETWORK_NAME}
+    name: ${DOCKER_NAME_PREFIX}_${DOCKER_NETWORK_NAME}
     external: true
