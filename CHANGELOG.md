@@ -2,6 +2,21 @@
 
 
 
+## v14.8.4 (2023-11-29)
+
+### Fix
+
+* fix: disable overconsumption check ([`90c4be9`](https://github.com/agritheory/beam/commit/90c4be961e420a0aca130f86dd40cca8bedaa163))
+
+### Unknown
+
+* Merge pull request #80 from agritheory/disable_overconsumption_check
+
+fix: disable overconsumption check ([`964f4fc`](https://github.com/agritheory/beam/commit/964f4fc5c932fe1538abbc2e270c0f31644bbfac))
+
+* Use accepted qty in hu for purchase receipt (#72) ([`5780b16`](https://github.com/agritheory/beam/commit/5780b16972cdf70f998c516b777d9aebc64a87b1))
+
+
 ## v14.8.3 (2023-10-05)
 
 ### Fix
