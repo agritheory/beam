@@ -6,6 +6,7 @@ Caddy (with TLS) + CUPS.
 ## Initial Setup
 
 ```sh
+echo 'unqualified-search-registries = ["docker.io"]' | sudo tee -a /etc/containers/registries.conf
 cp .env.example .env
 podman-compose build
 ```
