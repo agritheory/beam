@@ -59,3 +59,16 @@ def set_rows_to_recombine(docname: str, to_recombine=None) -> None:
 		if row.name in to_recombine:
 			row.db_set("recombine_on_cancel", True)
 	return
+
+
+@frappe.whitelist()
+def get_handling_units_for_item_code(doctype, txt, searchfield, start, page_len, filters):
+	StockLedgerEntry = frappe.qb.DocType("Stock Ledger Entry")
+	return (
+		frappe.qb.from_(StockLedgerEntry)
+		.select(StockLedgerEntry.handling_unit)
+		.where(StockLedgerEntry.item_code == filters.get("item_code"))
+		.orderby(StockLedgerEntry.posting_date, order=frappe.qb.desc)
+		.groupby(StockLedgerEntry.handling_unit)
+		.run(as_dict=False)
+	)
