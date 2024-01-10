@@ -18,6 +18,9 @@ RUN apt-get update \
         hplip \
         smbclient \
         printer-driver-cups-pdf \
+        hplip \
+        printer-driver-gutenprint \
+        avahi-daemon \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -32,7 +35,11 @@ RUN useradd \
     && echo "$CUPS_ADMIN_USER ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 USER $CUPS_ADMIN_USER
 
-COPY --chown=root:lp cupsd.conf /etc/cups/cupsd.conf
+COPY cupsd.conf /etc/cups/cupsd.conf
+RUN sudo chmod -R a+rwx /var/spool \
+    && sudo chmod -R a+rwx /etc/cups
+
+COPY avahi-daemon.conf /etc/avahi/avahi-daemon.conf
 
 CMD [\
     "/usr/sbin/cupsd", \
