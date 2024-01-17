@@ -2,6 +2,20 @@ frappe.ui.form.on('Stock Entry', {
 	async before_cancel(frm) {
 		await set_recombine_handling_units(frm)
 	},
+	setup: function (frm) {
+		frm.set_query('handling_unit', 'items', function (doc, cdt, cdn) {
+			let row = locals[cdt][cdn]
+			if (!row.item_code) {
+				return
+			}
+			return {
+				query: 'beam.beam.overrides.stock_entry.get_handling_units_for_item_code',
+				filters: {
+					item_code: row.item_code,
+				},
+			}
+		})
+	},
 })
 
 async function show_handling_unit_recombine_dialog(frm) {
