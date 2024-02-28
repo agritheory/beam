@@ -19,7 +19,10 @@ def generate_handling_units(doc, method=None):
 		return doc
 
 	for row in doc.items:
-		if not frappe.get_value("Item", row.item_code, "is_stock_item"):
+		if not (
+			frappe.get_value("Item", row.item_code, "is_stock_item")
+			and frappe.get_value("Item", row.item_code, "enable_handling_unit")
+		):
 			continue
 
 		if (
