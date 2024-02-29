@@ -150,6 +150,11 @@ doc_events = {
 			# "beam.beam.handling_unit.validate_handling_unit_overconsumption",
 		],
 	},
+	"Subcontracting Receipt": {
+		"before_submit": [
+			"beam.beam.handling_unit.generate_handling_units",
+		],
+	},
 }
 
 # Scheduled Tasks
@@ -241,3 +246,9 @@ doc_events = {
 # auth_hooks = [
 # 	"beam.auth.validate"
 # ]
+
+from erpnext.controllers.subcontracting_controller import SubcontractingController
+
+from beam.beam.overrides.subcontracting_controller import update_stock_ledger
+
+SubcontractingController.update_stock_ledger = update_stock_ledger
