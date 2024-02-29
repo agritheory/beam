@@ -36,6 +36,7 @@ def update_stock_ledger(self, allow_negative_stock=False, via_landed_cost_vouche
 							"actual_qty": flt(item.rejected_qty) * flt(item.conversion_factor),
 							"serial_no": cstr(item.rejected_serial_no).strip(),
 							"incoming_rate": 0.0,
+							"handling_unit": item.handling_unit,
 						},
 					)
 				)
