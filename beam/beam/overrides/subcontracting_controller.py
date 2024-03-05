@@ -55,7 +55,7 @@ def make_sl_entries_for_supplier_warehouse(self, sl_entries):
 		for item in self.get("supplied_items"):
 			# negative quantity is passed, as raw material qty has to be decreased
 			# when SCR is submitted and it has to be increased when SCR is cancelled
-			handling_unit = get_hendling_unit_for_consumption(sle_hu, item)
+			handling_unit = get_handling_unit_for_consumption(sle_hu, item)
 			sl_entries.append(
 				self.get_sl_entries(
 					item,
@@ -70,7 +70,7 @@ def make_sl_entries_for_supplier_warehouse(self, sl_entries):
 			)
 
 
-def get_hendling_unit_for_consumption(sle_hu, item):
+def get_handling_unit_for_consumption(sle_hu, item):
 	if sle_hu.get(item.subcontracting_order):
 		for row in sle_hu.get(item.subcontracting_order):
 			if row.item_code == item.rm_item_code:
