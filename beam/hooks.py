@@ -101,6 +101,7 @@ extend_bootinfo = "beam.beam.boot.boot_session"
 # Override standard doctype classes
 override_doctype_class = {
 	"Stock Entry": "beam.beam.overrides.stock_entry.BEAMStockEntry",
+	"Subcontracting Receipt": "beam.beam.overrides.subcontracting_receipt.BEAMSubcontractingReceipt",
 }
 
 
@@ -134,6 +135,7 @@ doc_events = {
 	},
 	"Stock Entry": {
 		"validate": [
+			"beam.beam.overrides.stock_entry.validate_handling_unit",
 			# "beam.beam.handling_unit.validate_handling_unit_overconsumption",
 		],
 		"before_submit": [
@@ -246,9 +248,3 @@ doc_events = {
 # auth_hooks = [
 # 	"beam.auth.validate"
 # ]
-
-from erpnext.controllers.subcontracting_controller import SubcontractingController
-
-from beam.beam.overrides.subcontracting_controller import update_stock_ledger
-
-SubcontractingController.update_stock_ledger = update_stock_ledger
