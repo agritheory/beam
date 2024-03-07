@@ -15,7 +15,8 @@
 	"private": true,
 	"release": {
 		"branches": [
-			"version-14"
+			"version-14",
+			"version-15"
 		]
 	}
 }

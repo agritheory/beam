@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - version-14
+      # - version-15  # TODO: uncomment
 jobs:
   release:
     name: Release

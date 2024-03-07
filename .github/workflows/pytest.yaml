@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - version-14
+      - version-15
   pull_request:
     branches:
       - version-14
+      - version-15
 
 # concurrency:
 #   group: develop-cloud_storage-${{ github.event.number }}
@@ -43,7 +45,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
-          node-version: 14
+          node-version: 18
           check-latest: true
           cache: 'yarn'  # Replaces `Get yarn cache directory path` and `yarn-cache` steps
     
