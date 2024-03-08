@@ -72,3 +72,10 @@ def get_handling_units_for_item_code(doctype, txt, searchfield, start, page_len,
 		.groupby(StockLedgerEntry.handling_unit)
 		.run(as_dict=False)
 	)
+
+
+def validate_items_with_handling_unit(self, method):
+	if self.stock_entry_type != "Material Receipt":
+		for i, row in enumerate(self.items):
+			if not row.handling_unit and frappe.db.get_value("Item", row.item_code, "enable_handling_unit"):
+				frappe.throw(f"Row #{i+1}: Handling Unit is missing for item {row.item_code}")
