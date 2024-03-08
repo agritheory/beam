@@ -101,7 +101,6 @@ extend_bootinfo = "beam.beam.boot.boot_session"
 # Override standard doctype classes
 override_doctype_class = {
 	"Stock Entry": "beam.beam.overrides.stock_entry.BEAMStockEntry",
-	"Subcontracting Receipt": "beam.beam.overrides.subcontracting_receipt.BEAMSubcontractingReceipt",
 }
 
 
@@ -150,11 +149,6 @@ doc_events = {
 	"Delivery Note": {
 		"validate": [
 			# "beam.beam.handling_unit.validate_handling_unit_overconsumption",
-		],
-	},
-	"Subcontracting Receipt": {
-		"before_submit": [
-			"beam.beam.handling_unit.generate_handling_units",
 		],
 	},
 }
