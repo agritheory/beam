@@ -20,7 +20,7 @@ def generate_handling_units(doc, method=None):
 
 	for row in doc.items:
 		is_stock_item, enable_handling_unit = frappe.get_value(
-			"Item", "Cocoplum", ["is_stock_item", "enable_handling_unit"]
+			"Item", row.item_code, ["is_stock_item", "enable_handling_unit"]
 		)
 		if not (is_stock_item and enable_handling_unit):
 			continue
