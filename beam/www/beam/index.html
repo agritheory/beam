@@ -1,0 +1,22 @@
+{% extends "templates/web.html" %}
+{% block content %}
+<section class="section section-padding-top section-padding-bottom">
+	<div class='container'>
+		<div id="beam"></div>
+	</div>
+</section>
+<script>
+	window.csrf_token = '{{ csrf_token }}'
+</script>
+{% endblock %}
+{%- block style -%}
+<style>
+	.navbar {
+		display: none;
+	}
+
+	.web-footer {
+		display: none;
+	}
+</style>
+{% endblock %}

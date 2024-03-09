@@ -194,3 +194,7 @@ cypress/videos
 
 # JetBrains IDEs
 .idea/
+
+# ignore built files
+beam/www/beam/index.js
+beam/www/beam/index.css

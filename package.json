@@ -1,8 +1,16 @@
 {
 	"name": "beam",
-	"scripts": {},
+	"scripts": {
+		"dev": "vite build --watch --config=./beam/www/beam/vite.config.js",
+		"build": "vite build --config=./beam/www/beam/vite.config.js"
+	},
 	"dependencies": {
-		"onscan.js": "^1.5.2"
+		"@vitejs/plugin-vue": "^4.4.0",
+		"onscan.js": "^1.5.2",
+		"vue": "^3.2.25",
+		"vue-router": "^4.0.12",
+		"vite": "^4.5.0",
+		"vite-plugin-pwa": "^0.16.6"
 	},
 	"devDependencies": {},
 	"repository": {
@@ -12,11 +20,5 @@
 	"publishConfig": {
 		"access": "restricted"
 	},
-	"private": true,
-	"release": {
-		"branches": [
-			"version-14",
-			"version-15"
-		]
-	}
+	"private": true
 }
