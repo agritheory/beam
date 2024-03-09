@@ -19,7 +19,7 @@ frappe.ui.form.on('Stock Entry', {
 })
 
 async function show_handling_unit_recombine_dialog(frm) {
-	const data = get_handling_units(frm)
+	const data = await get_handling_units(frm)
 	if (!data) {
 		return resolve({})
 	}
@@ -56,13 +56,28 @@ async function show_handling_unit_recombine_dialog(frm) {
 			read_only: 1,
 		},
 		{
+			fieldtype: 'Float',
+			fieldname: 'remaining_qty',
+			label: __('Remaining Qty'),
+			in_list_view: 1,
+			read_only: 1,
+		},
+		{
 			fieldtype: 'Data',
 			fieldname: 'to_handling_unit',
 			label: __('Handling Unit to recombine'),
 			in_list_view: 1,
 			read_only: 1,
 		},
+		{
+			fieldtype: 'Float',
+			fieldname: 'transferred_qty',
+			label: __('Transferred Qty'),
+			in_list_view: 1,
+			read_only: 1,
+		},
 	]
+
 	return new Promise(resolve => {
 		let dialog = new frappe.ui.Dialog({
 			title: __('Please select Handling Units to re-combine'),
@@ -100,20 +115,31 @@ async function show_handling_unit_recombine_dialog(frm) {
 	})
 }
 
-function get_handling_units(frm) {
+async function get_handling_units(frm) {
 	let handling_units = []
-	frm.doc.items.forEach(row => {
+	for (const row of frm.doc.items) {
 		if (row.handling_unit && row.to_handling_unit) {
+			let remaining_qty = await get_handling_unit_stock_qty(frm.doc.name, row.handling_unit, row.s_warehouse)
 			handling_units.push({
 				row_name: row.name,
 				item_code: row.item_code,
 				item_name: row.item_name,
 				handling_unit: row.handling_unit,
 				to_handling_unit: row.to_handling_unit,
+				remaining_qty: remaining_qty,
+				transferred_qty: row.qty,
 			})
 		}
-	})
+	}
 	return handling_units
+}
+async function get_handling_unit_stock_qty(name, handling_unit, s_warehouse) {
+	let result = await frappe.xcall('beam.beam.overrides.stock_entry.get_handling_unit_qty', {
+		voucher_no: name,
+		handling_unit: handling_unit,
+		warehouse: s_warehouse,
+	})
+	return flt(result)
 }
 
 async function set_recombine_handling_units(frm) {
