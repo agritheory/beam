@@ -108,7 +108,7 @@ async function show_handling_unit_recombine_dialog(frm) {
 				return resolve(to_recombine)
 			},
 			primary_action_label: __('Cancel and Recombine'),
-			size: 'large',
+			size: 'extra-large',
 		})
 		dialog.show()
 		dialog.get_close_btn()
