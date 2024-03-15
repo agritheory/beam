@@ -485,13 +485,18 @@ def test_stock_entry_for_send_to_subcontractor():
 		assert hu.qty > 0
 
 
-@pytest.mark.skip()
-def test_subcontracting():
-	# Use pie crust
-	# create purchase order
-	# create subcontracting
-	# create and test generation of handling units on subcontracting receipt
-	pass
+def test_subcontracting_receipt():
+	for sr in frappe.get_all("Subcontracting Receipt"):
+		sr = frappe.get_doc("Subcontracting Receipt", sr)
+		for row in sr.items:
+			assert row.handling_unit == None
+		sr.submit()
+		for row in sr.items:
+			assert isinstance(row.handling_unit, str)
+			if row.rejected_qty:
+				assert row.rejected_qty + row.qty == row.received_qty
+				hu = get_handling_unit(row.handling_unit)
+				assert hu.stock_qty == row.stock_qty
 
 
 @pytest.mark.xfail()
