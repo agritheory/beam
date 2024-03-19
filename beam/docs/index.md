@@ -20,6 +20,17 @@ If the user scans an Item in a Delivery Note, it will populate everything it kno
 
 Read more about [how scanning in form views works](./form.md).
 
+## Beam Settings
+
+Beam's version 15 introduced a new Beam Settings document to allow users to opt in or out of features in the app. Settings are unique on a per-company basis and are automatically generated (with default options) during certain related transactions if a Beam Settings document doesn't already exist for the company. Related transactions include submission of a Purchase Receipt, Purchase Invoice, or Stock Entry.
+
+![Screen shot of the Beam Settings document with a field for company and a check box to enable handling units.](./assets/beam_settings.png)
+
+Settings options include:
+
+- **Company:** the company in ERPNext to apply the given settings to. One Beam Settings document may exist for each company in the system
+- **Enable Handling Units:** (default checked) enables the generation of Handling Units (see What is a Handling Unit section for more information)
+
 ## What is a Handling Unit?
 
 A Handling Unit is the combination of a container, any packaging material, and the items within or on it. This could be a pallet of raw materials used in a manufacturing process, a crate containing several other Handling Units, or a delivery vehicle transporting the crates and pallets.
