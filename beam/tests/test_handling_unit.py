@@ -2,6 +2,9 @@ import frappe
 import pytest
 from erpnext.manufacturing.doctype.work_order.work_order import make_stock_entry
 from erpnext.stock.get_item_details import get_valuation_rate
+from erpnext.subcontracting.doctype.subcontracting_order.subcontracting_order import (
+	make_subcontracting_receipt,
+)
 
 from beam.beam.scan import get_handling_unit
 
@@ -486,6 +489,13 @@ def test_stock_entry_for_send_to_subcontractor():
 
 
 def test_subcontracting_receipt():
+	for row in frappe.get_all("Subcontracting Order", pluck="name"):
+		if not frappe.db.exists(
+			"Subcontracting Receipt Item", {"docstatus": 1, "subcontracting_order": row}
+		):
+			so_doc = make_subcontracting_receipt(row)
+			so_doc.save()
+
 	for sr in frappe.get_all("Subcontracting Receipt"):
 		sr = frappe.get_doc("Subcontracting Receipt", sr)
 		for row in sr.items:
@@ -496,7 +506,7 @@ def test_subcontracting_receipt():
 			if row.rejected_qty:
 				assert row.rejected_qty + row.qty == row.received_qty
 				hu = get_handling_unit(row.handling_unit)
-				assert hu.stock_qty == row.stock_qty
+				assert hu.stock_qty == row.returned_qty
 
 
 @pytest.mark.xfail()
