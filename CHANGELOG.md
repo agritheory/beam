@@ -2,6 +2,34 @@
 
 
 
+## v15.1.0 (2024-03-26)
+
+### Ci
+
+* ci: open release for version-15 ([`15c44a2`](https://github.com/agritheory/beam/commit/15c44a2882814b5be5935cb9e91dc6e19fea4af3))
+
+### Feature
+
+* feat: add BEAM Settings for v15 (#96) ([`ea73c02`](https://github.com/agritheory/beam/commit/ea73c02575c68f8da83e7617c954403b63948fe7))
+
+
+## v15.0.0 (2024-03-07)
+
+### Ci
+
+* ci: version-15 ([`c9deda4`](https://github.com/agritheory/beam/commit/c9deda4c733bad99da5da80a6c4eb3a713d010ce))
+
+* ci: add black to CI (#90) ([`399384f`](https://github.com/agritheory/beam/commit/399384f7056fb3d8b6aecc042431b632c36eea6f))
+
+### Unknown
+
+* CUPS service (#79)
+
+Co-authored-by: Lucas Vazquez &lt;lucas.vazquez@enviame.io&gt; ([`ac2c3ad`](https://github.com/agritheory/beam/commit/ac2c3add89346b51bc0e3084cf5dd8d2bdfa260c))
+
+* Stock Entry hu query filter (#84) ([`d6d1b5f`](https://github.com/agritheory/beam/commit/d6d1b5faca7ef85e17ea8ef255b9577def4b16ea))
+
+
 ## v14.8.4 (2023-11-29)
 
 ### Fix
@@ -299,7 +327,7 @@ docs: document features - first pass ([`fb5b7ac`](https://github.com/agritheory/
 Scanning Handling Unit in Listview should filter instead of route ([`2869963`](https://github.com/agritheory/beam/commit/286996364eed49542e2bc37aea6ca3770479854f))
 
 
-## v14.1.3 (2023-07-12)
+## v14.1.3 (2023-07-11)
 
 ### Documentation
 
@@ -318,7 +346,7 @@ fix: ignore permissions on barcode creation ([`57ce99d`](https://github.com/agri
 * wip: more documentation and stubs ([`0834808`](https://github.com/agritheory/beam/commit/083480843fa639714b8ffb5fb115e96d97beb7f5))
 
 
-## v14.1.2 (2023-07-11)
+## v14.1.2 (2023-07-10)
 
 ### Fix
 
@@ -571,7 +599,7 @@ feat: handle scanning of non-handling units ([`db158dc`](https://github.com/agri
 docs: fix readme ([`087158b`](https://github.com/agritheory/beam/commit/087158bd68c0a9a608ffd8bf225616e12c106502))
 
 
-## v14.0.1 (2023-05-27)
+## v14.0.1 (2023-05-26)
 
 ### Ci
 
