@@ -6,6 +6,9 @@ on:
       - version-14
       - version-15
   pull_request:
+    branches:
+      - version-14
+      - version-15
 
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -16,13 +19,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
           fetch-depth: 2
 
       - name: Setup Python
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
@@ -44,13 +47,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
           fetch-depth: 2
 
       - name: Setup Python
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
@@ -65,7 +68,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
           fetch-depth: 2
@@ -81,21 +84,21 @@ jobs:
         shell: bash
         run: |
           echo "The following files are not formatted:"
-          echo "${{steps.prettier-run.outputs.prettier_output}}"
+          echo "${{steps.prettier-run.outputs.prettier_output}}" >> $GITHUB_OUTPUT
 
   json_diff:
     needs: [ py_json_merge ]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.ref }}
           fetch-depth: 2
 
       - name: Find JSON changes
         id: changed-json
-        uses: tj-actions/changed-files@v36
+        uses: tj-actions/changed-files@v43
         with:
           files: |
             **/*.json
@@ -139,11 +142,19 @@ jobs:
             echo "D,${file}" >> base/mrd.txt
           done
 
+      - name: Setup requirements and script
+        run: |
+          pip install rich
+          pip install json_source_map
+          git clone --depth 1 https://gist.github.com/3eea518743067f1b971114f1a2016f69 fsjd
+
+      - name: Diff table
+        run: python3 fsjd/frappe_schema_json_diff.py base/mrd.txt head/acmr.txt 1
 
   py_json_merge:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Fetch validator
         run: git clone --depth 1 https://gist.github.com/f1bf2c11f78331b2417189c385022c28.git validate_json
