@@ -19,7 +19,10 @@ def generate_handling_units(doc, method=None):
 		return doc
 
 	for row in doc.items:
-		if not frappe.get_value("Item", row.item_code, "is_stock_item"):
+		is_stock_item, enable_handling_unit = frappe.get_value(
+			"Item", row.item_code, ["is_stock_item", "enable_handling_unit"]
+		)
+		if not (is_stock_item and enable_handling_unit):
 			continue
 
 		if (
@@ -32,6 +35,11 @@ def generate_handling_units(doc, method=None):
 			handling_unit.save()
 			row.to_handling_unit = handling_unit.name
 			continue
+
+		if doc.doctype == "Subcontracting Receipt" and not row.handling_unit:
+			handling_unit = frappe.new_doc("Handling Unit")
+			handling_unit.save()
+			row.handling_unit = handling_unit.name
 
 		if doc.doctype == "Stock Entry" and doc.purpose == "Manufacture" and row.is_scrap_item:
 			create_handling_unit = frappe.get_value(
