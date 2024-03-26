@@ -3,6 +3,7 @@ import json
 import frappe
 from erpnext.stock.stock_ledger import NegativeStockError
 
+from beam.beam.doctype.beam_settings.beam_settings import create_beam_settings
 from beam.beam.scan import get_handling_unit
 
 """
@@ -12,6 +13,16 @@ See docs/handling_unit.md
 
 @frappe.whitelist()
 def generate_handling_units(doc, method=None):
+	company = doc.get("company") or frappe.defaults.get_defaults().company
+	settings = (
+		create_beam_settings(company)
+		if not frappe.db.exists("BEAM Settings", {"company": company})
+		else frappe.get_doc("BEAM Settings", {"company": company})
+	)
+
+	if not settings.enable_handling_units:
+		return doc
+
 	if doc.doctype == "Purchase Invoice" and not doc.update_stock:
 		return doc
 
@@ -60,6 +71,16 @@ def generate_handling_units(doc, method=None):
 
 @frappe.whitelist()
 def validate_handling_unit_overconsumption(doc, method=None):
+	company = doc.get("company") or frappe.defaults.get_defaults().company
+	settings = (
+		create_beam_settings(company)
+		if not frappe.db.exists("BEAM Settings", {"company": company})
+		else frappe.get_doc("BEAM Settings", {"company": company})
+	)
+
+	if not settings.enable_handling_units:
+		return doc
+
 	if doc.doctype == "Sales Invoice" and not doc.update_stock:
 		return doc
 
