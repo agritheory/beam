@@ -142,6 +142,7 @@ async function get_handling_unit_stock_qty(name, handling_unit, s_warehouse) {
 	return flt(result)
 }
 
+//re combine
 async function set_recombine_handling_units(frm) {
 	let to_recombine = await show_handling_unit_recombine_dialog(frm)
 	await frappe.xcall('beam.beam.overrides.stock_entry.set_rows_to_recombine', {
