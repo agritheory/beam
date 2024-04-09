@@ -3,6 +3,10 @@ name: Linters
 on:
   push:
     branches:
+<<<<<<< HEAD
+=======
+      - version-15
+>>>>>>> c71599f (Added remaining qty and transferred qty on dialog box(Cancellation process of stock entry)  (#93))
       - version-14
       - version-15
   pull_request:
@@ -15,14 +19,10 @@ env:
 
 jobs:
   mypy:
-    needs: [ py_json_merge ]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
-          fetch-depth: 2
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -43,14 +43,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   black:
-    needs: [ py_json_merge ]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
-          fetch-depth: 2
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -59,19 +55,15 @@ jobs:
 
       - name: Install Black (Frappe)
         run: pip install git+https://github.com/frappe/black.git
-    
+
       - name: Run Black (Frappe)
         run: black --check .
 
   prettier:
-    needs: [ py_json_merge ]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
-          fetch-depth: 2
 
       - name: Prettify code
         uses: rutajdash/prettier-cli-action@v1.0.0
