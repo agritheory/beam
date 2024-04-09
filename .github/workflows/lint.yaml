@@ -3,7 +3,7 @@ name: Linters
 on:
   push:
     branches:
-      - main
+      - version-15
       - version-14
   pull_request:
 
@@ -16,21 +16,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
           fetch-depth: 2
 
       - name: Setup Python
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
       - name: Install mypy
         run: pip install mypy
 
-      # - name: Install mypy types
-      #   run: mypy ./aterp/. --install-types
+      - name: Install mypy types
+        run: mypy ./beam/. --install-types
 
       - name: Run mypy
         uses: sasanquaneuf/mypy-github-action@releases/v1
@@ -44,13 +44,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
           fetch-depth: 2
 
       - name: Setup Python
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
@@ -65,7 +65,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
           fetch-depth: 2
@@ -88,7 +88,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.ref }}
           fetch-depth: 2
@@ -143,7 +143,7 @@ jobs:
   py_json_merge:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Fetch validator
         run: git clone --depth 1 https://gist.github.com/f1bf2c11f78331b2417189c385022c28.git validate_json
