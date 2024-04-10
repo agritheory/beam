@@ -134,6 +134,7 @@ doc_events = {
 	},
 	"Stock Entry": {
 		"validate": [
+			"beam.beam.overrides.stock_entry.validate_items_with_handling_unit"
 			# "beam.beam.handling_unit.validate_handling_unit_overconsumption",
 		],
 		"before_submit": [
