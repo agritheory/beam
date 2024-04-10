@@ -3,6 +3,7 @@ import copy
 import frappe
 from erpnext.stock.doctype.stock_entry.stock_entry import StockEntry
 from erpnext.stock.doctype.stock_entry_detail.stock_entry_detail import StockEntryDetail
+from frappe import _
 from frappe.utils import cstr, flt
 from typing_extensions import Self
 
