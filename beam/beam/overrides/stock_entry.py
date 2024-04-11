@@ -3,6 +3,7 @@ import copy
 import frappe
 from erpnext.stock.doctype.stock_entry.stock_entry import StockEntry
 from erpnext.stock.doctype.stock_entry_detail.stock_entry_detail import StockEntryDetail
+from frappe import _
 from frappe.utils import cstr, flt
 from typing_extensions import Self
 
@@ -88,3 +89,10 @@ def get_handling_unit_qty(voucher_no, handling_unit, warehouse):
 		},
 		["qty_after_transaction"],
 	)
+
+
+def validate_items_with_handling_unit(doc, method=None):
+	if doc.stock_entry_type != "Material Receipt":
+		for row in doc.items:
+			if not row.handling_unit and frappe.db.get_value("Item", row.item_code, "enable_handling_unit"):
+				frappe.throw(frappe._(f"Row #{row.idx}: Handling Unit is missing for item {row.item_code}"))
