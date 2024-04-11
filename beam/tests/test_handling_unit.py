@@ -100,6 +100,7 @@ def test_stock_entry_repack():
 			"conversion_factor": 100,
 			"stock_qty": 100,
 			"s_warehouse": "Storeroom - APC",
+			"handling_unit": pr_hu["handling_unit"],
 		},
 	)
 	se.append(
