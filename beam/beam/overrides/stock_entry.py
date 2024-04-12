@@ -91,6 +91,7 @@ def get_handling_unit_qty(voucher_no, handling_unit, warehouse):
 	)
 
 
+# This function validates stock entry items to prevent missing handling units.
 def validate_items_with_handling_unit(doc, method=None):
 	if doc.stock_entry_type != "Material Receipt":
 		for row in doc.items:
@@ -101,4 +102,4 @@ def validate_items_with_handling_unit(doc, method=None):
 			):
 				frappe.throw(frappe._(f"Row #{row.idx}: Handling Unit is missing for item {row.item_code}"))
 			elif not row.handling_unit:
-			  frappe.throw(frappe._(f"Row #{row.idx}: Handling Unit is missing for item {row.item_code}"))
+				frappe.throw(frappe._(f"Row #{row.idx}: Handling Unit is missing for item {row.item_code}"))
