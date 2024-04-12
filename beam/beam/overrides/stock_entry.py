@@ -101,4 +101,4 @@ def validate_items_with_handling_unit(doc, method=None):
 			):
 				frappe.throw(frappe._(f"Row #{row.idx}: Handling Unit is missing for item {row.item_code}"))
 			elif not row.handling_unit:
-				frappe.throw(frappe._(f"Row #{row.idx}: Handling Unit is missing for item {row.item_code}"))
+			  frappe.throw(frappe._(f"Row #{row.idx}: Handling Unit is missing for item {row.item_code}"))
