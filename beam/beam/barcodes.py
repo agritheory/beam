@@ -4,6 +4,9 @@ from io import BytesIO
 
 import barcode
 import frappe
+from erpnext import get_default_company
+
+from beam.beam.doctype.beam_settings.beam_settings import create_beam_settings
 
 
 @frappe.whitelist()
@@ -36,11 +39,13 @@ def barcode128(barcode_text: str) -> str:
 	if not barcode_text:
 		return ""
 
-	font_size = 0
-	barcode_font_size = frappe.get_all("BEAM Settings", {"barcode_font_size": ["!=", ""]}, pluck="barcode_font_size")
-	if len(barcode_font_size):
-		font_size = barcode_font_size[0]
-
+	company = get_default_company()
+	settings = (
+		create_beam_settings(company)
+		if not frappe.db.exists("BEAM Settings", {"company": company})
+		else frappe.get_doc("BEAM Settings", {"company": company})
+	)
+	font_size = settings.barcode_font_size or 0
 	temp = BytesIO()  # TODO: move to line 38?
 	barcode.Code128(barcode_text, writer=barcode.writer.ImageWriter()).write(
 		temp,
