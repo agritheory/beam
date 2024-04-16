@@ -35,10 +35,16 @@ def create_beam_barcode(doc, method=None):
 def barcode128(barcode_text: str) -> str:
 	if not barcode_text:
 		return ""
+
+	font_size = 0
+	barcode_font_size = frappe.get_all("BEAM Settings", {"barcode_font_size": ["!=", ""]}, pluck="barcode_font_size")
+	if len(barcode_font_size):
+		font_size = barcode_font_size[0]
+
 	temp = BytesIO()  # TODO: move to line 38?
 	barcode.Code128(barcode_text, writer=barcode.writer.ImageWriter()).write(
 		temp,
-		options={"module_width": 0.4, "module_height": 10, "font_size": 0, "compress": True},
+		options={"module_width": 0.4, "module_height": 10, "font_size": font_size, "compress": True},
 	)
 	encoded = base64.b64encode(temp.getvalue()).decode("ascii")
 	return f'<img src="data:image/png;base64,{encoded}"/>'
