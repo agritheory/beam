@@ -62,6 +62,7 @@ def set_rows_to_recombine(docname: str, to_recombine=None) -> None:
 
 
 @frappe.whitelist()
+@frappe.read_only()
 def get_handling_units_for_item_code(doctype, txt, searchfield, start, page_len, filters):
 	StockLedgerEntry = frappe.qb.DocType("Stock Ledger Entry")
 	return (
@@ -78,6 +79,7 @@ def get_handling_units_for_item_code(doctype, txt, searchfield, start, page_len,
 
 
 @frappe.whitelist()
+@frappe.read_only()
 def get_handling_unit_qty(voucher_no, handling_unit, warehouse):
 	return frappe.db.get_value(
 		"Stock Ledger Entry",
