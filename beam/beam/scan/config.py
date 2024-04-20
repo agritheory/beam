@@ -4,6 +4,7 @@ from beam.beam.scan import frm, listview
 
 
 @frappe.whitelist()
+@frappe.read_only()
 def get_scan_doctypes():
 	scannable_doctypes = set()
 	listview_doctypes = set()
