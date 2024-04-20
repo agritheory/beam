@@ -150,6 +150,22 @@ doc_events = {
 			# "beam.beam.handling_unit.validate_handling_unit_overconsumption",
 		],
 	},
+	"Subcontracting Receipt": {
+		"before_submit": [
+			"beam.beam.handling_unit.generate_handling_units",
+		],
+	},
+	(
+		"Stock Entry",
+		"Stock Reconciliation",
+		"Purchase Receipt",
+		"Purchase Invoice",
+		"Delivery Note",
+		"Sales Invoice",
+	): {
+		"on_submit": ["beam.beam.demand.modify_demand"],
+		"on_cancel": ["beam.beam.demand.modify_demand"],
+	},
 }
 
 # Scheduled Tasks

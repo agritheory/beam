@@ -11,6 +11,7 @@ from erpnext.setup.utils import enable_all_roles_and_domains, set_defaults_for_t
 from erpnext.stock.get_item_details import get_item_details
 from frappe.desk.page.setup_wizard.setup_wizard import setup_complete
 
+from beam.beam.demand import build_demand_map
 from beam.tests.fixtures import boms, customers, items, operations, suppliers, workstations
 
 
@@ -44,6 +45,7 @@ def before_test():
 		frappe.db.set_value("Module Onboarding", modu, "is_complete", 1)
 	frappe.set_value("Website Settings", "Website Settings", "home_page", "login")
 	frappe.db.commit()
+	build_demand_map()
 
 
 def create_test_data():
@@ -267,6 +269,10 @@ def create_items(settings):
 		if i.item_code == "Parchment Paper":
 			i.append("uoms", {"uom": "Box", "conversion_factor": 100})
 			i.purchase_uom = "Box"
+		if i.item_code in ("Water", "Ice Water"):
+			i.append("uoms", {"uom": "Gallon Liquid (US)", "conversion_factor": 15.142})
+			i.purchase_uom = "Gallon Liquid (US)"
+			i.valuation_rate = 0.01 if i.item_code == "Water" else 0.02
 		i.save()
 		if item.get("item_price"):
 			ip = frappe.new_doc("Item Price")
@@ -284,20 +290,21 @@ def create_items(settings):
 		"items",
 		{
 			"item_code": "Water",
-			"qty": 10000000,
+			"qty": 1000,
 			"t_warehouse": "Refrigerator - APC",
-			"basic_rate": 0.0,
-			"allow_zero_valuation_rate": 1,
+			"uom": "Gallon Liquid (US)",
+			"basic_rate": 0.15,
+			"expense_account": "5111 - Cost of Goods Sold - APC",
 		},
 	)
 	water.append(
 		"items",
 		{
 			"item_code": "Ice Water",
-			"qty": 10000000,
+			"qty": 1000,
 			"t_warehouse": "Refrigerator - APC",
-			"basic_rate": 0.0,
-			"allow_zero_valuation_rate": 1,
+			"basic_rate": 0.30,
+			"expense_account": "5111 - Cost of Goods Sold - APC",
 		},
 	)
 	water.save()
@@ -465,8 +472,11 @@ def create_production_plan(settings, prod_plan_from_doc):
 	for item in pp.po_items:
 		item.planned_start_date = settings.day
 	pp.get_sub_assembly_items()
+	start_time = datetime.datetime(settings.day.year, settings.day.month, settings.day.day, 0, 0)
 	for item in pp.sub_assembly_items:
-		item.schedule_date = settings.day
+		item.schedule_date = start_time
+		time = frappe.get_value("BOM Operation", {"parent": item.bom_no}, "sum(time_in_mins) AS time")
+		start_time += datetime.timedelta(minutes=time + 2)
 	pp.for_warehouse = "Storeroom - APC"
 	raw_materials = get_items_for_material_requests(
 		pp.as_dict(), warehouses=None, get_parent_warehouse_data=None
@@ -528,23 +538,26 @@ def create_production_plan(settings, prod_plan_from_doc):
 		pr.save()
 		# pr.submit() # don't submit - needed to test handling unit generation
 
+	# TODO: call internal functions to make sub assembly items first
 	pp.make_work_order()
-	wos = frappe.get_all("Work Order", {"production_plan": pp.name})
+	wos = frappe.get_all("Work Order", {"production_plan": pp.name}, order_by="creation")
+	start_time = datetime.datetime(settings.day.year, settings.day.month, settings.day.day, 0, 0)
 	for wo in wos:
 		wo = frappe.get_doc("Work Order", wo)
 		wo.wip_warehouse = "Kitchen - APC"
+		wo.actual_start_date = wo.planned_start_date = start_time
 		wo.save()
 		wo.submit()
 		job_cards = frappe.get_all("Job Card", {"work_order": wo.name})
 		for job_card in job_cards:
 			job_card = frappe.get_doc("Job Card", job_card)
-			job_card.append(
-				"time_logs",
-				{
-					"completed_qty": wo.qty,
-				},
+			job_card.time_logs[0].completed_qty = wo.qty
+			job_card.time_logs[0].from_time = start_time
+			job_card.time_logs[0].to_time = start_time + datetime.timedelta(
+				minutes=job_card.time_logs[0].time_in_mins
 			)
 			job_card.save()
+			start_time = job_card.time_logs[0].to_time + datetime.timedelta(minutes=2)
 			job_card.submit()
 
 
