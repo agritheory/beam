@@ -32,10 +32,11 @@ def create_beam_barcode(doc, method=None):
 
 
 @frappe.whitelist()
+@frappe.read_only()
 def barcode128(barcode_text: str) -> str:
 	if not barcode_text:
 		return ""
-	temp = BytesIO()  # TODO: move to line 38?
+	temp = BytesIO()
 	barcode.Code128(barcode_text, writer=barcode.writer.ImageWriter()).write(
 		temp,
 		options={"module_width": 0.4, "module_height": 10, "font_size": 0, "compress": True},
