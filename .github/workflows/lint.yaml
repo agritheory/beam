@@ -20,9 +20,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
-          fetch-depth: 2
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -48,9 +45,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
-          fetch-depth: 2
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -59,7 +53,7 @@ jobs:
 
       - name: Install Black (Frappe)
         run: pip install git+https://github.com/frappe/black.git
-    
+
       - name: Run Black (Frappe)
         run: black --check .
 
@@ -69,9 +63,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
-          fetch-depth: 2
 
       - name: Prettify code
         uses: rutajdash/prettier-cli-action@v1.0.0
@@ -92,9 +83,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.ref }}
-          fetch-depth: 2
 
       - name: Find JSON changes
         id: changed-json

@@ -1,10 +1,6 @@
-import copy
-
 import frappe
 from erpnext.stock.doctype.stock_entry.stock_entry import StockEntry
-from erpnext.stock.doctype.stock_entry_detail.stock_entry_detail import StockEntryDetail
 from frappe.utils import cstr, flt
-from typing_extensions import Self
 
 from beam.beam.doctype.beam_settings.beam_settings import create_beam_settings
 
@@ -76,13 +72,31 @@ def set_rows_to_recombine(docname: str, to_recombine=None) -> None:
 
 
 @frappe.whitelist()
+@frappe.read_only()
 def get_handling_units_for_item_code(doctype, txt, searchfield, start, page_len, filters):
 	StockLedgerEntry = frappe.qb.DocType("Stock Ledger Entry")
 	return (
 		frappe.qb.from_(StockLedgerEntry)
 		.select(StockLedgerEntry.handling_unit)
-		.where(StockLedgerEntry.item_code == filters.get("item_code"))
+		.where(
+			(StockLedgerEntry.item_code == filters.get("item_code"))
+			& (StockLedgerEntry.handling_unit != "")
+		)
 		.orderby(StockLedgerEntry.posting_date, order=frappe.qb.desc)
 		.groupby(StockLedgerEntry.handling_unit)
 		.run(as_dict=False)
+	)
+
+
+@frappe.whitelist()
+@frappe.read_only()
+def get_handling_unit_qty(voucher_no, handling_unit, warehouse):
+	return frappe.db.get_value(
+		"Stock Ledger Entry",
+		{
+			"voucher_no": voucher_no,
+			"handling_unit": handling_unit,
+			"warehouse": warehouse,
+		},
+		["qty_after_transaction"],
 	)
