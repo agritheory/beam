@@ -1,32 +1,35 @@
 import calendar
-import datetime
 import pathlib
 import sqlite3
+from typing import TYPE_CHECKING
 
 import frappe
 from erpnext.stock.stock_balance import get_balance_qty_from_sle
 from frappe.utils import get_site_path
 from frappe.utils.data import get_datetime
 
+if TYPE_CHECKING:
+	from frappe.model.document import Document
 
-def build_demand_map():
+
+def build_demand_map() -> None:
 	transfer_demand = frappe.db.sql(
 		"""
-	SELECT
-	'Work Order' AS doctype,
-	`tabWork Order`.name AS parent,
-	`tabWork Order`.wip_warehouse AS warehouse,
-	`tabWork Order Item`.name,
-	`tabWork Order Item`.item_code,
-	`tabWork Order`.planned_start_date AS delivery_date,
-	(`tabWork Order Item`.required_qty - `tabWork Order Item`.transferred_qty) AS net_required_qty
-	FROM `tabWork Order`, `tabWork Order Item`
-	WHERE
-	`tabWork Order`.name = `tabWork Order Item`.parent
-	AND (`tabWork Order Item`.transferred_qty - `tabWork Order Item`.required_qty) < 0
-	AND `tabWork Order`.status = 'Not Started'
-	ORDER BY `tabWork Order`.planned_start_date
-	""",
+			SELECT
+				'Work Order' AS doctype,
+				`tabWork Order`.name AS parent,
+				`tabWork Order`.wip_warehouse AS warehouse,
+				`tabWork Order Item`.name,
+				`tabWork Order Item`.item_code,
+				`tabWork Order`.planned_start_date AS delivery_date,
+				(`tabWork Order Item`.required_qty - `tabWork Order Item`.transferred_qty) AS net_required_qty
+			FROM `tabWork Order`, `tabWork Order Item`
+			WHERE
+				`tabWork Order`.name = `tabWork Order Item`.parent
+				AND (`tabWork Order Item`.transferred_qty - `tabWork Order Item`.required_qty) < 0
+				AND `tabWork Order`.status = 'Not Started'
+			ORDER BY `tabWork Order`.planned_start_date
+		""",
 		as_dict=True,
 	)
 
@@ -35,22 +38,22 @@ def build_demand_map():
 	)
 	sales_demand = frappe.db.sql(
 		"""
-	SELECT
-	'Sales Order' AS doctype,
-	`tabSales Order`.name AS parent,
-	%(default_fg_warehouse)s AS warehouse,
-	`tabSales Order Item`.name,
-	`tabSales Order Item`.item_code,
-	`tabSales Order`.delivery_date,
-	(`tabSales Order Item`.stock_qty - `tabSales Order Item`.delivered_qty) AS net_required_qty
-	FROM `tabSales Order`, `tabSales Order Item`
-	WHERE
-	`tabSales Order`.name = `tabSales Order Item`.parent
-	AND `tabSales Order`.docstatus = 1
-	AND `tabSales Order`.status != 'Closed'
-	AND (`tabSales Order Item`.stock_qty - `tabSales Order Item`.delivered_qty) > 0
-	ORDER BY `tabSales Order`.delivery_date
-	""",
+			SELECT
+				'Sales Order' AS doctype,
+				`tabSales Order`.name AS parent,
+				%(default_fg_warehouse)s AS warehouse,
+				`tabSales Order Item`.name,
+				`tabSales Order Item`.item_code,
+				`tabSales Order`.delivery_date,
+				(`tabSales Order Item`.stock_qty - `tabSales Order Item`.delivered_qty) AS net_required_qty
+			FROM `tabSales Order`, `tabSales Order Item`
+			WHERE
+				`tabSales Order`.name = `tabSales Order Item`.parent
+				AND `tabSales Order`.docstatus = 1
+				AND `tabSales Order`.status != 'Closed'
+				AND (`tabSales Order Item`.stock_qty - `tabSales Order Item`.delivered_qty) > 0
+			ORDER BY `tabSales Order`.delivery_date
+		""",
 		{"default_fg_warehouse": default_fg_warehouse},
 		as_dict=True,
 	)
@@ -69,14 +72,14 @@ def build_demand_map():
 			)
 
 
-def dict_factory(cursor, row):
+def dict_factory(cursor: sqlite3.Cursor, row: dict) -> frappe._dict:
 	d = frappe._dict({})
 	for idx, col in enumerate(cursor.description):
 		d[col[0]] = row[idx]
 	return d
 
 
-def get_demand_db():
+def get_demand_db() -> sqlite3.Connection:
 	path = pathlib.Path(f"{get_site_path()}/demand.db").resolve()
 	with sqlite3.connect(path) as conn:
 		cur = conn.cursor()
@@ -84,52 +87,55 @@ def get_demand_db():
 		data = cur.fetchone()
 		if data:
 			return sqlite3.connect(path)
+
 		# else setup table
 		cur.execute(
-			"""CREATE TABLE demand(
-		key text,
-		doctype text,
-		parent text,
-		warehouse text,
-		name text,
-		item_code text,
-		delivery_date int,
-		modified int,
-		net_required_qty real,
-		actual_qty real,
-		status text
-		assigned text
-		)"""
+			"""
+				CREATE TABLE demand(
+					key text,
+					doctype text,
+					parent text,
+					warehouse text,
+					name text,
+					item_code text,
+					delivery_date int,
+					modified int,
+					net_required_qty real,
+					actual_qty real,
+					status text
+					assigned text
+				)
+			"""
 		)
 		cur.execute(
 			"""
-		CREATE INDEX idx_key
-		ON demand(key);
-		"""
+				CREATE INDEX idx_key
+				ON demand(key);
+			"""
 		)
 		cur.execute(
 			"""
-		CREATE INDEX idx_warehouse
-		ON demand(warehouse);
-		"""
+				CREATE INDEX idx_warehouse
+				ON demand(warehouse);
+			"""
 		)
 		cur.execute(
 			"""
-		CREATE INDEX idx_item_code
-		ON demand(item_code);
-		"""
+				CREATE INDEX idx_item_code
+				ON demand(item_code);
+			"""
 		)
 		cur.execute(
 			"""
-		CREATE INDEX delivery_date
-		ON demand(delivery_date);
-		"""
+				CREATE INDEX delivery_date
+				ON demand(delivery_date);
+			"""
 		)
 
 		return sqlite3.connect(path)
 
 
-def modify_demand(doc, method=None):
+def modify_demand(doc: "Document", method: str | None = None):
 	with get_demand_db() as conn:
 		conn.row_factory = dict_factory
 		cur = conn.cursor()

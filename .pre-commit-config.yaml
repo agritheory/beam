@@ -23,7 +23,7 @@ repos:
     rev: v2.34.0
     hooks:
       - id: pyupgrade
-        args: ['--py38-plus']
+        args: ['--py310-plus']
 
   - repo: https://github.com/frappe/black
     rev: 951ccf4d5bb0d692b457a5ebc4215d755618eb68
@@ -34,16 +34,14 @@ repos:
     rev: v2.7.1
     hooks:
       - id: prettier
-        types_or: [javascript]
+        types_or: [javascript, vue, scss]
         # Ignore any files that might contain jinja / bundles
         exclude: |
           (?x)^(
-              beam/public/dist/.*|
               .*node_modules.*|
-              .*boilerplate.*|
-              beam/www/website_script.js|
-              beam/templates/includes/.*|
-              beam/public/js/lib/.*
+              beam/public/dist/.*|
+              beam/public/js/lib/.*|
+              beam/templates/includes/.*
           )$
 
   - repo: https://github.com/PyCQA/isort
