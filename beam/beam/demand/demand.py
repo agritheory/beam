@@ -112,30 +112,10 @@ def get_demand_db() -> sqlite3.Connection:
 				)
 			"""
 		)
-		cur.execute(
-			"""
-				CREATE INDEX idx_key
-				ON demand(key);
-			"""
-		)
-		cur.execute(
-			"""
-				CREATE INDEX idx_warehouse
-				ON demand(warehouse);
-			"""
-		)
-		cur.execute(
-			"""
-				CREATE INDEX idx_item_code
-				ON demand(item_code);
-			"""
-		)
-		cur.execute(
-			"""
-				CREATE INDEX delivery_date
-				ON demand(delivery_date);
-			"""
-		)
+		cur.execute("CREATE INDEX idx_key ON demand(key)")
+		cur.execute("CREATE INDEX idx_warehouse ON demand(warehouse)")
+		cur.execute("CREATE INDEX idx_item_code ON demand(item_code)")
+		cur.execute("CREATE INDEX delivery_date ON demand(delivery_date)")
 
 		return sqlite3.connect(path)
 
@@ -181,16 +161,16 @@ def modify_demand(
 
 				# TODO: apply demand effect dynamically
 				rows = result.fetchall()
-				for r in rows:
-					if r.actual_qty == r.net_required_qty:
+				for row in rows:
+					if row.actual_qty == row.net_required_qty:
 						continue
 					update_qty = row_qty
-					if row_qty > r.net_required_qty:
-						row_qty = row_qty - r.net_required_qty
-						update_qty = r.net_required_qty
+					if row_qty > row.net_required_qty:
+						row_qty = row_qty - row.net_required_qty
+						update_qty = row.net_required_qty
 					result = cur.execute(
 						f"""
-							UPDATE demand SET actual_qty = '{update_qty}' WHERE key = '{r.key}';
+							UPDATE demand SET actual_qty = '{update_qty}' WHERE key = '{row.key}';
 						"""
 					)
 
