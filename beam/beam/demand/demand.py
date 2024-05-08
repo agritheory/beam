@@ -1,17 +1,20 @@
 import calendar
 import pathlib
 import sqlite3
+from typing import TYPE_CHECKING
 
 import frappe
-from erpnext.accounts.doctype.purchase_invoice.purchase_invoice import PurchaseInvoice
-from erpnext.accounts.doctype.sales_invoice.sales_invoice import SalesInvoice
-from erpnext.stock.doctype.delivery_note.delivery_note import DeliveryNote
-from erpnext.stock.doctype.purchase_receipt.purchase_receipt import PurchaseReceipt
-from erpnext.stock.doctype.stock_entry.stock_entry import StockEntry
-from erpnext.stock.doctype.stock_reconciliation.stock_reconciliation import StockReconciliation
 from erpnext.stock.stock_balance import get_balance_qty_from_sle
 from frappe.utils import get_site_path
 from frappe.utils.data import get_datetime
+
+if TYPE_CHECKING:
+	from erpnext.accounts.doctype.purchase_invoice.purchase_invoice import PurchaseInvoice
+	from erpnext.accounts.doctype.sales_invoice.sales_invoice import SalesInvoice
+	from erpnext.stock.doctype.delivery_note.delivery_note import DeliveryNote
+	from erpnext.stock.doctype.purchase_receipt.purchase_receipt import PurchaseReceipt
+	from erpnext.stock.doctype.stock_entry.stock_entry import StockEntry
+	from erpnext.stock.doctype.stock_reconciliation.stock_reconciliation import StockReconciliation
 
 
 def build_demand_map() -> None:
@@ -138,12 +141,12 @@ def get_demand_db() -> sqlite3.Connection:
 
 
 def modify_demand(
-	doc: DeliveryNote
-	| PurchaseInvoice
-	| PurchaseReceipt
-	| SalesInvoice
-	| StockEntry
-	| StockReconciliation,
+	doc: "DeliveryNote"
+	| "PurchaseInvoice"
+	| "PurchaseReceipt"
+	| "SalesInvoice"
+	| "StockEntry"
+	| "StockReconciliation",
 	method: str | None = None,
 ):
 	with get_demand_db() as conn:
@@ -160,23 +163,9 @@ def modify_demand(
 				continue
 
 			for action in method_matrix:
-				if action.get("condition"):
-					if isinstance(doc, PurchaseInvoice):
-						if action.get("condition") == "Purchase Receipt":
-							if doc.is_return:
-								continue
-						elif action.get("condition") == "Purchase Return":
-							if not doc.is_return:
-								continue
-					elif isinstance(doc, SalesInvoice):
-						if action.get("condition") == "Sales Fulfillment":
-							if doc.is_return:
-								continue
-						elif action.get("condition") == "Sales Return":
-							if not doc.is_return:
-								continue
-					elif isinstance(doc, StockEntry):
-						if action.get("condition") and action.get("condition") != doc.purpose:
+				if action.get("conditions"):
+					for key, value in action.get("conditions", {}).items():
+						if doc.get(key) != value:
 							continue
 
 				quantity_field = action.get("quantity_field")
@@ -222,13 +211,13 @@ demand = {
 				"warehouse_field": "warehouse",
 				"quantity_field": "stock_qty",
 				"demand_effect": "decrease",
-				"condition": "Purchase Receipt",
+				"conditions": {"is_return": False},
 			},
 			{
 				"warehouse_field": "warehouse",
 				"quantity_field": "stock_qty",
 				"demand_effect": "increase",
-				"condition": "Purchase Return",
+				"conditions": {"is_return": True},
 			},
 		],
 		"on_cancel": [
@@ -236,13 +225,13 @@ demand = {
 				"warehouse_field": "warehouse",
 				"quantity_field": "stock_qty",
 				"demand_effect": "increase",
-				"condition": "Purchase Receipt",
+				"conditions": {"is_return": False},
 			},
 			{
 				"warehouse_field": "warehouse",
 				"quantity_field": "stock_qty",
 				"demand_effect": "decrease",
-				"condition": "Purchase Return",
+				"conditions": {"is_return": True},
 			},
 		],
 	},
@@ -260,13 +249,13 @@ demand = {
 				"warehouse_field": "warehouse",
 				"quantity_field": "stock_qty",
 				"demand_effect": "increase",
-				"condition": "Sales Fulfillment",
+				"conditions": {"is_return": False},
 			},
 			{
 				"warehouse_field": "warehouse",
 				"quantity_field": "stock_qty",
 				"demand_effect": "decrease",
-				"condition": "Sales Return",
+				"conditions": {"is_return": True},
 			},
 		],
 		"on_cancel": [
@@ -274,13 +263,13 @@ demand = {
 				"warehouse_field": "warehouse",
 				"quantity_field": "stock_qty",
 				"demand_effect": "decrease",
-				"condition": "Sales Fulfillment",
+				"conditions": {"is_return": False},
 			},
 			{
 				"warehouse_field": "warehouse",
 				"quantity_field": "stock_qty",
 				"demand_effect": "increase",
-				"condition": "Sales Return",
+				"conditions": {"is_return": True},
 			},
 		],
 	},
@@ -290,73 +279,73 @@ demand = {
 				"warehouse_field": "s_warehouse",
 				"quantity_field": "transfer_qty",
 				"demand_effect": "decrease",
-				"condition": "Material Transfer for Manufacture",
+				"conditions": {"purpose": "Material Transfer for Manufacture"},
 			},
 			{
 				"warehouse_field": "t_warehouse",
 				"quantity_field": "transfer_qty",
 				"demand_effect": "increase",
-				"condition": "Material Transfer for Manufacture",
+				"conditions": {"purpose": "Material Transfer for Manufacture"},
 			},
 			{
 				"warehouse_field": "s_warehouse",
 				"quantity_field": "transfer_qty",
 				"demand_effect": "decrease",
-				"condition": "Material Issue",
+				"conditions": {"purpose": "Material Issue"},
 			},
 			{
 				"warehouse_field": "s_warehouse",
 				"quantity_field": "transfer_qty",
 				"demand_effect": "increase",
-				"condition": "Material Receipt",
+				"conditions": {"purpose": "Material Receipt"},
 			},
 			{
 				"warehouse_field": "s_warehouse",
 				"quantity_field": "transfer_qty",
 				"demand_effect": "decrease",
-				"condition": "Material Transfer",
+				"conditions": {"purpose": "Material Transfer"},
 			},
 			{
 				"warehouse_field": "t_warehouse",
 				"quantity_field": "transfer_qty",
 				"demand_effect": "increase",
-				"condition": "Material Transfer",
+				"conditions": {"purpose": "Material Transfer"},
 			},
 			{
 				"warehouse_field": "s_warehouse",
 				"quantity_field": "transfer_qty",
 				"demand_effect": "decrease",
-				"condition": "Manufacture",
+				"conditions": {"purpose": "Manufacture"},
 			},
 			{
 				"warehouse_field": "t_warehouse",
 				"quantity_field": "transfer_qty",
 				"demand_effect": "increase",
-				"condition": "Manufacture",
+				"conditions": {"purpose": "Manufacture"},
 			},
 			{
 				"warehouse_field": "s_warehouse",
 				"quantity_field": "transfer_qty",
 				"demand_effect": "decrease",
-				"condition": "Repack",
+				"conditions": {"purpose": "Repack"},
 			},
 			{
 				"warehouse_field": "t_warehouse",
 				"quantity_field": "transfer_qty",
 				"demand_effect": "increase",
-				"condition": "Repack",
+				"conditions": {"purpose": "Repack"},
 			},
 			{
 				"warehouse_field": "s_warehouse",
 				"quantity_field": "transfer_qty",
 				"demand_effect": "decrease",
-				"condition": "Send to Subcontractor",
+				"conditions": {"purpose": "Send to Subcontractor"},
 			},
 			{
 				"warehouse_field": "t_warehouse",
 				"quantity_field": "transfer_qty",
 				"demand_effect": "increase",
-				"condition": "Send to Subcontractor",
+				"conditions": {"purpose": "Send to Subcontractor"},
 			},
 		],
 		"on_cancel": [
@@ -364,73 +353,73 @@ demand = {
 				"warehouse_field": "s_warehouse",
 				"quantity_field": "transfer_qty",
 				"demand_effect": "increase",
-				"condition": "Material Transfer for Manufacture",
+				"conditions": {"purpose": "Material Transfer for Manufacture"},
 			},
 			{
 				"warehouse_field": "t_warehouse",
 				"quantity_field": "transfer_qty",
 				"demand_effect": "decrease",
-				"condition": "Material Transfer for Manufacture",
+				"conditions": {"purpose": "Material Transfer for Manufacture"},
 			},
 			{
 				"warehouse_field": "s_warehouse",
 				"quantity_field": "transfer_qty",
 				"demand_effect": "increase",
-				"condition": "Material Issue",
+				"conditions": {"purpose": "Material Issue"},
 			},
 			{
 				"warehouse_field": "s_warehouse",
 				"quantity_field": "transfer_qty",
 				"demand_effect": "decrease",
-				"condition": "Material Receipt",
+				"conditions": {"purpose": "Material Receipt"},
 			},
 			{
 				"warehouse_field": "s_warehouse",
 				"quantity_field": "transfer_qty",
 				"demand_effect": "increase",
-				"condition": "Material Transfer",
+				"conditions": {"purpose": "Material Transfer"},
 			},
 			{
 				"warehouse_field": "t_warehouse",
 				"quantity_field": "transfer_qty",
 				"demand_effect": "decrease",
-				"condition": "Material Transfer",
+				"conditions": {"purpose": "Material Transfer"},
 			},
 			{
 				"warehouse_field": "s_warehouse",
 				"quantity_field": "transfer_qty",
 				"demand_effect": "increase",
-				"condition": "Manufacture",
+				"conditions": {"purpose": "Manufacture"},
 			},
 			{
 				"warehouse_field": "t_warehouse",
 				"quantity_field": "transfer_qty",
 				"demand_effect": "decrease",
-				"condition": "Manufacture",
+				"conditions": {"purpose": "Manufacture"},
 			},
 			{
 				"warehouse_field": "s_warehouse",
 				"quantity_field": "transfer_qty",
 				"demand_effect": "increase",
-				"condition": "Repack",
+				"conditions": {"purpose": "Repack"},
 			},
 			{
 				"warehouse_field": "t_warehouse",
 				"quantity_field": "transfer_qty",
 				"demand_effect": "decrease",
-				"condition": "Repack",
+				"conditions": {"purpose": "Repack"},
 			},
 			{
 				"warehouse_field": "s_warehouse",
 				"quantity_field": "transfer_qty",
 				"demand_effect": "increase",
-				"condition": "Send to Subcontractor",
+				"conditions": {"purpose": "Send to Subcontractor"},
 			},
 			{
 				"warehouse_field": "t_warehouse",
 				"quantity_field": "transfer_qty",
 				"demand_effect": "decrease",
-				"condition": "Send to Subcontractor",
+				"conditions": {"purpose": "Send to Subcontractor"},
 			},
 		],
 	},
