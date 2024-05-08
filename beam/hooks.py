@@ -163,8 +163,8 @@ doc_events = {
 		"Delivery Note",
 		"Sales Invoice",
 	): {
-		"on_submit": ["beam.beam.demand.modify_demand"],
-		"on_cancel": ["beam.beam.demand.modify_demand"],
+		"on_submit": ["beam.beam.demand.demand.modify_demand"],
+		"on_cancel": ["beam.beam.demand.demand.modify_demand"],
 	},
 }
 

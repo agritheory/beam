@@ -6,11 +6,10 @@ from time import localtime
 
 import frappe
 
-from beam.beam.demand import dict_factory, get_demand_db
+from beam.beam.demand.demand import dict_factory, get_demand_db
 
 
 def execute(filters=None):
-	columns, data = [], []
 	return get_columns(filters), get_data(filters)
 
 

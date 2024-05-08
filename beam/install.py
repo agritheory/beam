@@ -3,7 +3,7 @@ import pathlib
 import frappe
 from frappe.utils import get_site_path
 
-from beam.beam.demand import build_demand_map
+from beam.beam.demand.demand import build_demand_map
 from beam.beam.scan.config import get_scan_doctypes
 from beam.customize import load_customizations
 
