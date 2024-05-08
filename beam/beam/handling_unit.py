@@ -94,7 +94,9 @@ def validate_handling_unit_overconsumption(doc, method=None):
 			# incoming
 			if row.get("s_warehouse") and not row.get("t_warehouse"):
 				if abs(row.get(qty_field) - hu.stock_qty) != 0.0 and (
-					(row.get(qty_field) - hu.stock_qty) < precision_denominator
+					# (row.get(qty_field) - hu.stock_qty) < precision_denominator
+					(row.get(qty_field) - hu.stock_qty)
+					> precision_denominator
 				):
 					error = True
 			# outgoing
