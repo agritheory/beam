@@ -117,9 +117,7 @@ doc_events = {
 	# 	"Stock Entry",
 	# 	"Sales Invoice",
 	# 	"Delivery Note",
-	# ): {
-	# 	"validate": ["beam.beam.handling_unit.validate_handling_unit_overconsumption"]
-	# },
+	# ): {"validate": ["beam.beam.handling_unit.validate_handling_unit_overconsumption"]},
 	("Purchase Receipt", "Purchase Invoice", "Stock Entry", "Subcontracting Receipt",): {
 		"before_submit": ["beam.beam.handling_unit.generate_handling_units"],
 	},
