@@ -109,51 +109,19 @@ override_doctype_class = {
 # Hook on document methods and events
 
 doc_events = {
-	"Item": {
-		"validate": [
-			"beam.beam.barcodes.create_beam_barcode",
-		]
+	("Item", "Warehouse"): {
+		"validate": ["beam.beam.barcodes.create_beam_barcode"],
 	},
-	"Warehouse": {
-		"validate": [
-			"beam.beam.barcodes.create_beam_barcode",
-		]
-	},
-	"Purchase Receipt": {
-		"before_submit": [
-			"beam.beam.handling_unit.generate_handling_units",
-		],
-		"validate": [
-			# "beam.beam.handling_unit.validate_handling_unit_overconsumption",
-		],
-	},
-	"Purchase Invoice": {
-		"before_submit": [
-			"beam.beam.handling_unit.generate_handling_units",
-		],
-	},
-	"Stock Entry": {
-		"validate": [
-			# "beam.beam.handling_unit.validate_handling_unit_overconsumption",
-		],
-		"before_submit": [
-			"beam.beam.handling_unit.generate_handling_units",
-		],
-	},
-	"Sales Invoice": {
-		"validate": [
-			# "beam.beam.handling_unit.validate_handling_unit_overconsumption",
-		],
-	},
-	"Delivery Note": {
-		"validate": [
-			# "beam.beam.handling_unit.validate_handling_unit_overconsumption",
-		],
-	},
-	"Subcontracting Receipt": {
-		"before_submit": [
-			"beam.beam.handling_unit.generate_handling_units",
-		],
+	# (
+	# 	"Purchase Receipt",
+	# 	"Stock Entry",
+	# 	"Sales Invoice",
+	# 	"Delivery Note",
+	# ): {
+	# 	"validate": ["beam.beam.handling_unit.validate_handling_unit_overconsumption"]
+	# },
+	("Purchase Receipt", "Purchase Invoice", "Stock Entry", "Subcontracting Receipt",): {
+		"before_submit": ["beam.beam.handling_unit.generate_handling_units"],
 	},
 	(
 		"Stock Entry",

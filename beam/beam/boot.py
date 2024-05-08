@@ -1,5 +1,3 @@
-import frappe
-
 from beam.beam.scan.config import get_scan_doctypes
 
 
