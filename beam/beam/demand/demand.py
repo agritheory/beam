@@ -159,18 +159,24 @@ def modify_demand(
 					"""
 				)
 
-				# TODO: apply demand effect dynamically
 				rows = result.fetchall()
+				demand_effect = action.get("demand_effect")
 				for row in rows:
 					if row.actual_qty == row.net_required_qty:
 						continue
-					update_qty = row_qty
-					if row_qty > row.net_required_qty:
-						row_qty = row_qty - row.net_required_qty
-						update_qty = row.net_required_qty
+
+					new_actual_qty = row.net_required_qty
+					if demand_effect == "increase":
+						new_actual_qty = row.net_required_qty + row_qty
+					elif demand_effect == "decrease":
+						update_qty = min(row_qty, row.net_required_qty)
+						new_actual_qty = row.net_required_qty - update_qty
+					elif demand_effect == "adjustment":
+						new_actual_qty = row_qty
+
 					result = cur.execute(
 						f"""
-							UPDATE demand SET actual_qty = '{update_qty}' WHERE key = '{row.key}';
+							UPDATE demand SET actual_qty = '{new_actual_qty}' WHERE key = '{row.key}';
 						"""
 					)
 
