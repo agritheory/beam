@@ -22,6 +22,27 @@
 
 ### Unknown
 
+
+## v14.8.5 (2024-04-20)
+
+### Ci
+
+* ci: add black to CI (#90) ([`399384f`](https://github.com/agritheory/beam/commit/399384f7056fb3d8b6aecc042431b632c36eea6f))
+
+### Fix
+
+* fix: add read-only decorator to APIs (#104)
+
+Co-authored-by: Rohan Bansal &lt;rohan@agritheory.dev&gt; ([`0323066`](https://github.com/agritheory/beam/commit/0323066718f3b3a9d9a19036878eb65fdc66bf2d))
+
+### Unknown
+
+* Added remaining qty and transferred qty on dialog box(Cancellation process of stock entry)  (#93)
+
+Co-authored-by: Tyler Matteson &lt;tyler@agritheory.com&gt; ([`c71599f`](https://github.com/agritheory/beam/commit/c71599f4eb3a784217732b1f94dd5fab22a0c06e))
+
+* Changes to remove null value in handling unit list (#95) ([`2c8d861`](https://github.com/agritheory/beam/commit/2c8d8610deaaea4c88fc1f08a76a02657b7af110))
+
 * CUPS service (#79)
 
 Co-authored-by: Lucas Vazquez &lt;lucas.vazquez@enviame.io&gt; ([`ac2c3ad`](https://github.com/agritheory/beam/commit/ac2c3add89346b51bc0e3084cf5dd8d2bdfa260c))
