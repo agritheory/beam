@@ -9,7 +9,12 @@ from frappe.utils import get_site_path
 from frappe.utils.data import get_datetime
 
 if TYPE_CHECKING:
-	from frappe.model.document import Document
+	from erpnext.accounts.doctype.purchase_invoice.purchase_invoice import PurchaseInvoice
+	from erpnext.accounts.doctype.sales_invoice.sales_invoice import SalesInvoice
+	from erpnext.stock.doctype.delivery_note.delivery_note import DeliveryNote
+	from erpnext.stock.doctype.purchase_receipt.purchase_receipt import PurchaseReceipt
+	from erpnext.stock.doctype.stock_entry.stock_entry import StockEntry
+	from erpnext.stock.doctype.stock_reconciliation.stock_reconciliation import StockReconciliation
 
 
 def build_demand_map() -> None:
@@ -107,63 +112,72 @@ def get_demand_db() -> sqlite3.Connection:
 				)
 			"""
 		)
-		cur.execute(
-			"""
-				CREATE INDEX idx_key
-				ON demand(key);
-			"""
-		)
-		cur.execute(
-			"""
-				CREATE INDEX idx_warehouse
-				ON demand(warehouse);
-			"""
-		)
-		cur.execute(
-			"""
-				CREATE INDEX idx_item_code
-				ON demand(item_code);
-			"""
-		)
-		cur.execute(
-			"""
-				CREATE INDEX delivery_date
-				ON demand(delivery_date);
-			"""
-		)
+		cur.execute("CREATE INDEX idx_key ON demand(key)")
+		cur.execute("CREATE INDEX idx_warehouse ON demand(warehouse)")
+		cur.execute("CREATE INDEX idx_item_code ON demand(item_code)")
+		cur.execute("CREATE INDEX delivery_date ON demand(delivery_date)")
 
 		return sqlite3.connect(path)
 
 
-def modify_demand(doc: "Document", method: str | None = None):
+def modify_demand(
+	doc: "DeliveryNote"
+	| "PurchaseInvoice"
+	| "PurchaseReceipt"
+	| "SalesInvoice"
+	| "StockEntry"
+	| "StockReconciliation",
+	method: str | None = None,
+):
 	with get_demand_db() as conn:
 		conn.row_factory = dict_factory
 		cur = conn.cursor()
+		demand = frappe.get_hooks("demand")
+
 		for row in doc.items:
-			warehouse_field, qty_field = "warehouse", "stock_qty"
-			if doc.doctype == "Stock Entry" and method == "submit":
-				warehouse_field, qty_field = "t_warehouse", "transfer_qty"
-			elif doc.doctype == "Stock Entry" and method == "cancel":
-				warehouse_field, qty_field = "s_warehouse", "transfer_qty"
+			doctype_matrix = demand.get(doc.doctype)
+			if not doctype_matrix:
+				continue
 
-			row_qty = row.get(qty_field)
-			result = cur.execute(
-				f"""
-			SELECT * FROM demand WHERE item_code = '{row.item_code}' AND warehouse = '{row.get(warehouse_field)} ORDER BY delivery_date ASC';
-			"""
-			)
-			rows = result.fetchall()
+			method_matrix = doctype_matrix.get(method)
+			if not method_matrix:
+				continue
 
-			for r in rows:
-				if r.actual_qty == r.net_required_qty:
-					continue
-				update_qty = row_qty
-				if row_qty > r.net_required_qty:
-					row_qty = row_qty - r.net_required_qty
-					update_qty = r.net_required_qty
+			for action in method_matrix:
+				if action.get("conditions"):
+					for key, value in action.get("conditions", {}).items():
+						if doc.get(key) != value:
+							continue
+
+				quantity_field = action.get("quantity_field")
+				warehouse_field = action.get("warehouse_field")
+
+				row_qty = row.get(quantity_field)
 				result = cur.execute(
 					f"""
-				UPDATE demand SET actual_qty = '{r.net_required_qty}' WHERE key = '{r.key}';
-				"""
+						SELECT * FROM demand WHERE item_code = '{row.item_code}' AND warehouse = '{row.get(warehouse_field)} ORDER BY delivery_date ASC';
+					"""
 				)
+
+				rows = result.fetchall()
+				demand_effect = action.get("demand_effect")
+				for row in rows:
+					if row.actual_qty == row.net_required_qty:
+						continue
+
+					new_actual_qty = row.net_required_qty
+					if demand_effect == "increase":
+						new_actual_qty = row.net_required_qty + row_qty
+					elif demand_effect == "decrease":
+						update_qty = min(row_qty, row.net_required_qty)
+						new_actual_qty = row.net_required_qty - update_qty
+					elif demand_effect == "adjustment":
+						new_actual_qty = row_qty
+
+					result = cur.execute(
+						f"""
+							UPDATE demand SET actual_qty = '{new_actual_qty}' WHERE key = '{row.key}';
+						"""
+					)
+
 		conn.commit()
