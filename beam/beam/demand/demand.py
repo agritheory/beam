@@ -1,7 +1,7 @@
 import calendar
 import pathlib
 import sqlite3
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 import frappe
 from erpnext.stock.stock_balance import get_balance_qty_from_sle
@@ -121,12 +121,14 @@ def get_demand_db() -> sqlite3.Connection:
 
 
 def modify_demand(
-	doc: "DeliveryNote"
-	| "PurchaseInvoice"
-	| "PurchaseReceipt"
-	| "SalesInvoice"
-	| "StockEntry"
-	| "StockReconciliation",
+	doc: Union[
+		"DeliveryNote",
+		"PurchaseInvoice",
+		"PurchaseReceipt",
+		"SalesInvoice",
+		"StockEntry",
+		"StockReconciliation",
+	],
 	method: str | None = None,
 ):
 	with get_demand_db() as conn:
