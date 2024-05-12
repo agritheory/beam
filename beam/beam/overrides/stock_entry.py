@@ -95,7 +95,15 @@ def get_handling_unit_qty(voucher_no, handling_unit, warehouse):
 def validate_items_with_handling_unit(doc, method=None):
 	if doc.stock_entry_type != "Material Receipt":
 		for row in doc.items:
-			if (
+			if not frappe.get_value("Item", row.item_code, "enable_handling_unit"):
+				continue
+			elif row.is_scrap_item and not frappe.get_value(
+				"BOM Scrap Item",
+				{"item_code": row.item_code, "parent": doc.get("bom_no")},
+				"create_handling_unit",
+			):
+				continue
+			elif (
 				doc.stock_entry_type in ["Repack", "Manufacture"]
 				and not (row.t_warehouse or row.is_finished_item or row.is_scrap_item)
 				and not row.handling_unit

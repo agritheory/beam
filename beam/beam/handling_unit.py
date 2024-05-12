@@ -77,7 +77,7 @@ def validate_handling_unit_overconsumption(doc, method=None):
 	if doc.doctype == "Stock Entry" and doc.purpose == "Material Receipt":
 		return doc
 
-	qty_field = "actual_qty" if doc.doctype == "Stock Entry" else "stock_qty"
+	qty_field = "transfer_qty" if doc.doctype == "Stock Entry" else "stock_qty"
 
 	for row in doc.get("items"):
 		error = False
@@ -91,25 +91,18 @@ def validate_handling_unit_overconsumption(doc, method=None):
 		precision_denominator = 1 / pow(100, frappe.get_precision(row.doctype, qty_field))
 
 		if doc.doctype == "Stock Entry":
-			# incoming
-			if row.get("s_warehouse") and not row.get("t_warehouse"):
-				if abs(row.get(qty_field) - hu.stock_qty) != 0.0 and (
-					# (row.get(qty_field) - hu.stock_qty) < precision_denominator
-					(row.get(qty_field) - hu.stock_qty)
-					> precision_denominator
-				):
-					error = True
 			# outgoing
-			elif row.get("t_warehouse") and not row.get("s_warehouse"):
+			if row.get("t_warehouse") and not row.get("s_warehouse"):
 				if (
-					abs(hu.stock_qty - row.get(qty_field)) != 0.0
+					abs(hu.stock_qty - row.get(qty_field)) > 0.0
 					and (hu.stock_qty - row.get(qty_field) > precision_denominator)
 					and not row.is_scrap_item
 				):
 					error = True
-			else:  # transfer / same warehouse
-				if abs(hu.stock_qty - row.get(qty_field)) != 0.0 and (
-					hu.stock_qty - row.get(qty_field) < precision_denominator
+			else:  # incoming and transfer / same warehouse
+				if (
+					abs(hu.stock_qty - row.get(qty_field)) > 0.0
+					and hu.stock_qty - row.get(qty_field) < precision_denominator
 				):
 					error = True
 
@@ -122,7 +115,7 @@ def validate_handling_unit_overconsumption(doc, method=None):
 		if error == True:
 			frappe.throw(
 				frappe._(
-					f"Row #{row.idx}: Handling Unit for {row.item_code} cannot be more than {hu.stock_qty} {hu.stock_uom}. You have {row.get(qty_field)} {row.stock_uom}"
+					f"Row #{row.idx}: Handling Unit for {row.item_code} cannot be more than {hu.stock_qty:.1f} {hu.stock_uom}. You have {row.get(qty_field):.1f} {row.stock_uom}"
 				),
 				NegativeStockError,
 				title=frappe._("Insufficient Stock"),
