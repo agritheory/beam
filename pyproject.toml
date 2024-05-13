@@ -9,7 +9,8 @@ readme = "README.md"
 dynamic = ["version"]
 dependencies = [
     "python-barcode",
-    "pytest"
+    "pytest",
+    "pytest-order"
 ]
 
 [build-system]
