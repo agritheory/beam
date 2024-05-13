@@ -105,6 +105,7 @@ def get_handling_unit_qty(voucher_no, handling_unit, warehouse):
 		["qty_after_transaction"],
 	)
 
+
 # This function validates stock entry items to prevent missing handling units.
 def validate_items_with_handling_unit(doc, method=None):
 	if doc.stock_entry_type != "Material Receipt":
