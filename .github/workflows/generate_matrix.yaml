@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - version-14
+      - version-15
   pull_request:
 
 env:

@@ -1,9 +1,11 @@
 import frappe
 
 from beam.beam.scan.config import get_scan_doctypes
+from beam.customize import load_customizations
 
 
 def after_install():
+	load_customizations()
 	print("Setting up Handling Unit Inventory Dimension")
 	if frappe.db.exists("Inventory Dimension", "Handling Unit"):
 		return

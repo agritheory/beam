@@ -13,8 +13,6 @@ fi
 
 cd ~ || exit
 
-# sudo apt update -y && sudo apt install redis-server -y 
-
 pip install --upgrade pip
 pip install frappe-bench
 
@@ -28,7 +26,8 @@ mysql --host 127.0.0.1 --port 3306 -u root -e "GRANT ALL PRIVILEGES ON \`test_si
 mysql --host 127.0.0.1 --port 3306 -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'root'"  # match site_cofig
 mysql --host 127.0.0.1 --port 3306 -u root -e "FLUSH PRIVILEGES"
 
-git clone https://github.com/frappe/frappe --branch version-14
+echo BRANCH_NAME: "${BRANCH_NAME}"
+git clone https://github.com/frappe/frappe --branch ${BRANCH_NAME}
 bench init frappe-bench --frappe-path ~/frappe --python "$(which python)" --skip-assets --ignore-exist
 
 mkdir ~/frappe-bench/sites/test_site
@@ -41,8 +40,8 @@ sed -i 's/schedule:/# schedule:/g' Procfile
 sed -i 's/socketio:/# socketio:/g' Procfile
 sed -i 's/redis_socketio:/# redis_socketio:/g' Procfile
 
-bench get-app https://github.com/frappe/erpnext --branch version-14 --resolve-deps --skip-assets
-bench get-app beam "${GITHUB_WORKSPACE}" --skip-assets --resolve-deps
+bench get-app erpnext https://github.com/frappe/erpnext --branch ${BRANCH_NAME} --resolve-deps --skip-assets
+bench get-app beam "${GITHUB_WORKSPACE}" --skip-assets
 
 printf '%s\n' 'frappe' 'erpnext' 'beam' > ~/frappe-bench/sites/apps.txt
 bench setup requirements --python
@@ -52,7 +51,6 @@ bench start &> bench_run_logs.txt &
 CI=Yes &
 bench --site test_site reinstall --yes --admin-password admin
 
-# bench --site test_site install-app erpnext beam
 bench setup requirements --dev
 
 echo "BENCH VERSION NUMBERS:"

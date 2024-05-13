@@ -6,6 +6,8 @@ on:
       - version-15
       - version-14
   pull_request:
+    branches:
+      - version-15
 
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -26,7 +28,7 @@ jobs:
         run: pip install mypy
 
       - name: Install mypy types
-        run: mypy ./beam/. --install-types
+        run: mypy ./beam/. --install-types --non-interactive
 
       - name: Run mypy
         uses: sasanquaneuf/mypy-github-action@releases/v1
@@ -48,7 +50,7 @@ jobs:
 
       - name: Install Black (Frappe)
         run: pip install git+https://github.com/frappe/black.git
-    
+
       - name: Run Black (Frappe)
         run: black --check .
 
@@ -69,5 +71,4 @@ jobs:
         shell: bash
         run: |
           echo "The following files are not formatted:"
-          echo "${{steps.prettier-run.outputs.prettier_output}}"
-
+          echo "${{ steps.prettier-run.outputs.prettier_output }}" >> $GITHUB_OUTPUT

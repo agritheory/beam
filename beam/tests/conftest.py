@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -32,8 +33,8 @@ def db_instance():
 
 	currentsite = "test_site"
 	sites = Path(get_bench_path()) / "sites"
-	if (sites / "currentsite.txt").is_file():
-		currentsite = (sites / "currentsite.txt").read_text()
+	if (sites / "common_site_config.json").is_file():
+		currentsite = json.loads((sites / "common_site_config.json").read_text()).get("default_site")
 
 	frappe.init(site=currentsite, sites_path=sites)
 	frappe.connect()

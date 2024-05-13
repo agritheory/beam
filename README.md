@@ -8,11 +8,11 @@ MIT
 
 ## Install Instructions
 
-Set up a new bench, substitute a path to the python version to use, which should 3.10 latest
+Set up a new bench, substitute a path to the python version to use, which should be 3.10 latest
 
 ```
 # for linux development
-bench init --frappe-branch version-14 {{ bench name }} --python ~/.pyenv/versions/3.10.4/bin/python3
+bench init --frappe-branch version-15 {{ bench name }} --python ~/.pyenv/versions/3.10.13/bin/python3
 ```
 Create a new site in that bench
 ```
@@ -20,13 +20,13 @@ cd {{ bench name }}
 bench new-site {{ site name }} --force --db-name {{ site name }}
 bench use {{ site name }}
 ```
-Download the ERPNext app, its prerequisite Payments, and the HR module
+Download the ERPNext app
 ```
-bench get-app erpnext --branch version-14
+bench get-app erpnext --branch version-15
 ```
 Download this application and install all apps
 ```
-bench get-app beam git@github.com:agritheory/beam.git
+bench get-app beam --branch version-15 git@github.com:agritheory/beam.git
 ```
 Set developer mode in `site_config.json`
 ```
@@ -35,7 +35,10 @@ nano site_config.json
 
  "developer_mode": 1,
 ```
-
+Enable server scripts
+```
+bench set-config -g server_script_enabled 1
+```
 Update and get the site ready
 ```
 bench start

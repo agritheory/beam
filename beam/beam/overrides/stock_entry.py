@@ -3,13 +3,19 @@ import copy
 import frappe
 from erpnext.stock.doctype.stock_entry.stock_entry import StockEntry
 from erpnext.stock.doctype.stock_entry_detail.stock_entry_detail import StockEntryDetail
-from frappe import _
 from frappe.utils import cstr, flt
 from typing_extensions import Self
+
+from beam.beam.doctype.beam_settings.beam_settings import create_beam_settings
 
 
 class BEAMStockEntry(StockEntry):
 	def update_stock_ledger(self):
+		settings = (
+			create_beam_settings(self.company)
+			if not frappe.db.exists("BEAM Settings", {"company": self.company})
+			else frappe.get_doc("BEAM Settings", {"company": self.company})
+		)
 		sl_entries = []
 		finished_item_row = self.get_finished_item_row()
 		self.get_sle_for_source_warehouse(sl_entries, finished_item_row)
@@ -18,7 +24,7 @@ class BEAMStockEntry(StockEntry):
 			sl_entries.reverse()
 		self.make_sl_entries(sl_entries)
 
-		if self.docstatus == 2:
+		if self.docstatus == 2 and settings.enable_handling_units:
 			hu_sles = self.make_handling_unit_sles()
 			self.make_sl_entries(hu_sles)
 
@@ -54,6 +60,13 @@ class BEAMStockEntry(StockEntry):
 @frappe.whitelist()
 def set_rows_to_recombine(docname: str, to_recombine=None) -> None:
 	doc = frappe.get_doc("Stock Entry", docname)
+	settings = (
+		create_beam_settings(doc.company)
+		if not frappe.db.exists("BEAM Settings", {"company": doc.company})
+		else frappe.get_doc("BEAM Settings", {"company": doc.company})
+	)
+	if not settings.enable_handling_units:
+		return
 	if not to_recombine:
 		return
 	for row in doc.items:
@@ -63,6 +76,7 @@ def set_rows_to_recombine(docname: str, to_recombine=None) -> None:
 
 
 @frappe.whitelist()
+@frappe.read_only()
 def get_handling_units_for_item_code(doctype, txt, searchfield, start, page_len, filters):
 	StockLedgerEntry = frappe.qb.DocType("Stock Ledger Entry")
 	return (
@@ -79,6 +93,7 @@ def get_handling_units_for_item_code(doctype, txt, searchfield, start, page_len,
 
 
 @frappe.whitelist()
+@frappe.read_only()
 def get_handling_unit_qty(voucher_no, handling_unit, warehouse):
 	return frappe.db.get_value(
 		"Stock Ledger Entry",
@@ -89,25 +104,3 @@ def get_handling_unit_qty(voucher_no, handling_unit, warehouse):
 		},
 		["qty_after_transaction"],
 	)
-
-
-# This function validates stock entry items to prevent missing handling units.
-def validate_items_with_handling_unit(doc, method=None):
-	if doc.stock_entry_type != "Material Receipt":
-		for row in doc.items:
-			if not frappe.get_value("Item", row.item_code, "enable_handling_unit"):
-				continue
-			elif row.is_scrap_item and not frappe.get_value(
-				"BOM Scrap Item",
-				{"item_code": row.item_code, "parent": doc.get("bom_no")},
-				"create_handling_unit",
-			):
-				continue
-			elif (
-				doc.stock_entry_type in ["Repack", "Manufacture"]
-				and not (row.t_warehouse or row.is_finished_item or row.is_scrap_item)
-				and not row.handling_unit
-			):
-				frappe.throw(frappe._(f"Row #{row.idx}: Handling Unit is missing for item {row.item_code}"))
-			elif not row.handling_unit:
-				frappe.throw(frappe._(f"Row #{row.idx}: Handling Unit is missing for item {row.item_code}"))
