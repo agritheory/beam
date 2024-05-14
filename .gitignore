@@ -194,3 +194,6 @@ cypress/videos
 
 # JetBrains IDEs
 .idea/
+
+beam/www/beam/index.js
+beam/www/beam/style.css

@@ -70,7 +70,7 @@ def create_test_data():
 	company_address.city = "Chelsea"
 	company_address.state = "MA"
 	company_address.pincode = "89077"
-	company_address.is_your_company_address = 1
+	company_address.is_your_company_address = True
 	company_address.append("links", {"link_doctype": "Company", "link_name": settings.company})
 	company_address.save()
 	frappe.set_value("Company", settings.company, "tax_id", "04-1871930")
@@ -141,11 +141,11 @@ def create_customers(settings):
 
 def setup_manufacturing_settings(settings):
 	mfg_settings = frappe.get_doc("Manufacturing Settings", "Manufacturing Settings")
-	mfg_settings.material_consumption = 1
+	mfg_settings.material_consumption = True
 	mfg_settings.default_wip_warehouse = "Kitchen - APC"
 	mfg_settings.default_fg_warehouse = "Baked Goods - APC"
 	mfg_settings.overproduction_percentage_for_work_order = 5.00
-	mfg_settings.job_Card_excess_transfer = 1
+	mfg_settings.job_Card_excess_transfer = True
 	mfg_settings.save()
 
 	if frappe.db.exists("Account", {"account_name": "Work In Progress", "company": settings.company}):
@@ -217,21 +217,21 @@ def create_items(settings):
 	if not frappe.db.exists("Price List", "Bakery Buying"):
 		pl = frappe.new_doc("Price List")
 		pl.price_list_name = "Bakery Buying"
-		pl.buying = 1
+		pl.buying = True
 		pl.append("countries", {"country": "United States"})
 		pl.save()
 
 	if not frappe.db.exists("Price List", "Bakery Wholesale"):
 		pl = frappe.new_doc("Price List")
 		pl.price_list_name = "Bakery Wholesale"
-		pl.selling = 1
+		pl.selling = True
 		pl.append("countries", {"country": "United States"})
 		pl.save()
 
 	if not frappe.db.exists("Pricing Rule", "Bakery Retail"):
 		pr = frappe.new_doc("Pricing Rule")
 		pr.title = "Bakery Retail"
-		pr.selling = 1
+		pr.selling = True
 		pr.apply_on = "Item Group"
 		pr.company = settings.company
 		pr.margin_type = "Percentage"
@@ -249,15 +249,16 @@ def create_items(settings):
 		i.item_group = item.get("item_group")
 		i.stock_uom = item.get("uom")
 		i.description = item.get("description")
-		i.maintain_stock = 1
-		i.include_item_in_manufacturing = 1
+		i.maintain_stock = True
+		i.enable_handling_unit = i.item_code not in ("Water", "Ice Water")
+		i.include_item_in_manufacturing = True
 		i.default_warehouse = settings.get("warehouse")
 		i.default_material_request_type = (
 			"Purchase" if item.get("item_group") in ("Bakery Supplies", "Ingredients") else "Manufacture"
 		)
 		i.valuation_method = "FIFO"
-		i.is_purchase_item = 1 if item.get("item_group") in ("Bakery Supplies", "Ingredients") else 0
-		i.is_sales_item = 1 if item.get("item_group") == "Baked Goods" else 0
+		i.is_purchase_item = item.get("item_group") in ("Bakery Supplies", "Ingredients")
+		i.is_sales_item = item.get("item_group") == "Baked Goods"
 		i.append(
 			"item_defaults",
 			{"company": settings.company, "default_warehouse": item.get("default_warehouse")},
@@ -277,7 +278,7 @@ def create_items(settings):
 			ip.item_code = i.item_code
 			ip.uom = i.stock_uom
 			ip.price_list = "Bakery Wholesale" if i.is_sales_item else "Bakery Buying"
-			ip.buying = 1
+			ip.buying = True
 			ip.valid_from = "2018-1-1"
 			ip.price_list_rate = item.get("item_price")
 			ip.save()
@@ -339,7 +340,7 @@ def create_boms(settings):
 		b.rm_cost_as_per = "Price List"
 		b.buying_price_list = "Bakery Buying"
 		b.currency = "USD"
-		b.with_operations = 1
+		b.with_operations = True
 		for item in bom.get("items"):
 			b.append("items", {**item, "stock_uom": item.get("uom")})
 			b.items[-1].bom_no = frappe.get_value("BOM", {"item": item.get("item_code")})
@@ -448,7 +449,7 @@ def create_production_plan(settings, prod_plan_from_doc):
 	pp = frappe.new_doc("Production Plan")
 	pp.posting_date = settings.day
 	pp.company = settings.company
-	pp.combine_sub_items = 1
+	pp.combine_sub_items = True
 	if prod_plan_from_doc == "Sales Order":
 		pp.get_items_from = "Sales Order"
 		pp.append(
@@ -512,13 +513,13 @@ def create_production_plan(settings, prod_plan_from_doc):
 			continue
 		if supplier == "Freedom Provisions":
 			pr = frappe.new_doc("Purchase Invoice")
-			pr.update_stock = 1
+			pr.update_stock = True
 		else:
 			pr = frappe.new_doc("Purchase Receipt")
 		pr.company = settings.company
 		pr.supplier = supplier
 		pr.posting_date = settings.day
-		pr.set_posting_time = 1
+		pr.set_posting_time = True
 		pr.buying_price_list = "Bakery Buying"
 		for item in items:
 			item_details = get_item_details(
@@ -564,7 +565,7 @@ def create_purchase_receipt_for_received_qty_test(settings):
 	pr.company = settings.company
 	pr.supplier = "Freedom Provisions"
 	pr.posting_date = settings.day
-	pr.set_posting_time = 1
+	pr.set_posting_time = True
 	pr.buying_price_list = "Bakery Buying"
 	item = frappe.get_doc("Item", "Gooseberry")
 	pr.append(
