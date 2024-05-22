@@ -10,9 +10,9 @@ from erpnext.stock.get_item_details import get_item_details
 @frappe.whitelist()
 def scan(
 	barcode: str,
-	context: Optional[Union[str, dict[str, Any]]] = None,
-	current_qty: Optional[Union[str, float]] = None,
-) -> Union[list[dict[str, Any]], None]:
+	context: str | dict[str, Any] | None = None,
+	current_qty: str | float | None = None,
+) -> list[dict[str, Any]] | None:
 	if not context:
 		context = {}  # TODO: is this the correct assumption?
 	context_dict = frappe._dict(json.loads(context) if isinstance(context, str) else context)
@@ -27,7 +27,7 @@ def scan(
 	return None  # mypy asked for this
 
 
-def get_barcode_context(barcode: str) -> Union[frappe._dict, None]:
+def get_barcode_context(barcode: str) -> frappe._dict | None:
 	item_barcode = frappe.db.get_value(
 		"Item Barcode", {"barcode": barcode}, ["parent", "parenttype"], as_dict=True
 	)
@@ -41,7 +41,7 @@ def get_barcode_context(barcode: str) -> Union[frappe._dict, None]:
 	)
 
 
-def get_handling_unit(handling_unit: str, parent_doctype: Optional[str] = None) -> frappe._dict:
+def get_handling_unit(handling_unit: str, parent_doctype: str | None = None) -> frappe._dict:
 	sl_entries = frappe.get_all(
 		"Stock Ledger Entry",
 		filters={"handling_unit": handling_unit, "is_cancelled": 0},

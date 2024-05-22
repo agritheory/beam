@@ -1,7 +1,9 @@
-import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import { VitePWA } from 'vite-plugin-pwa'
-import path from 'path'
+// import { VitePWA } from 'vite-plugin-pwa'
+import { resolve } from 'path'
+import { defineConfig } from 'vite'
+
+const projectRootDir = resolve(__dirname)
 
 export default defineConfig({
 	plugins: [
@@ -48,13 +50,12 @@ export default defineConfig({
 	],
 	build: {
 		lib: {
-			entry: path.resolve(__dirname, 'beam.js'),
-			name: 'timeclock',
+			entry: resolve(projectRootDir, 'beam.js'),
+			name: 'beam',
 			fileName: format => `index.js`, // creates module only output
 			// TODO: need to figure out how to export index.css also
 		},
 		outDir: './beam/www/beam/',
-		root: './',
 		target: 'es2015',
 		emptyOutDir: false,
 		minify: false,

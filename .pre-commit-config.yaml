@@ -20,10 +20,10 @@ repos:
       - id: debug-statements
 
   - repo: https://github.com/asottile/pyupgrade
-    rev: v2.34.0
+    rev: v3.15.2
     hooks:
       - id: pyupgrade
-        args: ['--py38-plus']
+        args: ['--py310-plus']
 
   - repo: https://github.com/frappe/black
     rev: 951ccf4d5bb0d692b457a5ebc4215d755618eb68
@@ -34,25 +34,38 @@ repos:
     rev: v2.7.1
     hooks:
       - id: prettier
-        types_or: [javascript]
+        types_or: [javascript, vue, scss]
         # Ignore any files that might contain jinja / bundles
         exclude: |
           (?x)^(
-              beam/public/dist/.*|
+            .*node_modules.*|
+            beam/public/dist/.*|
+            beam/public/js/lib/.*|
+            beam/templates/includes/.*
+          )$
+
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    rev: v8.44.0
+    hooks:
+      - id: eslint
+        types_or: [javascript]
+        args: ['--quiet']
+        # Ignore any files that might contain jinja / bundles
+        exclude: |
+          (?x)^(
               .*node_modules.*|
-              .*boilerplate.*|
-              beam/www/website_script.js|
-              beam/templates/includes/.*|
-              beam/public/js/lib/.*
+              beam/public/dist/.*|
+              beam/public/js/lib/.*|
+              beam/templates/includes/.*
           )$
 
   - repo: https://github.com/PyCQA/isort
-    rev: 5.12.0
+    rev: 5.13.2
     hooks:
       - id: isort
 
   - repo: https://github.com/PyCQA/flake8
-    rev: 5.0.4
+    rev: 6.0.0
     hooks:
       - id: flake8
         additional_dependencies: ['flake8-bugbear']
