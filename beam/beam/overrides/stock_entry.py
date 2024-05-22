@@ -76,13 +76,53 @@ def set_rows_to_recombine(docname: str, to_recombine=None) -> None:
 
 
 @frappe.whitelist()
+@frappe.read_only()
 def get_handling_units_for_item_code(doctype, txt, searchfield, start, page_len, filters):
 	StockLedgerEntry = frappe.qb.DocType("Stock Ledger Entry")
 	return (
 		frappe.qb.from_(StockLedgerEntry)
 		.select(StockLedgerEntry.handling_unit)
-		.where(StockLedgerEntry.item_code == filters.get("item_code"))
+		.where(
+			(StockLedgerEntry.item_code == filters.get("item_code"))
+			& (StockLedgerEntry.handling_unit != "")
+		)
 		.orderby(StockLedgerEntry.posting_date, order=frappe.qb.desc)
 		.groupby(StockLedgerEntry.handling_unit)
 		.run(as_dict=False)
 	)
+
+
+@frappe.whitelist()
+@frappe.read_only()
+def get_handling_unit_qty(voucher_no, handling_unit, warehouse):
+	return frappe.db.get_value(
+		"Stock Ledger Entry",
+		{
+			"voucher_no": voucher_no,
+			"handling_unit": handling_unit,
+			"warehouse": warehouse,
+		},
+		["qty_after_transaction"],
+	)
+
+
+# This function validates stock entry items to prevent missing handling units.
+def validate_items_with_handling_unit(doc, method=None):
+	if doc.stock_entry_type != "Material Receipt":
+		for row in doc.items:
+			if not frappe.get_value("Item", row.item_code, "enable_handling_unit"):
+				continue
+			elif row.is_scrap_item and not frappe.get_value(
+				"BOM Scrap Item",
+				{"item_code": row.item_code, "parent": doc.get("bom_no")},
+				"create_handling_unit",
+			):
+				continue
+			elif (
+				doc.stock_entry_type in ["Repack", "Manufacture"]
+				and not (row.t_warehouse or row.is_finished_item or row.is_scrap_item)
+				and not row.handling_unit
+			):
+				frappe.throw(frappe._(f"Row #{row.idx}: Handling Unit is missing for item {row.item_code}"))
+			elif not row.handling_unit:
+				frappe.throw(frappe._(f"Row #{row.idx}: Handling Unit is missing for item {row.item_code}"))

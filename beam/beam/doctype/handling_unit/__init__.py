@@ -1,11 +1,9 @@
-import datetime
-import json
-
 import frappe
 from pypika import Order
 
 
 @frappe.whitelist()
+@frappe.read_only()
 @frappe.validate_and_sanitize_search_inputs
 def handling_unit_query(doctype, txt, searchfield, start=0, page_len=20, filters=None):
 	filters = frappe._dict({}) if not filters else filters

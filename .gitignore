@@ -198,3 +198,4 @@ cypress/videos
 # ignore built files
 beam/www/beam/index.js
 beam/www/beam/index.css
+beam/www/beam/style.css
