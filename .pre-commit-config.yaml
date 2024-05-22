@@ -44,21 +44,6 @@ repos:
             beam/templates/includes/.*
           )$
 
-  - repo: https://github.com/pre-commit/mirrors-eslint
-    rev: v8.44.0
-    hooks:
-      - id: eslint
-        types_or: [javascript]
-        args: ['--quiet']
-        # Ignore any files that might contain jinja / bundles
-        exclude: |
-          (?x)^(
-              .*node_modules.*|
-              beam/public/dist/.*|
-              beam/public/js/lib/.*|
-              beam/templates/includes/.*
-          )$
-
   - repo: https://github.com/PyCQA/isort
     rev: 5.13.2
     hooks:

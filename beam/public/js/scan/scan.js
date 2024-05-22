@@ -30,8 +30,8 @@ class ScanHandler {
 	constructor() {
 		let me = this
 		if (
-			!window.hasOwnProperty('scanHandler') || // eslint-disable-line no-prototype-builtins
-			!window.scanHandler.hasOwnProperty('scanner') || // eslint-disable-line no-prototype-builtins
+			!window.hasOwnProperty('scanHandler') ||
+			!window.scanHandler.hasOwnProperty('scanner') ||
 			!window.scanHandler.scanner.isAttachedTo(document)
 		) {
 			me.scanner = onScan.attachTo(document, {
