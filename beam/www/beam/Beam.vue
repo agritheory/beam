@@ -18,11 +18,7 @@ const activeWorkstations = ref('')
 const inactiveWorkstations = ref('')
 
 onMounted(async () => {
-	let headers = { 'X-Frappe-Site-Name': window.location.hostname }
-	if (window.csrf_token) {
-		headers['X-Frappe-CSRF-Token'] = window.csrf_token
-	}
-	const response = await fetch('/api/workstations', { headers })
+	const response = await fetch('/api/workstations')
 	const data = await response.json()
 
 	activeWorkstations.value = data.filter(d => d.status === 'Production')
