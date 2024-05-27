@@ -1,8 +1,8 @@
-{% extends "templates/web.html" %}
+<!-- {% extends "templates/web.html" %}
 
 {% block content %}
 <section class="section section-padding-top section-padding-bottom">
-	<div class='container'>
+	<div class="container">
 		<div id="beam"></div>
 	</div>
 </section>
@@ -22,4 +22,24 @@
 		display: none;
 	}
 </style>
-{% endblock %}
+{% endblock %} -->
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Beam</title>
+	</head>
+	<body>
+		<section class="section section-padding-top section-padding-bottom">
+			<div class="container">
+				<div id="beam"></div>
+			</div>
+		</section>
+		<script>
+			window.csrf_token = "{{ csrf_token }}"
+		</script>
+		<script type="module" src="./index.js"></script>
+	</body>
+</html>

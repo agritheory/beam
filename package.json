@@ -1,25 +1,14 @@
 {
 	"name": "beam",
 	"private": true,
-	"type": "module",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/agritheory/beam.git"
 	},
 	"scripts": {
-		"dev": "vite --config=./beam/www/beam/vite.config.ts",
-		"build": "vite build --config=./beam/www/beam/vite.config.ts"
-	},
-	"dependencies": {
-		"@vitejs/plugin-vue": "^5.0.4",
-		"onscan.js": "^1.5.2",
-		"vite": "^5.2.11",
-		"vite-plugin-pwa": "^0.20.0",
-		"vue": "^3.4.27",
-		"vue-router": "^4.3.2"
-	},
-	"devDependencies": {
-		"miragejs": "^0.1.48"
+		"install": "cd beam/www/beam && yarn install",
+		"dev": "cd beam/www/beam && yarn dev",
+		"build": "cd beam/www/beam && yarn build"
 	},
 	"publishConfig": {
 		"access": "restricted"
