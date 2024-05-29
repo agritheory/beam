@@ -1,14 +1,16 @@
-import datetime
 import json
 import os
 from pathlib import Path
 
 import frappe
-from frappe.utils import get_bench_path, get_files_path, random_string
+
+# from frappe.utils import get_bench_path, get_files_path, random_string
 from frappe.utils.jinja import get_jinja_hooks
 from frappe.utils.safe_exec import get_safe_globals
+
+# Frappe dependencies
 from jinja2 import DebugUndefined, Environment
-from PyPDF2 import PdfFileWriter
+from pypdf import PdfWriter
 
 try:
 	import cups
@@ -39,9 +41,11 @@ def print_by_server(
 		if print_format.raw_printing == 1:
 			output = ""
 			# using a custom jinja environment so we don't have to use frappe's formatting
+			methods, filters = get_jinja_hooks()
 			e = Environment(undefined=DebugUndefined)
 			e.globals.update(get_safe_globals())
-			e.globals.update(get_jinja_hooks("methods"))
+			if methods:
+				e.globals.update(methods)
 			template = e.from_string(print_format.raw_commands)
 			output = template.render(doc=doc)
 			if not file_path:
@@ -51,7 +55,7 @@ def print_by_server(
 				file_path = os.path.join("/", "tmp", f"frappe-zpl-{frappe.generate_hash()}.txt")
 			Path(file_path).write_text(output)
 		else:
-			output = PdfFileWriter()
+			output = PdfWriter()
 			output = frappe.get_print(
 				doctype,
 				name,
