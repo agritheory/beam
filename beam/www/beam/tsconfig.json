@@ -5,7 +5,6 @@
     "moduleResolution": "nodenext",
     "lib": ["esnext", "DOM", "DOM.Iterable"],
     "jsx": "preserve",
-    "allowImportingTsExtensions": true,
     "isolatedModules": true,
     "noEmit": true,
     "resolveJsonModule": true,

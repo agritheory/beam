@@ -6,15 +6,9 @@ on:
       - version-14
       - version-15
   pull_request:
-    branches:
-      - version-14
-      - version-15
+
 env:
     BRANCH_NAME: ${{ github.base_ref || github.ref_name }}
-
-# concurrency:
-#   group: develop-cloud_storage-${{ github.event.number }}
-#   cancel-in-progress: true
 
 jobs:
   tests:
@@ -47,7 +41,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
           check-latest: true
           cache: 'yarn'  # Replaces `Get yarn cache directory path` and `yarn-cache` steps
 
