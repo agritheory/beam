@@ -20,6 +20,8 @@ const activeWorkstations = ref<Workstation[]>([])
 const inactiveWorkstations = ref<Workstation[]>([])
 
 onMounted(async () => {
+	// TODO: (Frappe) implement actual server endpoint
+	// TODO: (Mirage) mock new server endpoint in mirage
 	const response = await fetch('/api/workstations')
 	const data: Workstation[] = await response.json()
 
