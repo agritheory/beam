@@ -12,6 +12,7 @@ export default defineConfig({
 	build: {
 		target: 'esnext',
 		outDir: resolve(__dirname, '..', '..', 'public/dist/js/portal/'),
+		sourcemap: true,
 		lib: {
 			entry: resolve(__dirname, 'index.ts'),
 			name: 'beam',
@@ -20,15 +21,9 @@ export default defineConfig({
 		},
 	},
 	define: {
-		'import.meta.env.FRAPPE_DEV_MODE': isDeveloperMode(),
 		'process.env': process.env,
 	},
 })
-
-function isDeveloperMode() {
-	const config = getCommonSiteConfig()
-	return Boolean(config?.developer_mode)
-}
 
 function getProxyOptions(): ServerOptions['proxy'] {
 	const config = getCommonSiteConfig()
