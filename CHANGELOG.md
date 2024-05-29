@@ -2,6 +2,33 @@
 
 
 
+## v14.8.5 (2024-04-20)
+
+### Ci
+
+* ci: add black to CI (#90) ([`399384f`](https://github.com/agritheory/beam/commit/399384f7056fb3d8b6aecc042431b632c36eea6f))
+
+### Fix
+
+* fix: add read-only decorator to APIs (#104)
+
+Co-authored-by: Rohan Bansal &lt;rohan@agritheory.dev&gt; ([`0323066`](https://github.com/agritheory/beam/commit/0323066718f3b3a9d9a19036878eb65fdc66bf2d))
+
+### Unknown
+
+* Added remaining qty and transferred qty on dialog box(Cancellation process of stock entry)  (#93)
+
+Co-authored-by: Tyler Matteson &lt;tyler@agritheory.com&gt; ([`c71599f`](https://github.com/agritheory/beam/commit/c71599f4eb3a784217732b1f94dd5fab22a0c06e))
+
+* Changes to remove null value in handling unit list (#95) ([`2c8d861`](https://github.com/agritheory/beam/commit/2c8d8610deaaea4c88fc1f08a76a02657b7af110))
+
+* CUPS service (#79)
+
+Co-authored-by: Lucas Vazquez &lt;lucas.vazquez@enviame.io&gt; ([`ac2c3ad`](https://github.com/agritheory/beam/commit/ac2c3add89346b51bc0e3084cf5dd8d2bdfa260c))
+
+* Stock Entry hu query filter (#84) ([`d6d1b5f`](https://github.com/agritheory/beam/commit/d6d1b5faca7ef85e17ea8ef255b9577def4b16ea))
+
+
 ## v14.8.4 (2023-11-29)
 
 ### Fix
@@ -299,7 +326,7 @@ docs: document features - first pass ([`fb5b7ac`](https://github.com/agritheory/
 Scanning Handling Unit in Listview should filter instead of route ([`2869963`](https://github.com/agritheory/beam/commit/286996364eed49542e2bc37aea6ca3770479854f))
 
 
-## v14.1.3 (2023-07-12)
+## v14.1.3 (2023-07-11)
 
 ### Documentation
 
@@ -318,7 +345,7 @@ fix: ignore permissions on barcode creation ([`57ce99d`](https://github.com/agri
 * wip: more documentation and stubs ([`0834808`](https://github.com/agritheory/beam/commit/083480843fa639714b8ffb5fb115e96d97beb7f5))
 
 
-## v14.1.2 (2023-07-11)
+## v14.1.2 (2023-07-10)
 
 ### Fix
 
@@ -571,7 +598,7 @@ feat: handle scanning of non-handling units ([`db158dc`](https://github.com/agri
 docs: fix readme ([`087158b`](https://github.com/agritheory/beam/commit/087158bd68c0a9a608ffd8bf225616e12c106502))
 
 
-## v14.0.1 (2023-05-27)
+## v14.0.1 (2023-05-26)
 
 ### Ci
 
