@@ -8,7 +8,6 @@
 	},
 	"scripts": {
 		"dev": "vite",
-		"dev:ui": "vite --open",
 		"build": "vite build",
 		"preview": "vite preview"
 	},
@@ -21,7 +20,8 @@
 	},
 	"devDependencies": {
 		"@types/node": "^20.12.12",
-		"miragejs": "^0.1.48"
+		"miragejs": "^0.1.48",
+		"typescript": "^5.4.5"
 	},
 	"publishConfig": {
 		"access": "restricted"
