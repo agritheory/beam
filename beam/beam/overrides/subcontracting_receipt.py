@@ -88,14 +88,14 @@ def get_sle(self):
 			if stock_entry := frappe.db.exists(
 				"Stock Entry", {"subcontracting_order": row.subcontracting_order, "docstatus": 1}
 			):
-				sle_hu = frappe.db.sql(
-					f"""
-                                        Select name, handling_unit, item_code
-                                        From `tabStock Ledger Entry`
-                                        where voucher_type = "Stock Entry" and voucher_no = '{stock_entry}' and
-                                        warehouse = '{self.supplier_warehouse}'
-                                        """,
-					as_dict=True,
+				sle_hu = frappe.get_all(
+					"Stock Ledger Entry",
+					filters={
+						"voucher_type": "Stock Entry",
+						"voucher_no": stock_entry,
+						"warehouse": self.supplier_warehouse,
+					},
+					fields=["name", "handling_unit", "item_code"],
 				)
 				sle_hu_map[row.subcontracting_order] = sle_hu
 	return sle_hu_map
