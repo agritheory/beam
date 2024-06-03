@@ -24,7 +24,7 @@ def load_customizations():
 			custom_field.flags.ignore_version = True
 			custom_field.save()
 		for prop in customizations.get("property_setters"):
-			if field.get("module") != "BEAM":
+			if prop.get("module") != "BEAM":
 				continue
 			property_setter = frappe.get_doc(
 				{
