@@ -1,6 +1,39 @@
 # CHANGELOG
 
 
+
+## v15.1.1 (2024-06-04)
+
+### Ci
+
+* ci: update conftest for json (#101) ([`1f670c3`](https://github.com/agritheory/beam/commit/1f670c3e57c239e2fdc5d54b34044d858ac52c8a))
+
+* ci: refactor env variable, remove unused code (#97) ([`da908af`](https://github.com/agritheory/beam/commit/da908af16099f65920d1b32f2629010231af3d5c))
+
+### Fix
+
+* fix: update printing dependencies (#125)
+
+Co-authored-by: Rohan Bansal &lt;rohan@agritheory.dev&gt; ([`49530cf`](https://github.com/agritheory/beam/commit/49530cfa35cefb3a88f9a51954869c932654e2f9))
+
+### Unknown
+
+* Port HU tests / staging to V15 (#118)
+
+Co-authored-by: ViralKansodiya-Fosserp &lt;141210323+viralkansodiya@users.noreply.github.com&gt;
+Co-authored-by: viralpatel15 &lt;viralkansodiya167@gmail.com&gt;
+Co-authored-by: Heather Kusmierz &lt;heather.kusmierz@gmail.com&gt; ([`7fd6960`](https://github.com/agritheory/beam/commit/7fd6960f9f58478b6118bb5448678c1afdf34962))
+
+* Merge v14 into v15 (#114)
+
+Co-authored-by: ViralKansodiya-Fosserp &lt;141210323+viralkansodiya@users.noreply.github.com&gt;
+Co-authored-by: Tyler Matteson &lt;tyler@agritheory.com&gt;
+Co-authored-by: Rohan Bansal &lt;rohan@agritheory.dev&gt;
+Co-authored-by: AgriTheory &lt;support@agritheory.dev&gt; ([`41ddda6`](https://github.com/agritheory/beam/commit/41ddda6e47ed42c2b8a7b2074ef785992b4bd6eb))
+
+* Barcode Font Size should be set in BEAM settings (#103) ([`feb53b2`](https://github.com/agritheory/beam/commit/feb53b2374b7c59c67d07cd9453c9f94869cff35))
+
+
 ## v15.1.0 (2024-03-26)
 
 ### Ci
@@ -21,27 +54,6 @@
 * ci: add black to CI (#90) ([`399384f`](https://github.com/agritheory/beam/commit/399384f7056fb3d8b6aecc042431b632c36eea6f))
 
 ### Unknown
-
-
-## v14.8.5 (2024-04-20)
-
-### Ci
-
-* ci: add black to CI (#90) ([`399384f`](https://github.com/agritheory/beam/commit/399384f7056fb3d8b6aecc042431b632c36eea6f))
-
-### Fix
-
-* fix: add read-only decorator to APIs (#104)
-
-Co-authored-by: Rohan Bansal &lt;rohan@agritheory.dev&gt; ([`0323066`](https://github.com/agritheory/beam/commit/0323066718f3b3a9d9a19036878eb65fdc66bf2d))
-
-### Unknown
-
-* Added remaining qty and transferred qty on dialog box(Cancellation process of stock entry)  (#93)
-
-Co-authored-by: Tyler Matteson &lt;tyler@agritheory.com&gt; ([`c71599f`](https://github.com/agritheory/beam/commit/c71599f4eb3a784217732b1f94dd5fab22a0c06e))
-
-* Changes to remove null value in handling unit list (#95) ([`2c8d861`](https://github.com/agritheory/beam/commit/2c8d8610deaaea4c88fc1f08a76a02657b7af110))
 
 * CUPS service (#79)
 
