@@ -2,6 +2,28 @@
 
 
 
+## v14.8.6 (2024-06-05)
+
+### Fix
+
+* fix: replace frappe.db.sql with frappe.get_all ([`01420e4`](https://github.com/agritheory/beam/commit/01420e40261dcb22865ffc98302b225698ce20fb))
+
+### Test
+
+* test: fix net qty and HU tests (#117) ([`e33d501`](https://github.com/agritheory/beam/commit/e33d5019e602d46fef71846dae58d0118a0fad99))
+
+### Unknown
+
+* Merge pull request #126 from agritheory/staging ([`42ff3e1`](https://github.com/agritheory/beam/commit/42ff3e1e851a3e6278fa3078c85eafccd7563f02))
+
+* Merge branch &#39;version-14&#39; into staging ([`03b649e`](https://github.com/agritheory/beam/commit/03b649ed7d1772e141ab027e01d10a6dffb5ae7e))
+
+* Mandatory handling unit  validation improvement (#102)
+
+Co-authored-by: viralpatel15 &lt;viralkansodiya167@gmail.com&gt;
+Co-authored-by: Tyler Matteson &lt;tyler@agritheory.com&gt; ([`f0d6570`](https://github.com/agritheory/beam/commit/f0d6570fd4e2ea7d580b9c65e068e069554ee722))
+
+
 ## v14.8.5 (2024-04-20)
 
 ### Ci
@@ -15,6 +37,15 @@
 Co-authored-by: Rohan Bansal &lt;rohan@agritheory.dev&gt; ([`0323066`](https://github.com/agritheory/beam/commit/0323066718f3b3a9d9a19036878eb65fdc66bf2d))
 
 ### Unknown
+
+* Validation: Mandatory handling unit (#92)
+
+Co-authored-by: viralpatel15 &lt;viralkansodiya167@gmail.com&gt;
+Co-authored-by: Tyler Matteson &lt;tyler@agritheory.com&gt; ([`eb39ff2`](https://github.com/agritheory/beam/commit/eb39ff28278147c5c20315ada8ad3813add9e9b6))
+
+* Track Subcontracting Process by Handling Unit (#88)
+
+Co-authored-by: viralpatel15 &lt;viralkansodiya167@gmail.com&gt; ([`45efb6e`](https://github.com/agritheory/beam/commit/45efb6e0af3fcbe9a47ce5b133a6056c4d2e8a08))
 
 * Added remaining qty and transferred qty on dialog box(Cancellation process of stock entry)  (#93)
 
