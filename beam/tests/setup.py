@@ -250,6 +250,7 @@ def create_items(settings):
 		i.stock_uom = item.get("uom")
 		i.description = item.get("description")
 		i.maintain_stock = 1
+		i.enable_handling_unit = 0 if i.item_code in ("Water", "Ice Water") else 1
 		i.include_item_in_manufacturing = 1
 		i.default_warehouse = settings.get("warehouse")
 		i.default_material_request_type = (
