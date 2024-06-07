@@ -7,6 +7,7 @@ import frappe
 from erpnext.stock.stock_balance import get_balance_qty_from_sle
 from frappe.utils import get_site_path
 from frappe.utils.data import get_datetime
+from frappe.utils.synchronization import filelock
 
 if TYPE_CHECKING:
 	from erpnext.accounts.doctype.purchase_invoice.purchase_invoice import PurchaseInvoice
@@ -86,38 +87,39 @@ def dict_factory(cursor: sqlite3.Cursor, row: dict) -> frappe._dict:
 
 def get_demand_db() -> sqlite3.Connection:
 	path = pathlib.Path(f"{get_site_path()}/demand.db").resolve()
-	with sqlite3.connect(path) as conn:
-		cur = conn.cursor()
-		cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='demand';")
-		data = cur.fetchone()
-		if data:
+	with filelock(str(path)):
+		with sqlite3.connect(path) as conn:
+			cur = conn.cursor()
+			cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='demand';")
+			data = cur.fetchone()
+			if data:
+				return sqlite3.connect(path)
+
+			# else setup table
+			cur.execute(
+				"""
+					CREATE TABLE demand(
+						key text,
+						doctype text,
+						parent text,
+						warehouse text,
+						name text,
+						item_code text,
+						delivery_date int,
+						modified int,
+						net_required_qty real,
+						actual_qty real,
+						status text
+						assigned text
+					)
+				"""
+			)
+			cur.execute("CREATE INDEX idx_key ON demand(key)")
+			cur.execute("CREATE INDEX idx_warehouse ON demand(warehouse)")
+			cur.execute("CREATE INDEX idx_item_code ON demand(item_code)")
+			cur.execute("CREATE INDEX delivery_date ON demand(delivery_date)")
+
 			return sqlite3.connect(path)
-
-		# else setup table
-		cur.execute(
-			"""
-				CREATE TABLE demand(
-					key text,
-					doctype text,
-					parent text,
-					warehouse text,
-					name text,
-					item_code text,
-					delivery_date int,
-					modified int,
-					net_required_qty real,
-					actual_qty real,
-					status text
-					assigned text
-				)
-			"""
-		)
-		cur.execute("CREATE INDEX idx_key ON demand(key)")
-		cur.execute("CREATE INDEX idx_warehouse ON demand(warehouse)")
-		cur.execute("CREATE INDEX idx_item_code ON demand(item_code)")
-		cur.execute("CREATE INDEX delivery_date ON demand(delivery_date)")
-
-		return sqlite3.connect(path)
 
 
 def modify_demand(
