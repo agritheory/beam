@@ -11,6 +11,12 @@ from frappe.utils import cint, cstr, flt, get_link_to_form
 
 class BEAMSubcontractingReceipt(SubcontractingReceipt):
 	def update_stock_ledger(self, allow_negative_stock=False, via_landed_cost_voucher=False):
+		"""
+		HASH: 4d34b1ead73baf4c5430a2ecbe44b9e8468d7626
+		REPO: https://github.com/frappe/erpnext/
+		PATH: erpnext/controllers/subcontracting_controller.py
+		METHOD: update_stock_ledger
+		"""
 		self.update_ordered_and_reserved_qty()
 
 		sl_entries = []

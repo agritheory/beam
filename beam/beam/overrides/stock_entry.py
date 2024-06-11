@@ -10,6 +10,12 @@ from typing_extensions import Self
 
 class BEAMStockEntry(StockEntry):
 	def update_stock_ledger(self):
+		"""
+		HASH: 153e0ba81b62acc170a951a289363fff5579edc7
+		REPO: https://github.com/frappe/erpnext/
+		PATH: erpnext/stock/doctype/stock_entry/stock_entry.py
+		METHOD: update_stock_ledger
+		"""
 		sl_entries = []
 		finished_item_row = self.get_finished_item_row()
 		self.get_sle_for_source_warehouse(sl_entries, finished_item_row)
