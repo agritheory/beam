@@ -58,6 +58,7 @@ jinja = {
 	"methods": [
 		"beam.beam.scan.get_handling_unit",
 		"beam.beam.barcodes.barcode128",
+		"beam.beam.zpl_preview",
 	]
 }
 

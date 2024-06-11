@@ -39,7 +39,7 @@ def barcode128(barcode_text: str) -> str:
 	temp = BytesIO()
 	barcode.Code128(barcode_text, writer=barcode.writer.ImageWriter()).write(
 		temp,
-		options={"module_width": 0.4, "module_height": 10, "font_size": 0, "compress": True},
+		options={"module_width": 0.4, "module_height": 10, "font_size": 10, "compress": True},
 	)
 	encoded = base64.b64encode(temp.getvalue()).decode("ascii")
 	return f'<img src="data:image/png;base64,{encoded}"/>'

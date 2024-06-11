@@ -9,6 +9,8 @@ readme = "README.md"
 dynamic = ["version"]
 dependencies = [
     "python-barcode",
+    "imgkit",
+    "zebrafy",
     "pytest",
     "pytest-order"
 ]
