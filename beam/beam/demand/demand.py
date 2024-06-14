@@ -185,3 +185,39 @@ def modify_demand(
 					)
 
 		conn.commit()
+
+
+def get_descendants_of_warehouse_with_warehouse_types(beam_settings, warehouse):
+	beam_settings = frappe.get_doc("BEAM Settings", beam_settings).as_dict()
+	warehouse_types = []
+	if beam_settings.warehouse_types:
+		warehouse_types = [wt.warehouse_type for wt in beam_settings.warehouse_types]
+
+	if warehouse_types:
+		order_by = "lft"
+		limit = None
+		lft, rgt = frappe.db.get_value("Warehouse", warehouse, ["lft", "rgt"])
+
+		if rgt - lft <= 1:
+			return []
+
+		warehouses = frappe.get_list(
+			"Warehouse",
+			{
+				"lft": [">", lft],
+				"rgt": ["<", rgt],
+				"company": beam_settings.company,
+				"warehouse_type": ["not in", warehouse_types],
+			},
+			"name",
+			order_by=order_by,
+			limit_page_length=limit,
+			ignore_permissions=True,
+			pluck="name",
+		)
+		return warehouses
+	else:
+		from frappe.utils.nestedset import get_descendants_of
+
+		warehouses = get_descendants_of("Warehouse", warehouse, ignore_permissions=True, order_by="lft")
+		return warehouses
