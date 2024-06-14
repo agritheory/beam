@@ -35,7 +35,7 @@
    "label": "Barcode Font Size"
   },
   {
-   "description": "Warehouse Types to be selected to exclude warehouse types while checking descendants of the warehouse.",
+   "description": "These Warehouse Types will be excluded when checking for inventory availability",
    "fieldname": "warehouse_types",
    "fieldtype": "Table MultiSelect",
    "label": "Warehouse Types",
@@ -44,7 +44,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-06-14 03:13:37.150446",
+ "modified": "2024-06-14 10:47:01.611630",
  "modified_by": "Administrator",
  "module": "BEAM",
  "name": "BEAM Settings",
