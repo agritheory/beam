@@ -67,7 +67,7 @@ def build_demand_map() -> None:
 		row.key = frappe.generate_hash()
 		row.delivery_date = str(calendar.timegm(get_datetime(row.delivery_date).timetuple()))
 		row.net_required_qty = str(row.net_required_qty)
-		row.actual_qty = str(get_balance_qty_from_sle(row.item_code, row.warehouse))
+		row.actual_qty = str(get_aggregate_qty(row.item_code, row.warehouse))
 
 	with get_demand_db() as conn:
 		cur = conn.cursor()
@@ -76,6 +76,16 @@ def build_demand_map() -> None:
 			cur.execute(
 				f"""INSERT INTO demand ('{"', '".join(row.keys())}') VALUES ('{"', '".join(row.values())}')"""
 			)
+
+
+def get_aggregate_qty(item_code, warehouse):
+	warehouses_to_check = [warehouse]
+	if frappe.db.get_value("Warehouse", warehouse, "is_group"):
+		warehouses_to_check.extend(get_descendant_warehouses("Ambrosia Pie Company", warehouse))
+	total_qty = 0
+	for wh in warehouses_to_check:
+		total_qty += get_balance_qty_from_sle(item_code, wh)
+	return total_qty
 
 
 def dict_factory(cursor: sqlite3.Cursor, row: dict) -> frappe._dict:
@@ -187,7 +197,7 @@ def modify_demand(
 		conn.commit()
 
 
-def get_descendants_of_warehouse_with_warehouse_types(beam_settings, warehouse):
+def get_descendant_warehouses(beam_settings, warehouse):
 	beam_settings = frappe.get_doc("BEAM Settings", beam_settings).as_dict()
 	warehouse_types = []
 	if beam_settings.warehouse_types:
@@ -201,7 +211,7 @@ def get_descendants_of_warehouse_with_warehouse_types(beam_settings, warehouse):
 		if rgt - lft <= 1:
 			return []
 
-		warehouses = frappe.get_list(
+		descendant_warehouses = frappe.get_list(
 			"Warehouse",
 			{
 				"lft": [">", lft],
@@ -215,9 +225,11 @@ def get_descendants_of_warehouse_with_warehouse_types(beam_settings, warehouse):
 			ignore_permissions=True,
 			pluck="name",
 		)
-		return warehouses
+		return descendant_warehouses
 	else:
 		from frappe.utils.nestedset import get_descendants_of
 
-		warehouses = get_descendants_of("Warehouse", warehouse, ignore_permissions=True, order_by="lft")
-		return warehouses
+		descendant_warehouses = get_descendants_of(
+			"Warehouse", warehouse, ignore_permissions=True, order_by="lft"
+		)
+		return descendant_warehouses
