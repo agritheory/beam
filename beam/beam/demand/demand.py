@@ -19,6 +19,7 @@ if TYPE_CHECKING:
 
 
 def build_demand_map() -> None:
+	output = []
 	transfer_demand = frappe.db.sql(
 		"""
 			SELECT
@@ -67,25 +68,30 @@ def build_demand_map() -> None:
 		row.key = frappe.generate_hash()
 		row.delivery_date = str(calendar.timegm(get_datetime(row.delivery_date).timetuple()))
 		row.net_required_qty = str(row.net_required_qty)
-		row.actual_qty = str(get_aggregate_qty(row.item_code, row.warehouse))
+		row.actual_qty = str(get_balance_qty_from_sle(row.item_code, row.warehouse))
+		row.indent = str(0)
+		output.append(row)
+
+		if frappe.db.get_value("Warehouse", row.warehouse, "is_group"):
+			warehouses_to_check = [row.warehouse]
+			warehouses_to_check.extend(get_descendant_warehouses("Ambrosia Pie Company", row.warehouse))
+			for wh in warehouses_to_check:
+				qty = get_balance_qty_from_sle(row.item_code, wh)
+				if qty > 0:
+					new_row = row.copy()
+					new_row.key = frappe.generate_hash()
+					new_row.warehouse = wh
+					new_row.actual_qty = str(qty)
+					new_row.indent = str(1)
+					output.append(new_row)
 
 	with get_demand_db() as conn:
 		cur = conn.cursor()
 		cur.execute("DELETE FROM demand;")  # sqlite does not implement a TRUNCATE command
-		for row in transfer_demand + sales_demand:
+		for row in output:
 			cur.execute(
 				f"""INSERT INTO demand ('{"', '".join(row.keys())}') VALUES ('{"', '".join(row.values())}')"""
 			)
-
-
-def get_aggregate_qty(item_code, warehouse):
-	warehouses_to_check = [warehouse]
-	if frappe.db.get_value("Warehouse", warehouse, "is_group"):
-		warehouses_to_check.extend(get_descendant_warehouses("Ambrosia Pie Company", warehouse))
-	total_qty = 0
-	for wh in warehouses_to_check:
-		total_qty += get_balance_qty_from_sle(item_code, wh)
-	return total_qty
 
 
 def dict_factory(cursor: sqlite3.Cursor, row: dict) -> frappe._dict:
@@ -111,6 +117,7 @@ def get_demand_db() -> sqlite3.Connection:
 					CREATE TABLE demand(
 						key text,
 						doctype text,
+						indent int,
 						parent text,
 						warehouse text,
 						name text,
