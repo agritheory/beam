@@ -29,13 +29,19 @@ def build_demand_map() -> None:
 				`tabWork Order Item`.name,
 				`tabWork Order Item`.item_code,
 				`tabWork Order`.planned_start_date AS delivery_date,
-				(`tabWork Order Item`.required_qty - `tabWork Order Item`.transferred_qty) AS net_required_qty
-			FROM `tabWork Order`, `tabWork Order Item`
+				(`tabWork Order Item`.required_qty - `tabWork Order Item`.transferred_qty) AS net_required_qty,
+				`tabItem`.stock_uom
+			FROM
+				`tabWork Order`
+			JOIN
+				`tabWork Order Item` ON `tabWork Order`.name = `tabWork Order Item`.parent
+			LEFT JOIN
+				`tabItem` ON `tabWork Order Item`.item_code = `tabItem`.name
 			WHERE
-				`tabWork Order`.name = `tabWork Order Item`.parent
-				AND (`tabWork Order Item`.transferred_qty - `tabWork Order Item`.required_qty) < 0
+				(`tabWork Order Item`.transferred_qty - `tabWork Order Item`.required_qty) < 0
 				AND `tabWork Order`.status = 'Not Started'
-			ORDER BY `tabWork Order`.planned_start_date
+			ORDER BY
+				`tabWork Order`.planned_start_date
 		""",
 		as_dict=True,
 	)
@@ -52,14 +58,20 @@ def build_demand_map() -> None:
 				`tabSales Order Item`.name,
 				`tabSales Order Item`.item_code,
 				`tabSales Order`.delivery_date,
-				(`tabSales Order Item`.stock_qty - `tabSales Order Item`.delivered_qty) AS net_required_qty
-			FROM `tabSales Order`, `tabSales Order Item`
+				(`tabSales Order Item`.stock_qty - `tabSales Order Item`.delivered_qty) AS net_required_qty,
+				`tabItem`.stock_uom
+			FROM
+				`tabSales Order`
+			JOIN
+				`tabSales Order Item` ON `tabSales Order`.name = `tabSales Order Item`.parent
+			LEFT JOIN
+				`tabItem` ON `tabSales Order Item`.item_code = `tabItem`.name
 			WHERE
-				`tabSales Order`.name = `tabSales Order Item`.parent
-				AND `tabSales Order`.docstatus = 1
+				`tabSales Order`.docstatus = 1
 				AND `tabSales Order`.status != 'Closed'
 				AND (`tabSales Order Item`.stock_qty - `tabSales Order Item`.delivered_qty) > 0
-			ORDER BY `tabSales Order`.delivery_date
+			ORDER BY
+				`tabSales Order`.delivery_date
 		""",
 		{"default_fg_warehouse": default_fg_warehouse},
 		as_dict=True,
@@ -125,6 +137,7 @@ def get_demand_db() -> sqlite3.Connection:
 						delivery_date int,
 						modified int,
 						net_required_qty real,
+						stock_uom text,
 						actual_qty real,
 						status text
 						assigned text
