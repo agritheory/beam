@@ -18,7 +18,7 @@ def get_scan_doctypes():
 		[listview_doctypes.add(value) for value in values.keys()]
 
 	if hooked_listview:
-		for key, values in hooked_frm.items():
+		for key, values in hooked_listview.items():
 			scannable_doctypes.add(key)
 			[listview_doctypes.add(value) for value in values.keys()]
 
