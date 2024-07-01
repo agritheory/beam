@@ -1,9 +1,11 @@
+import base64
 import datetime
 import json
 import os
 from pathlib import Path
 
 import frappe
+import requests
 from frappe.utils import get_bench_path, get_files_path, random_string
 from frappe.utils.jinja import get_jinja_hooks
 from frappe.utils.safe_exec import get_safe_globals
@@ -39,9 +41,20 @@ def print_by_server(
 		if print_format.raw_printing == 1:
 			output = ""
 			# using a custom jinja environment so we don't have to use frappe's formatting
+			methods, filters = get_jinja_hooks()
 			e = Environment(undefined=DebugUndefined)
 			e.globals.update(get_safe_globals())
-			e.globals.update(get_jinja_hooks("methods"))
+			e.filters.update(
+				{
+					"json": frappe.as_json,
+					"len": len,
+					"int": frappe.utils.data.cint,
+					"str": frappe.utils.data.cstr,
+					"flt": frappe.utils.data.flt,
+				}
+			)
+			if methods:
+				e.globals.update(methods)
 			template = e.from_string(print_format.raw_commands)
 			output = template.render(doc=doc)
 			if not file_path:
@@ -109,3 +122,26 @@ def print_handling_units(
 			print_format,
 			handling_unit,
 		)
+
+
+"""
+<img src="data:image/png;base64,{{ labelary_api(doc, 'Handling Unit 6x4 ZPL Format', {}) }}" />
+"""
+
+
+def labelary_api(doc, print_format, settings):
+	print_format = frappe.get_doc("Print Format", print_format)
+	if print_format.raw_printing != 1:
+		frappe.throw("This is a not a RAW print format")
+	output = ""
+	# using a custom jinja environment so we don't have to use frappe's formatting
+	methods, filters = get_jinja_hooks()
+	e = Environment(undefined=DebugUndefined)
+	e.globals.update(get_safe_globals())
+	if methods:
+		e.globals.update(methods)
+	template = e.from_string(print_format.raw_commands)
+	output = template.render(doc=doc)
+	url = "http://api.labelary.com/v1/printers/8dpmm/labels/6x4/0/"
+	r = requests.post(url, files={"file": output})
+	return base64.b64encode(r.content).decode("ascii")

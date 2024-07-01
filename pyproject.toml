@@ -10,7 +10,8 @@ dynamic = ["version"]
 dependencies = [
     "python-barcode",
     "pytest",
-    "pytest-order"
+    "pytest-order",
+    "py-zebra-zpl"
 ]
 
 [build-system]
