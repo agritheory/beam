@@ -1,3 +1,6 @@
+# Copyright (c) 2025, AgriTheory and contributors
+# For license information, please see license.txt
+
 from . import __version__ as app_version
 
 app_name = "beam"
@@ -58,7 +61,15 @@ jinja = {
 	"methods": [
 		"beam.beam.scan.get_handling_unit",
 		"beam.beam.barcodes.barcode128",
-	]
+		"beam.beam.barcodes.formatted_zpl_barcode",
+		"beam.beam.barcodes.zebra_zpl_barcode",
+		"beam.beam.barcodes.formatted_zpl_label",
+		"beam.beam.barcodes.zebra_zpl_label",
+		"beam.beam.barcodes.formatted_zpl_text",
+		"beam.beam.barcodes.zebra_zpl_text",
+		"beam.beam.barcodes.add_to_label",
+		"beam.beam.printing.labelary_api",
+	],
 }
 
 # Installation
