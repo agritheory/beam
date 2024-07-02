@@ -66,7 +66,7 @@ def formatted_zpl_barcode(barcode_text: str) -> str:
 @frappe.whitelist()
 @frappe.read_only()
 def formatted_zpl_label(
-	width: str, length: str, dpi: str = 203, print_speed: int = 2, copies: int = 1
+	width: str, length: str, dpi: int = 203, print_speed: int = 2, copies: int = 1
 ) -> str:
 	l = frappe._dict({})
 	# ^XA Start format
