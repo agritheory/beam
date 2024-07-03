@@ -53,6 +53,13 @@ def get_columns(filters):
 			"align": "Right",
 		},
 		{
+			"label": frappe._("Stock UOM"),
+			"fieldname": "stock_uom",
+			"fieldtype": "Link",
+			"options": "UOM",
+			"width": "100px",
+		},
+		{
 			"label": frappe._("Actual Qty"),
 			"fieldname": "actual_qty",
 			"fieldtype": "Float",

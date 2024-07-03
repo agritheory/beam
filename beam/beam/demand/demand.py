@@ -19,6 +19,7 @@ if TYPE_CHECKING:
 
 
 def build_demand_map() -> None:
+	output = []
 	transfer_demand = frappe.db.sql(
 		"""
 			SELECT
@@ -28,13 +29,19 @@ def build_demand_map() -> None:
 				`tabWork Order Item`.name,
 				`tabWork Order Item`.item_code,
 				`tabWork Order`.planned_start_date AS delivery_date,
-				(`tabWork Order Item`.required_qty - `tabWork Order Item`.transferred_qty) AS net_required_qty
-			FROM `tabWork Order`, `tabWork Order Item`
+				(`tabWork Order Item`.required_qty - `tabWork Order Item`.transferred_qty) AS net_required_qty,
+				`tabItem`.stock_uom
+			FROM
+				`tabWork Order`
+			JOIN
+				`tabWork Order Item` ON `tabWork Order`.name = `tabWork Order Item`.parent
+			LEFT JOIN
+				`tabItem` ON `tabWork Order Item`.item_code = `tabItem`.name
 			WHERE
-				`tabWork Order`.name = `tabWork Order Item`.parent
-				AND (`tabWork Order Item`.transferred_qty - `tabWork Order Item`.required_qty) < 0
+				(`tabWork Order Item`.transferred_qty - `tabWork Order Item`.required_qty) < 0
 				AND `tabWork Order`.status = 'Not Started'
-			ORDER BY `tabWork Order`.planned_start_date
+			ORDER BY
+				`tabWork Order`.planned_start_date
 		""",
 		as_dict=True,
 	)
@@ -51,14 +58,20 @@ def build_demand_map() -> None:
 				`tabSales Order Item`.name,
 				`tabSales Order Item`.item_code,
 				`tabSales Order`.delivery_date,
-				(`tabSales Order Item`.stock_qty - `tabSales Order Item`.delivered_qty) AS net_required_qty
-			FROM `tabSales Order`, `tabSales Order Item`
+				(`tabSales Order Item`.stock_qty - `tabSales Order Item`.delivered_qty) AS net_required_qty,
+				`tabItem`.stock_uom
+			FROM
+				`tabSales Order`
+			JOIN
+				`tabSales Order Item` ON `tabSales Order`.name = `tabSales Order Item`.parent
+			LEFT JOIN
+				`tabItem` ON `tabSales Order Item`.item_code = `tabItem`.name
 			WHERE
-				`tabSales Order`.name = `tabSales Order Item`.parent
-				AND `tabSales Order`.docstatus = 1
+				`tabSales Order`.docstatus = 1
 				AND `tabSales Order`.status != 'Closed'
 				AND (`tabSales Order Item`.stock_qty - `tabSales Order Item`.delivered_qty) > 0
-			ORDER BY `tabSales Order`.delivery_date
+			ORDER BY
+				`tabSales Order`.delivery_date
 		""",
 		{"default_fg_warehouse": default_fg_warehouse},
 		as_dict=True,
@@ -68,11 +81,26 @@ def build_demand_map() -> None:
 		row.delivery_date = str(calendar.timegm(get_datetime(row.delivery_date).timetuple()))
 		row.net_required_qty = str(row.net_required_qty)
 		row.actual_qty = str(get_balance_qty_from_sle(row.item_code, row.warehouse))
+		row.indent = str(0)
+		output.append(row)
+
+		if frappe.db.get_value("Warehouse", row.warehouse, "is_group"):
+			warehouses_to_check = [row.warehouse]
+			warehouses_to_check.extend(get_descendant_warehouses("Ambrosia Pie Company", row.warehouse))
+			for wh in warehouses_to_check:
+				qty = get_balance_qty_from_sle(row.item_code, wh)
+				if qty > 0:
+					new_row = row.copy()
+					new_row.key = frappe.generate_hash()
+					new_row.warehouse = wh
+					new_row.actual_qty = str(qty)
+					new_row.indent = str(1)
+					output.append(new_row)
 
 	with get_demand_db() as conn:
 		cur = conn.cursor()
 		cur.execute("DELETE FROM demand;")  # sqlite does not implement a TRUNCATE command
-		for row in transfer_demand + sales_demand:
+		for row in output:
 			cur.execute(
 				f"""INSERT INTO demand ('{"', '".join(row.keys())}') VALUES ('{"', '".join(row.values())}')"""
 			)
@@ -101,6 +129,7 @@ def get_demand_db() -> sqlite3.Connection:
 					CREATE TABLE demand(
 						key text,
 						doctype text,
+						indent int,
 						parent text,
 						warehouse text,
 						name text,
@@ -108,6 +137,7 @@ def get_demand_db() -> sqlite3.Connection:
 						delivery_date int,
 						modified int,
 						net_required_qty real,
+						stock_uom text,
 						actual_qty real,
 						status text
 						assigned text
@@ -185,3 +215,41 @@ def modify_demand(
 					)
 
 		conn.commit()
+
+
+def get_descendant_warehouses(beam_settings, warehouse):
+	beam_settings = frappe.get_doc("BEAM Settings", beam_settings).as_dict()
+	warehouse_types = []
+	if beam_settings.warehouse_types:
+		warehouse_types = [wt.warehouse_type for wt in beam_settings.warehouse_types]
+
+	if warehouse_types:
+		order_by = "lft"
+		limit = None
+		lft, rgt = frappe.db.get_value("Warehouse", warehouse, ["lft", "rgt"])
+
+		if rgt - lft <= 1:
+			return []
+
+		descendant_warehouses = frappe.get_list(
+			"Warehouse",
+			{
+				"lft": [">", lft],
+				"rgt": ["<", rgt],
+				"company": beam_settings.company,
+				"warehouse_type": ["not in", warehouse_types],
+			},
+			"name",
+			order_by=order_by,
+			limit_page_length=limit,
+			ignore_permissions=True,
+			pluck="name",
+		)
+		return descendant_warehouses
+	else:
+		from frappe.utils.nestedset import get_descendants_of
+
+		descendant_warehouses = get_descendants_of(
+			"Warehouse", warehouse, ignore_permissions=True, order_by="lft"
+		)
+		return descendant_warehouses
