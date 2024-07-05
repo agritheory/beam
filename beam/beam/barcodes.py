@@ -3,12 +3,13 @@
 
 import base64
 import uuid
-from io import BytesIO, StringIO
+from io import BytesIO
 
-import barcode
 import frappe
-import zebra_zpl
+from barcode import Code128
+from barcode.writer import ImageWriter
 from erpnext import get_default_company
+from zebra_zpl import Barcode, Label, Printable, Text
 
 from beam.beam.doctype.beam_settings.beam_settings import create_beam_settings
 
@@ -51,9 +52,9 @@ def barcode128(barcode_text: str) -> str:
 		else frappe.get_doc("BEAM Settings", {"company": company})
 	)
 	font_size = settings.barcode_font_size or 0
-	temp = BytesIO()  # TODO: move to line 40?
-	barcode.Code128(barcode_text, writer=barcode.writer.ImageWriter()).write(
-		temp,
+	temp = BytesIO()
+	instance = Code128(barcode_text, writer=ImageWriter())
+	instance.write(
 		options={"module_width": 0.4, "module_height": 10, "font_size": font_size, "compress": True},
 	)
 	encoded = base64.b64encode(temp.getvalue()).decode("ascii")
@@ -63,7 +64,7 @@ def barcode128(barcode_text: str) -> str:
 @frappe.whitelist()
 @frappe.read_only()
 def formatted_zpl_barcode(barcode_text: str) -> str:
-	bc = zebra_zpl.Barcode(
+	bc = Barcode(
 		barcode_text,
 		type="C",
 		human_readable="Y",
@@ -73,16 +74,15 @@ def formatted_zpl_barcode(barcode_text: str) -> str:
 		justification="C",
 		position=(20, 40),
 	)
-	b = bc.to_zpl()
-	return b
+	return bc.to_zpl()
 
 
 @frappe.whitelist()
 @frappe.read_only()
 def formatted_zpl_label(
-	width: str, length: str, dpi: int = 203, print_speed: int = 2, copies: int = 1
+	width: int, length: int, dpi: int = 203, print_speed: int = 2, copies: int = 1
 ) -> str:
-	l = frappe._dict({})
+	l = frappe._dict()
 	# ^XA Start format
 	# ^LL<label height in dots>,<space between labels in dots>
 	# ^LH<label home - x,y coordinates of top left label>
@@ -98,47 +98,40 @@ def formatted_zpl_label(
 
 @frappe.whitelist()
 @frappe.read_only()
-def formatted_zpl_text(text: str, width: None) -> str:
-	tf = zebra_zpl.Text(
-		text, font_type=0, font_size=28, position=(0, 25), width=width, y=25, justification="C"
-	)
-	t = tf.to_zpl()
-	return t
+def formatted_zpl_text(text: str, width: int | None = None) -> str:
+	tf = Text(text, font_type=0, font_size=28, position=(0, 25), width=width, y=25, justification="C")
+	return tf.to_zpl()
 
 
 @frappe.whitelist()
 @frappe.read_only()
 def zebra_zpl_label(*args, **kwargs):
-	l = ZPLLabelStringOutput()
-	for key, value in kwargs.items():
-		l[key] = value
-	return l
+	return ZPLLabelStringOutput(*args, **kwargs)
 
 
 @frappe.whitelist()
 @frappe.read_only()
-def zebra_zpl_barcode(*args, **kwargs):
-	return zebra_zpl.Barcode(*args, **kwargs)
+def zebra_zpl_barcode(data: str, **kwargs):
+	return Barcode(data, **kwargs)
 
 
 @frappe.whitelist()
 @frappe.read_only()
-def zebra_zpl_text(*args, **kwargs):
-	return zebra_zpl.Text(*args, **kwargs)
+def zebra_zpl_text(data: str, **kwargs):
+	return Text(data, **kwargs)
 
 
 @frappe.whitelist()
 @frappe.read_only()
-def add_to_label(label, *args, **kwargs):
-	label.add(*args, **kwargs)
+def add_to_label(label: Label, element: Printable):
+	label.add(element)
 
 
-class ZPLLabelStringOutput(zebra_zpl.Label):
-	def __getitem__(self, key):
-		return getattr(self, key)
-
-	def __setitem__(self, key, value):
-		setattr(self, key, value)
+class ZPLLabelStringOutput(Label):
+	def __init__(
+		self, width: int = 100, length: int = 100, dpi: int = 203, print_speed: int = 2, copies: int = 1
+	):
+		super().__init__(width, length, dpi, print_speed, copies)
 
 	def dump_contents(self, io=None):
 		s = ""
