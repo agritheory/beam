@@ -176,7 +176,7 @@ export function makeServer() {
 		},
 
 		routes() {
-			this.namespace = 'api'
+			this.namespace = 'mirage'
 			this.get('/workstations', schema => {
 				return schema.db.workstations
 			})

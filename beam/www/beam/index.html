@@ -1,16 +1,37 @@
-<!doctype html>
-<html lang="en">
+<!-- <html lang="en">
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>Beam</title>
-		<script crossorigin type="module" src="/assets/beam/dist/js/portal/beam-ui.js"></script>
+		<link rel="icon" type="image/x-icon" href="/assets/erpnext/images/erpnext-favicon.svg">
+		<title>BEAM</title>
 	</head>
 	<body>
 		<div id="beam"></div>
-
 		<script>
 			window.csrf_token = "{{ csrf_token }}"
 		</script>
 	</body>
-</html>
+</html> -->
+
+{% extends "templates/web.html" %}
+{% block content %}
+<section class="section section-padding-top section-padding-bottom">
+	<div class='container'>
+		<div id="beam"></div>
+	</div>
+</section>
+<script>
+	window.csrf_token = '{{ csrf_token }}'
+</script>
+{% endblock %}
+{%- block style -%}
+<style>
+	.navbar {
+		display: none;
+	}
+
+	.web-footer {
+		display: none;
+	}
+</style>
+{% endblock %}

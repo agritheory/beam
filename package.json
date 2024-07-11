@@ -6,10 +6,23 @@
 		"url": "https://github.com/agritheory/beam.git"
 	},
 	"scripts": {
-		"install": "cd beam/www/beam && yarn install",
-		"dev": "cd beam/www/beam && yarn dev",
-		"build": "cd beam/www/beam && yarn build"
+		"dev": "vite build --watch --config=./beam/www/beam/vite.config.ts",
+		"build": "tsc --noEmit && vite build --config=./beam/www/beam/vite.config.ts"
 	},
+	"dependencies": {
+		"@stonecrop/beam": "^0.2.25",
+		"@vitejs/plugin-vue": "^5.0.4",
+		"portal-vue": "^3.0.0",
+		"onscan.js": "^1.5.2",
+		"vite": "^5.2.11",
+		"vue": "^3.4.27",
+		"vue-router": "^4.3.2"
+		},
+		"devDependencies": {
+			"@types/node": "^20.12.12",
+			"miragejs": "^0.1.48",
+			"typescript": "^5.4.5"
+		},
 	"publishConfig": {
 		"access": "restricted"
 	}
