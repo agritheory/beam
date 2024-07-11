@@ -18,6 +18,11 @@ export default defineConfig({
 			formats: ['es'], // only create module output for Frappe
 			fileName: format => `index.js`, // creates module only output
 		},
+		rollupOptions: {
+			output: {
+				assetFileNames: "index.[ext]",
+			},
+		},
 	},
 	define: {
 		'process.env': process.env,

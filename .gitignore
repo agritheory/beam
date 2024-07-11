@@ -198,4 +198,4 @@ cypress/videos
 # built BEAM files
 
 beam/www/beam/index.js
-beam/www/beam/style.css
+beam/www/beam/index.css

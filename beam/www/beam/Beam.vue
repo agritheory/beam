@@ -2,29 +2,17 @@
 	<BeamModal @confirmmodal="confirmModal" @closemodal="closeModal" :showModal="showModal">
 		<Confirm @confirmmodal="confirmModal" @closemodal="closeModal" />
 	</BeamModal>
-
-	<Navbar @click="handlePrimaryAction">
-		<template #title> </template>
-		<template #navbaraction>Done</template>
-	</Navbar>
-
-	<ListView :items="items" />
-	<ActionFooter @click="handlePrimaryAction">Done</ActionFooter>
+	<RouterView />
 	<ScanInput @scaninput="handleScanInput($event)" />
 	<BeamModalOutlet @confirmmodal="confirmModal" @closemodal="closeModal"></BeamModalOutlet>
 </template>
 
-<script setup lang="ts">
+<script setup>
 import { onMounted, ref } from 'vue'
-
-import type { Workstation } from './types'
-
-const activeWorkstations = ref<Workstation[]>([])
-const inactiveWorkstations = ref<Workstation[]>([])
 
 const showModal = ref(false)
 
-const handleScanInput = (barcode: string) => {
+const handleScanInput = barcode => {
 	incrementListItemCountByBarcode(barcode)
 }
 
@@ -34,7 +22,7 @@ const handlePrimaryAction = () => {
 	showModal.value = true
 }
 
-const incrementListItemCountByBarcode = (barcode?: string) => {
+const incrementListItemCountByBarcode = barcode => {
 	if (!barcode) {
 		return
 	}
@@ -86,6 +74,6 @@ onMounted(async () => {
 })
 </script>
 
-<style scoped>
+<style>
 @import url('@stonecrop/beam/styles');
 </style>

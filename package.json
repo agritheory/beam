@@ -7,6 +7,7 @@
 	},
 	"scripts": {
 		"dev": "vite build --watch --config=./beam/www/beam/vite.config.ts",
+		"dev:server": "vite --config=./beam/www/beam/vite.config.ts",
 		"build": "tsc --noEmit && vite build --config=./beam/www/beam/vite.config.ts"
 	},
 	"dependencies": {
@@ -25,5 +26,6 @@
 		},
 	"publishConfig": {
 		"access": "restricted"
-	}
+	},
+	"type": "module"
 }

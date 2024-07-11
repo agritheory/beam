@@ -15,11 +15,10 @@
 
 {% extends "templates/web.html" %}
 {% block content %}
-<section class="section section-padding-top section-padding-bottom">
-	<div class='container'>
-		<div id="beam"></div>
-	</div>
-</section>
+<div class='container'>
+	<div id="beam"></div>
+</div>
+<link rel="stylesheet" href="/beam/index.css">
 <script>
 	window.csrf_token = '{{ csrf_token }}'
 </script>
@@ -29,9 +28,15 @@
 	.navbar {
 		display: none;
 	}
-
 	.web-footer {
 		display: none;
+	}
+	.container {
+		padding-left: .5rem;
+		padding-right: .5rem;
+	}
+	#beam {
+		all: unset;
 	}
 </style>
 {% endblock %}
