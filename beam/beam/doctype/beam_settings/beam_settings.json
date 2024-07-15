@@ -8,6 +8,7 @@
  "field_order": [
   "company",
   "enable_handling_units",
+  "always_generate_for_transfer",
   "barcode_font_size"
  ],
  "fields": [
@@ -33,11 +34,18 @@
    "fieldname": "barcode_font_size",
    "fieldtype": "Int",
    "label": "Barcode Font Size"
+  },
+  {
+   "default": "1",
+   "description": "Stock movements of complete Handling Units will keep the same number when unchecked.",
+   "fieldname": "always_generate_for_transfer",
+   "fieldtype": "Check",
+   "label": "Always Generate for Transfer"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-05-29 01:43:57.177980",
+ "modified": "2024-07-15 18:53:08.101936",
  "modified_by": "Administrator",
  "module": "BEAM",
  "name": "BEAM Settings",
