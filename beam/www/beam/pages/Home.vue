@@ -1,27 +1,27 @@
 <template>
-	<nav>
-		<RouterLink class="home-nav" to="/workstation">
-			<li>Workstations</li>
-		</RouterLink>
-		<RouterLink class="home-nav" to="/work_order">
-			<li>Work Orders</li>
-		</RouterLink>
-		<RouterLink class="home-nav" to="/receive">
-			<li>Receive</li>
-		</RouterLink>
-		<RouterLink class="home-nav" to="/ship">
-			<li>Ship</li>
-		</RouterLink>
-		<RouterLink class="home-nav" to="/transfer">
-			<li>Transfer</li>
-		</RouterLink>
-		<RouterLink class="home-nav" to="/manufacture">
-			<li>Manufacture</li>
-		</RouterLink>
-		<RouterLink class="home-nav" to="/repack">
-			<li>Repack</li>
-		</RouterLink>
-	</nav>
+    <nav>
+        <RouterLink class="home-nav" to="/workstation">
+            <li>Workstations</li>
+        </RouterLink>
+        <RouterLink class="home-nav" to="/work_order">
+            <li>Work Orders</li>
+        </RouterLink>
+        <RouterLink class="home-nav" to="/receive">
+            <li>Receive</li>
+        </RouterLink>
+        <RouterLink class="home-nav" to="/ship">
+            <li>Ship</li>
+        </RouterLink>
+        <RouterLink class="home-nav" to="/transfer">
+            <li>Transfer</li>
+        </RouterLink>
+        <RouterLink class="home-nav" to="/manufacture">
+            <li>Manufacture</li>
+        </RouterLink>
+        <RouterLink class="home-nav" to="/repack">
+            <li>Repack</li>
+        </RouterLink>
+    </nav>
 </template>
 <script setup></script>
 <style scoped>

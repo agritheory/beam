@@ -27,6 +27,8 @@ import Ship from './pages/Ship.vue'
 import Transfer from './pages/Transfer.vue'
 import Manufacture from './pages/Manufacture.vue'
 import Repack from './pages/Repack.vue'
+import JobCard from './pages/JobCard.vue'
+import Operation from './pages/Operation.vue'
 
 if (import.meta.env.VITE_SERVER) {
 	makeServer()
@@ -52,7 +54,19 @@ const routes = [
 		path: '/work_order',
 		name: 'work_order',
 		component: WorkOrder,
-	},
+    },
+    {
+        path: '/job_card/:orderId',
+        name: 'job_card',
+        component: JobCard,
+        props: true
+    },
+    {
+        path: '/operation/:operationID',
+        name: 'operation',
+        component: Operation,
+        props: true
+    },
 	{
 		path: '/receive',
 		name: 'receive',
