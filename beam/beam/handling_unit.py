@@ -48,7 +48,7 @@ def generate_handling_units(doc, method=None):
 				row.to_handling_unit = handling_unit.name
 			else:
 				row.to_handling_unit = row.handling_unit
-		continue
+			continue
 
 		if doc.doctype == "Subcontracting Receipt" and not row.handling_unit:
 			handling_unit = frappe.new_doc("Handling Unit")
