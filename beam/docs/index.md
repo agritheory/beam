@@ -45,7 +45,11 @@ Warehouses may also have unique barcodes associated with them. The user can navi
 
 ## Print Server Integration
 
-Beam offers the ability to print to raw input printers like Zebra printers directly from the browser. Also included are several debugging and example print formats. For more details about configuring this, see the [print server section](./print_server.md). 
+Beam offers the ability to print to raw input printers like Zebra printers directly from the browser. Also included are several debugging and example print formats. For more details about configuring this, see the [print server section](./print_server.md).
+
+### Zebra Printing
+
+The app also includes Jinja utility functions to generate [ZPL](https://en.wikipedia.org/wiki/Zebra_Programming_Language) code and labels (using the [free Labelary API](https://labelary.com/)) against any document, which can then be used within a Print Format to preview the print output before sending it to your Zebra printer. For more details about using these utilities, see the [Zebra printing section](./zebra_printing.md).
 
 ## Roadmap and Planned Features
 

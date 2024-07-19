@@ -127,7 +127,9 @@ def print_handling_units(
 """
 
 
-def labelary_api(doc, print_format, settings):
+def labelary_api(doc, print_format, settings=None):
+	if not settings:
+		settings = {}
 	print_format = frappe.get_doc("Print Format", print_format)
 	if print_format.raw_printing != 1:
 		frappe.throw("This is a not a RAW print format")
