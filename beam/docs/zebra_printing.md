@@ -1,7 +1,7 @@
 # Zebra Printing
 
 To create a Zebra print format, you need the following documents:
-- A ZPL Print Format made against Handling Units that uses the available Jinja utility functions to generate ZPL code.
+- A ZPL Print Format made against Doctype that may contain barcodes (Item, Warehouse, Handling Units, etc.) that uses the available Jinja utility functions to generate ZPL code.
 - A document Print Format that uses the free Labelary API to convert the above ZPL code and generate a preview of the print output for the linked document.
 
 ### ZPL Code Generation
@@ -12,6 +12,8 @@ Currently, only three types of printable ZPL data can be generated with utilties
 - `Label`
 
 Beam uses the [py-zebra-zpl](https://github.com/mtking2/py-zebra-zpl) library to generate the above types, as it provides a basic interface to create ZPL code using Python objects. Please refer to the library's documentation for more information on how to use it.
+
+**Note:** Additional ZPL elements (like graphic fields) and commands (text mirroring, character encoding, etc.) can be developed separately and added as text directly to the ZPL Print Format. For more information, visit the [official documentation page](https://supportcommunity.zebra.com/s/article/ZPL-Command-Information-and-DetailsV2?language=en_US) or the [Labelary ZPL Programming Guide](https://labelary.com/zpl.html).
 
 In addition, Beam exposes the following Jinja functions to be used within a Print Format:
 
@@ -25,7 +27,7 @@ Generate a [Code 128](https://en.wikipedia.org/wiki/Code_128) barcode image. It 
 
 ##### Example
 ```jinja
-{{ barcode128('123456') }}
+{{ barcode128(doc.barcodes[0].barcode) }}
 ```
 
 ---
@@ -38,7 +40,7 @@ Generate a formatted ZPL barcode. It takes the following arguments:
 
 ##### Example
 ```jinja
-{{ formatted_zpl_barcode('123456') }}
+{{ formatted_zpl_barcode(doc.barcodes[0].barcode) }}
 ```
 
 ---
@@ -48,8 +50,10 @@ Generate a formatted ZPL barcode. It takes the following arguments:
 Generate a formatted ZPL label object. It takes the following arguments:
 
 - `width`: The width of the label in dots. Required.
+  - This value is typically the width of the expected label multiplied by the printer's DPI value.
 - `height`: The height of the label in dots. Required.
-- `dpi`: The DPI of the printer. Defaults to 203.
+  - This value is typically the height of the expected label multiplied by the printer's DPI value.
+- `dpi`: The dots-per-inch (DPI) value of the printer. Defaults to 203.
   - Visit the [official documentation](https://supportcommunity.zebra.com/s/article/000026166) to determine the DPI for your Zebra printer model.
 - `print_speed`: The print speed of the printer in inches per second (ips). Defaults to 2.
   - Slower print speeds typically yield better print quality.
@@ -60,6 +64,7 @@ Generate a formatted ZPL label object. It takes the following arguments:
 ```jinja
 {% set label = formatted_zpl_label(width=6*203, height=4*203, dpi=203) %}
 {{ label.start }}
+<!-- add ZPL elements and commands -->
 {{ label.end }}
 ```
 
@@ -90,7 +95,7 @@ Additional arguments can be passed to the function to customize the barcode. Ple
 ##### Example
 ```jinja
 {% set label = zebra_zpl_label(width=6*203, length=4*203, dpi=203) -%}
-{{ label.add(zebra_zpl_barcode('123456')) }}
+{{ label.add(zebra_zpl_barcode(doc.barcodes[0].barcode)) }}
 {{ label.dump_contents() }}
 ```
 
@@ -170,9 +175,7 @@ Add text, barcodes, and other printable elements to a ZPL label. It takes the fo
 ##### Example
 ```jinja
 {% set label = zebra_zpl_label(width=6*203, length=4*203, dpi=203) -%}
-{% set barcode = zebra_zpl_barcode('123456') %}
+{% set barcode = zebra_zpl_barcode(doc.barcodes[0].barcode) %}
 {% add_to_label(label, barcode) %}
 {{ label.dump_contents() }}
 ```
-
----
