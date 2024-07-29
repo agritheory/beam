@@ -26,8 +26,8 @@ def get_columns(filters):
 		{
 			"label": frappe._("Warehouse"),
 			"fieldname": "warehouse",
-			"fieldtype": "Dynamic Link",
-			"options": "doctype",
+			"fieldtype": "Link",
+			"options": "Warehouse",
 			"width": "150px",
 		},
 		{"fieldname": "name", "fieldtype": "Data", "hidden": True},
@@ -41,8 +41,8 @@ def get_columns(filters):
 		{
 			"label": frappe._("Item Code"),
 			"fieldname": "item_code",
-			"fieldtype": "Dynamic Link",
-			"options": "doctype",
+			"fieldtype": "Link",
+			"options": "Item",
 			"width": "150px",
 		},
 		{
@@ -55,8 +55,7 @@ def get_columns(filters):
 		{
 			"label": frappe._("Stock UOM"),
 			"fieldname": "stock_uom",
-			"fieldtype": "Link",
-			"options": "UOM",
+			"fieldtype": "Data",
 			"width": "100px",
 		},
 		{

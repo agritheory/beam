@@ -8,7 +8,8 @@
  "field_order": [
   "company",
   "enable_handling_units",
-  "barcode_font_size"
+  "barcode_font_size",
+  "warehouse_types"
  ],
  "fields": [
   {
@@ -29,15 +30,21 @@
    "label": "Enable Handling Units"
   },
   {
-   "default": "12",
    "fieldname": "barcode_font_size",
    "fieldtype": "Int",
    "label": "Barcode Font Size"
+  },
+  {
+   "description": "These Warehouse Types will be excluded when checking for inventory availability",
+   "fieldname": "warehouse_types",
+   "fieldtype": "Table MultiSelect",
+   "label": "Warehouse Types",
+   "options": "Warehouse Types"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-05-29 01:43:57.177980",
+ "modified": "2024-06-14 10:47:01.611630",
  "modified_by": "Administrator",
  "module": "BEAM",
  "name": "BEAM Settings",

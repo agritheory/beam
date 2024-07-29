@@ -1,8 +1,7 @@
 // Copyright (c) 2024, AgriTheory and contributors
 // For license information, please see license.txt
-/* eslint-disable */
 
-frappe.query_reports['Item Demand'] = {
+frappe.query_reports['Demand Map'] = {
 	filters: [],
 	formatter: function (value, row, column, data, default_formatter) {
 		value = default_formatter(value, row, column, data)

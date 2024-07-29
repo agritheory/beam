@@ -1,6 +1,8 @@
 import calendar
+import datetime
 import pathlib
 import sqlite3
+from time import localtime
 from typing import TYPE_CHECKING, Union
 
 import frappe
@@ -25,6 +27,7 @@ def build_demand_map() -> None:
 			SELECT
 				'Work Order' AS doctype,
 				`tabWork Order`.name AS parent,
+				`tabWork Order`.company,
 				`tabWork Order`.wip_warehouse AS warehouse,
 				`tabWork Order Item`.name,
 				`tabWork Order Item`.item_code,
@@ -54,6 +57,7 @@ def build_demand_map() -> None:
 			SELECT
 				'Sales Order' AS doctype,
 				`tabSales Order`.name AS parent,
+				`tabSales Order`.company,
 				%(default_fg_warehouse)s AS warehouse,
 				`tabSales Order Item`.name,
 				`tabSales Order Item`.item_code,
@@ -86,7 +90,7 @@ def build_demand_map() -> None:
 
 		if frappe.db.get_value("Warehouse", row.warehouse, "is_group"):
 			warehouses_to_check = [row.warehouse]
-			warehouses_to_check.extend(get_descendant_warehouses("Ambrosia Pie Company", row.warehouse))
+			warehouses_to_check.extend(get_descendant_warehouses(row.company, row.warehouse))
 			for wh in warehouses_to_check:
 				qty = get_balance_qty_from_sle(row.item_code, wh)
 				if qty > 0:
@@ -129,6 +133,7 @@ def get_demand_db() -> sqlite3.Connection:
 					CREATE TABLE demand(
 						key text,
 						doctype text,
+						company text,
 						indent int,
 						parent text,
 						warehouse text,
@@ -145,6 +150,7 @@ def get_demand_db() -> sqlite3.Connection:
 				"""
 			)
 			cur.execute("CREATE INDEX idx_key ON demand(key)")
+			cur.execute("CREATE INDEX idx_company ON demand(company)")
 			cur.execute("CREATE INDEX idx_warehouse ON demand(warehouse)")
 			cur.execute("CREATE INDEX idx_item_code ON demand(item_code)")
 			cur.execute("CREATE INDEX delivery_date ON demand(delivery_date)")
@@ -163,16 +169,16 @@ def modify_demand(
 	],
 	method: str | None = None,
 ):
+	print(f"Modifying demand for {doc.name}")
 	with get_demand_db() as conn:
 		conn.row_factory = dict_factory
 		cur = conn.cursor()
 		demand = frappe.get_hooks("demand")
 
+		doctype_matrix = demand.get(doc.doctype)
+		if not doctype_matrix:
+			return
 		for row in doc.items:
-			doctype_matrix = demand.get(doc.doctype)
-			if not doctype_matrix:
-				continue
-
 			method_matrix = doctype_matrix.get(method)
 			if not method_matrix:
 				continue
@@ -187,13 +193,15 @@ def modify_demand(
 				warehouse_field = action.get("warehouse_field")
 
 				row_qty = row.get(quantity_field)
-				result = cur.execute(
+				rows = cur.execute(
 					f"""
-						SELECT * FROM demand WHERE item_code = '{row.item_code}' AND warehouse = '{row.get(warehouse_field)} ORDER BY delivery_date ASC';
+						SELECT * FROM demand
+						WHERE item_code = '{row.item_code}'
+						AND company = '{doc.company}
+						ORDER BY delivery_date ASC';
 					"""
-				)
+				).fetchall()
 
-				rows = result.fetchall()
 				demand_effect = action.get("demand_effect")
 				for row in rows:
 					if row.actual_qty == row.net_required_qty:
@@ -226,7 +234,7 @@ def get_descendant_warehouses(beam_settings, warehouse):
 	if warehouse_types:
 		order_by = "lft"
 		limit = None
-		lft, rgt = frappe.db.get_value("Warehouse", warehouse, ["lft", "rgt"])
+		lft, rgt = frappe.get_cached_value("Warehouse", warehouse, ["lft", "rgt"])
 
 		if rgt - lft <= 1:
 			return []
@@ -253,3 +261,45 @@ def get_descendant_warehouses(beam_settings, warehouse):
 			"Warehouse", warehouse, ignore_permissions=True, order_by="lft"
 		)
 		return descendant_warehouses
+
+
+# enum for valid order_by options
+
+
+@frappe.whitelist()
+def get_demand(
+	company,
+	item_code=None,
+	warehouse=None,
+	workstation=None,
+	assigned=None,
+	order_by="workstation, assigned",
+):
+	filters = {}
+	if workstation:
+		filters["workstation"] = f"{workstation}"
+	if item_code:
+		filters["item_code"] = f"{item_code}"
+	if warehouse:
+		filters["warehouse"] = f"{warehouse}"
+
+	_filters = "\n".join([f"AND {key} = '{value}'" for key, value in filters.items()])
+
+	if assigned:
+		_filters += f" AND assigned LIKE %{assigned}%"
+
+	with get_demand_db() as conn:
+		conn.row_factory = dict_factory
+		cur = conn.cursor()
+		rows = cur.execute(
+			f"""
+				SELECT * FROM demand
+				WHERE company = '{company}'
+				{_filters}
+				ORDER BY '{order_by}'
+			"""
+		).fetchall()
+
+		for row in rows:
+			row.delivery_date = datetime.datetime(*localtime(row.delivery_date)[:6])
+		return rows

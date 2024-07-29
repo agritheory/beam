@@ -7,6 +7,7 @@ from erpnext.subcontracting.doctype.subcontracting_order.subcontracting_order im
 	make_subcontracting_receipt,
 )
 
+from beam.beam.demand.demand import get_demand
 from beam.beam.scan import get_handling_unit
 
 
@@ -31,8 +32,12 @@ def test_purchase_receipt_handling_unit_generation():
 			assert isinstance(row.handling_unit, str)
 			if row.rejected_qty:
 				assert row.rejected_qty + row.qty == row.received_qty
-				hu = get_handling_unit(row.handling_unit)
-				assert hu.stock_qty == row.stock_qty
+			hu = get_handling_unit(row.handling_unit)
+			assert hu.stock_qty == row.stock_qty
+			# NOTE demand should have a side effect here
+			if hu:
+				print(row.item_code, get_demand(pr.company, item_code=row.item_code)[0].actual_qty)
+				assert get_demand(pr.company, item_code=row.item_code)[0].actual_qty > 0.0
 
 
 @pytest.mark.order(2)
