@@ -1,50 +1,35 @@
 <template>
 	<h1>Job Cards</h1>
 
-	<li v-for="operation in operations">
-		<router-link :to="{ name: 'operation', params: { id: operation.id } }">
-			<span>{{ operation.id }}</span>
-			<span class="right-align"> ({{ operation.completedOperations }} / {{ operation.maxOperations }})</span>
+	<li v-for="operation in workOrder.operations">
+		<router-link :to="{ name: 'operation', params: { workOrder: route.params.id, id: operation.name } }">
+			<span>{{ operation.operation }}</span>
+			<span class="right-align"> ({{ workOrder.qty }} / {{ operation.completed_qty }})</span>
 		</router-link>
 	</li>
 </template>
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
 
-import { Operation } from '../types'
+import type { WorkOrder } from '../types'
 
-const operations = ref<Operation[]>([])
+const route = useRoute()
+const workOrder = ref<Partial<WorkOrder>>({})
 
-onMounted(() => {
-	// TODO: update this value with the correct API call
-	operations.value = [
-		{
-			id: 'operation 1',
-			maxOperations: '3',
-			completedOperations: '0',
+onMounted(async () => {
+	// avoid CSRF-token errors on reloading a page
+	frappe.csrf_token = window.csrf_token
+
+	const response = await frappe.call({
+		method: 'frappe.client.get',
+		args: {
+			doctype: 'Work Order',
+			name: route.params.id,
 		},
-		{
-			id: 'operation 2',
-			maxOperations: '3',
-			completedOperations: '0',
-		},
-		{
-			id: 'operation 3',
-			maxOperations: '3',
-			completedOperations: '0',
-		},
-		{
-			id: 'operation 4',
-			maxOperations: '3',
-			completedOperations: '0',
-		},
-		{
-			id: 'operation 5',
-			maxOperations: '3',
-			completedOperations: '0',
-		},
-	]
+	})
+	workOrder.value = response.message as WorkOrder
 })
 </script>
 

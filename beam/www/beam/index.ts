@@ -12,7 +12,7 @@ import {
 	ScanInput,
 } from '@stonecrop/beam'
 import { createApp } from 'vue'
-import { createRouter, createWebHashHistory } from 'vue-router'
+import { createRouter, createWebHashHistory, type RouteRecordRaw } from 'vue-router'
 
 import Beam from './Beam.vue'
 import { makeServer } from './mocks/mirage'
@@ -31,7 +31,7 @@ if (import.meta.env.VITE_SERVER) {
 	makeServer()
 }
 
-const routes = [
+const routes: RouteRecordRaw[] = [
 	{
 		path: '/',
 		name: 'home',
@@ -56,13 +56,11 @@ const routes = [
 		path: '/job_card/:id',
 		name: 'job_card',
 		component: JobCard,
-		props: true,
 	},
 	{
-		path: '/operation/:id',
+		path: '/work_order/:workOrder/operation/:id',
 		name: 'operation',
 		component: Operation,
-		props: true,
 	},
 	{
 		path: '/receive',

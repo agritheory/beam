@@ -1,17 +1,38 @@
-export type Workstation = {
+export type ParentDoctype = {
 	creation: string
 	modified_by: string
 	modified: string
 	name: string
 	owner: string
-
-	production_capacity: number
-	workstation_name: string
-	status?: string
 }
 
-export type Operation = {
-	id: string
-	maxOperations: string
-	completedOperations: string
+export type ChildDoctype = ParentDoctype & {
+	idx: number
+	parent: string
+	parenttype: string
+	parentfield: string
+}
+
+export type JobCard = ParentDoctype & {
+	total_time_in_mins: number
+}
+
+export type WorkOrder = ParentDoctype & {
+	item_name: string
+	qty: number
+
+	operations: WorkOrderOperation[]
+}
+
+export type Workstation = ParentDoctype & {
+	production_capacity: number
+	status?: string
+	workstation_name: string
+}
+
+export type WorkOrderOperation = ChildDoctype & {
+	actual_operation_time: number
+	completed_qty: number
+	description?: string
+	operation: string
 }
