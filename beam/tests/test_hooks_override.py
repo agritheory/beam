@@ -42,6 +42,7 @@ def patch_frappe_get_hooks(monkeymodule, *args, **kwargs):
 	monkeymodule.setattr("frappe.get_hooks", patched_hooks)
 
 
+@pytest.mark.order(30)
 def test_beam_frm_hooks_override(patch_frappe_get_hooks):
 	item_barcode = frappe.get_value("Item Barcode", {"parent": "Kaduka Key Lime Pie"}, "barcode")
 	dn = frappe.new_doc("Delivery Note")

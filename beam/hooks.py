@@ -130,8 +130,8 @@ doc_events = {
 		"Delivery Note",
 		"Sales Invoice",
 	): {
-		"on_submit": ["beam.beam.demand.demand.modify_demand"],
-		"on_cancel": ["beam.beam.demand.demand.modify_demand"],
+		"on_submit": ["beam.beam.demand.demand.modify_allocations"],
+		"on_cancel": ["beam.beam.demand.demand.modify_allocations"],
 	},
 	"Stock Entry": {
 		"before_submit": [
@@ -328,7 +328,7 @@ demand = {
 				"conditions": {"purpose": "Material Issue"},
 			},
 			{
-				"warehouse_field": "s_warehouse",
+				"warehouse_field": "t_warehouse",
 				"quantity_field": "transfer_qty",
 				"demand_effect": "increase",
 				"conditions": {"purpose": "Material Receipt"},

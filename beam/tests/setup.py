@@ -289,9 +289,9 @@ def create_items(settings):
 		"items",
 		{
 			"item_code": "Water",
-			"qty": 1000,
+			"qty": 9,  # intentionally to help with demand tests
 			"t_warehouse": "Refrigerator - APC",
-			"uom": "Gallon Liquid (US)",
+			"uom": "Cup",
 			"basic_rate": 0.15,
 			"expense_account": "5111 - Cost of Goods Sold - APC",
 		},
@@ -300,7 +300,8 @@ def create_items(settings):
 		"items",
 		{
 			"item_code": "Ice Water",
-			"qty": 1000,
+			"qty": 11,  # intentionally to help with demand tests
+			"uom": "Cup",
 			"t_warehouse": "Refrigerator - APC",
 			"basic_rate": 0.30,
 			"expense_account": "5111 - Cost of Goods Sold - APC",
