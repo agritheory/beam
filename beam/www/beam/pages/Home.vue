@@ -1,33 +1,22 @@
 <template>
-    <nav>
-        <RouterLink class="home-nav" to="/workstation">
-            <li>Workstations</li>
-        </RouterLink>
-        <RouterLink class="home-nav" to="/work_order">
-            <li>Work Orders</li>
-        </RouterLink>
-        <RouterLink class="home-nav" to="/receive">
-            <li>Receive</li>
-        </RouterLink>
-        <RouterLink class="home-nav" to="/ship">
-            <li>Ship</li>
-        </RouterLink>
-        <RouterLink class="home-nav" to="/transfer">
-            <li>Transfer</li>
-        </RouterLink>
-        <RouterLink class="home-nav" to="/manufacture">
-            <li>Manufacture</li>
-        </RouterLink>
-        <RouterLink class="home-nav" to="/repack">
-            <li>Repack</li>
-        </RouterLink>
-    </nav>
+	<nav>
+		<li><router-link class="home-nav" to="/workstation">Workstations</router-link></li>
+		<li><router-link class="home-nav" to="/work_order">Work Orders</router-link></li>
+		<li><router-link class="home-nav" to="/receive">Receive</router-link></li>
+		<li><router-link class="home-nav" to="/ship">Ship</router-link></li>
+		<li><router-link class="home-nav" to="/transfer">Transfer</router-link></li>
+		<li><router-link class="home-nav" to="/manufacture">Manufacture</router-link></li>
+		<li><router-link class="home-nav" to="/repack">Repack</router-link></li>
+	</nav>
 </template>
-<script setup></script>
+
+<script setup lang="ts"></script>
+
 <style scoped>
 nav {
 	padding-top: 0.5rem;
 }
+
 li {
 	list-style: none;
 	padding: 2rem;
@@ -36,9 +25,11 @@ li {
 	border: 2px solid gray;
 	outline: 2px solid transparent;
 }
+
 li:active {
 	outline: 2px solid gray;
 }
+
 .home-nav {
 	display: block;
 }

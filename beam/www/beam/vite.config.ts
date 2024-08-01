@@ -2,16 +2,13 @@ import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
 import { resolve } from 'path'
 
-
 export default defineConfig({
 	plugins: [vue()],
 	build: {
-		target: 'esnext',
-		sourcemap: true,
-		root: './',
-		outDir: './beam/www/beam/',
 		emptyOutDir: false,
-		minify: false,
+		outDir: './beam/www/beam/',
+		sourcemap: true,
+		target: 'esnext',
 		lib: {
 			entry: resolve(__dirname, 'index.ts'),
 			name: 'beam',
@@ -20,7 +17,7 @@ export default defineConfig({
 		},
 		rollupOptions: {
 			output: {
-				assetFileNames: "index.[ext]",
+				assetFileNames: 'index.[ext]',
 			},
 		},
 	},

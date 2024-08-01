@@ -1,8 +1,3 @@
-import { createApp } from 'vue'
-import { createMemoryHistory, createRouter } from 'vue-router'
-
-
-import { makeServer } from './mocks/mirage'
 import {
 	ActionFooter,
 	BeamModal,
@@ -16,9 +11,11 @@ import {
 	Navbar,
 	ScanInput,
 } from '@stonecrop/beam'
-import PortalVue from 'portal-vue'
+import { createApp } from 'vue'
+import { createRouter, createWebHashHistory } from 'vue-router'
 
 import Beam from './Beam.vue'
+import { makeServer } from './mocks/mirage'
 import Home from './pages/Home.vue'
 import Workstation from './pages/Workstation.vue'
 import WorkOrder from './pages/WorkOrder.vue'
@@ -54,19 +51,19 @@ const routes = [
 		path: '/work_order',
 		name: 'work_order',
 		component: WorkOrder,
-    },
-    {
-        path: '/job_card/:orderId',
-        name: 'job_card',
-        component: JobCard,
-        props: true
-    },
-    {
-        path: '/operation/:operationID',
-        name: 'operation',
-        component: Operation,
-        props: true
-    },
+	},
+	{
+		path: '/job_card/:id',
+		name: 'job_card',
+		component: JobCard,
+		props: true,
+	},
+	{
+		path: '/operation/:id',
+		name: 'operation',
+		component: Operation,
+		props: true,
+	},
 	{
 		path: '/receive',
 		name: 'receive',
@@ -95,15 +92,12 @@ const routes = [
 ]
 
 const router = createRouter({
-	history: createMemoryHistory(),
+	history: createWebHashHistory(),
 	routes,
 })
 
 const app = createApp(Beam)
-
 app.use(router)
-app.use(PortalVue)
-
 app.component('ActionFooter', ActionFooter)
 app.component('BeamModal', BeamModal)
 app.component('BeamModalOutlet', BeamModalOutlet)

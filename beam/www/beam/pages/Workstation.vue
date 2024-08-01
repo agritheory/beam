@@ -7,12 +7,10 @@
 	</Navbar>
 	<ListView :items="workstations" />
 </template>
-<script setup>
-import { ref, onMounted } from 'vue'
 
+<script setup lang="ts">
 import { Navbar } from '@stonecrop/beam'
 
-onMounted(() => {})
-
 const handlePrimaryAction = () => {}
+const workstations = ['Manufacture', 'Receive', 'Repack', 'Ship']
 </script>
