@@ -80,7 +80,7 @@ def build_demand_map() -> None:
 				(`tabWork Order Item`.transferred_qty - `tabWork Order Item`.required_qty) < 0
 				AND `tabWork Order`.status = 'Not Started'
 			ORDER BY
-				`tabWork Order`.planned_start_date, `tabWork Order`.name ASC
+				`tabWork Order`.planned_start_date, `tabWork Order`.creation ASC
 		""",
 		as_dict=True,
 	)
@@ -111,7 +111,7 @@ def build_demand_map() -> None:
 				AND `tabSales Order`.status != 'Closed'
 				AND (`tabSales Order Item`.stock_qty - `tabSales Order Item`.delivered_qty) > 0
 			ORDER BY
-				`tabSales Order`.delivery_date, `tabSales Order`.name ASC
+				`tabSales Order`.delivery_date, `tabSales Order`.creation ASC
 		""",
 		{"default_fg_warehouse": default_fg_warehouse},
 		as_dict=True,

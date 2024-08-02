@@ -36,7 +36,8 @@ def test_purchase_receipt_handling_unit_generation():
 			assert hu.stock_qty == row.stock_qty
 			# NOTE demand should have a side effect here
 			if hu:  # flag for inventoriable item
-				print(row.item_code, get_demand(pr.company, item_code=row.item_code))
+				pass
+				# print(row.item_code, get_demand(pr.company, item_code=row.item_code))
 				# TODO: assert that there is satisfied demand for every item with a HU
 				# assert get_demand(pr.company, item_code=row.item_code)[0].actual_qty > 0.0
 
@@ -124,6 +125,18 @@ def test_stock_entry_repack():
 			"handling_unit": pr_hu["handling_unit"],
 		},
 	)
+	scan = frappe.call(
+		"beam.beam.scan.scan",
+		**{
+			"barcode": pr_hu.handling_unit,
+			"context": {"frm": "Stock Entry", "doc": se.as_dict()},
+			"current_qty": 100,
+		},
+	)
+	assert scan[0]["action"] == "add_or_associate"
+	se.items[0].handling_unit = scan[0]["context"].get(
+		"handling_unit"
+	)  # simulates the effect of 'associate'
 	se.append(
 		"items",
 		{
@@ -211,6 +224,11 @@ def test_stock_entry_for_manufacture():
 	se_tfm = frappe.get_value(
 		"Stock Entry", {"work_order": wo, "purpose": "Material Transfer for Manufacture"}
 	)
+	job_cards = frappe.get_all("Job Card", {"work_order": wo})
+	for job_card in job_cards:
+		job_card = frappe.get_doc("Job Card", job_card)
+		job_card.submit()
+
 	se = make_stock_entry(wo, "Manufacture", 40)
 	# simulate scanning
 	for row in se.get("items"):

@@ -119,9 +119,6 @@ doc_events = {
 	# 	"Sales Invoice",
 	# 	"Delivery Note",
 	# ): {"validate": ["beam.beam.handling_unit.validate_handling_unit_overconsumption"]},
-	("Purchase Receipt", "Purchase Invoice", "Stock Entry", "Subcontracting Receipt",): {
-		"before_submit": ["beam.beam.handling_unit.generate_handling_units"],
-	},
 	(
 		"Stock Entry",
 		"Stock Reconciliation",
@@ -133,8 +130,12 @@ doc_events = {
 		"on_submit": ["beam.beam.demand.demand.modify_allocations"],
 		"on_cancel": ["beam.beam.demand.demand.modify_allocations"],
 	},
+	("Purchase Receipt", "Purchase Invoice", "Subcontracting Receipt",): {
+		"before_submit": ["beam.beam.handling_unit.generate_handling_units"],
+	},
 	"Stock Entry": {
 		"before_submit": [
+			"beam.beam.handling_unit.generate_handling_units",
 			"beam.beam.overrides.stock_entry.validate_items_with_handling_unit",
 		],
 	},
