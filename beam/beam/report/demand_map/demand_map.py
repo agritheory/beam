@@ -7,7 +7,7 @@ from time import localtime
 import frappe
 from frappe.utils.data import flt
 
-from beam.beam.demand.demand import dict_factory, get_balance_qty_from_sle, get_demand_db
+from beam.beam.demand.demand import dict_factory, get_demand_db
 
 
 def execute(filters=None):
