@@ -1,24 +1,18 @@
-import json
+"""
+See docs/handling_unit.md
+"""
 
 import frappe
 from erpnext.stock.stock_ledger import NegativeStockError
 
-from beam.beam.doctype.beam_settings.beam_settings import create_beam_settings
+from beam.beam.doctype.beam_settings.beam_settings import get_beam_settings
 from beam.beam.scan import get_handling_unit
-
-"""
-See docs/handling_unit.md
-"""
 
 
 @frappe.whitelist()
 def generate_handling_units(doc, method=None):
 	company = doc.get("company") or frappe.defaults.get_defaults().company
-	settings = (
-		create_beam_settings(company)
-		if not frappe.db.exists("BEAM Settings", {"company": company})
-		else frappe.get_doc("BEAM Settings", {"company": company})
-	)
+	settings = get_beam_settings(company)
 
 	if not settings.enable_handling_units:
 		return doc
@@ -44,13 +38,13 @@ def generate_handling_units(doc, method=None):
 		):
 			handling_unit = frappe.new_doc("Handling Unit")
 			handling_unit.save()
-			row.to_handling_unit = handling_unit.name
+			row.db_set("to_handling_unit", handling_unit.name)
 			continue
 
 		if doc.doctype == "Subcontracting Receipt" and not row.handling_unit:
 			handling_unit = frappe.new_doc("Handling Unit")
 			handling_unit.save()
-			row.handling_unit = handling_unit.name
+			row.db_set("handling_unit", handling_unit.name)
 
 		if doc.doctype == "Stock Entry" and doc.purpose == "Manufacture" and row.is_scrap_item:
 			create_handling_unit = frappe.get_value(
@@ -59,7 +53,7 @@ def generate_handling_units(doc, method=None):
 			if bool(create_handling_unit):
 				handling_unit = frappe.new_doc("Handling Unit")
 				handling_unit.save()
-				row.handling_unit = handling_unit.name
+				row.db_set("handling_unit", handling_unit.name)
 			continue
 
 		if row.get("handling_unit"):
@@ -72,7 +66,7 @@ def generate_handling_units(doc, method=None):
 
 		handling_unit = frappe.new_doc("Handling Unit")
 		handling_unit.save()
-		row.handling_unit = handling_unit.name
+		row.db_set("handling_unit", handling_unit.name)
 
 	return doc
 
@@ -80,11 +74,7 @@ def generate_handling_units(doc, method=None):
 @frappe.whitelist()
 def validate_handling_unit_overconsumption(doc, method=None):
 	company = doc.get("company") or frappe.defaults.get_defaults().company
-	settings = (
-		create_beam_settings(company)
-		if not frappe.db.exists("BEAM Settings", {"company": company})
-		else frappe.get_doc("BEAM Settings", {"company": company})
-	)
+	settings = get_beam_settings(company)
 
 	if not settings.enable_handling_units:
 		return doc

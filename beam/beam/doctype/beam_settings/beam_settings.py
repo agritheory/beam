@@ -10,8 +10,10 @@ class BEAMSettings(Document):
 
 
 @frappe.whitelist()
-def create_beam_settings(company: str) -> str:
-	beams = frappe.new_doc("BEAM Settings")
-	beams.company = company
-	beams.save()
-	return beams
+def get_beam_settings(company: str) -> str:
+	if frappe.db.exists("BEAM Settings", {"company": company}):
+		return frappe.get_doc("BEAM Settings", {"company": company})
+	settings = frappe.new_doc("BEAM Settings")
+	settings.company = company
+	settings.save()
+	return settings

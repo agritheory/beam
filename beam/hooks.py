@@ -121,7 +121,7 @@ doc_events = {
 		]
 	},
 	"Purchase Receipt": {
-		"before_submit": [
+		"on_submit": [
 			"beam.beam.handling_unit.generate_handling_units",
 		],
 		"validate": [
@@ -129,7 +129,7 @@ doc_events = {
 		],
 	},
 	"Purchase Invoice": {
-		"before_submit": [
+		"on_submit": [
 			"beam.beam.handling_unit.generate_handling_units",
 		],
 	},
@@ -137,7 +137,7 @@ doc_events = {
 		"validate": [
 			# "beam.beam.handling_unit.validate_handling_unit_overconsumption",
 		],
-		"before_submit": [
+		"on_submit": [
 			"beam.beam.handling_unit.generate_handling_units",
 			"beam.beam.overrides.stock_entry.validate_items_with_handling_unit",
 		],
@@ -153,7 +153,7 @@ doc_events = {
 		],
 	},
 	"Subcontracting Receipt": {
-		"before_submit": [
+		"on_submit": [
 			"beam.beam.handling_unit.generate_handling_units",
 		],
 	},

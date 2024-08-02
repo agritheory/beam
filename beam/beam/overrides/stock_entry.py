@@ -6,16 +6,12 @@ from erpnext.stock.doctype.stock_entry_detail.stock_entry_detail import StockEnt
 from frappe.utils import cstr, flt
 from typing_extensions import Self
 
-from beam.beam.doctype.beam_settings.beam_settings import create_beam_settings
+from beam.beam.doctype.beam_settings.beam_settings import get_beam_settings
 
 
 class BEAMStockEntry(StockEntry):
 	def update_stock_ledger(self):
-		settings = (
-			create_beam_settings(self.company)
-			if not frappe.db.exists("BEAM Settings", {"company": self.company})
-			else frappe.get_doc("BEAM Settings", {"company": self.company})
-		)
+		settings = get_beam_settings(self.company)
 		sl_entries = []
 		finished_item_row = self.get_finished_item_row()
 		self.get_sle_for_source_warehouse(sl_entries, finished_item_row)
@@ -60,11 +56,7 @@ class BEAMStockEntry(StockEntry):
 @frappe.whitelist()
 def set_rows_to_recombine(docname: str, to_recombine=None) -> None:
 	doc = frappe.get_doc("Stock Entry", docname)
-	settings = (
-		create_beam_settings(doc.company)
-		if not frappe.db.exists("BEAM Settings", {"company": doc.company})
-		else frappe.get_doc("BEAM Settings", {"company": doc.company})
-	)
+	settings = get_beam_settings(doc.company)
 	if not settings.enable_handling_units:
 		return
 	if not to_recombine:
