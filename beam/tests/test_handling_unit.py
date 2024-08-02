@@ -1,3 +1,5 @@
+import time
+
 import frappe
 import pytest
 from erpnext.manufacturing.doctype.work_order.work_order import make_stock_entry
@@ -21,7 +23,7 @@ def submit_all_purchase_receipts():
 		pr.submit()
 
 
-@pytest.mark.order(11)
+@pytest.mark.order(10)
 def test_purchase_receipt_handling_unit_generation():
 	for pr in frappe.get_all("Purchase Receipt"):
 		pr = frappe.get_doc("Purchase Receipt", pr)
@@ -34,15 +36,9 @@ def test_purchase_receipt_handling_unit_generation():
 				assert row.rejected_qty + row.qty == row.received_qty
 			hu = get_handling_unit(row.handling_unit)
 			assert hu.stock_qty == row.stock_qty
-			# NOTE demand should have a side effect here
-			if hu:  # flag for inventoriable item
-				pass
-				# print(row.item_code, get_demand(pr.company, item_code=row.item_code))
-				# TODO: assert that there is satisfied demand for every item with a HU
-				# assert get_demand(pr.company, item_code=row.item_code)[0].actual_qty > 0.0
 
 
-@pytest.mark.order(12)
+@pytest.mark.order(11)
 def test_purchase_invoice():
 	for pi in frappe.get_all("Purchase Invoice"):
 		pi = frappe.get_doc("Purchase Invoice", pi)

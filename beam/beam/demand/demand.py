@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 	from erpnext.stock.doctype.stock_reconciliation.stock_reconciliation import StockReconciliation
 
 
-def get_balance_qty_from_sle(item_code, warehouse=None, company=None) -> float | list:
+def get_qty_from_sle(item_code, warehouse=None, company=None) -> float | list:
 	if not company and not warehouse:
 		company = frappe.defaults.get_defaults().get("company")
 
@@ -171,10 +171,8 @@ def build_allocation_map(doc=None, doc_row=None, action=None):
 				item_demand_map[d.item_code] = [d]
 
 		for _item_code, demand_rows in item_demand_map.items():
-			# TODO: make supply fetching respect inventory dimensions
-			# TODO: make supply fetching respect accounting dimensions
 			demand_queue = deque(demand_rows)
-			supply_queue = deque(get_balance_qty_from_sle(_item_code))
+			supply_queue = deque(get_qty_from_sle(_item_code))
 			if not any([bool(supply_queue), bool(demand_queue)]):
 				continue
 
@@ -344,9 +342,9 @@ def modify_allocations(
 		for action in method_matrix:
 			if action.get("conditions"):
 				for key, value in action.get("conditions", {}).items():
-					if doc.get(key) != value:
-						continue  # TODO remove nested continue
-					build_allocation_map(doc=doc, doc_row=row, action=action)
+					if doc.get(key) == value:
+						# print(f'Allocating demand for {doc.name} {row.item_code} {row.get("stock_qty") or row.get("transfer_qty")}')
+						build_allocation_map(doc=doc, doc_row=row, action=action)
 
 
 def get_descendant_warehouses(beam_settings, warehouse):

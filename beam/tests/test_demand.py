@@ -144,3 +144,18 @@ def test_insufficient_total_demand_scenario():
 	assert ice_water[1].parent == "MFG-WO-2024-00005"
 
 	# assert make-up allocation and not over-allocation
+
+
+@pytest.mark.order(13)
+def test_allocation_from_purchasing():
+	for pr in frappe.get_all(
+		"Purchase Receipt", ["name", "'Purchase Receipt' AS doctype"]
+	) + frappe.get_all("Purchase Invoice", ["name", "'Purchase Invoice' AS doctype"]):
+		pr = frappe.get_doc(pr.doctype, pr.name)
+		for row in pr.items:
+			if row.handling_unit:  # flag for inventoriable item
+				d = get_demand(pr.company, item_code=row.item_code)
+				assert len(d) > 0
+				total_demand = sum(i.allocated_qty for i in d) or 0
+				print(row.item_code, total_demand, row.stock_qty)
+				[print(l) for l in d]
