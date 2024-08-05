@@ -90,6 +90,7 @@ def create_test_data():
 		create_material_request(settings)
 	create_production_plan(settings, prod_plan_from_doc)
 	create_purchase_receipt_for_received_qty_test(settings)
+	create_network_printer_settings(settings)
 
 
 def create_suppliers(settings):
@@ -575,3 +576,17 @@ def create_purchase_receipt_for_received_qty_test(settings):
 		},
 	)
 	pr.save()
+
+
+def create_network_printer_settings(settings):
+	printer_settings = [
+		{"name": "Primary Example Printer", "server_ip": "localhost", "port": 8888},
+		{"name": "Secondary Example Printer", "server_ip": "localhost", "port": 9999},
+	]
+	for ps in printer_settings:
+		nps = frappe.new_doc("Network Printer Settings")
+		nps.name = ps["name"]
+		nps.server_ip = ps["server_ip"]
+		nps.port = ps["port"]
+		nps.printer_name = ps["name"]
+		nps.save()
