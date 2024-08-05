@@ -31,32 +31,28 @@ if TYPE_CHECKING:
 	)
 
 
-def get_qty_from_sle(item_code, warehouse=None, company=None) -> float | list:
+def get_qty_from_sle(item_code, warehouse=None, company=None) -> list | float:
 	if not company and not warehouse:
 		company = frappe.defaults.get_defaults().get("company")
 
+	_warehouse = []
 	if warehouse:
-		_warehouse = warehouse
+		_warehouse = [warehouse]
 
-	if not warehouse or frappe.get_cached_value("Warehouse", warehouse, "is_group") == 1:
+	if not warehouse or frappe.get_cached_value("Warehouse", warehouse, "is_group") == True:
 		root_warehouse = frappe.get_all(
 			"Warehouse",
-			{"is_group": 1, "parent_warehouse": ["is", "not set"], "company": company},
+			{"company": company, "is_group": True, "parent_warehouse": ["is", "not set"]},
 			pluck="name",
 		)[0]
-		_warehouse = f"""{"', '".join(get_descendant_warehouses(frappe.get_doc('BEAM Settings', company), root_warehouse))}"""
 
-	# TODO: initialize a default value for _warehouse before using it
-	balance_qty = frappe.db.sql(
-		f"""
-		SELECT qty_after_transaction, warehouse FROM `tabStock Ledger Entry`
-		WHERE item_code = %(item_code)s
-		AND warehouse IN ('{_warehouse}')
-		AND is_cancelled = 0
-		ORDER BY posting_date desc, posting_time desc, creation desc
-		""",
-		{"item_code": item_code},
-		as_dict=True,
+		_warehouse = get_descendant_warehouses(company, root_warehouse)
+
+	balance_qty = frappe.get_all(
+		"Stock Ledger Entry",
+		filters={"item_code": item_code, "warehouse": ["in", _warehouse], "is_cancelled": False},
+		fields=["qty_after_transaction", "warehouse"],
+		order_by="posting_date desc, posting_time desc, creation desc",
 	)
 
 	if not warehouse:
@@ -65,9 +61,8 @@ def get_qty_from_sle(item_code, warehouse=None, company=None) -> float | list:
 	return flt(balance_qty[0].qty_after_transaction) if balance_qty else 0.0
 
 
-def build_demand_map() -> None:
-	output = []
-	transfer_demand = frappe.db.sql(
+def get_transfer_demand():
+	return frappe.db.sql(
 		"""
 			SELECT
 				'Work Order' AS doctype,
@@ -94,10 +89,13 @@ def build_demand_map() -> None:
 		as_dict=True,
 	)
 
+
+def get_sales_demand():
 	default_fg_warehouse = frappe.db.get_single_value(
 		"Manufacturing Settings", "default_fg_warehouse"
 	)
-	sales_demand = frappe.db.sql(
+
+	return frappe.db.sql(
 		"""
 			SELECT
 				'Sales Order' AS doctype,
@@ -125,6 +123,13 @@ def build_demand_map() -> None:
 		{"default_fg_warehouse": default_fg_warehouse},
 		as_dict=True,
 	)
+
+
+def build_demand_map() -> None:
+	transfer_demand = get_transfer_demand()
+	sales_demand = get_sales_demand()
+
+	output = []
 	for row in transfer_demand + sales_demand:
 		row.key = frappe.generate_hash()
 		row.delivery_date = str(calendar.timegm(get_datetime(row.delivery_date).timetuple()))
@@ -171,6 +176,7 @@ def build_allocation_map(
 		cur = conn.cursor()
 		item_demand_map = frappe._dict({})
 
+		quantity_field = warehouse_field = demand_effect = None
 		if action:
 			quantity_field = action.get("quantity_field")
 			warehouse_field = action.get("warehouse_field")
@@ -179,16 +185,17 @@ def build_allocation_map(
 		row_qty = None
 		item_query = warehouse_query = ""
 		if row:
-			row_qty = row.get(quantity_field)
+			row_qty = row.get(quantity_field) if quantity_field else None
 			item_query = f"WHERE item_code = '{row.item_code}'"
-			warehouse_query = f"AND warehouse = '{row.get(warehouse_field)}'"
+			if warehouse_field:
+				warehouse_query = f"AND warehouse = '{row.get(warehouse_field)}'"
 
-		query = cur.execute(
+		demand_query = cur.execute(
 			f"""
 			SELECT
 				d.*,
 				COALESCE(
-				(SELECT SUM(a.allocated_qty) FROM allocation a WHERE a.demand = d.key),
+					(SELECT SUM(a.allocated_qty) FROM allocation a WHERE a.demand = d.key),
 					0
 				) AS allocated_qty,
 				d.total_required_qty - COALESCE(
@@ -200,11 +207,11 @@ def build_allocation_map(
 			{item_query}
 			{warehouse_query}
 			ORDER BY delivery_date ASC;
-		"""
+			"""
 		)
-		raw_demand = query.fetchall()
 
-		for demand_row in raw_demand:
+		demand_rows = demand_query.fetchall()
+		for demand_row in demand_rows:
 			if demand_row.item_code in item_demand_map:
 				item_demand_map[demand_row.item_code].append(demand_row)
 			else:
@@ -220,23 +227,23 @@ def build_allocation_map(
 				current_demand = demand_queue[0]
 				current_supply = supply_queue[0]
 
+				net_required_qty = current_demand["total_required_qty"] - current_demand["allocated_qty"]
+				allocated_qty = min(current_supply["qty_after_transaction"], net_required_qty)
+				if demand_effect == "increase":
+					demand_allocation_qty = allocated_qty
+				elif demand_effect == "decrease":
+					demand_allocation_qty = -allocated_qty
+				else:
+					demand_allocation_qty = allocated_qty
+
 				allocation = {
 					**new_allocation(current_demand),
 					"warehouse": current_supply.get("warehouse"),
+					"allocated_qty": str(demand_allocation_qty),
 				}
 
-				net_required_qty = current_demand["total_required_qty"] - current_demand["allocated_qty"]
 				if current_supply["qty_after_transaction"] >= net_required_qty:
 					# Full demand can be met
-					allocated_qty = net_required_qty
-
-					demand_allocation_qty = 0
-					if demand_effect == "increase":
-						demand_allocation_qty = allocated_qty
-					elif demand_effect == "decrease":
-						demand_allocation_qty = -allocated_qty
-
-					allocation["allocated_qty"] = str(demand_allocation_qty)
 					current_supply["qty_after_transaction"] -= allocated_qty
 					demand_queue.popleft()
 
@@ -245,15 +252,6 @@ def build_allocation_map(
 						break
 				else:
 					# Partial demand is met
-					allocated_qty = current_supply["qty_after_transaction"]
-
-					demand_allocation_qty = 0
-					if demand_effect == "increase":
-						demand_allocation_qty = allocated_qty
-					elif demand_effect == "decrease":
-						demand_allocation_qty = -allocated_qty
-
-					allocation["allocated_qty"] = str(demand_allocation_qty)
 					current_demand["total_required_qty"] -= allocated_qty
 					supply_queue.popleft()
 
