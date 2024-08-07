@@ -201,10 +201,11 @@ def get_demand_query(
 	item_query = warehouse_query = ""
 	if row:
 		item_query = f"WHERE item_code = '{row.item_code}'"
-		if action:
-			warehouse_field = action.get("warehouse_field")
-			if warehouse_field:
-				warehouse_query = f"AND warehouse = '{row.get(warehouse_field)}'"
+		# TODO: should we only consider warehouse if it is the same as the demand warehouse?
+		# if action:
+		# 	warehouse_field = action.get("warehouse_field")
+		# 	if warehouse_field:
+		# 		warehouse_query = f"AND warehouse = '{row.get(warehouse_field)}'"
 
 	return cursor.execute(
 		f"""
@@ -271,72 +272,80 @@ def update_allocations(
 		quantity_field = action.get("quantity_field")
 		row_qty = row.get(quantity_field) if quantity_field else None
 
-		allocations = []
-		item_demand_map = get_item_demand_map(cur, row=row, action=action)
-		demand_effect = action.get("demand_effect")
-		for item_code, demand_rows in item_demand_map.items():
-			demand_queue = deque(demand_rows)
-			supply_queue = deque(get_qty_from_sle(item_code))
-			if not any([supply_queue, demand_queue]):
-				continue
+		warehouse_field = action.get("warehouse_field")
+		warehouse = row.get(warehouse_field)
 
-			while supply_queue and demand_queue:
-				current_demand = demand_queue[0]
-				current_supply = supply_queue[0]
+		allocation_query = cur.execute(
+			f"""
+			SELECT
+				*
+			FROM
+				allocation
+			WHERE
+				item_code = '{row.item_code}'
+				AND warehouse = '{warehouse}'
+				AND allocated_qty > 0
+			"""
+		)
 
-				net_required_qty = current_demand["total_required_qty"] - current_demand["allocated_qty"]
-				allocated_qty = min(current_supply["qty_after_transaction"], net_required_qty)
+		existing_allocations = allocation_query.fetchall()
+		if existing_allocations:
+			demand_effect = action.get("demand_effect")
+			for allocation in existing_allocations:
+				demand_query = cur.execute(f"SELECT * FROM demand WHERE key = '{allocation.demand}'")
+				demand_row = demand_query.fetchone()
+
 				if demand_effect == "increase":
-					demand_allocation_qty = allocated_qty
+					new_allocated_qty = min(demand_row.total_required_qty, allocation.allocated_qty + row_qty)
 				elif demand_effect == "decrease":
-					demand_allocation_qty = -allocated_qty
-				else:
-					demand_allocation_qty = allocated_qty
+					new_allocated_qty = max(0, allocation.allocated_qty - row_qty)
+				elif demand_effect == "adjustment":
+					new_allocated_qty = min(demand_row.total_required_qty, row_qty)
 
-				allocation = {
-					**new_allocation(current_demand),
-					"warehouse": current_supply.get("warehouse"),
-					"allocated_qty": str(demand_allocation_qty),
-				}
+				cur.execute(
+					f"UPDATE allocation SET allocated_qty = {new_allocated_qty} WHERE key = '{allocation.key}'"
+				)
+		else:
+			item_demand_map = get_item_demand_map(cur, row=row, action=action)
+			demand_rows = item_demand_map.get(row.item_code)
+			demand_queue = deque(demand_rows)
 
-				if current_supply["qty_after_transaction"] >= net_required_qty:
+			allocations = []
+			while demand_queue:
+				current_demand = demand_queue[0]
+				net_required_qty = current_demand["total_required_qty"] - current_demand["allocated_qty"]
+				allocated_qty = min(row_qty, net_required_qty)
+
+				allocations.append(
+					{
+						**new_allocation(current_demand),
+						"warehouse": warehouse,
+						"allocated_qty": str(allocated_qty),
+					}
+				)
+
+				if row_qty >= net_required_qty:
 					# Full demand can be met
-					current_supply["qty_after_transaction"] -= allocated_qty
 					demand_queue.popleft()
-
-					if current_supply["qty_after_transaction"] == 0:
-						supply_queue.popleft()
-						break
 				else:
 					# Partial demand is met
 					current_demand["total_required_qty"] -= allocated_qty
-					supply_queue.popleft()
+					break
 
-				allocations.append(allocation)
-
-		for allocation in allocations:
-			cur.execute(
-				f"""INSERT INTO allocation ('{"', '".join(allocation.keys())}') VALUES ('{"', '".join(allocation.values())}')"""
-			)
+			for allocation in allocations:
+				cur.execute(
+					f"""INSERT INTO allocation ('{"', '".join(allocation.keys())}') VALUES ('{"', '".join(allocation.values())}')"""
+				)
 
 
 def create_allocations():
-	# - get all demand
-	# - get all supply
-	# - iterate over demand and supply
-	# - if demand is met, remove from demand
-	# - if supply is exhausted, remove from supply
-	# - if demand is partially met, update demand and supply
-	# - if demand is not met, continue to next demand
-	# - if supply is not exhausted, continue to next supply
-	# - if demand is exhausted, continue to next demand
-
 	with get_demand_db() as conn:
 		conn.row_factory = dict_factory
 		cur = conn.cursor()
 
-		allocations = []
 		item_demand_map = get_item_demand_map(cur)
+
+		allocations = []
 		for item_code, demand_rows in item_demand_map.items():
 			demand_queue = deque(demand_rows)
 			supply_queue = deque(get_qty_from_sle(item_code))
