@@ -31,26 +31,26 @@ if TYPE_CHECKING:
 	)
 
 
-def get_qty_from_sle(item_code, warehouse=None, company=None) -> list | float:
+def get_qty_from_sle(item_code: str, warehouse: str | None = None, company: str | None = None):
 	if not company and not warehouse:
 		company = frappe.defaults.get_defaults().get("company")
 
-	_warehouse = []
+	warehouses = []
 	if warehouse:
-		_warehouse = [warehouse]
+		warehouses = [warehouse]
 
-	if not warehouse or frappe.get_cached_value("Warehouse", warehouse, "is_group") == True:
+	if not warehouse or frappe.get_cached_value("Warehouse", warehouse, "is_group"):
 		root_warehouse = frappe.get_all(
 			"Warehouse",
 			{"company": company, "is_group": True, "parent_warehouse": ["is", "not set"]},
 			pluck="name",
 		)[0]
 
-		_warehouse = get_descendant_warehouses(company, root_warehouse)
+		warehouses = get_descendant_warehouses(company, root_warehouse)
 
 	balance_qty = frappe.get_all(
 		"Stock Ledger Entry",
-		filters={"item_code": item_code, "warehouse": ["in", _warehouse], "is_cancelled": False},
+		filters={"item_code": item_code, "warehouse": ["in", warehouses], "is_cancelled": False},
 		fields=["qty_after_transaction", "warehouse"],
 		order_by="posting_date desc, posting_time desc, creation desc",
 	)
@@ -436,40 +436,32 @@ def modify_allocations(
 				build_allocation_map(row=row, action=action)
 
 
-def get_descendant_warehouses(company, warehouse):
+def get_descendant_warehouses(company, warehouse) -> list[str]:
 	beam_settings = frappe.get_doc("BEAM Settings", company)
-	warehouse_types = []
-	if beam_settings.warehouse_types:
-		warehouse_types = [wt.warehouse_type for wt in beam_settings.warehouse_types]
 
-	if warehouse_types:
-		order_by = "lft"
-		limit = None
-		lft, rgt = frappe.get_cached_value("Warehouse", warehouse, ["lft", "rgt"])
+	warehouse_types = [wt.warehouse_type for wt in beam_settings.warehouse_types]
+	if not warehouse_types:
+		return get_descendants_of("Warehouse", warehouse, ignore_permissions=True, order_by="lft")
 
-		if rgt - lft <= 1:
-			return []
+	order_by = "lft"
+	limit = None
+	lft, rgt = frappe.get_cached_value("Warehouse", warehouse, ["lft", "rgt"])
 
-		descendant_warehouses = frappe.get_list(
-			"Warehouse",
-			{
-				"lft": [">", lft],
-				"rgt": ["<", rgt],
-				"company": beam_settings.company,
-				"warehouse_type": ["not in", warehouse_types],
-			},
-			"name",
-			order_by=order_by,
-			limit_page_length=limit,
-			ignore_permissions=True,
-			pluck="name",
-		)
-		return descendant_warehouses
-	else:
-		descendant_warehouses = get_descendants_of(
-			"Warehouse", warehouse, ignore_permissions=True, order_by="lft"
-		)
-		return descendant_warehouses
+	if rgt - lft <= 1:
+		return []
+
+	return frappe.get_all(
+		"Warehouse",
+		filters={
+			"lft": [">", lft],
+			"rgt": ["<", rgt],
+			"company": beam_settings.company,
+			"warehouse_type": ["not in", warehouse_types],
+		},
+		pluck="name",
+		order_by=order_by,
+		limit_page_length=limit,
+	)
 
 
 @frappe.whitelist()
