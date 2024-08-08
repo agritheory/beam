@@ -308,6 +308,8 @@ def update_allocations(
 		else:
 			item_demand_map = get_item_demand_map(cur, row=row, action=action)
 			demand_rows = item_demand_map.get(row.item_code)
+			if not demand_rows:
+				return
 			demand_queue = deque(demand_rows)
 
 			allocations = []
@@ -434,8 +436,8 @@ def modify_allocations(
 				build_allocation_map(row=row, action=action)
 
 
-def get_descendant_warehouses(beam_settings, warehouse):
-	beam_settings = frappe.get_doc("BEAM Settings", beam_settings).as_dict()
+def get_descendant_warehouses(company, warehouse):
+	beam_settings = frappe.get_doc("BEAM Settings", company)
 	warehouse_types = []
 	if beam_settings.warehouse_types:
 		warehouse_types = [wt.warehouse_type for wt in beam_settings.warehouse_types]

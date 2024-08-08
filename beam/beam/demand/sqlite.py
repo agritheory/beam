@@ -6,20 +6,23 @@ from frappe.utils import get_site_path
 from frappe.utils.synchronization import filelock
 
 
+def get_demand_db_path() -> pathlib.Path:
+	return pathlib.Path(f"{get_site_path()}/demand.db").resolve()
+
+
 def get_demand_db() -> sqlite3.Connection:
-	path = pathlib.Path(f"{get_site_path()}/demand.db").resolve()
-	with filelock(str(path)):
-		with sqlite3.connect(path) as conn:
-			cur = conn.cursor()
-			cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='demand';")
-			data = cur.fetchone()
-			if data:
-				return sqlite3.connect(path)
-			return create_demand_db(cur)
+	path = get_demand_db_path()
+	with filelock(str(path)), sqlite3.connect(path) as conn:
+		cursor = conn.cursor()
+		cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='demand';")
+		data = cursor.fetchone()
+		if data:
+			return sqlite3.connect(path)
+		return create_demand_db(cursor)
 
 
 def create_demand_db(cursor: sqlite3.Cursor) -> sqlite3.Connection:
-	path = pathlib.Path(f"{get_site_path()}/demand.db").resolve()
+	path = get_demand_db_path()
 	cursor.execute(
 		"""
 			CREATE TABLE demand(
