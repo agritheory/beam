@@ -1,0 +1,33 @@
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<link rel="stylesheet" href="./index.css" />
+		<style>
+			.navbar {
+				display: none;
+			}
+			.web-footer {
+				display: none;
+			}
+			.container {
+				padding-left: .5rem;
+				padding-right: .5rem;
+			}
+			#beam {
+				all: unset;
+			}
+		</style>
+
+		<title>BEAM</title>
+	</head>
+	<body>
+		<div class="container">
+			<div id="beam"></div>
+		</div>
+		<script>
+			window.csrf_token = "{{ csrf_token }}"
+		</script>
+		<script type="module" src="./index.ts"></script>
+	</body>
+</html>

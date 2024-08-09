@@ -1,28 +1,15 @@
-<!-- <html lang="en">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<link rel="icon" type="image/x-icon" href="/assets/erpnext/images/erpnext-favicon.svg">
-		<title>BEAM</title>
-	</head>
-	<body>
-		<div id="beam"></div>
-		<script>
-			window.csrf_token = "{{ csrf_token }}"
-		</script>
-	</body>
-</html> -->
-
 {% extends "templates/web.html" %}
+
 {% block content %}
-<div class='container'>
+<div class="container">
 	<div id="beam"></div>
 </div>
 <link rel="stylesheet" href="/beam/index.css">
 <script>
-	window.csrf_token = '{{ csrf_token }}'
+	window.csrf_token = "{{ csrf_token }}"
 </script>
 {% endblock %}
+
 {%- block style -%}
 <style>
 	.navbar {
