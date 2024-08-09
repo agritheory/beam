@@ -32,21 +32,12 @@ if TYPE_CHECKING:
 
 
 def get_qty_from_sle(item_code: str, warehouse: str | None = None, company: str | None = None):
-	if not company and not warehouse:
-		company = frappe.defaults.get_defaults().get("company")
-
 	warehouses = []
 	if warehouse:
 		warehouses = [warehouse]
 
 	if not warehouse or frappe.get_cached_value("Warehouse", warehouse, "is_group"):
-		root_warehouse = frappe.get_all(
-			"Warehouse",
-			{"company": company, "is_group": True, "parent_warehouse": ["is", "not set"]},
-			pluck="name",
-		)[0]
-
-		warehouses = get_descendant_warehouses(company, root_warehouse)
+		warehouses = get_demand_warehouses(company)
 
 	balance_qty = frappe.get_all(
 		"Stock Ledger Entry",
@@ -196,16 +187,8 @@ def get_demand_query(
 		"StockReconciliationItem",
 		None,
 	] = None,
-	action: dict | None = None,
 ):
-	item_query = warehouse_query = ""
-	if row:
-		item_query = f"WHERE item_code = '{row.item_code}'"
-		# TODO: should we only consider warehouse if it is the same as the demand warehouse?
-		# if action:
-		# 	warehouse_field = action.get("warehouse_field")
-		# 	if warehouse_field:
-		# 		warehouse_query = f"AND warehouse = '{row.get(warehouse_field)}'"
+	item_filter = f"WHERE item_code = '{row.item_code}'" if row else ""
 
 	return cursor.execute(
 		f"""
@@ -221,9 +204,9 @@ def get_demand_query(
 			) AS net_required_qty
 		FROM
 			demand d
-		{item_query}
-		{warehouse_query}
-		ORDER BY delivery_date ASC;
+		{item_filter}
+		ORDER BY
+			delivery_date ASC;
 		"""
 	)
 
@@ -239,9 +222,8 @@ def get_item_demand_map(
 		"StockReconciliationItem",
 		None,
 	] = None,
-	action: dict | None = None,
 ):
-	demand_query = get_demand_query(cursor, row=row, action=action)
+	demand_query = get_demand_query(cursor, row=row)
 	demand_rows = demand_query.fetchall()
 
 	item_demand_map = frappe._dict({})
@@ -267,7 +249,7 @@ def update_allocations(
 ):
 	with get_demand_db() as conn:
 		conn.row_factory = dict_factory
-		cur = conn.cursor()
+		cursor = conn.cursor()
 
 		quantity_field = action.get("quantity_field")
 		row_qty = row.get(quantity_field) if quantity_field else None
@@ -275,16 +257,11 @@ def update_allocations(
 		warehouse_field = action.get("warehouse_field")
 		warehouse = row.get(warehouse_field)
 
-		allocation_query = cur.execute(
+		allocation_query = cursor.execute(
 			f"""
-			SELECT
-				*
-			FROM
-				allocation
-			WHERE
-				item_code = '{row.item_code}'
-				AND warehouse = '{warehouse}'
-				AND allocated_qty > 0
+			SELECT *
+			FROM allocation
+			WHERE item_code = '{row.item_code}' AND warehouse = '{warehouse}' AND allocated_qty > 0
 			"""
 		)
 
@@ -292,7 +269,7 @@ def update_allocations(
 		if existing_allocations:
 			demand_effect = action.get("demand_effect")
 			for allocation in existing_allocations:
-				demand_query = cur.execute(f"SELECT * FROM demand WHERE key = '{allocation.demand}'")
+				demand_query = cursor.execute(f"SELECT * FROM demand WHERE key = '{allocation.demand}'")
 				demand_row = demand_query.fetchone()
 
 				if demand_effect == "increase":
@@ -302,11 +279,11 @@ def update_allocations(
 				elif demand_effect == "adjustment":
 					new_allocated_qty = min(demand_row.total_required_qty, row_qty)
 
-				cur.execute(
+				cursor.execute(
 					f"UPDATE allocation SET allocated_qty = {new_allocated_qty} WHERE key = '{allocation.key}'"
 				)
 		else:
-			item_demand_map = get_item_demand_map(cur, row=row, action=action)
+			item_demand_map = get_item_demand_map(cursor, row=row)
 			demand_rows = item_demand_map.get(row.item_code)
 			if not demand_rows:
 				return
@@ -335,7 +312,7 @@ def update_allocations(
 					break
 
 			for allocation in allocations:
-				cur.execute(
+				cursor.execute(
 					f"""INSERT INTO allocation ('{"', '".join(allocation.keys())}') VALUES ('{"', '".join(allocation.values())}')"""
 				)
 
@@ -419,14 +396,26 @@ def modify_allocations(
 	method: str,
 ):
 	demand_hooks = frappe.get_hooks("demand")
+
 	doctype_matrix: dict[str, list[dict[str, Any]]] = demand_hooks.get(doc.doctype)
 	if not doctype_matrix:
 		return
+
 	method_matrix = doctype_matrix.get(method)
 	if not method_matrix:
 		return
+
+	demand_warehouses = get_demand_warehouses(doc.get("company"))
 	for row in doc.get("items"):
 		for action in method_matrix:
+			# implicit conditions: skip allocation for non-demand warehouses
+			warehouse_field = action.get("warehouse_field")
+			if warehouse_field:
+				warehouse = row.get(warehouse_field)
+				if warehouse not in demand_warehouses:
+					continue
+
+			# explicit conditions
 			conditions = action.get("conditions")
 			if conditions:
 				for key, value in conditions.items():
@@ -434,6 +423,19 @@ def modify_allocations(
 						build_allocation_map(row=row, action=action)
 			else:
 				build_allocation_map(row=row, action=action)
+
+
+def get_demand_warehouses(company: str | None = None) -> list[str]:
+	if not company:
+		company = frappe.defaults.get_defaults().get("company")
+
+	root_warehouse = frappe.get_all(
+		"Warehouse",
+		{"company": company, "is_group": True, "parent_warehouse": ["is", "not set"]},
+		pluck="name",
+	)[0]
+
+	return get_descendant_warehouses(company, root_warehouse)
 
 
 def get_descendant_warehouses(company, warehouse) -> list[str]:

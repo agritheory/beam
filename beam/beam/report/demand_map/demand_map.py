@@ -132,6 +132,8 @@ def get_data(filters):
 			row.net_required_qty = row.total_required_qty - row.allocated_qty
 			for allocation in allocations:
 				allocation.indent = 1
+				allocation.total_required_qty = None
+				allocation.net_required_qty = None
 				allocation.delivery_date = datetime.datetime(*localtime(allocation.allocated_date)[:6])
 				allocation.source_warehouse = allocation.pop("warehouse")
 				if allocation.source_warehouse != row.demand_warehouse:
