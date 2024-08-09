@@ -27,7 +27,7 @@ import Repack from './pages/Repack.vue'
 import JobCard from './pages/JobCard.vue'
 import Operation from './pages/Operation.vue'
 
-if (import.meta.env.VITE_SERVER) {
+if (import.meta.env.DEV) {
 	makeServer()
 }
 
