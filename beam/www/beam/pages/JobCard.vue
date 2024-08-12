@@ -4,7 +4,7 @@
 	<li v-for="operation in workOrder.operations">
 		<router-link :to="{ name: 'operation', params: { workOrder: route.params.id, id: operation.name } }">
 			<span>{{ operation.operation }}</span>
-			<span class="right-align"> ({{ workOrder.qty }} / {{ operation.completed_qty }})</span>
+			<span class="right-align"> ({{ operation.completed_qty }} / {{ workOrder.qty }})</span>
 		</router-link>
 	</li>
 </template>
@@ -19,17 +19,9 @@ const route = useRoute()
 const workOrder = ref<Partial<WorkOrder>>({})
 
 onMounted(async () => {
-	// avoid CSRF-token errors on reloading a page
-	frappe.csrf_token = window.csrf_token
-
-	const response = await frappe.call({
-		method: 'frappe.client.get',
-		args: {
-			doctype: 'Work Order',
-			name: route.params.id,
-		},
-	})
-	workOrder.value = response.message as WorkOrder
+	const response = await fetch(`/api/resource/Work Order/${route.params.id}`)
+	const { data }: { data: Partial<WorkOrder> } = await response.json()
+	workOrder.value = data
 })
 </script>
 

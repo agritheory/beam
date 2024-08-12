@@ -13,21 +13,18 @@ import { onMounted, ref } from 'vue'
 
 import type { WorkOrder } from '../types'
 
-const workOrders = ref<WorkOrder[]>([])
+const workOrders = ref<Partial<WorkOrder>[]>([])
 
 onMounted(async () => {
-	// avoid CSRF-token errors on reloading a page
-	frappe.csrf_token = window.csrf_token
-
-	const response = await frappe.call({
-		method: 'frappe.client.get_list',
-		args: {
-			doctype: 'Work Order',
-			order_by: 'creation',
-			fields: ['name', 'item_name'],
-		},
+	const params = new URLSearchParams({
+		fields: JSON.stringify(['name', 'item_name']),
+		order_by: 'creation asc',
 	})
-	workOrders.value = response.message as WorkOrder[]
+
+	const url = new URL(`/api/resource/Work Order?${params}`, window.location.origin)
+	const response = await fetch(url)
+	const { data }: { data: Partial<WorkOrder>[] } = await response.json()
+	workOrders.value = data
 })
 </script>
 
