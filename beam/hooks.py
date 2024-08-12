@@ -16,7 +16,7 @@ app_include_js = ["beam.bundle.js"]
 
 # include js, css files in header of web template
 # web_include_css = "/assets/beam/css/beam.css"
-# web_include_js = "/assets/beam/js/beam.js"
+web_include_js = ["beam-web.bundle.js"]
 
 # include custom scss in every website theme (without file extension ".scss")
 # website_theme_scss = "beam/public/scss/website"
