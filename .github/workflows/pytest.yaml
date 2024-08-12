@@ -98,7 +98,6 @@ jobs:
           cd apps/beam
           poetry install
           pytest --cov=beam --cov-report=xml --disable-warnings -s | tee pytest-coverage.txt
-          pytest ./apps/beam/beam/tests/ --disable-warnings -s
 
       - name: Pytest coverage comment
         uses: MishaKav/pytest-coverage-comment@main
