@@ -35,10 +35,7 @@ ensure_newline_before_comments = true
 indent = "\t"
 
 [tool.semantic_release]
-version_variables = [
-    "beam/__init__.py:__version__",
-    "pyproject.toml:version"
-]
+version_toml = ["pyproject.toml:tool.poetry.version"]
 
 [tool.semantic_release.branches.version]
 match = "version-14"
