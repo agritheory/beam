@@ -76,6 +76,7 @@ def create_test_data():
 	frappe.set_value("Company", settings.company, "tax_id", "04-1871930")
 	create_warehouses(settings)
 	setup_manufacturing_settings(settings)
+	setup_beam_settings(settings)
 	create_workstations()
 	create_operations()
 	create_item_groups(settings)
@@ -174,6 +175,14 @@ def setup_manufacturing_settings(settings):
 	wip.save()
 
 	frappe.set_value("Warehouse", "Kitchen - APC", "account", wip.name)
+
+
+def setup_beam_settings(settings):
+	beams = frappe.new_doc("BEAM Settings")
+	beams.company = settings.company
+	beams.enable_handling_units = True
+	beams.append("warehouse_types", {"warehouse_type": "Quarantine"})
+	beams.save()
 
 
 def create_workstations():
@@ -328,6 +337,90 @@ def create_warehouses(settings):
 		wh.parent_warehouse = root_wh
 		wh.company = settings.company
 		wh.save()
+	create_quarantine_warehouse(settings, parent_wh=root_wh)
+
+
+# TODO: replace with test utils functionality
+def create_quarantine_warehouse(
+	settings,
+	wh_name="Quarantined, Scrap and Rejected Items",
+	account_name=None,
+	parent_account=None,
+	account_number="1430",
+	parent_wh=None,
+	is_default_scrap_wh=True,
+):
+	if not account_name:
+		if not parent_account:
+			# If one possible parent account in system, use it, if zero or 2+, account is standalone
+			parent_accts = frappe.get_all(
+				"Account",
+				{
+					"company": settings.company,
+					"root_type": "Asset",
+					"account_type": "Stock",
+					"is_group": 1,
+				},
+				"name",
+				pluck="name",
+			)
+			parent_account = parent_accts[0] if len(parent_accts) == 1 else ""
+
+		if not frappe.db.exists(
+			"Account",
+			{
+				"name": wh_name,
+				"company": settings.company,
+				"root_type": "Asset",
+				"account_type": "Stock",
+			},
+		):
+			a = frappe.new_doc("Account")
+			a.name = a.account_name = wh_name
+			a.account_number = account_number
+			a.is_group = 0
+			a.company = settings.company
+			a.root_type = "Asset"
+			a.report_type = "Balance Sheet"
+			a.account_currency = frappe.get_value("Company", settings.company, "default_currency")
+			a.parent_account = parent_account
+			a.account_type = "Stock"
+			a.save()
+			account_name = a.name
+
+	if not parent_wh:
+		parent_wh = frappe.get_value("Warehouse", {"company": settings.company, "is_group": 1})
+
+	wh_type = "Quarantine"
+	if not frappe.db.exists("Warehouse Type", wh_type):
+		wht = frappe.new_doc("Warehouse Type")
+		wht.name = wh_type
+		wht.save()
+
+	if not frappe.db.exists(
+		"Warehouse",
+		{
+			"warehouse_name": wh_name,
+			"company": settings.company,
+			"is_rejected_warehouse": 1,
+			"account": account_name,
+		},
+	):
+		wh = frappe.new_doc("Warehouse")
+		wh.warehouse_name = wh_name
+		wh.company = settings.company
+		wh.is_group = 0
+		wh.parent_warehouse = parent_wh
+		wh.is_rejected_warehouse = 1
+		wh.account = account_name
+		wh.warehouse_type = wh_type
+		wh.save()
+		wh_name = wh.name
+
+	if is_default_scrap_wh:
+		ms = frappe.get_doc("Manufacturing Settings")
+		ms.default_scrap_warehouse = wh_name
+		ms.save()
 
 
 def create_boms(settings):
