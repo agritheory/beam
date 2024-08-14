@@ -16,7 +16,7 @@ app_include_js = ["beam.bundle.js"]
 
 # include js, css files in header of web template
 # web_include_css = "/assets/beam/css/beam.css"
-# web_include_js = "/assets/beam/js/beam.js"
+web_include_js = ["beam-web.bundle.js"]
 
 # include custom scss in every website theme (without file extension ".scss")
 # website_theme_scss = "beam/public/scss/website"
@@ -187,11 +187,10 @@ doc_events = {
 
 # Overriding Methods
 # ------------------------------
-#
-# override_whitelisted_methods = {
-# 	"frappe.desk.doctype.event.event.get_events": "beam.event.get_events"
-# }
-#
+
+# override_whitelisted_methods = {"demand": "beam.beam..graphql_server"}
+
+
 # each overriding function accepts a `data` argument;
 # generated from the base implementation of the doctype dashboard,
 # along with any modifications made in other Frappe apps

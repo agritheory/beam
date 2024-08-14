@@ -30,3 +30,6 @@ onMounted(async () => {
 	workOrders.value = response.message as WorkOrder[]
 })
 </script>
+<style>
+@import url('@stonecrop/beam/styles');
+</style>
