@@ -50,6 +50,11 @@ const routes: RouteRecordRaw[] = [
 	{
 		path: '/work_order',
 		name: 'work_order',
+		component: Manufacture,
+	},
+	{
+		path: '/work_order/:workOrder/',
+		name: 'work_order/:workOrder/',
 		component: WorkOrder,
 	},
 	{

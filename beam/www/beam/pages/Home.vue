@@ -1,11 +1,10 @@
 <template>
 	<nav>
+		<li><router-link class="home-nav" to="/manufacture">Manufacture</router-link></li>
 		<li><router-link class="home-nav" to="/workstation">Workstations</router-link></li>
-		<li><router-link class="home-nav" to="/work_order">Work Orders</router-link></li>
 		<li><router-link class="home-nav" to="/receive">Receive</router-link></li>
 		<li><router-link class="home-nav" to="/ship">Ship</router-link></li>
 		<li><router-link class="home-nav" to="/transfer">Transfer</router-link></li>
-		<li><router-link class="home-nav" to="/manufacture">Manufacture</router-link></li>
 		<li><router-link class="home-nav" to="/repack">Repack</router-link></li>
 	</nav>
 </template>
