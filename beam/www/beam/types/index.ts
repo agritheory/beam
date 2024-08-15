@@ -20,6 +20,7 @@ export type JobCard = ParentDoctype & {
 export type WorkOrder = ParentDoctype & {
 	item_name: string
 	qty: number
+	produced_qty: number
 
 	operations: WorkOrderOperation[]
 }

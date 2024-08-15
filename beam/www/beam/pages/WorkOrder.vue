@@ -1,5 +1,5 @@
 <template>
-	<h3>Work Order</h3>
+	<h1>Operation</h1>
 	<div class="container">
 		<div class="box">
 			{{ operation.description }}
@@ -26,54 +26,30 @@ const jobCard = ref<Partial<JobCard>>({})
 const operationStarted = computed(() =>
 	isNaN(jobCard.value.total_time_in_mins) ? false : jobCard.value.total_time_in_mins > 0
 )
+
 const elapsedTime = computed(() => {
 	const date = new Date(0)
 	date.setSeconds(jobCard.value.total_time_in_mins * 60)
-	if (isNaN(date.getTime())) {
-		return '00:00:00'
-	}
-	return date.toISOString().substring(11, 19)
+	return isNaN(date.getTime()) ? '00:00:00' : date.toISOString().substring(11, 19)
 })
 
 onMounted(async () => {
-	// avoid CSRF-token errors on reloading a page
-	frappe.csrf_token = window.csrf_token
-
-	const order = await frappe.call({
-		method: 'frappe.client.get',
-		args: {
-			doctype: 'Work Order',
-			name: route.params.workOrder,
-		},
-	})
-
-	workOrder.value = order.message as WorkOrder
+	const orderResponse = await fetch(`/api/resource/Work Order/${route.params.workOrder}`)
+	const { data }: { data: Partial<WorkOrder> } = await orderResponse.json()
+	workOrder.value = data
 	operation.value = workOrder.value.operations.find(operation => operation.name === route.params.id) || {}
 
-	const jobCardCheck = await frappe.call({
-		method: 'frappe.client.get_count',
-		args: {
-			doctype: 'Job Card',
-			filters: {
-				operation_id: route.params.id,
-			},
-		},
-	})
-
-	if (jobCardCheck.message === 0) {
+	const filters = [['operation_id', '=', route.params.id]]
+	const params = new URLSearchParams({ filters: JSON.stringify(filters) })
+	const checkJobResponse = await fetch(`/api/resource/Job Card?${params}`)
+	const { data: jobData }: { data: Partial<JobCard>[] } = await checkJobResponse.json()
+	if (jobData.length === 0) {
 		return
 	}
 
-	const jobCard = await frappe.call({
-		method: 'frappe.client.get',
-		args: {
-			doctype: 'Job Card',
-			filters: {
-				operation_id: route.params.id,
-			},
-		},
-	})
-	jobCard.value = jobCard.message as JobCard
+	const jobResponse = await fetch(`/api/resource/Job Card/${jobData[0].name}`)
+	const { data: job }: { data: Partial<JobCard> } = await jobResponse.json()
+	jobCard.value = job
 })
 
 const startOperation = () => {
