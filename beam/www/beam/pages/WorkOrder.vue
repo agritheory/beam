@@ -1,66 +1,65 @@
 <template>
-	<h1>Operation</h1>
 	<div class="container">
 		<div class="box">
-			{{ operation.description }}
+			<ListView :items="operations" />
 		</div>
-		<div class="box fix-height">
-			<b class>{{ elapsedTime }}</b>
-			<button :disabled="!operationStarted" @click="startOperation">Start</button>
-			<button :disabled="operationStarted" @click="stopOperation">Stop</button>
+		<div class="box">
+			<ListView :items="jobCards" />
 		</div>
 	</div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
-import type { JobCard, WorkOrder, WorkOrderOperation } from '../types'
+import type { JobCard, ListViewItem, WorkOrder } from '../types'
 
 const route = useRoute()
+const workOrderId = route.params.orderId
+
 const workOrder = ref<Partial<WorkOrder>>({})
-const operation = ref<Partial<WorkOrderOperation>>({})
-const jobCard = ref<Partial<JobCard>>({})
-
-const operationStarted = computed(() =>
-	isNaN(jobCard.value.total_time_in_mins) ? false : jobCard.value.total_time_in_mins > 0
-)
-
-const elapsedTime = computed(() => {
-	const date = new Date(0)
-	date.setSeconds(jobCard.value.total_time_in_mins * 60)
-	return isNaN(date.getTime()) ? '00:00:00' : date.toISOString().substring(11, 19)
-})
+const operations = ref<ListViewItem[]>([])
+const jobCards = ref<ListViewItem[]>([])
 
 onMounted(async () => {
-	const orderResponse = await fetch(`/api/resource/Work Order/${route.params.workOrder}`)
-	const { data }: { data: Partial<WorkOrder> } = await orderResponse.json()
+	// get work order
+	const orderResponse = await fetch(`/api/resource/Work Order/${workOrderId}`)
+	const { data }: { data: WorkOrder } = await orderResponse.json()
 	workOrder.value = data
-	operation.value = workOrder.value.operations.find(operation => operation.name === route.params.id) || {}
 
-	const filters = [['operation_id', '=', route.params.id]]
-	const params = new URLSearchParams({ filters: JSON.stringify(filters) })
-	const checkJobResponse = await fetch(`/api/resource/Job Card?${params}`)
-	const { data: jobData }: { data: Partial<JobCard>[] } = await checkJobResponse.json()
-	if (jobData.length === 0) {
-		return
+	// build operation list
+	operations.value = data.operations.map(operation => ({
+		...operation,
+		label: operation.operation,
+		count: { count: operation.completed_qty, of: workOrder.value.qty },
+		linkComponent: 'ListAnchor',
+		route: `#/work_order/${workOrderId}/operation/${operation.name}`,
+	}))
+
+	// get job cards
+	for (const operation of data.operations) {
+		const filters = [['operation_id', '=', operation.name]]
+		const params = new URLSearchParams({ filters: JSON.stringify(filters) })
+		const checkJobResponse = await fetch(`/api/resource/Job Card?${params}`)
+		const { data: jobData }: { data: JobCard[] } = await checkJobResponse.json()
+		if (jobData.length === 0) {
+			continue
+		}
+
+		for (const job of jobData) {
+			const jobResponse = await fetch(`/api/resource/Job Card/${job.name}`)
+			const { data: jobCard }: { data: JobCard } = await jobResponse.json()
+			jobCards.value.push({
+				...jobCard,
+				label: jobCard.name,
+				count: { count: jobCard.total_time_in_mins, of: operation.time_in_mins },
+				linkComponent: 'ListAnchor',
+				route: `#/job_card/${workOrderId}`,
+			})
+		}
 	}
-
-	const jobResponse = await fetch(`/api/resource/Job Card/${jobData[0].name}`)
-	const { data: job }: { data: Partial<JobCard> } = await jobResponse.json()
-	jobCard.value = job
 })
-
-const startOperation = () => {
-	// TODO: action here
-	alert('Timer Started')
-}
-
-const stopOperation = () => {
-	// TODO: action here
-	alert('Timer Stopped')
-}
 </script>
 
 <style scoped>
@@ -69,6 +68,7 @@ b {
 	justify-content: center;
 	align-items: center;
 }
+
 .container {
 	display: flex;
 	gap: 20px;
@@ -83,14 +83,5 @@ b {
 	outline: 2px solid transparent;
 	flex: 1;
 	min-width: 100px;
-}
-
-.fix-height {
-	height: 7rem;
-	font-size: 150%;
-	text-align: center;
-	display: grid;
-	grid-template-columns: repeat(3, 1fr);
-	gap: 20px;
 }
 </style>

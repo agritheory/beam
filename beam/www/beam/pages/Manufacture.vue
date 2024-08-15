@@ -1,32 +1,32 @@
 <template>
-	<h3>Work Orders</h3>
-	<ListView :items="orders" />
+	<ListView :items="items" />
 </template>
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 
-import type { WorkOrder } from '../types'
+import type { ListViewItem, WorkOrder } from '../types'
 
-const orders = ref([])
+const items = ref<ListViewItem[]>([])
 
 onMounted(async () => {
 	const params = new URLSearchParams({
-		fields: JSON.stringify(['name', 'item_name AS label', 'qty', 'produced_qty']),
+		fields: JSON.stringify(['name', 'item_name', 'qty', 'produced_qty']),
 		order_by: 'creation asc',
 	})
 
 	const url = new URL(`/api/resource/Work Order?${params}`, window.location.origin)
 	const response = await fetch(url)
-	const { data }: { data: Partial<WorkOrder>[] } = await response.json()
+	const { data }: { data: WorkOrder[] } = await response.json()
+
 	data.forEach(row => {
-		orders.value.push({
+		items.value.push({
 			...row,
+			label: row.item_name,
 			count: { count: row.produced_qty, of: row.qty },
 			linkComponent: 'ListAnchor',
 			route: `#/work_order/${row.name}`,
 		})
 	})
-	orders.value = data
 })
 </script>

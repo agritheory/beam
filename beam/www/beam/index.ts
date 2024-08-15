@@ -43,29 +43,29 @@ const routes: RouteRecordRaw[] = [
 		component: Home,
 	},
 	{
-		path: '/workstation',
-		name: 'workstation',
-		component: Workstation,
-	},
-	{
-		path: '/work_order',
-		name: 'work_order',
+		path: '/manufacture',
+		name: 'manufacture',
 		component: Manufacture,
 	},
 	{
-		path: '/work_order/:workOrder/',
-		name: 'work_order/:workOrder/',
+		path: '/work_order/:orderId/',
+		name: 'work_order',
 		component: WorkOrder,
 	},
 	{
-		path: '/job_card/:id',
+		path: '/job_card/:orderId/',
 		name: 'job_card',
 		component: JobCard,
 	},
 	{
-		path: '/work_order/:workOrder/operation/:id',
+		path: '/work_order/:orderId/operation/:id',
 		name: 'operation',
 		component: Operation,
+	},
+	{
+		path: '/transfer',
+		name: 'transfer',
+		component: Transfer,
 	},
 	{
 		path: '/receive',
@@ -78,20 +78,15 @@ const routes: RouteRecordRaw[] = [
 		component: Ship,
 	},
 	{
-		path: '/transfer',
-		name: 'transfer',
-		component: Transfer,
-	},
-	{
-		path: '/manufacture',
-		name: 'manufacture',
-		component: Manufacture,
-	},
-	{
 		path: '/repack',
 		name: 'repack',
 		component: Repack,
 	},
+	// {
+	// 	path: '/workstation',
+	// 	name: 'workstation',
+	// 	component: Workstation,
+	// },
 ]
 
 const router = createRouter({
