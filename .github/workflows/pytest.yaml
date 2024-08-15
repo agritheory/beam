@@ -6,24 +6,10 @@ on:
       - version-14
       - version-15
   pull_request:
-    branches:
-      - version-14
-      - version-15
-env:
-    BRANCH_NAME: ${{ github.base_ref || github.ref_name }}
-
-# concurrency:
-#   group: develop-cloud_storage-${{ github.event.number }}
-#   cancel-in-progress: true
 
 jobs:
   tests:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-      fail-fast: false
-    name: Server
+    runs-on: ubuntu-latest
 
     services:
       mariadb:
@@ -47,9 +33,9 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
           check-latest: true
-          cache: 'yarn'  # Replaces `Get yarn cache directory path` and `yarn-cache` steps
+          cache: 'yarn'
 
       - name: Add to Hosts
         run: echo "127.0.0.1 test_site" | sudo tee -a /etc/hosts
@@ -58,7 +44,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/*requirements.txt', '**/pyproject.toml', '**/setup.py', '**/setup.cfg') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
           restore-keys: |
             ${{ runner.os }}-pip-
             ${{ runner.os }}-
@@ -73,9 +59,7 @@ jobs:
         env:
           MYSQL_HOST: 'localhost'
           MYSQL_PWD: 'admin'
-          BRANCH_NAME: ${{ env.BRANCH_NAME}}
-        run: |
-          bash ${{ github.workspace }}/.github/helper/install.sh
+        run: bash ${{ github.workspace }}/.github/helper/install.sh
 
       - name: Run Tests
         working-directory: /home/runner/frappe-bench

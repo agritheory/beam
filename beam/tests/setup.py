@@ -696,7 +696,6 @@ def create_network_printer_settings(settings):
 		{"name": "Receiving Printer", "server_ip": "localhost", "port": 8888},
 		{"name": "Kitchen Printer", "server_ip": "localhost", "port": 9999},
 	]
-
 	for ps in printer_settings:
 		if not frappe.db.exists("Network Printer Settings", ps):
 			nps = frappe.new_doc("Network Printer Settings")

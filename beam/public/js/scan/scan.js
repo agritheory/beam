@@ -142,7 +142,7 @@ class ScanHandler {
 						row.handling_unit == field.context.handling_unit
 					) {
 						if (cur_frm.doc.doctype == 'Stock Entry') {
-							if ((field.field = 'basic_rate')) {
+							if (field.field == 'basic_rate') {
 								cur_frm.events.set_basic_rate(cur_frm, row.doctype, row.name)
 							} else {
 								frappe.model.set_value(row.doctype, row.name, field.field, field.target)

@@ -1,0 +1,15 @@
+{
+	"compilerOptions": {
+		"target": "esnext",
+		"module": "nodenext",
+		"moduleResolution": "nodenext",
+		"lib": ["esnext", "DOM", "DOM.Iterable"],
+		"jsx": "preserve",
+		"isolatedModules": true,
+		"noEmit": true,
+		"resolveJsonModule": true,
+		"skipLibCheck": true,
+		"useDefineForClassFields": true
+	},
+	"include": ["**/*.ts", "**/*.vue"]
+}
