@@ -26,29 +26,29 @@ def test_opening_demand():
 
 	assert len(water) == 4
 
-	assert water[0].total_required_qty == 10.0
-	assert water[0].net_required_qty == 10.0
+	assert water[0].total_required_qty == 2.5
+	assert water[0].net_required_qty == 2.5
 	assert water[0].allocated_qty == 0.0
 	assert water[0].warehouse == "Kitchen - APC"
-	assert water[0].parent == "MFG-WO-2024-00008"
+	assert water[0].parent == "MFG-WO-2024-00007"
 
 	assert water[1].total_required_qty == 2.5
 	assert water[1].net_required_qty == 2.5
 	assert water[1].allocated_qty == 0
 	assert water[1].warehouse == "Kitchen - APC"
-	assert water[1].parent == "MFG-WO-2024-00009"
+	assert water[1].parent == "MFG-WO-2024-00008"
 
-	assert water[2].total_required_qty == 2.5
-	assert water[2].net_required_qty == 0.0
-	assert water[2].allocated_qty == 2.5
-	assert water[2].warehouse == "Refrigerator - APC"
-	assert water[2].parent == "MFG-WO-2024-00006"
+	assert water[2].total_required_qty == 10.0
+	assert water[2].net_required_qty == 10.0
+	assert water[2].allocated_qty == 0.0
+	assert water[2].warehouse == "Kitchen - APC"
+	assert water[2].parent == "MFG-WO-2024-00009"
 
 	assert water[3].total_required_qty == 10.0
-	assert water[3].net_required_qty == 3.5
-	assert water[3].allocated_qty == 6.5
+	assert water[3].net_required_qty == 1.0
+	assert water[3].allocated_qty == 9.0
 	assert water[3].warehouse == "Refrigerator - APC"
-	assert water[3].parent == "MFG-WO-2024-00007"
+	assert water[3].parent == "MFG-WO-2024-00006"
 
 	ice_water = get_demand(
 		company=frappe.defaults.get_defaults().get("company"), item_code="Ice Water"
@@ -96,29 +96,29 @@ def test_insufficient_total_demand_scenario():
 
 	assert len(water) == 4
 
-	assert water[0].total_required_qty == 10.0
-	assert water[0].net_required_qty == 10.0
+	assert water[0].total_required_qty == 2.5
+	assert water[0].net_required_qty == 2.5
 	assert water[0].allocated_qty == 0
 	assert water[0].warehouse == "Kitchen - APC"
-	assert water[0].parent == "MFG-WO-2024-00008"
+	assert water[0].parent == "MFG-WO-2024-00007"
 
 	assert water[1].total_required_qty == 2.5
 	assert water[1].net_required_qty == 2.5
 	assert water[1].allocated_qty == 0.0
 	assert water[1].warehouse == "Kitchen - APC"
-	assert water[1].parent == "MFG-WO-2024-00009"
+	assert water[1].parent == "MFG-WO-2024-00008"
 
-	assert water[2].total_required_qty == 2.5
-	assert water[2].net_required_qty == 0.0
-	assert water[2].allocated_qty == 2.5
-	assert water[2].warehouse == "Refrigerator - APC"
-	assert water[2].parent == "MFG-WO-2024-00006"
+	assert water[2].total_required_qty == 10.0
+	assert water[2].net_required_qty == 10.0
+	assert water[2].allocated_qty == 0.0
+	assert water[2].warehouse == "Kitchen - APC"
+	assert water[2].parent == "MFG-WO-2024-00009"
 
 	assert water[3].total_required_qty == 10.0
 	assert water[3].net_required_qty == 0.0
 	assert water[3].allocated_qty == 10.0
 	assert water[3].warehouse == "Refrigerator - APC"
-	assert water[3].parent == "MFG-WO-2024-00007"
+	assert water[3].parent == "MFG-WO-2024-00006"
 
 	# assert partial allocations
 	ice_water = get_demand(company=se.company, item_code="Ice Water")
@@ -142,6 +142,6 @@ def test_allocation_from_purchasing():
 		pr = frappe.get_doc(pr.doctype, pr.name)
 		for row in pr.items:
 			if row.handling_unit:  # flag for inventoriable item
+				# TODO: this should be improved with greater specificity, but detecting that creating inventory leads to modification of the demand db is OK for now
 				d = get_demand(pr.company, item_code=row.item_code)
 				assert len(d) > 0
-				total_demand = sum(i.allocated_qty for i in d) or 0

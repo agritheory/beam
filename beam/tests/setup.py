@@ -468,7 +468,7 @@ def create_sales_order(settings):
 		"items",
 		{
 			"item_code": "Double Plum Pie",
-			"delivery_date": so.transaction_date,
+			"delivery_date": so.transaction_date + datetime.timedelta(days=1),
 			"qty": 40,
 			"warehouse": "Baked Goods - APC",
 		},
@@ -477,7 +477,7 @@ def create_sales_order(settings):
 		"items",
 		{
 			"item_code": "Gooseberry Pie",
-			"delivery_date": so.transaction_date,
+			"delivery_date": so.transaction_date + datetime.timedelta(days=2),
 			"qty": 10,
 			"warehouse": "Baked Goods - APC",
 		},
@@ -486,7 +486,7 @@ def create_sales_order(settings):
 		"items",
 		{
 			"item_code": "Kaduka Key Lime Pie",
-			"delivery_date": so.transaction_date,
+			"delivery_date": so.transaction_date + datetime.timedelta(days=3),
 			"qty": 10,
 			"warehouse": "Baked Goods - APC",
 		},
@@ -513,7 +513,7 @@ def create_material_request(settings):
 		"items",
 		{
 			"item_code": "Double Plum Pie",
-			"schedule_date": mr.schedule_date,
+			"schedule_date": mr.schedule_date + datetime.timedelta(days=1),
 			"qty": 40,
 			"warehouse": "Baked Goods - APC",
 		},
@@ -522,7 +522,7 @@ def create_material_request(settings):
 		"items",
 		{
 			"item_code": "Gooseberry Pie",
-			"schedule_date": mr.schedule_date,
+			"schedule_date": mr.schedule_date + datetime.timedelta(days=2),
 			"qty": 10,
 			"warehouse": "Baked Goods - APC",
 		},
@@ -531,7 +531,7 @@ def create_material_request(settings):
 		"items",
 		{
 			"item_code": "Kaduka Key Lime Pie",
-			"schedule_date": mr.schedule_date,
+			"schedule_date": mr.schedule_date + datetime.timedelta(days=3),
 			"qty": 10,
 			"warehouse": "Baked Goods - APC",
 		},

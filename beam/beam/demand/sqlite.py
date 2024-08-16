@@ -37,7 +37,8 @@ def create_demand_db(cursor: sqlite3.Cursor) -> sqlite3.Connection:
 				modified int,
 				total_required_qty real,
 				stock_uom text,
-				assigned text
+				assigned text,
+				creation int
 			)
 		"""
 	)
@@ -57,7 +58,8 @@ def create_demand_db(cursor: sqlite3.Cursor) -> sqlite3.Connection:
 				allocated_qty real,
 				stock_uom text,
 				status text,
-				assigned text
+				assigned text,
+				creation int
 			)
 		"""
 	)

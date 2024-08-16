@@ -63,7 +63,7 @@ def get_qty_from_sle(item_code: str, warehouse: str | None = None, company: str 
 		"Stock Ledger Entry",
 		filters={"item_code": item_code, "warehouse": ["in", warehouses], "is_cancelled": False},
 		fields=["qty_after_transaction", "warehouse"],
-		order_by="posting_date desc, posting_time desc, creation desc",
+		order_by="posting_date desc, posting_time desc, creation DESC",
 	)
 
 	if not warehouse:
@@ -78,7 +78,7 @@ def get_manufacturing_demand() -> list[frappe._dict]:
 	pending_work_orders = frappe.get_all(
 		"Work Order",
 		filters={"docstatus": 1, "status": "Not Started"},
-		fields=["name", "company", "wip_warehouse", "planned_start_date"],
+		fields=["name", "company", "wip_warehouse", "planned_start_date", "creation"],
 		order_by="planned_start_date, creation ASC",
 	)
 
@@ -105,6 +105,7 @@ def get_manufacturing_demand() -> list[frappe._dict]:
 						"delivery_date": work_order.planned_start_date,
 						"total_required_qty": item.required_qty - item.transferred_qty,
 						"stock_uom": frappe.db.get_value("Item", item.item_code, "stock_uom"),
+						"creation": work_order.creation,
 					}
 				)
 			)
@@ -121,7 +122,7 @@ def get_sales_demand() -> list[frappe._dict]:
 	sales_orders = frappe.get_all(
 		"Sales Order",
 		filters={"docstatus": 1, "status": ["!=", "Closed"]},
-		fields=["name", "company", "delivery_date"],
+		fields=["name", "company", "delivery_date", "creation"],
 		order_by="delivery_date, creation ASC",
 	)
 
@@ -148,6 +149,7 @@ def get_sales_demand() -> list[frappe._dict]:
 						"delivery_date": sales_order.delivery_date,
 						"total_required_qty": item.stock_qty - item.delivered_qty,
 						"stock_uom": frappe.db.get_value("Item", item.item_code, "stock_uom"),
+						"creation": sales_order.creation,
 					}
 				)
 			)
@@ -163,6 +165,7 @@ def build_demand_map() -> None:
 	for row in manufacturing_demand + sales_demand:
 		row.key = frappe.generate_hash()
 		row.delivery_date = str(calendar.timegm(get_datetime(row.delivery_date).timetuple()))
+		row.creation = str(calendar.timegm(get_datetime(row.creation).timetuple()))
 		row.total_required_qty = str(row.total_required_qty)
 		output.append(row)
 
@@ -400,6 +403,7 @@ def new_allocation(demand_row):
 			"stock_uom": demand_row.stock_uom,
 			"status": "Soft Allocated",
 			"assigned": demand_row.assigned or "",
+			"creation": str(demand_row.creation),
 		}
 	)
 
@@ -541,7 +545,8 @@ def get_demand(
 				d.total_required_qty,
 
 				'' AS status,
-				d.assigned
+				d.assigned,
+				d.creation
 			FROM demand d
 			WHERE allocated_qty <= 0
 			{d_filters}
@@ -573,11 +578,12 @@ def get_demand(
 				(SELECT d.total_required_qty FROM demand d WHERE a.demand = d.key) AS total_required_qty,
 
 				a.status,
-				a.assigned
+				a.assigned,
+				a.creation
 			FROM allocation a
 			WHERE allocated_qty > 0
 			{a_filters}
-			ORDER BY delivery_date, parent ASC
+			ORDER BY delivery_date, creation, parent ASC
 		"""
 
 		rows = cur.execute(query).fetchall()
@@ -585,5 +591,6 @@ def get_demand(
 			row.delivery_date = datetime.datetime(*localtime(row.delivery_date)[:6])
 			row.allocated_date = datetime.datetime(*localtime(row.allocated_date)[:6])
 			row.modified = datetime.datetime(*localtime(row.modified)[:6])
+			row.creation = datetime.datetime(*localtime(row.creation)[:6])
 
 		return rows
