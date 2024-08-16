@@ -1,16 +1,40 @@
 <template>
 	<nav>
-		<li><router-link class="home-nav" to="/manufacture">Manufacture</router-link></li>
-		<!-- <li><router-link class="home-nav" to="/workstation">Workstations</router-link></li> -->
-		<li><router-link class="home-nav" to="/transfer">Transfer</router-link></li>
-		<li><router-link class="home-nav" to="/receive">Receive</router-link></li>
-		<li><router-link class="home-nav" to="/ship">Ship</router-link></li>
-		<li><router-link class="home-nav" to="/repack">Repack</router-link></li>
-		<li><router-link class="home-nav" to="/workstation">Workstations</router-link></li>
+		<ListView :items="home" />
 	</nav>
 </template>
 
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { ref } from 'vue'
+
+const home = ref([
+	{
+		label: 'Manufacture',
+		route: 'beam#/manufacture',
+		linkComponent: 'ListAnchor',
+	},
+	{
+		label: 'Transfer',
+		route: 'beam#/transfer',
+		linkComponent: 'ListAnchor',
+	},
+	{
+		label: 'Receive',
+		route: 'beam#/receive',
+		linkComponent: 'ListAnchor',
+	},
+	{
+		label: 'Ship',
+		route: 'beam#/ship',
+		linkComponent: 'ListAnchor',
+	},
+	{
+		label: 'Repack',
+		route: 'beam#/repack',
+		linkComponent: 'ListAnchor',
+	},
+])
+</script>
 
 <style scoped>
 nav {
