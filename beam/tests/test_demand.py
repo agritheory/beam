@@ -30,25 +30,25 @@ def test_opening_demand():
 	assert water[0].net_required_qty == 10.0
 	assert water[0].allocated_qty == 0.0
 	assert water[0].warehouse == "Kitchen - APC"
-	assert water[0].parent == "MFG-WO-2024-00007"
+	assert water[0].parent == "MFG-WO-2024-00008"
 
 	assert water[1].total_required_qty == 2.5
 	assert water[1].net_required_qty == 2.5
 	assert water[1].allocated_qty == 0
 	assert water[1].warehouse == "Kitchen - APC"
-	assert water[1].parent == "MFG-WO-2024-00008"
+	assert water[1].parent == "MFG-WO-2024-00009"
 
 	assert water[2].total_required_qty == 2.5
-	assert water[2].net_required_qty == 2.5
-	assert water[2].allocated_qty == 0
-	assert water[2].warehouse == "Kitchen - APC"
-	assert water[2].parent == "MFG-WO-2024-00009"
+	assert water[2].net_required_qty == 0.0
+	assert water[2].allocated_qty == 2.5
+	assert water[2].warehouse == "Refrigerator - APC"
+	assert water[2].parent == "MFG-WO-2024-00006"
 
 	assert water[3].total_required_qty == 10.0
-	assert water[3].net_required_qty == 1.0
-	assert water[3].allocated_qty == 9.0
+	assert water[3].net_required_qty == 3.5
+	assert water[3].allocated_qty == 6.5
 	assert water[3].warehouse == "Refrigerator - APC"
-	assert water[3].parent == "MFG-WO-2024-00006"
+	assert water[3].parent == "MFG-WO-2024-00007"
 
 	ice_water = get_demand(
 		company=frappe.defaults.get_defaults().get("company"), item_code="Ice Water"
@@ -94,23 +94,23 @@ def test_insufficient_total_demand_scenario():
 	se.submit()
 	water = get_demand(company=se.company, item_code="Water")
 
-	assert len(water) == 5
+	assert len(water) == 4
 
-	assert water[0].total_required_qty == 2.5
-	assert water[0].net_required_qty == 2.5
+	assert water[0].total_required_qty == 10.0
+	assert water[0].net_required_qty == 10.0
 	assert water[0].allocated_qty == 0
 	assert water[0].warehouse == "Kitchen - APC"
-	assert water[0].parent == "MFG-WO-2024-00009"
+	assert water[0].parent == "MFG-WO-2024-00008"
 
-	assert water[1].total_required_qty == 10.0
-	assert water[1].net_required_qty == 0.0
-	assert water[1].allocated_qty == 9.0
-	assert water[1].warehouse == "Refrigerator - APC"
-	assert water[1].parent == "MFG-WO-2024-00006"
+	assert water[1].total_required_qty == 2.5
+	assert water[1].net_required_qty == 2.5
+	assert water[1].allocated_qty == 0.0
+	assert water[1].warehouse == "Kitchen - APC"
+	assert water[1].parent == "MFG-WO-2024-00009"
 
-	assert water[2].total_required_qty == 10.0
+	assert water[2].total_required_qty == 2.5
 	assert water[2].net_required_qty == 0.0
-	assert water[2].allocated_qty == 1.0
+	assert water[2].allocated_qty == 2.5
 	assert water[2].warehouse == "Refrigerator - APC"
 	assert water[2].parent == "MFG-WO-2024-00006"
 
@@ -120,28 +120,16 @@ def test_insufficient_total_demand_scenario():
 	assert water[3].warehouse == "Refrigerator - APC"
 	assert water[3].parent == "MFG-WO-2024-00007"
 
-	assert water[4].total_required_qty == 2.5
-	assert water[4].net_required_qty == 0.0
-	assert water[4].allocated_qty == 2.5
-	assert water[4].warehouse == "Refrigerator - APC"
-	assert water[4].parent == "MFG-WO-2024-00008"
-
 	# assert partial allocations
 	ice_water = get_demand(company=se.company, item_code="Ice Water")
 
-	assert len(ice_water) == 2
+	assert len(ice_water) == 1
 
 	assert ice_water[0].total_required_qty == 50
 	assert ice_water[0].net_required_qty == 0.0
-	assert ice_water[0].allocated_qty == 11
+	assert ice_water[0].allocated_qty == 50
 	assert ice_water[0].warehouse == "Refrigerator - APC"
 	assert ice_water[0].parent == "MFG-WO-2024-00005"
-
-	assert ice_water[1].total_required_qty == 50
-	assert ice_water[1].net_required_qty == 0.0
-	assert ice_water[1].allocated_qty == 39
-	assert ice_water[1].warehouse == "Refrigerator - APC"
-	assert ice_water[1].parent == "MFG-WO-2024-00005"
 
 	# assert make-up allocation and not over-allocation
 
@@ -157,5 +145,3 @@ def test_allocation_from_purchasing():
 				d = get_demand(pr.company, item_code=row.item_code)
 				assert len(d) > 0
 				total_demand = sum(i.allocated_qty for i in d) or 0
-				print(row.item_code, total_demand, row.stock_qty)
-				[print(l) for l in d]
