@@ -2,7 +2,7 @@ import calendar
 import datetime
 from collections import deque
 from time import localtime
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any, TypedDict, Union
 
 import frappe
 from frappe.utils.data import flt, get_datetime
@@ -29,6 +29,26 @@ if TYPE_CHECKING:
 	from erpnext.stock.doctype.stock_reconciliation_item.stock_reconciliation_item import (
 		StockReconciliationItem,
 	)
+
+
+class Demand(TypedDict):
+	key: str
+	demand: str
+	doctype: str
+	company: str
+	parent: str
+	warehouse: str
+	name: str
+	item_code: str
+	allocated_date: datetime.datetime
+	delivery_date: datetime.datetime
+	modified: datetime.datetime
+	stock_uom: str
+	allocated_qty: float
+	net_required_qty: float
+	total_required_qty: float
+	status: str
+	assigned: str
 
 
 def get_qty_from_sle(item_code: str, warehouse: str | None = None, company: str | None = None):
@@ -474,7 +494,7 @@ def get_demand(
 	workstation=None,
 	assigned=None,
 	order_by="workstation, assigned",
-):
+) -> list[Demand]:
 	filters = {}
 	if workstation:
 		filters["workstation"] = f"{workstation}"
@@ -483,8 +503,10 @@ def get_demand(
 	if warehouse:
 		filters["warehouse"] = f"{warehouse}"
 
-	d_filters = "AND " + "\nAND ".join([f"d.{key} IN ('{value}')" for key, value in filters.items()])
-	a_filters = "AND " + "\nAND ".join([f"a.{key} IN ('{value}')" for key, value in filters.items()])
+	a_filters = d_filters = ""
+	if filters:
+		d_filters = "AND " + "\nAND ".join([f"d.{key} IN ('{value}')" for key, value in filters.items()])
+		a_filters = "AND " + "\nAND ".join([f"a.{key} IN ('{value}')" for key, value in filters.items()])
 
 	# if assigned:
 	# 	_filters += f" AND assigned LIKE %{assigned}%"
@@ -557,10 +579,11 @@ def get_demand(
 			{a_filters}
 			ORDER BY delivery_date, parent ASC
 		"""
-		rows = cur.execute(query).fetchall()
 
+		rows = cur.execute(query).fetchall()
 		for row in rows:
 			row.delivery_date = datetime.datetime(*localtime(row.delivery_date)[:6])
 			row.allocated_date = datetime.datetime(*localtime(row.allocated_date)[:6])
 			row.modified = datetime.datetime(*localtime(row.modified)[:6])
+
 		return rows
