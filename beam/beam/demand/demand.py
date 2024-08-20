@@ -19,6 +19,8 @@ if TYPE_CHECKING:
 	)
 	from erpnext.accounts.doctype.sales_invoice.sales_invoice import SalesInvoice
 	from erpnext.accounts.doctype.sales_invoice_item.sales_invoice_item import SalesInvoiceItem
+	from erpnext.manufacturing.doctype.work_order.work_order import WorkOrder
+	from erpnext.selling.doctype.sales_order.sales_order import SalesOrder
 	from erpnext.stock.doctype.delivery_note.delivery_note import DeliveryNote
 	from erpnext.stock.doctype.delivery_note_item.delivery_note_item import DeliveryNoteItem
 	from erpnext.stock.doctype.purchase_receipt.purchase_receipt import PurchaseReceipt
@@ -155,6 +157,10 @@ def get_sales_demand() -> list[frappe._dict]:
 			)
 
 	return sales_demand
+
+
+def rebuild_demand_map(doc: Union["SalesOrder", "WorkOrder"], method: str):
+	build_demand_map()
 
 
 def build_demand_map() -> None:

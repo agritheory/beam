@@ -139,6 +139,10 @@ doc_events = {
 			"beam.beam.overrides.stock_entry.validate_items_with_handling_unit",
 		],
 	},
+	("Sales Order", "Work Order"): {
+		"on_submit": ["beam.beam.demand.demand.rebuild_demand_map"],
+		"on_cancel": ["beam.beam.demand.demand.rebuild_demand_map"],
+	},
 }
 
 # Scheduled Tasks
@@ -170,9 +174,10 @@ doc_events = {
 # Overriding Methods
 # ------------------------------
 #
-# override_whitelisted_methods = {
-# 	"frappe.desk.doctype.event.event.get_events": "beam.event.get_events"
-# }
+override_whitelisted_methods = {
+	"erpnext.manufacturing.doctype.work_order.work_order.close_work_order": "beam.beam.overrides.work_order.close_work_order",
+	"erpnext.selling.doctype.sales_order.sales_order.update_status": "beam.beam.overrides.sales_order.update_status",
+}
 #
 # each overriding function accepts a `data` argument;
 # generated from the base implementation of the doctype dashboard,
