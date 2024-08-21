@@ -140,8 +140,8 @@ doc_events = {
 		],
 	},
 	("Sales Order", "Work Order"): {
-		"on_submit": ["beam.beam.demand.demand.rebuild_demand_map"],
-		"on_cancel": ["beam.beam.demand.demand.rebuild_demand_map"],
+		"on_submit": ["beam.beam.demand.demand.modify_demand"],
+		"on_cancel": ["beam.beam.demand.demand.modify_demand"],
 	},
 }
 

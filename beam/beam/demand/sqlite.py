@@ -59,7 +59,8 @@ def create_demand_db(cursor: sqlite3.Cursor) -> sqlite3.Connection:
 				stock_uom text,
 				status text,
 				assigned text,
-				creation int
+				creation int,
+				is_manual boolean
 			)
 		"""
 	)

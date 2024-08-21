@@ -74,12 +74,17 @@ def get_qty_from_sle(item_code: str, warehouse: str | None = None, company: str 
 	return flt(balance_qty[0].qty_after_transaction) if balance_qty else 0.0
 
 
-def get_manufacturing_demand() -> list[frappe._dict]:
+def get_manufacturing_demand(name: str | None = None) -> list[frappe._dict]:
 	manufacturing_demand = []
+
+	if name:
+		filters = {"docstatus": 1, "status": "Not Started", "name": name}
+	else:
+		filters = {"docstatus": 1, "status": "Not Started"}
 
 	pending_work_orders = frappe.get_all(
 		"Work Order",
-		filters={"docstatus": 1, "status": "Not Started"},
+		filters=filters,
 		fields=["name", "company", "wip_warehouse", "planned_start_date", "creation"],
 		order_by="planned_start_date, creation ASC",
 	)
@@ -115,15 +120,20 @@ def get_manufacturing_demand() -> list[frappe._dict]:
 	return manufacturing_demand
 
 
-def get_sales_demand() -> list[frappe._dict]:
+def get_sales_demand(name: str | None = None) -> list[frappe._dict]:
 	sales_demand = []
 	default_fg_warehouse = frappe.db.get_single_value(
 		"Manufacturing Settings", "default_fg_warehouse"
 	)
 
+	if name:
+		filters = {"docstatus": 1, "status": ["!=", "Closed"], "name": name}
+	else:
+		filters = {"docstatus": 1, "status": ["!=", "Closed"]}
+
 	sales_orders = frappe.get_all(
 		"Sales Order",
-		filters={"docstatus": 1, "status": ["!=", "Closed"]},
+		filters=filters,
 		fields=["name", "company", "delivery_date", "creation"],
 		order_by="delivery_date, creation ASC",
 	)
@@ -159,32 +169,74 @@ def get_sales_demand() -> list[frappe._dict]:
 	return sales_demand
 
 
-def rebuild_demand_map(doc: Union["SalesOrder", "WorkOrder"], method: str):
+def build_demand_allocation_map() -> None:
+	with get_demand_db() as conn:
+		cursor = conn.cursor()
+
+		# sqlite does not implement a TRUNCATE command
+		cursor.execute("DELETE FROM demand;")
+		cursor.execute("DELETE FROM allocation;")
+
 	build_demand_map()
+	build_allocation_map()
 
 
-def build_demand_map() -> None:
-	manufacturing_demand = get_manufacturing_demand()
-	sales_demand = get_sales_demand()
+def get_demand_list(name: str | None = None) -> list[frappe._dict]:
+	manufacturing_demand = get_manufacturing_demand(name)
+	sales_demand = get_sales_demand(name)
+	return manufacturing_demand + sales_demand
 
-	output = []
-	for row in manufacturing_demand + sales_demand:
+
+def get_allocation_list(name: str | None = None) -> list[frappe._dict]:
+	with get_demand_db() as conn:
+		conn.row_factory = dict_factory
+		cursor = conn.cursor()
+		query = f"""
+			SELECT *
+			FROM allocation
+			{f"WHERE parent = '{name}'" if name else ""}
+			ORDER BY allocated_date, creation, parent ASC
+		"""
+
+		return cursor.execute(query).fetchall()
+
+
+def build_demand_map():
+	output: list[frappe._dict] = []
+
+	for row in get_demand_list():
 		row.key = frappe.generate_hash()
 		row.delivery_date = str(calendar.timegm(get_datetime(row.delivery_date).timetuple()))
 		row.creation = str(calendar.timegm(get_datetime(row.creation).timetuple()))
 		row.total_required_qty = str(row.total_required_qty)
 		output.append(row)
 
-	with get_demand_db() as conn:
-		cur = conn.cursor()
-		cur.execute("DELETE FROM demand;")  # sqlite does not implement a TRUNCATE command
-		cur.execute("DELETE FROM allocation;")  # sqlite does not implement a TRUNCATE command
-		for row in output:
-			cur.execute(
-				f"""INSERT INTO demand ('{"', '".join(row.keys())}') VALUES ('{"', '".join(row.values())}')"""
-			)
+	if output:
+		with get_demand_db() as conn:
+			cursor = conn.cursor()
+			for row in output:
+				cursor.execute(
+					f"""INSERT INTO demand ('{"', '".join(row.keys())}') VALUES ('{"', '".join(row.values())}')"""
+				)
 
-	build_allocation_map()
+
+def modify_demand(doc: Union["SalesOrder", "WorkOrder"], method: str | None = None) -> None:
+	with get_demand_db() as conn:
+		cursor = conn.cursor()
+
+		if method == "on_submit":
+			# TODO: add demand row normally, and try allocate stock
+			pass
+		elif method == "on_cancel":
+			# remove allocated stock
+			allocations = get_allocation_list(doc.name)
+			for allocation in allocations:
+				cursor.execute(f"DELETE FROM allocation WHERE key = '{allocation.key}'")
+
+			# remove demand row
+			demand = get_demand_list(doc.name)
+			for row in demand:
+				cursor.execute(f"DELETE FROM demand WHERE key = '{row.key}'")
 
 
 def build_allocation_map(
@@ -349,9 +401,9 @@ def update_allocations(
 def create_allocations():
 	with get_demand_db() as conn:
 		conn.row_factory = dict_factory
-		cur = conn.cursor()
+		cursor = conn.cursor()
 
-		item_demand_map = get_item_demand_map(cur)
+		item_demand_map = get_item_demand_map(cursor)
 
 		allocations = []
 		for item_code, demand_rows in item_demand_map.items():
@@ -389,7 +441,7 @@ def create_allocations():
 				allocations.append(allocation)
 
 		for allocation in allocations:
-			cur.execute(
+			cursor.execute(
 				f"""INSERT INTO allocation ('{"', '".join(allocation.keys())}') VALUES ('{"', '".join(allocation.values())}')"""
 			)
 
@@ -523,7 +575,7 @@ def get_demand(
 
 	with get_demand_db() as conn:
 		conn.row_factory = dict_factory
-		cur = conn.cursor()
+		cursor = conn.cursor()
 		query = f"""
 			SELECT
 				d.key,
@@ -592,7 +644,7 @@ def get_demand(
 			ORDER BY delivery_date, creation, parent ASC
 		"""
 
-		rows = cur.execute(query).fetchall()
+		rows = cursor.execute(query).fetchall()
 		for row in rows:
 			row.delivery_date = datetime.datetime(*localtime(row.delivery_date)[:6])
 			row.allocated_date = datetime.datetime(*localtime(row.allocated_date)[:6])

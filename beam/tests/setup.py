@@ -9,7 +9,7 @@ from erpnext.setup.utils import enable_all_roles_and_domains, set_defaults_for_t
 from erpnext.stock.get_item_details import get_item_details
 from frappe.desk.page.setup_wizard.setup_wizard import setup_complete
 
-from beam.beam.demand.demand import build_demand_map
+from beam.beam.demand.demand import build_demand_allocation_map
 from beam.tests.fixtures import boms, customers, items, operations, suppliers, workstations
 
 
@@ -43,7 +43,7 @@ def before_test():
 		frappe.db.set_value("Module Onboarding", modu, "is_complete", 1)
 	frappe.set_value("Website Settings", "Website Settings", "home_page", "login")
 	frappe.db.commit()
-	build_demand_map()
+	build_demand_allocation_map()
 
 
 def create_test_data():

@@ -6,7 +6,7 @@ import frappe
 import pytest
 from frappe.utils import get_bench_path
 
-from beam.beam.demand.demand import build_demand_map, get_demand_db
+from beam.beam.demand.demand import build_demand_allocation_map, get_demand_db
 
 
 def _get_logger(*args, **kwargs):
@@ -42,12 +42,5 @@ def db_instance():
 	frappe.connect()
 	frappe.db.commit = MagicMock()
 
-	# demand db - not frappe db
-	with get_demand_db() as conn:
-		cur = conn.cursor()
-		cur.execute("DELETE FROM demand;")  # sqlite does not implement a TRUNCATE command
-		cur.execute("DELETE FROM allocation;")  # sqlite does not implement a TRUNCATE command
-
-	build_demand_map()
-
+	build_demand_allocation_map()
 	yield frappe.db
