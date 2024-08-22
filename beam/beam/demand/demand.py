@@ -361,9 +361,12 @@ def update_allocations(
 				elif demand_effect == "adjustment":
 					new_allocated_qty = min(demand_row.total_required_qty, row_qty)
 
-				cursor.execute(
-					f"UPDATE allocation SET allocated_qty = {new_allocated_qty} WHERE key = '{allocation.key}'"
-				)
+				if new_allocated_qty <= 0:
+					cursor.execute(f"DELETE FROM allocation WHERE key = '{allocation.key}'")
+				else:
+					cursor.execute(
+						f"UPDATE allocation SET allocated_qty = {new_allocated_qty} WHERE key = '{allocation.key}'"
+					)
 		else:
 			item_demand_map = get_item_demand_map(cursor, row=row)
 			demand_rows = item_demand_map.get(row.item_code)
