@@ -238,10 +238,10 @@ doc_events = {
 demand = {
 	"Delivery Note": {
 		"on_submit": [
-			{"warehouse_field": "s_warehouse", "quantity_field": "stock_qty", "demand_effect": "increase"}
+			{"warehouse_field": "warehouse", "quantity_field": "stock_qty", "demand_effect": "increase"}
 		],
 		"on_cancel": [
-			{"warehouse_field": "s_warehouse", "quantity_field": "stock_qty", "demand_effect": "decrease"}
+			{"warehouse_field": "warehouse", "quantity_field": "stock_qty", "demand_effect": "decrease"}
 		],
 	},
 	"Purchase Invoice": {
