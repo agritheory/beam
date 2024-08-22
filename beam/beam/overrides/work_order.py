@@ -1,14 +1,13 @@
-import frappe
-from erpnext.manufacturing.doctype.work_order.work_order import (
-	close_work_order as erpnext_close_work_order,
-)
+from erpnext.manufacturing.doctype.work_order.work_order import WorkOrder
 
-from beam.beam.demand.demand import modify_demand
+from beam.beam.demand.demand import add_demand_allocation, remove_demand_allocation
 
 
-@frappe.whitelist()
-def close_work_order(work_order, status):
-	status = erpnext_close_work_order(work_order, status)
-	work_order = frappe.get_doc("Work Order", work_order)
-	modify_demand(work_order)
-	return status
+class BEAMWorkOrder(WorkOrder):
+	def update_status(self, status=None):
+		super().update_status(status)
+		if self.docstatus == 1:
+			if status == "Resumed":
+				add_demand_allocation(self.name)
+			elif status in ("Completed", "Cancelled", "Closed", "Stopped"):
+				remove_demand_allocation(self.name)

@@ -1,13 +1,13 @@
-import frappe
-from erpnext.selling.doctype.sales_order.sales_order import update_status as erpnext_update_status
+from erpnext.selling.doctype.sales_order.sales_order import SalesOrder
 
-from beam.beam.demand.demand import modify_demand
+from beam.beam.demand.demand import add_demand_allocation, remove_demand_allocation
 
 
-@frappe.whitelist()
-def update_status(status, name):
-	erpnext_update_status(status, name)
-	sales_order = frappe.get_doc("Sales Order", name)
-	if status == "Closed":
-		modify_demand(sales_order)
-	return status
+class BEAMSalesOrder(SalesOrder):
+	def update_status(self, status):
+		super().update_status(status)
+		if self.docstatus == 1:
+			if status == "Draft":  # status for resuming a held or closed sales order
+				add_demand_allocation(self.name)
+			elif status in ("Completed", "Cancelled", "Closed", "On Hold"):
+				remove_demand_allocation(self.name)

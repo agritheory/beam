@@ -8,7 +8,7 @@ import frappe
 from frappe.utils.data import flt, get_datetime
 from frappe.utils.nestedset import get_descendants_of
 
-from beam.beam.demand.sqlite import dict_factory, get_demand_db
+from beam.beam.demand.sqlite import get_demand_db, reset_demand_db
 
 if TYPE_CHECKING:
 	from sqlite3 import Cursor
@@ -170,41 +170,29 @@ def get_sales_demand(name: str | None = None) -> list[frappe._dict]:
 
 
 def build_demand_allocation_map() -> None:
-	with get_demand_db() as conn:
-		cursor = conn.cursor()
-
-		# sqlite does not implement a TRUNCATE command
-		cursor.execute("DELETE FROM demand;")
-		cursor.execute("DELETE FROM allocation;")
-
+	reset_demand_db()
 	build_demand_map()
 	build_allocation_map()
 
 
 def get_demand_list(name: str | None = None) -> list[frappe._dict]:
+	if name:
+		with get_demand_db() as conn:
+			cursor = conn.cursor()
+			demand_query = cursor.execute(f"SELECT * FROM demand WHERE parent = '{name}'")
+			sales_demand = demand_query.fetchall()
+			if sales_demand:
+				return sales_demand
+
 	manufacturing_demand = get_manufacturing_demand(name)
 	sales_demand = get_sales_demand(name)
 	return manufacturing_demand + sales_demand
 
 
-def get_allocation_list(name: str | None = None) -> list[frappe._dict]:
-	with get_demand_db() as conn:
-		conn.row_factory = dict_factory
-		cursor = conn.cursor()
-		query = f"""
-			SELECT *
-			FROM allocation
-			{f"WHERE parent = '{name}'" if name else ""}
-			ORDER BY allocated_date, creation, parent ASC
-		"""
-
-		return cursor.execute(query).fetchall()
-
-
-def build_demand_map():
+def build_demand_map(name: str | None = None):
 	output: list[frappe._dict] = []
 
-	for row in get_demand_list():
+	for row in get_demand_list(name):
 		row.key = frappe.generate_hash()
 		row.delivery_date = str(calendar.timegm(get_datetime(row.delivery_date).timetuple()))
 		row.creation = str(calendar.timegm(get_datetime(row.creation).timetuple()))
@@ -221,22 +209,36 @@ def build_demand_map():
 
 
 def modify_demand(doc: Union["SalesOrder", "WorkOrder"], method: str | None = None) -> None:
+	if method == "on_submit":
+		add_demand_allocation(doc.name)
+	elif method == "on_cancel":
+		remove_demand_allocation(doc.name)
+
+
+def get_allocation_list(name: str) -> list[frappe._dict]:
 	with get_demand_db() as conn:
 		cursor = conn.cursor()
+		query = f"SELECT * FROM allocation WHERE parent = '{name}'"
+		return cursor.execute(query).fetchall()
 
-		if method == "on_submit":
-			# TODO: add demand row normally, and try allocate stock
-			pass
-		elif method == "on_cancel":
-			# remove allocated stock
-			allocations = get_allocation_list(doc.name)
-			for allocation in allocations:
-				cursor.execute(f"DELETE FROM allocation WHERE key = '{allocation.key}'")
 
-			# remove demand row
-			demand = get_demand_list(doc.name)
-			for row in demand:
-				cursor.execute(f"DELETE FROM demand WHERE key = '{row.key}'")
+def add_demand_allocation(name: str) -> None:
+	build_demand_map(name)
+	build_allocation_map()
+
+
+def remove_demand_allocation(name: str) -> None:
+	with get_demand_db() as conn:
+		cursor = conn.cursor()
+		# remove allocated stock
+		allocations = get_allocation_list(name)
+		for allocation in allocations:
+			cursor.execute(f"DELETE FROM allocation WHERE key = '{allocation.key}'")
+
+		# remove demand row
+		demand = get_demand_list(name)
+		for row in demand:
+			cursor.execute(f"DELETE FROM demand WHERE key = '{row.key}'")
 
 
 def build_allocation_map(
@@ -329,7 +331,6 @@ def update_allocations(
 	action: dict,
 ):
 	with get_demand_db() as conn:
-		conn.row_factory = dict_factory
 		cursor = conn.cursor()
 
 		quantity_field = action.get("quantity_field")
@@ -400,7 +401,6 @@ def update_allocations(
 
 def create_allocations():
 	with get_demand_db() as conn:
-		conn.row_factory = dict_factory
 		cursor = conn.cursor()
 
 		item_demand_map = get_item_demand_map(cursor)
@@ -574,7 +574,6 @@ def get_demand(
 	# 	_filters += f" AND assigned LIKE %{assigned}%"
 
 	with get_demand_db() as conn:
-		conn.row_factory = dict_factory
 		cursor = conn.cursor()
 		query = f"""
 			SELECT

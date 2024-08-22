@@ -1,5 +1,3 @@
-from . import __version__ as app_version
-
 app_name = "beam"
 app_title = "BEAM"
 app_publisher = "AgriTheory"
@@ -100,8 +98,10 @@ extend_bootinfo = "beam.beam.boot.boot_session"
 # ---------------
 # Override standard doctype classes
 override_doctype_class = {
+	"Sales Order": "beam.beam.overrides.sales_order.BEAMSalesOrder",
 	"Stock Entry": "beam.beam.overrides.stock_entry.BEAMStockEntry",
 	"Subcontracting Receipt": "beam.beam.overrides.subcontracting_receipt.BEAMSubcontractingReceipt",
+	"Work Order": "beam.beam.overrides.work_order.BEAMWorkOrder",
 }
 
 
@@ -174,10 +174,9 @@ doc_events = {
 # Overriding Methods
 # ------------------------------
 #
-override_whitelisted_methods = {
-	"erpnext.manufacturing.doctype.work_order.work_order.close_work_order": "beam.beam.overrides.work_order.close_work_order",
-	"erpnext.selling.doctype.sales_order.sales_order.update_status": "beam.beam.overrides.sales_order.update_status",
-}
+# override_whitelisted_methods = {
+# 	"frappe.desk.doctype.event.event.get_events": "beam.event.get_events"
+# }
 #
 # each overriding function accepts a `data` argument;
 # generated from the base implementation of the doctype dashboard,

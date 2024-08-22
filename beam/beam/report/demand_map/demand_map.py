@@ -7,7 +7,7 @@ from time import localtime
 from frappe import _
 from frappe.utils.data import flt
 
-from beam.beam.demand.demand import dict_factory, get_demand_db
+from beam.beam.demand.demand import get_demand_db
 
 
 def execute(filters=None):
@@ -99,7 +99,6 @@ def get_columns(filters):
 def get_data(filters):
 	rows = []
 	with get_demand_db() as conn:
-		conn.row_factory = dict_factory
 		cursor = conn.cursor()
 		filter_query = ""
 		if filters.item_code:
