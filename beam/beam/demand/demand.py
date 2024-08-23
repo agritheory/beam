@@ -1,19 +1,19 @@
-import calendar
-import datetime
 from collections import deque
-from time import localtime
 from typing import TYPE_CHECKING, Any, Union
 
 import frappe
-from frappe.utils.data import flt, get_datetime
+from frappe.utils.data import flt
 from frappe.utils.nestedset import get_descendants_of
 
 from beam.beam.demand.sqlite import get_demand_db, reset_demand_db
-from beam.beam.demand.utils import Allocation, Demand
+from beam.beam.demand.utils import (
+	Allocation,
+	Demand,
+	get_datetime_from_epoch,
+	get_epoch_from_datetime,
+)
 
 if TYPE_CHECKING:
-	from sqlite3 import Cursor
-
 	from erpnext.accounts.doctype.purchase_invoice.purchase_invoice import PurchaseInvoice
 	from erpnext.accounts.doctype.purchase_invoice_item.purchase_invoice_item import (
 		PurchaseInvoiceItem,
@@ -176,8 +176,8 @@ def build_demand_map(name: str | None = None):
 	for row in get_demand_list(name):
 		if not row.key:
 			row.key = frappe.generate_hash()
-			row.delivery_date = str(calendar.timegm(get_datetime(row.delivery_date).timetuple()))
-			row.creation = str(calendar.timegm(get_datetime(row.creation).timetuple()))
+			row.delivery_date = str(get_epoch_from_datetime(row.delivery_date))
+			row.creation = str(get_epoch_from_datetime(row.creation))
 			row.total_required_qty = str(row.total_required_qty)
 		output.append(row)
 
@@ -242,7 +242,6 @@ def build_allocation_map(
 
 
 def get_demand_query(
-	cursor: "Cursor",
 	row: Union[
 		"DeliveryNoteItem",
 		"PurchaseInvoiceItem",
@@ -255,29 +254,30 @@ def get_demand_query(
 ):
 	item_filter = f"WHERE item_code = '{row.item_code}'" if row else ""
 
-	return cursor.execute(
-		f"""
-		SELECT
-			d.*,
-			COALESCE(
-				(SELECT SUM(a.allocated_qty) FROM allocation a WHERE a.demand = d.key),
-				0
-			) AS allocated_qty,
-			d.total_required_qty - COALESCE(
-				(SELECT SUM(a.allocated_qty) FROM allocation a WHERE a.demand = d.key),
-				0
-			) AS net_required_qty
-		FROM
-			demand d
-		{item_filter}
-		ORDER BY
-			delivery_date ASC;
-		"""
-	)
+	with get_demand_db() as conn:
+		cursor = conn.cursor()
+		return cursor.execute(
+			f"""
+			SELECT
+				d.*,
+				COALESCE(
+					(SELECT SUM(a.allocated_qty) FROM allocation a WHERE a.demand = d.key),
+					0
+				) AS allocated_qty,
+				d.total_required_qty - COALESCE(
+					(SELECT SUM(a.allocated_qty) FROM allocation a WHERE a.demand = d.key),
+					0
+				) AS net_required_qty
+			FROM
+				demand d
+			{item_filter}
+			ORDER BY
+				delivery_date ASC;
+			"""
+		)
 
 
 def get_item_demand_map(
-	cursor: "Cursor",
 	row: Union[
 		"DeliveryNoteItem",
 		"PurchaseInvoiceItem",
@@ -287,9 +287,9 @@ def get_item_demand_map(
 		"StockReconciliationItem",
 		None,
 	] = None,
-) -> dict[str, list[Demand]]:
-	demand_query = get_demand_query(cursor, row=row)
-	demand_rows: list[Demand] = demand_query.fetchall()
+) -> dict[str, list[Allocation | Demand]]:
+	demand_query = get_demand_query(row=row)
+	demand_rows: list[Allocation | Demand] = demand_query.fetchall()
 
 	item_demand_map = frappe._dict()
 	for demand_row in demand_rows:
@@ -344,24 +344,31 @@ def update_allocations(
 					new_allocated_qty = min(demand_row.total_required_qty, row_qty)
 
 				if new_allocated_qty <= 0:
+					# if allocation is fully removed, delete the allocation row entirely
 					cursor.execute(f"DELETE FROM allocation WHERE key = '{allocation.key}'")
 				else:
+					# if demand is partially or fully met, update allocation row
 					cursor.execute(
 						f"UPDATE allocation SET allocated_qty = {new_allocated_qty} WHERE key = '{allocation.key}'"
 					)
 		else:
-			item_demand_map = get_item_demand_map(cursor, row=row)
+			item_demand_map = get_item_demand_map(row=row)
 			demand_rows = item_demand_map.get(row.item_code)
 			if not demand_rows:
 				return
 			demand_queue = deque(demand_rows)
 
-			allocations = []
+			allocations: list[Allocation] = []
 			while demand_queue:
 				current_demand = demand_queue[0]
 				net_required_qty = current_demand["total_required_qty"] - current_demand["allocated_qty"]
-				allocated_qty = min(row_qty, net_required_qty)
 
+				if net_required_qty <= 0:
+					# if demand is already met, skip
+					demand_queue.popleft()
+					continue
+
+				allocated_qty = min(row_qty, net_required_qty)
 				allocations.append(
 					{
 						**new_allocation(current_demand),
@@ -388,7 +395,7 @@ def create_allocations():
 	with get_demand_db() as conn:
 		cursor = conn.cursor()
 
-		item_demand_map = get_item_demand_map(cursor)
+		item_demand_map = get_item_demand_map()
 
 		allocations = []
 		for item_code, demand_rows in item_demand_map.items():
@@ -441,8 +448,8 @@ def new_allocation(demand_row: Demand):
 			"parent": demand_row.parent,
 			"name": demand_row.name,
 			"item_code": demand_row.item_code,
-			"allocated_date": str(calendar.timegm(get_datetime().timetuple())),
-			"modified": str(calendar.timegm(get_datetime().timetuple())),
+			"allocated_date": str(get_epoch_from_datetime()),
+			"modified": str(get_epoch_from_datetime()),
 			"stock_uom": demand_row.stock_uom,
 			"status": "Soft Allocated",
 			"assigned": demand_row.assigned or "",
@@ -628,11 +635,11 @@ def get_demand(
 			ORDER BY delivery_date, creation, parent ASC
 		"""
 
-		rows: list[Demand | Allocation] = cursor.execute(query).fetchall()
+		rows: list[Allocation | Demand] = cursor.execute(query).fetchall()
 		for row in rows:
-			row.delivery_date = datetime.datetime(*localtime(row.delivery_date)[:6])
-			row.allocated_date = datetime.datetime(*localtime(row.allocated_date)[:6])
-			row.modified = datetime.datetime(*localtime(row.modified)[:6])
-			row.creation = datetime.datetime(*localtime(row.creation)[:6])
+			row.delivery_date = get_datetime_from_epoch(row.delivery_date)
+			row.allocated_date = get_datetime_from_epoch(row.allocated_date)
+			row.modified = get_datetime_from_epoch(row.modified)
+			row.creation = get_datetime_from_epoch(row.creation)
 
 		return rows

@@ -9,8 +9,16 @@ Demand increases based on the following factors:
 - When a Work Order is submitted
 
 Demand decreases based on the following factors:
-- When a Sales Order is either fulfilled, cancelled, closed or put on hold
-- When a Work Order is either completed, cancelled or closed
+- When a Sales Order is either:
+  - fulfilled (via a Sales Invoice or a Delivery Note)
+  - cancelled
+  - closed
+  - put on hold
+- When a Work Order is either:
+  - completed (via a Stock Entry)
+  - cancelled
+  - closed
+  - stopped
 
 <!-- ### Demand-Allocation Report
 
