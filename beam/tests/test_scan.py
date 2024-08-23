@@ -1,5 +1,4 @@
 import frappe
-import pytest
 
 """
 1. Test that a scanned item code in a list view returns the correct values for filtering

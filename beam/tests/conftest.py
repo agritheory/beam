@@ -6,7 +6,7 @@ import frappe
 import pytest
 from frappe.utils import get_bench_path
 
-from beam.beam.demand.demand import build_demand_allocation_map, get_demand_db
+from beam.beam.demand.demand import build_demand_allocation_map
 
 
 def _get_logger(*args, **kwargs):

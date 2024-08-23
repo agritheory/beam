@@ -1,5 +1,3 @@
-import json
-
 import frappe
 from erpnext.stock.stock_ledger import NegativeStockError
 

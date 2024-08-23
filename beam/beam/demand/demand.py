@@ -1,5 +1,5 @@
 from collections import deque
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 import frappe
 from frappe.utils.data import flt
@@ -14,6 +14,8 @@ from beam.beam.demand.utils import (
 )
 
 if TYPE_CHECKING:
+	from sqlite3 import Cursor
+
 	from erpnext.accounts.doctype.purchase_invoice.purchase_invoice import PurchaseInvoice
 	from erpnext.accounts.doctype.purchase_invoice_item.purchase_invoice_item import (
 		PurchaseInvoiceItem,
@@ -55,7 +57,9 @@ def get_qty_from_sle(item_code: str, warehouse: str | None = None, company: str 
 	return flt(balance_qty[0].qty_after_transaction) if balance_qty else 0.0
 
 
-def get_manufacturing_demand(name: str | None = None) -> list[Demand]:
+def get_manufacturing_demand(
+	name: str | None = None, item_code: str | None = None
+) -> list[Demand]:
 	manufacturing_demand = []
 
 	if name:
@@ -71,9 +75,14 @@ def get_manufacturing_demand(name: str | None = None) -> list[Demand]:
 	)
 
 	for work_order in pending_work_orders:
+		if item_code:
+			filters = {"parent": work_order.name, "item_code": item_code}
+		else:
+			filters = {"parent": work_order.name}
+
 		work_order_items = frappe.get_all(
 			"Work Order Item",
-			filters={"parent": work_order.name},
+			filters=filters,
 			fields=["name", "item_code", "required_qty", "transferred_qty"],
 		)
 
@@ -101,7 +110,7 @@ def get_manufacturing_demand(name: str | None = None) -> list[Demand]:
 	return manufacturing_demand
 
 
-def get_sales_demand(name: str | None = None) -> list[Demand]:
+def get_sales_demand(name: str | None = None, item_code: str | None = None) -> list[Demand]:
 	sales_demand = []
 	default_fg_warehouse = frappe.db.get_single_value(
 		"Manufacturing Settings", "default_fg_warehouse"
@@ -120,9 +129,14 @@ def get_sales_demand(name: str | None = None) -> list[Demand]:
 	)
 
 	for sales_order in sales_orders:
+		if item_code:
+			filters = {"parent": sales_order.name, "item_code": item_code}
+		else:
+			filters = {"parent": sales_order.name}
+
 		sales_order_items = frappe.get_all(
 			"Sales Order Item",
-			filters={"parent": sales_order.name},
+			filters=filters,
 			fields=["name", "item_code", "stock_qty", "delivered_qty"],
 		)
 
@@ -156,38 +170,48 @@ def build_demand_allocation_map() -> None:
 	build_allocation_map()
 
 
-def get_demand_list(name: str | None = None) -> list[Demand]:
+def get_demand_list(name: str | None = None, item_code: str | None = None) -> list[Demand]:
 	if name:
 		with get_demand_db() as conn:
 			cursor = conn.cursor()
-			demand_query = cursor.execute(f"SELECT * FROM demand WHERE parent = '{name}'")
+
+			if item_code:
+				demand_query = cursor.execute(
+					f"SELECT * FROM demand WHERE parent = '{name}' AND item_code = '{item_code}'"
+				)
+			else:
+				demand_query = cursor.execute(f"SELECT * FROM demand WHERE parent = '{name}'")
+
 			sales_demand: list[Demand] = demand_query.fetchall()
 			if sales_demand:
 				return sales_demand
 
-	manufacturing_demand = get_manufacturing_demand(name)
-	sales_demand = get_sales_demand(name)
+	manufacturing_demand = get_manufacturing_demand(name, item_code)
+	sales_demand = get_sales_demand(name, item_code)
 	return manufacturing_demand + sales_demand
 
 
-def build_demand_map(name: str | None = None):
+def build_demand_map(
+	name: str | None = None, item_code: str | None = None, cursor: Optional["Cursor"] = None
+) -> None:
 	output: list[Demand] = []
 
-	for row in get_demand_list(name):
-		if not row.key:
-			row.key = frappe.generate_hash()
-			row.delivery_date = str(get_epoch_from_datetime(row.delivery_date))
-			row.creation = str(get_epoch_from_datetime(row.creation))
-			row.total_required_qty = str(row.total_required_qty)
+	for row in get_demand_list(name, item_code):
+		row.key = row.key or frappe.generate_hash()
+		row.delivery_date = str(row.delivery_date or get_epoch_from_datetime(row.delivery_date))
+		row.creation = str(row.creation or get_epoch_from_datetime(row.creation))
+		row.total_required_qty = str(row.total_required_qty)
 		output.append(row)
 
 	if output:
-		with get_demand_db() as conn:
-			cursor = conn.cursor()
-			for row in output:
-				cursor.execute(
-					f"""INSERT INTO demand ('{"', '".join(row.keys())}') VALUES ('{"', '".join(row.values())}')"""
-				)
+		if not cursor:
+			with get_demand_db() as conn:
+				cursor = conn.cursor()
+
+		for row in output:
+			cursor.execute(
+				f"""INSERT INTO demand ('{"', '".join(row.keys())}') VALUES ('{"', '".join(row.values())}')"""
+			)
 
 
 def modify_demand(doc: Union["SalesOrder", "WorkOrder"], method: str | None = None) -> None:
@@ -212,12 +236,12 @@ def add_demand_allocation(name: str) -> None:
 def remove_demand_allocation(name: str) -> None:
 	with get_demand_db() as conn:
 		cursor = conn.cursor()
-		# remove allocated stock
+		# remove all allocated row(s)
 		allocations = get_allocation_list(name)
 		for allocation in allocations:
 			cursor.execute(f"DELETE FROM allocation WHERE key = '{allocation.key}'")
 
-		# remove demand row
+		# remove all demand row(s)
 		demand = get_demand_list(name)
 		for row in demand:
 			cursor.execute(f"DELETE FROM demand WHERE key = '{row.key}'")
@@ -334,23 +358,45 @@ def update_allocations(
 			demand_effect = action.get("demand_effect")
 			for allocation in existing_allocations:
 				demand_query = cursor.execute(f"SELECT * FROM demand WHERE key = '{allocation.demand}'")
-				demand_row = demand_query.fetchone()
+				demand_row: Demand = demand_query.fetchone()
 
-				if demand_effect == "increase":
-					new_allocated_qty = min(demand_row.total_required_qty, allocation.allocated_qty + row_qty)
-				elif demand_effect == "decrease":
-					new_allocated_qty = max(0, allocation.allocated_qty - row_qty)
-				elif demand_effect == "adjustment":
-					new_allocated_qty = min(demand_row.total_required_qty, row_qty)
+				if demand_row:
+					if demand_effect == "increase":
+						new_allocated_qty = min(demand_row.total_required_qty, allocation.allocated_qty + row_qty)
+					elif demand_effect == "decrease":
+						new_allocated_qty = max(0, allocation.allocated_qty - row_qty)
+					elif demand_effect == "adjustment":
+						new_allocated_qty = min(demand_row.total_required_qty, row_qty)
 
-				if new_allocated_qty <= 0:
-					# if allocation is fully removed, delete the allocation row entirely
-					cursor.execute(f"DELETE FROM allocation WHERE key = '{allocation.key}'")
+					if new_allocated_qty <= 0:
+						# if partial allocation is removed, delete the allocation row
+						cursor.execute(f"DELETE FROM allocation WHERE key = '{allocation.key}'")
+					elif new_allocated_qty >= demand_row.total_required_qty:
+						# if demand is fully met, delete the demand row and update allocation row
+						cursor.execute(f"DELETE FROM demand WHERE key = '{demand_row.key}'")
+						cursor.execute(
+							f"UPDATE allocation SET allocated_qty = {new_allocated_qty} WHERE key = '{allocation.key}'"
+						)
+					else:
+						# if demand is partially met, update allocation row
+						cursor.execute(
+							f"UPDATE allocation SET allocated_qty = {new_allocated_qty} WHERE key = '{allocation.key}'"
+						)
 				else:
-					# if demand is partially or fully met, update allocation row
-					cursor.execute(
-						f"UPDATE allocation SET allocated_qty = {new_allocated_qty} WHERE key = '{allocation.key}'"
-					)
+					if demand_effect == "decrease":
+						new_allocated_qty = max(0, allocation.allocated_qty - row_qty)
+						if new_allocated_qty <= 0:
+							cursor.execute(f"DELETE FROM allocation WHERE key = '{allocation.key}'")
+						else:
+							cursor.execute(
+								f"UPDATE allocation SET allocated_qty = {new_allocated_qty} WHERE key = '{allocation.key}'"
+							)
+
+						# re-create demand if allocation is being removed
+						build_demand_map(allocation.parent, allocation.item_code, cursor)
+					elif demand_effect in ["increase", "adjustment"]:
+						# TODO: are these cases even possible?
+						pass
 		else:
 			item_demand_map = get_item_demand_map(row=row)
 			demand_rows = item_demand_map.get(row.item_code)
@@ -361,12 +407,7 @@ def update_allocations(
 			allocations: list[Allocation] = []
 			while demand_queue:
 				current_demand = demand_queue[0]
-				net_required_qty = current_demand["total_required_qty"] - current_demand["allocated_qty"]
-
-				if net_required_qty <= 0:
-					# if demand is already met, skip
-					demand_queue.popleft()
-					continue
+				net_required_qty = current_demand["net_required_qty"]
 
 				allocated_qty = min(row_qty, net_required_qty)
 				allocations.append(
@@ -380,6 +421,7 @@ def update_allocations(
 				if row_qty >= net_required_qty:
 					# Full demand can be met
 					demand_queue.popleft()
+					cursor.execute(f"DELETE FROM demand WHERE key = '{current_demand.key}'")
 				else:
 					# Partial demand is met
 					current_demand["total_required_qty"] -= allocated_qty
