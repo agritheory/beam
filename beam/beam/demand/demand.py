@@ -2,13 +2,14 @@ import calendar
 import datetime
 from collections import deque
 from time import localtime
-from typing import TYPE_CHECKING, Any, TypedDict, Union
+from typing import TYPE_CHECKING, Any, Union
 
 import frappe
 from frappe.utils.data import flt, get_datetime
 from frappe.utils.nestedset import get_descendants_of
 
 from beam.beam.demand.sqlite import get_demand_db, reset_demand_db
+from beam.beam.demand.utils import Allocation, Demand
 
 if TYPE_CHECKING:
 	from sqlite3 import Cursor
@@ -33,26 +34,6 @@ if TYPE_CHECKING:
 	)
 
 
-class Demand(TypedDict):
-	key: str
-	demand: str
-	doctype: str
-	company: str
-	parent: str
-	warehouse: str
-	name: str
-	item_code: str
-	allocated_date: datetime.datetime
-	delivery_date: datetime.datetime
-	modified: datetime.datetime
-	stock_uom: str
-	allocated_qty: float
-	net_required_qty: float
-	total_required_qty: float
-	status: str
-	assigned: str
-
-
 def get_qty_from_sle(item_code: str, warehouse: str | None = None, company: str | None = None):
 	warehouses = []
 	if warehouse:
@@ -74,7 +55,7 @@ def get_qty_from_sle(item_code: str, warehouse: str | None = None, company: str 
 	return flt(balance_qty[0].qty_after_transaction) if balance_qty else 0.0
 
 
-def get_manufacturing_demand(name: str | None = None) -> list[frappe._dict]:
+def get_manufacturing_demand(name: str | None = None) -> list[Demand]:
 	manufacturing_demand = []
 
 	if name:
@@ -120,7 +101,7 @@ def get_manufacturing_demand(name: str | None = None) -> list[frappe._dict]:
 	return manufacturing_demand
 
 
-def get_sales_demand(name: str | None = None) -> list[frappe._dict]:
+def get_sales_demand(name: str | None = None) -> list[Demand]:
 	sales_demand = []
 	default_fg_warehouse = frappe.db.get_single_value(
 		"Manufacturing Settings", "default_fg_warehouse"
@@ -175,12 +156,12 @@ def build_demand_allocation_map() -> None:
 	build_allocation_map()
 
 
-def get_demand_list(name: str | None = None) -> list[frappe._dict]:
+def get_demand_list(name: str | None = None) -> list[Demand]:
 	if name:
 		with get_demand_db() as conn:
 			cursor = conn.cursor()
 			demand_query = cursor.execute(f"SELECT * FROM demand WHERE parent = '{name}'")
-			sales_demand = demand_query.fetchall()
+			sales_demand: list[Demand] = demand_query.fetchall()
 			if sales_demand:
 				return sales_demand
 
@@ -190,13 +171,14 @@ def get_demand_list(name: str | None = None) -> list[frappe._dict]:
 
 
 def build_demand_map(name: str | None = None):
-	output: list[frappe._dict] = []
+	output: list[Demand] = []
 
 	for row in get_demand_list(name):
-		row.key = frappe.generate_hash()
-		row.delivery_date = str(calendar.timegm(get_datetime(row.delivery_date).timetuple()))
-		row.creation = str(calendar.timegm(get_datetime(row.creation).timetuple()))
-		row.total_required_qty = str(row.total_required_qty)
+		if not row.key:
+			row.key = frappe.generate_hash()
+			row.delivery_date = str(calendar.timegm(get_datetime(row.delivery_date).timetuple()))
+			row.creation = str(calendar.timegm(get_datetime(row.creation).timetuple()))
+			row.total_required_qty = str(row.total_required_qty)
 		output.append(row)
 
 	if output:
@@ -215,7 +197,7 @@ def modify_demand(doc: Union["SalesOrder", "WorkOrder"], method: str | None = No
 		remove_demand_allocation(doc.name)
 
 
-def get_allocation_list(name: str) -> list[frappe._dict]:
+def get_allocation_list(name: str) -> list[Allocation]:
 	with get_demand_db() as conn:
 		cursor = conn.cursor()
 		query = f"SELECT * FROM allocation WHERE parent = '{name}'"
@@ -305,11 +287,11 @@ def get_item_demand_map(
 		"StockReconciliationItem",
 		None,
 	] = None,
-):
+) -> dict[str, list[Demand]]:
 	demand_query = get_demand_query(cursor, row=row)
-	demand_rows = demand_query.fetchall()
+	demand_rows: list[Demand] = demand_query.fetchall()
 
-	item_demand_map = frappe._dict({})
+	item_demand_map = frappe._dict()
 	for demand_row in demand_rows:
 		if demand_row.item_code in item_demand_map:
 			item_demand_map[demand_row.item_code].append(demand_row)
@@ -347,7 +329,7 @@ def update_allocations(
 			"""
 		)
 
-		existing_allocations = allocation_query.fetchall()
+		existing_allocations: list[Allocation] = allocation_query.fetchall()
 		if existing_allocations:
 			demand_effect = action.get("demand_effect")
 			for allocation in existing_allocations:
@@ -449,7 +431,7 @@ def create_allocations():
 			)
 
 
-def new_allocation(demand_row):
+def new_allocation(demand_row: Demand):
 	return frappe._dict(
 		{
 			"key": frappe.generate_hash(),
@@ -646,7 +628,7 @@ def get_demand(
 			ORDER BY delivery_date, creation, parent ASC
 		"""
 
-		rows = cursor.execute(query).fetchall()
+		rows: list[Demand | Allocation] = cursor.execute(query).fetchall()
 		for row in rows:
 			row.delivery_date = datetime.datetime(*localtime(row.delivery_date)[:6])
 			row.allocated_date = datetime.datetime(*localtime(row.allocated_date)[:6])
