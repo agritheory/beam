@@ -1,19 +1,20 @@
 <template>
-	<Navbar @click="handlePrimaryAction">
+	<!-- <Navbar @click="handlePrimaryAction">
 		<template #title>
 			<h3 class="nav-title">Transfer</h3>
 		</template>
 		<template #navbaraction>Done</template>
-	</Navbar>
+	</Navbar> -->
 	<ListView :items="transfer" />
 </template>
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { Navbar } from '@stonecrop/beam'
-import type { Workstation } from '../types'
+import type { ListViewItem } from '../types'
 
 const handlePrimaryAction = () => {}
-const workstations = ref<Partial<Workstation>[]>([])
+let transfer = ref<Partial<ListViewItem>[]>([])
+let transfers = []
 
 onMounted(async () => {
 	const params = new URLSearchParams({
@@ -21,16 +22,19 @@ onMounted(async () => {
 		order_by: 'creation asc',
 	})
 
-	const url = new URL(`/api/resource/demand?${params}`, window.location.origin)
+	const url = new URL(`/api/method/beam.beam.demand.demand.get_demand`, window.location.origin) // incorporate params
 	const response = await fetch(url)
-	let { data }: { data: Partial<Workstation>[] } = await response.json()
-	data.forEach(row => {
-		// row.count = { count: row.produced_qty, of: row.qty }
-		row.label = row.name
+	let data = await response.json()
+	// TODO: move this the server
+	data.message.forEach(row => {
+		row.count = { count: row.allocated_qty, of: `${row.total_required_qty} ${row.stock_uom}` }
+		row.label = row.parent
 		row.linkComponent = 'ListAnchor'
-		row.route = `#/workstation/${row.name}`
+		row.description = `${row.item_code} - ${row.warehouse}`
+		row.route = `#/${row.doctype}/${row.parent}`
+		transfers.push(row)
 	})
-	workstations.value = data
+	transfer.value = transfers
 })
 </script>
 <style scoped>

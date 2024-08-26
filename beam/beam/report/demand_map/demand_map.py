@@ -39,6 +39,12 @@ def get_columns(filters):
 			"width": "200px",
 		},
 		{
+			"label": _("Workstation"),
+			"fieldname": "workstation",
+			"fieldtype": "Data",
+			"width": "200px",
+		},
+		{
 			"label": _("Document"),
 			"fieldname": "parent",
 			"fieldtype": "Dynamic Link",
