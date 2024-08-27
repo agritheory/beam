@@ -205,18 +205,22 @@ def build_demand_map(
 
 	if output:
 		if cursor:
-			for row in output:
-				cursor.execute(
-					f"""INSERT INTO demand ('{"', '".join(row.keys())}') VALUES ('{"', '".join(row.values())}')"""
-				)
-			return
+			insert_demand(output, cursor)
+		else:
+			with get_demand_db() as conn:
+				cursor = conn.cursor()
+				insert_demand(output, cursor)
 
-		with get_demand_db() as conn:
-			cursor = conn.cursor()
-			for row in output:
-				cursor.execute(
-					f"""INSERT INTO demand ('{"', '".join(row.keys())}') VALUES ('{"', '".join(row.values())}')"""
-				)
+
+def insert_demand(output: list[Demand], cursor: "Cursor") -> None:
+	for row in output:
+		demand_row = {}
+		for key, value in row.items():
+			if value:
+				demand_row[key] = value
+		keys = "', '".join(demand_row.keys())
+		values = "', '".join(demand_row.values())
+		cursor.execute(f"INSERT INTO demand ('{keys}') VALUES ('{values}')")
 
 
 def modify_demand(doc: Union["SalesOrder", "WorkOrder"], method: str | None = None) -> None:

@@ -9,42 +9,42 @@ from frappe.utils import get_datetime
 class Demand(TypedDict, total=False):
 	assigned: str
 	company: str
-	creation: datetime.datetime | float
-	delivery_date: datetime.datetime | float
+	creation: str | float | datetime.datetime
+	delivery_date: str | float | datetime.datetime
 	doctype: str
 	item_code: str
 	key: str
-	modified: datetime.datetime | float
+	modified: str | float | datetime.datetime
 	name: str
 	parent: str
 	stock_uom: str
-	total_required_qty: float
+	total_required_qty: str | float
 	warehouse: str
 
 
 class Allocation(TypedDict, total=False):
-	allocated_date: datetime.datetime | float
-	allocated_qty: float
+	allocated_date: str | float | datetime.datetime
+	allocated_qty: str | float
 	assigned: str
 	company: str
-	creation: datetime.datetime | float
-	delivery_date: datetime.datetime | float
+	creation: str | float | datetime.datetime
+	delivery_date: str | float | datetime.datetime
 	demand: str
 	doctype: str
-	is_manual: float
+	is_manual: str | float
 	item_code: str
 	key: str
-	modified: datetime.datetime | float
+	modified: str | float | datetime.datetime
 	name: str
-	net_required_qty: float
+	net_required_qty: str | float
 	parent: str
 	status: str
 	stock_uom: str
-	total_required_qty: float
+	total_required_qty: str | float
 	warehouse: str
 
 
-def get_epoch_from_datetime(dt: datetime.datetime | float | None = None) -> int | float:
+def get_epoch_from_datetime(dt: str | float | datetime.datetime | None = None) -> int | float:
 	if isinstance(dt, (int, float)):
 		return dt
 
@@ -53,7 +53,10 @@ def get_epoch_from_datetime(dt: datetime.datetime | float | None = None) -> int 
 	return calendar.timegm(time_tuple)
 
 
-def get_datetime_from_epoch(seconds: float) -> datetime.datetime:
+def get_datetime_from_epoch(seconds: str | float) -> datetime.datetime | None:
+	if isinstance(seconds, str):
+		return get_datetime(seconds)
+
 	local_epoch = localtime(seconds)
 	local_epoch_list = local_epoch[:6]
 	return datetime.datetime(*local_epoch_list)
