@@ -1,16 +1,18 @@
+import random
 from pathlib import Path
 
 import frappe
 import pytest
-from frappe.utils import get_site_path
+from frappe.utils import add_days, get_site_path, today
 
-from beam.beam.demand.demand import build_demand_map, get_demand
+from beam.beam.demand.demand import build_demand_allocation_map, get_demand
+from beam.beam.scan import get_handling_unit
+from beam.tests.fixtures import customers
 
 # TODO:
 # configure rejected warehouse and make sure its under test for demand
 # debug allocation issues when
 # add filters to Demand Map: manufactured items, purchased items, finished goods
-#
 
 
 @pytest.mark.order(1)
@@ -20,40 +22,37 @@ def test_opening_demand():
 	if demand_db_path.exists():
 		demand_db_path.unlink(missing_ok=True)
 
-	build_demand_map()
+	company = frappe.defaults.get_defaults().get("company")
+	build_demand_allocation_map()
 	# get demand assert that correct quantities and allocations exist
-	water = get_demand(company=frappe.defaults.get_defaults().get("company"), item_code="Water")
-
+	water = get_demand(company=company, item_code="Water")
 	assert len(water) == 4
 
-	assert water[0].total_required_qty == 2.5
-	assert water[0].net_required_qty == 2.5
-	assert water[0].allocated_qty == 0.0
-	assert water[0].warehouse == "Kitchen - APC"
-	assert water[0].parent == "MFG-WO-2024-00007"
+	assert water[0].total_required_qty == 10.0
+	assert water[0].net_required_qty == 1.0
+	assert water[0].allocated_qty == 9.0
+	assert water[0].warehouse == "Refrigerator - APC"
+	assert water[0].parent == "MFG-WO-2024-00006"
 
 	assert water[1].total_required_qty == 2.5
 	assert water[1].net_required_qty == 2.5
-	assert water[1].allocated_qty == 0
+	assert water[1].allocated_qty == 0.0
 	assert water[1].warehouse == "Kitchen - APC"
-	assert water[1].parent == "MFG-WO-2024-00008"
+	assert water[1].parent == "MFG-WO-2024-00007"
 
-	assert water[2].total_required_qty == 10.0
-	assert water[2].net_required_qty == 10.0
-	assert water[2].allocated_qty == 0.0
+	assert water[2].total_required_qty == 2.5
+	assert water[2].net_required_qty == 2.5
+	assert water[2].allocated_qty == 0
 	assert water[2].warehouse == "Kitchen - APC"
-	assert water[2].parent == "MFG-WO-2024-00009"
+	assert water[2].parent == "MFG-WO-2024-00008"
 
 	assert water[3].total_required_qty == 10.0
-	assert water[3].net_required_qty == 1.0
-	assert water[3].allocated_qty == 9.0
-	assert water[3].warehouse == "Refrigerator - APC"
-	assert water[3].parent == "MFG-WO-2024-00006"
+	assert water[3].net_required_qty == 10.0
+	assert water[3].allocated_qty == 0.0
+	assert water[3].warehouse == "Kitchen - APC"
+	assert water[3].parent == "MFG-WO-2024-00009"
 
-	ice_water = get_demand(
-		company=frappe.defaults.get_defaults().get("company"), item_code="Ice Water"
-	)
-
+	ice_water = get_demand(company=company, item_code="Ice Water")
 	assert len(ice_water) == 1
 
 	assert ice_water[0].total_required_qty == 50
@@ -65,7 +64,7 @@ def test_opening_demand():
 
 @pytest.mark.order(2)
 def test_insufficient_total_demand_scenario():
-	# test multiple partial allocations
+	# test multiple allocations
 	se = frappe.new_doc("Stock Entry")
 	se.stock_entry_type = se.purpose = "Material Receipt"
 	se.append(
@@ -93,45 +92,149 @@ def test_insufficient_total_demand_scenario():
 	se.save()
 	se.submit()
 	water = get_demand(company=se.company, item_code="Water")
-
 	assert len(water) == 4
 
-	assert water[0].total_required_qty == 2.5
-	assert water[0].net_required_qty == 2.5
-	assert water[0].allocated_qty == 0
-	assert water[0].warehouse == "Kitchen - APC"
-	assert water[0].parent == "MFG-WO-2024-00007"
+	assert water[0].total_required_qty == None
+	assert water[0].net_required_qty == 0.0
+	assert water[0].allocated_qty == 10.0
+	assert water[0].warehouse == "Refrigerator - APC"
+	assert water[0].parent == "MFG-WO-2024-00006"
 
 	assert water[1].total_required_qty == 2.5
 	assert water[1].net_required_qty == 2.5
 	assert water[1].allocated_qty == 0.0
 	assert water[1].warehouse == "Kitchen - APC"
-	assert water[1].parent == "MFG-WO-2024-00008"
+	assert water[1].parent == "MFG-WO-2024-00007"
 
-	assert water[2].total_required_qty == 10.0
-	assert water[2].net_required_qty == 10.0
-	assert water[2].allocated_qty == 0.0
+	assert water[2].total_required_qty == 2.5
+	assert water[2].net_required_qty == 2.5
+	assert water[2].allocated_qty == 0
 	assert water[2].warehouse == "Kitchen - APC"
-	assert water[2].parent == "MFG-WO-2024-00009"
+	assert water[2].parent == "MFG-WO-2024-00008"
 
 	assert water[3].total_required_qty == 10.0
-	assert water[3].net_required_qty == 0.0
-	assert water[3].allocated_qty == 10.0
-	assert water[3].warehouse == "Refrigerator - APC"
-	assert water[3].parent == "MFG-WO-2024-00006"
+	assert water[3].net_required_qty == 10.0
+	assert water[3].allocated_qty == 0.0
+	assert water[3].warehouse == "Kitchen - APC"
+	assert water[3].parent == "MFG-WO-2024-00009"
 
 	# assert partial allocations
 	ice_water = get_demand(company=se.company, item_code="Ice Water")
-
 	assert len(ice_water) == 1
 
-	assert ice_water[0].total_required_qty == 50
-	assert ice_water[0].net_required_qty == 0.0
+	assert ice_water[0].total_required_qty == None
+	assert ice_water[0].net_required_qty == 0
 	assert ice_water[0].allocated_qty == 50
 	assert ice_water[0].warehouse == "Refrigerator - APC"
 	assert ice_water[0].parent == "MFG-WO-2024-00005"
 
-	# assert make-up allocation and not over-allocation
+
+@pytest.mark.order(3)
+def test_demand_removal_on_order_cancel():
+	company = frappe.defaults.get_defaults().get("company")
+	pie = get_demand(company=company, item_code="Ambrosia Pie")
+	assert len(pie) == 1
+
+	so = frappe.new_doc("Sales Order")
+	so.company = company
+	so.customer = random.choice(customers)
+	so.selling_price_list = "Bakery Wholesale"
+	so.append(
+		"items",
+		{
+			"item_code": "Ambrosia Pie",
+			"delivery_date": add_days(today(), 7),
+			"qty": 10,
+			"warehouse": "Baked Goods - APC",
+		},
+	)
+	so.save()
+	so.submit()
+
+	pie = get_demand(company=company, item_code="Ambrosia Pie")
+	assert len(pie) == 2
+
+	so.cancel()
+
+	pie = get_demand(company=company, item_code="Ambrosia Pie")
+	assert len(pie) == 1
+
+
+@pytest.mark.order(4)
+def test_allocation_creation_on_delivery():
+	se = frappe.new_doc("Stock Entry")
+	se.stock_entry_type = se.purpose = "Material Receipt"
+	se.append(
+		"items",
+		{
+			"item_code": "Ambrosia Pie",
+			"qty": 35,
+			"t_warehouse": "Baked Goods - APC",
+			"basic_rate": frappe.get_value("Item Price", {"item_code": "Ambrosia Pie"}, "price_list_rate"),
+		},
+	)
+	se.save()
+	se.submit()
+	handling_unit = se.items[0].handling_unit
+
+	dn = frappe.new_doc("Delivery Note")
+	dn.customer = random.choice(customers)
+	scan = frappe.call(
+		"beam.beam.scan.scan",
+		**{
+			"barcode": str(handling_unit),
+			"context": {"frm": dn.doctype, "doc": dn.as_dict()},
+			"current_qty": 1,
+		},
+	)
+	dn.append(
+		"items",
+		{
+			**scan[0]["context"],
+			"qty": 5,
+		},
+	)
+	dn.save()
+	dn.submit()
+
+	# assert net qty on handling unit above
+	hu = get_handling_unit(handling_unit)
+	assert hu.item_code == dn.items[0].item_code
+	assert hu.stock_qty == 30  # 30 from stock entry less 5 from delivery note
+	assert hu.item_code == dn.items[0].item_code
+
+	# assert partial allocations
+	pie = get_demand(company=dn.company, item_code="Ambrosia Pie")
+	assert len(pie) == 1
+
+	assert pie[0].total_required_qty == None
+	assert pie[0].net_required_qty == 0
+	assert pie[0].allocated_qty == 40  # 30 from stock entry plus 5 from delivery note
+	assert pie[0].warehouse == "Baked Goods - APC"
+	assert pie[0].parent == "SAL-ORD-2024-00001"
+
+
+@pytest.mark.order(5)
+def test_allocation_reversal_on_delivery_cancel():
+	dn = frappe.get_doc("Delivery Note", "MAT-DN-2024-00001")
+	dn.cancel()
+
+	pie = get_demand(company=dn.company, item_code="Ambrosia Pie")
+	assert len(pie) == 2
+
+	# allocation from stock entry
+	assert pie[0].total_required_qty == None
+	assert pie[0].net_required_qty == 0
+	assert pie[0].allocated_qty == 35  # 30 from stock entry plus 5 from delivery note
+	assert pie[0].warehouse == "Baked Goods - APC"
+	assert pie[0].parent == "SAL-ORD-2024-00001"
+
+	# demand re-created from delivery note cancel
+	assert pie[1].total_required_qty == 40
+	assert pie[1].net_required_qty == 40
+	assert pie[1].allocated_qty == 0
+	assert pie[1].warehouse == "Baked Goods - APC"
+	assert pie[1].parent == "SAL-ORD-2024-00001"
 
 
 @pytest.mark.order(13)

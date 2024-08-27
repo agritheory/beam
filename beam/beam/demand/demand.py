@@ -688,6 +688,7 @@ def get_demand(
 
 		rows: list[Allocation | Demand] = cursor.execute(query).fetchall()
 		for row in rows:
+			row.net_required_qty = max(0.0, row.net_required_qty)
 			row.delivery_date = get_datetime_from_epoch(row.delivery_date)
 			row.allocated_date = get_datetime_from_epoch(row.allocated_date)
 			row.modified = get_datetime_from_epoch(row.modified)
