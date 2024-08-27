@@ -71,7 +71,7 @@ def get_manufacturing_demand(
 		"Work Order",
 		filters=filters,
 		fields=["name", "company", "wip_warehouse", "planned_start_date", "creation"],
-		order_by="planned_start_date, creation ASC",
+		order_by="expected_delivery_date ASC, creation ASC, name ASC",
 	)
 
 	for work_order in pending_work_orders:
@@ -125,7 +125,7 @@ def get_sales_demand(name: str | None = None, item_code: str | None = None) -> l
 		"Sales Order",
 		filters=filters,
 		fields=["name", "company", "delivery_date", "creation"],
-		order_by="delivery_date, creation ASC",
+		order_by="delivery_date ASC, creation ASC, name ASC",
 	)
 
 	for sales_order in sales_orders:
@@ -204,14 +204,19 @@ def build_demand_map(
 		output.append(row)
 
 	if output:
-		if not cursor:
-			with get_demand_db() as conn:
-				cursor = conn.cursor()
+		if cursor:
+			for row in output:
+				cursor.execute(
+					f"""INSERT INTO demand ('{"', '".join(row.keys())}') VALUES ('{"', '".join(row.values())}')"""
+				)
+			return
 
-		for row in output:
-			cursor.execute(
-				f"""INSERT INTO demand ('{"', '".join(row.keys())}') VALUES ('{"', '".join(row.values())}')"""
-			)
+		with get_demand_db() as conn:
+			cursor = conn.cursor()
+			for row in output:
+				cursor.execute(
+					f"""INSERT INTO demand ('{"', '".join(row.keys())}') VALUES ('{"', '".join(row.values())}')"""
+				)
 
 
 def modify_demand(doc: Union["SalesOrder", "WorkOrder"], method: str | None = None) -> None:
