@@ -1,10 +1,6 @@
-import copy
-
 import frappe
 from erpnext.stock.doctype.stock_entry.stock_entry import StockEntry
-from erpnext.stock.doctype.stock_entry_detail.stock_entry_detail import StockEntryDetail
 from frappe.utils import cstr, flt
-from typing_extensions import Self
 
 from beam.beam.doctype.beam_settings.beam_settings import create_beam_settings
 
@@ -119,10 +115,12 @@ def validate_items_with_handling_unit(doc, method=None):
 			):
 				continue
 			elif (
-				doc.stock_entry_type in ["Repack", "Manufacture"]
+				doc.stock_entry_type in ("Repack", "Manufacture")
 				and not (row.t_warehouse or row.is_finished_item or row.is_scrap_item)
 				and not row.handling_unit
 			):
 				frappe.throw(frappe._(f"Row #{row.idx}: Handling Unit is missing for item {row.item_code}"))
+			elif row.handling_unit:
+				continue
 			elif not row.handling_unit:
 				frappe.throw(frappe._(f"Row #{row.idx}: Handling Unit is missing for item {row.item_code}"))

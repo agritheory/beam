@@ -212,10 +212,10 @@
   resolved "https://registry.yarnpkg.com/@rollup/rollup-win32-x64-msvc/-/rollup-win32-x64-msvc-4.18.1.tgz#0cb240c147c0dfd0e3eaff4cc060a772d39e155c"
   integrity sha512-yjk2MAkQmoaPYCSu35RLJ62+dz358nE83VfTePJRp8CG7aMg25mEJYpXFiD+NcevhX8LxD5OP5tktPXnXN7GDw==
 
-"@stonecrop/beam@^0.2.27":
-  version "0.2.27"
-  resolved "https://registry.yarnpkg.com/@stonecrop/beam/-/beam-0.2.27.tgz#b18b0646237ae2b0910f2c238d541f00ad832824"
-  integrity sha512-tHRShy1rwuMefg8qvCMrCrxxifk49wpIxLEqZvDIhq2Bweh+/I8u+ZuGNdbkz1qWWPfb2KDKR9xuiSQdbBxqYQ==
+"@stonecrop/beam@^0.2.28":
+  version "0.2.28"
+  resolved "https://registry.yarnpkg.com/@stonecrop/beam/-/beam-0.2.28.tgz#79f1cbd96190448c9fc952720740e62f76d5f39c"
+  integrity sha512-A7Z7XL6YeT4VJoVlkiQkacnBxPi7d2w5/vZUM/9LAvnjnAaXBugKWb7luxarUPtHoE4Oz5weasWF0CKmXOSCzQ==
   dependencies:
     vue "^3.4.31"
 

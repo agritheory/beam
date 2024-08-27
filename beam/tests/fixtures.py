@@ -60,6 +60,8 @@ workstations = [
 	("Refrigerator Station", "200"),
 	("Oven Station", "20"),
 	("Mixer Station", "10"),
+	("Receiving", "100"),
+	("Shipping", "100"),
 ]
 
 operations = [
