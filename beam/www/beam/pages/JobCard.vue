@@ -1,8 +1,6 @@
 <template>
-	<h1>Job Cards</h1>
-
 	<li v-for="operation in workOrder.operations">
-		<router-link :to="{ name: 'operation', params: { workOrder: route.params.id, id: operation.name } }">
+		<router-link :to="{ name: 'operation', params: { orderId: route.params.orderId, id: operation.name } }">
 			<span>{{ operation.operation }}</span>
 			<span class="right-align"> ({{ operation.completed_qty }} / {{ workOrder.qty }})</span>
 		</router-link>
@@ -19,8 +17,8 @@ const route = useRoute()
 const workOrder = ref<Partial<WorkOrder>>({})
 
 onMounted(async () => {
-	const response = await fetch(`/api/resource/Work Order/${route.params.id}`)
-	const { data }: { data: Partial<WorkOrder> } = await response.json()
+	const response = await fetch(`/api/resource/Work Order/${route.params.orderId}`)
+	const { data }: { data: WorkOrder } = await response.json()
 	workOrder.value = data
 })
 </script>

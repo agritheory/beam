@@ -1,3 +1,6 @@
+# Copyright (c) 2024, AgriTheory and contributors
+# For license information, please see license.txt
+
 import pathlib
 import sqlite3
 
@@ -34,6 +37,7 @@ def create_demand_db(cursor: sqlite3.Cursor) -> sqlite3.Connection:
 				company text,
 				parent text,
 				warehouse text,
+				workstation text,
 				name text,
 				item_code text,
 				delivery_date int,
@@ -54,6 +58,7 @@ def create_demand_db(cursor: sqlite3.Cursor) -> sqlite3.Connection:
 				company text,
 				parent text,
 				warehouse text,
+				workstation text,
 				name text,
 				item_code text,
 				allocated_date int,

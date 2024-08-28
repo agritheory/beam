@@ -20,6 +20,7 @@ export type JobCard = ParentDoctype & {
 export type WorkOrder = ParentDoctype & {
 	item_name: string
 	qty: number
+	produced_qty: number
 
 	operations: WorkOrderOperation[]
 }
@@ -35,4 +36,18 @@ export type WorkOrderOperation = ChildDoctype & {
 	completed_qty: number
 	description?: string
 	operation: string
+	time_in_mins?: number
+}
+
+export type ListViewItem = {
+	label: string
+	description?: string
+	count?: {
+		count: number
+		of: number
+		uom?: string
+	}
+	checked?: boolean
+	linkComponent?: string
+	route?: string
 }

@@ -1,3 +1,6 @@
+# Copyright (c) 2024, AgriTheory and contributors
+# For license information, please see license.txt
+
 from collections import deque
 from typing import TYPE_CHECKING, Any, Optional, Union
 
@@ -85,6 +88,13 @@ def get_manufacturing_demand(
 			filters=filters,
 			fields=["name", "item_code", "required_qty", "transferred_qty"],
 		)
+		workstation = frappe.get_all(
+			"Work Order Operation",
+			filters={"parent": work_order.name},
+			fields=["workstation"],
+			order_by="idx ASC",
+		)
+		workstation = workstation[0].get("workstation") if workstation else None
 
 		for item in work_order_items:
 			if item.transferred_qty - item.required_qty >= 0:
@@ -97,6 +107,7 @@ def get_manufacturing_demand(
 						"parent": work_order.name,
 						"company": work_order.company,
 						"warehouse": work_order.wip_warehouse,
+						"workstation": workstation or "",
 						"name": item.name,
 						"item_code": item.item_code,
 						"delivery_date": work_order.planned_start_date,
@@ -128,6 +139,11 @@ def get_sales_demand(name: str | None = None, item_code: str | None = None) -> l
 		order_by="delivery_date ASC, creation ASC, name ASC",
 	)
 
+	shipping_workstations = {
+		s.company: s.shipping_workstation
+		for s in frappe.get_all("BEAM Settings", ["company", "shipping_workstation"])
+	}
+
 	for sales_order in sales_orders:
 		if item_code:
 			filters = {"parent": sales_order.name, "item_code": item_code}
@@ -151,6 +167,7 @@ def get_sales_demand(name: str | None = None, item_code: str | None = None) -> l
 						"parent": sales_order.name,
 						"company": sales_order.company,
 						"warehouse": default_fg_warehouse,
+						"workstation": shipping_workstations.get(sales_order.company) or "",
 						"name": item.name,
 						"item_code": item.item_code,
 						"delivery_date": sales_order.delivery_date,
@@ -593,12 +610,13 @@ def get_descendant_warehouses(company, warehouse) -> list[str]:
 
 @frappe.whitelist()
 def get_demand(
-	company,
+	company=None,
 	item_code=None,
 	warehouse=None,
 	workstation=None,
 	assigned=None,
 	order_by="workstation, assigned",
+	status=None,
 ) -> list[Demand]:
 	filters = {}
 	if workstation:

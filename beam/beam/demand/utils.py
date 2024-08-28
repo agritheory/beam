@@ -1,3 +1,6 @@
+# Copyright (c) 2024, AgriTheory and contributors
+# For license information, please see license.txt
+
 import calendar
 import datetime
 from time import localtime
@@ -13,6 +16,7 @@ class Demand(TypedDict, total=False):
 	delivery_date: str | float | datetime.datetime
 	doctype: str
 	item_code: str
+	workstation: str
 	key: str
 	modified: str | float | datetime.datetime
 	name: str
@@ -33,6 +37,7 @@ class Allocation(TypedDict, total=False):
 	doctype: str
 	is_manual: str | float
 	item_code: str
+	workstation: str
 	key: str
 	modified: str | float | datetime.datetime
 	name: str
