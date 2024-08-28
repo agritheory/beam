@@ -379,6 +379,8 @@ def update_allocations(
 			"""
 		)
 
+		# TODO: remove demand row if demand is fully satisfied
+
 		existing_allocations: list[Allocation] = allocation_query.fetchall()
 		if existing_allocations:
 			demand_effect = action.get("demand_effect")
@@ -397,14 +399,8 @@ def update_allocations(
 					if new_allocated_qty <= 0:
 						# if partial allocation is removed, delete the allocation row
 						cursor.execute(f"DELETE FROM allocation WHERE key = '{allocation.key}'")
-					elif new_allocated_qty >= demand_row.total_required_qty:
-						# if demand is fully met, delete the demand row and update allocation row
-						cursor.execute(f"DELETE FROM demand WHERE key = '{demand_row.key}'")
-						cursor.execute(
-							f"UPDATE allocation SET allocated_qty = {new_allocated_qty} WHERE key = '{allocation.key}'"
-						)
 					else:
-						# if demand is partially met, update allocation row
+						# if demand can be partially or fully met, update allocation row
 						cursor.execute(
 							f"UPDATE allocation SET allocated_qty = {new_allocated_qty} WHERE key = '{allocation.key}'"
 						)
@@ -447,7 +443,6 @@ def update_allocations(
 				if row_qty >= net_required_qty:
 					# Full demand can be met
 					demand_queue.popleft()
-					cursor.execute(f"DELETE FROM demand WHERE key = '{current_demand.key}'")
 				else:
 					# Partial demand is met
 					current_demand["total_required_qty"] -= allocated_qty
