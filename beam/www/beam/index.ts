@@ -34,17 +34,14 @@ if (import.meta.env.DEV) {
 	makeServer()
 }
 
-declare const frappe: any
+interface FrappeWindow extends Window {
+	frappe: any
+}
+declare const window: FrappeWindow
 
 const routes: RouteRecordRaw[] = [
 	{
 		path: '/',
-		name: 'home',
-		component: Home,
-		meta: { requiresAuth: true },
-	},
-	{
-		path: '',
 		name: 'home',
 		component: Home,
 		meta: { requiresAuth: true },
@@ -108,11 +105,6 @@ const routes: RouteRecordRaw[] = [
 		component: Repack,
 		meta: { requiresAuth: true },
 	},
-	// {
-	// 	path: '/workstation',
-	// 	name: 'workstation',
-	// 	component: Workstation,
-	// },
 ]
 
 const router = createRouter({
@@ -121,15 +113,20 @@ const router = createRouter({
 })
 
 router.beforeEach((to, from, next) => {
-	if (to.meta && to.meta.requiresAuth) {
-		if (frappe.user == 'Guest') {
-			next(false)
-			window.location.href = '/login'
+	if (!window.frappe) {
+		// dev environment; simply proceed with path
+		next()
+	} else {
+		if (to.meta && to.meta.requiresAuth) {
+			if (window.frappe.user === 'Guest') {
+				next(false)
+				window.location.href = '/login'
+			} else {
+				next()
+			}
 		} else {
 			next()
 		}
-	} else {
-		next()
 	}
 })
 

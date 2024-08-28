@@ -10,27 +10,27 @@ import { ref } from 'vue'
 const home = ref([
 	{
 		label: 'Manufacture',
-		route: 'beam#/manufacture',
+		route: '#/manufacture',
 		linkComponent: 'ListAnchor',
 	},
 	{
 		label: 'Transfer',
-		route: 'beam#/transfer',
+		route: '#/transfer',
 		linkComponent: 'ListAnchor',
 	},
 	{
 		label: 'Receive',
-		route: 'beam#/receive',
+		route: '#/receive',
 		linkComponent: 'ListAnchor',
 	},
 	{
 		label: 'Ship',
-		route: 'beam#/ship',
+		route: '#/ship',
 		linkComponent: 'ListAnchor',
 	},
 	{
 		label: 'Repack',
-		route: 'beam#/repack',
+		route: '#/repack',
 		linkComponent: 'ListAnchor',
 	},
 ])
