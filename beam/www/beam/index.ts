@@ -1,3 +1,6 @@
+// Copyright (c) 2024, AgriTheory and contributors
+// For license information, please see license.txt
+
 import {
 	ActionFooter,
 	BeamModal,
@@ -53,22 +56,27 @@ const routes: RouteRecordRaw[] = [
 		meta: { requiresAuth: true },
 	},
 	{
-		path: '/work_order',
+		path: '/work_order/:orderId/',
 		name: 'work_order',
 		component: WorkOrder,
 		meta: { requiresAuth: true },
 	},
 	{
-		path: '/job_card/:id',
+		path: '/job_card/:orderId/',
 		name: 'job_card',
 		component: JobCard,
 		meta: { requiresAuth: true },
 	},
 	{
-		path: '/work_order/:workOrder/operation/:id',
+		path: '/work_order/:orderId/operation/:id',
 		name: 'operation',
 		component: Operation,
 		meta: { requiresAuth: true },
+	},
+	{
+		path: '/transfer',
+		name: 'transfer',
+		component: Transfer,
 	},
 	{
 		path: '/receive',
@@ -100,6 +108,11 @@ const routes: RouteRecordRaw[] = [
 		component: Repack,
 		meta: { requiresAuth: true },
 	},
+	// {
+	// 	path: '/workstation',
+	// 	name: 'workstation',
+	// 	component: Workstation,
+	// },
 ]
 
 const router = createRouter({

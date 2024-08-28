@@ -2,10 +2,20 @@
 	"actions": [],
 	"allow_rename": 1,
 	"autoname": "field:company",
-	"creation": "2024-03-18 17:06:58.552999",
+	"creation": "2024-03-18 17:06:58.552900",
 	"doctype": "DocType",
 	"engine": "InnoDB",
-	"field_order": ["company", "enable_handling_units", "barcode_font_size"],
+	"field_order": [
+		"general_tab",
+		"company",
+		"barcode_font_size",
+		"enable_handling_units",
+		"column_break_twrc",
+		"receiving_workstation",
+		"shipping_workstation",
+		"demand_tab",
+		"warehouse_types"
+	],
 	"fields": [
 		{
 			"fieldname": "company",
@@ -29,11 +39,44 @@
 			"fieldname": "barcode_font_size",
 			"fieldtype": "Int",
 			"label": "Barcode Font Size"
+		},
+		{
+			"description": "These Warehouse Types will be excluded when checking for inventory availability",
+			"fieldname": "warehouse_types",
+			"fieldtype": "Table MultiSelect",
+			"label": "Warehouse Types",
+			"options": "Warehouse Types"
+		},
+		{
+			"fieldname": "general_tab",
+			"fieldtype": "Tab Break",
+			"label": "General"
+		},
+		{
+			"fieldname": "column_break_twrc",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "receiving_workstation",
+			"fieldtype": "Link",
+			"label": "Receiving Workstation",
+			"options": "Workstation"
+		},
+		{
+			"fieldname": "shipping_workstation",
+			"fieldtype": "Link",
+			"label": "Shipping Workstation",
+			"options": "Workstation"
+		},
+		{
+			"fieldname": "demand_tab",
+			"fieldtype": "Tab Break",
+			"label": "Demand"
 		}
 	],
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2024-05-29 01:43:57.177980",
+	"modified": "2024-08-19 15:23:36.892295",
 	"modified_by": "Administrator",
 	"module": "BEAM",
 	"name": "BEAM Settings",

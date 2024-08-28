@@ -1,3 +1,5 @@
+import time
+
 import frappe
 import pytest
 from erpnext.manufacturing.doctype.work_order.work_order import make_stock_entry
@@ -7,6 +9,7 @@ from erpnext.subcontracting.doctype.subcontracting_order.subcontracting_order im
 	make_subcontracting_receipt,
 )
 
+from beam.beam.demand.demand import get_demand
 from beam.beam.scan import get_handling_unit
 
 
@@ -20,7 +23,7 @@ def submit_all_purchase_receipts():
 		pr.submit()
 
 
-@pytest.mark.order(1)
+@pytest.mark.order(10)
 def test_purchase_receipt_handling_unit_generation():
 	for pr in frappe.get_all("Purchase Receipt"):
 		pr = frappe.get_doc("Purchase Receipt", pr)
@@ -31,11 +34,11 @@ def test_purchase_receipt_handling_unit_generation():
 			assert isinstance(row.handling_unit, str)
 			if row.rejected_qty:
 				assert row.rejected_qty + row.qty == row.received_qty
-				hu = get_handling_unit(row.handling_unit)
-				assert hu.stock_qty == row.stock_qty
+			hu = get_handling_unit(row.handling_unit)
+			assert hu.stock_qty == row.stock_qty
 
 
-@pytest.mark.order(2)
+@pytest.mark.order(11)
 def test_purchase_invoice():
 	for pi in frappe.get_all("Purchase Invoice"):
 		pi = frappe.get_doc("Purchase Invoice", pi)
@@ -52,7 +55,7 @@ def test_purchase_invoice():
 				assert row.handling_unit == None
 
 
-@pytest.mark.order(3)
+@pytest.mark.order(13)
 def test_stock_entry_material_receipt():
 	submit_all_purchase_receipts()
 	se = frappe.new_doc("Stock Entry")
@@ -70,7 +73,7 @@ def test_stock_entry_material_receipt():
 		"items",
 		{
 			"item_code": "Ice Water",
-			"qty": 1000000000,
+			"qty": 100,
 			"t_warehouse": "Refrigerator - APC",
 			"basic_rate": 0,
 			"allow_zero_valuation_rate": 1,
@@ -91,7 +94,7 @@ def test_stock_entry_material_receipt():
 		assert row.handling_unit == sle.handling_unit
 
 
-@pytest.mark.order(4)
+@pytest.mark.order(14)
 def test_stock_entry_repack():
 	submit_all_purchase_receipts()
 	pr_hu = frappe.get_value(
@@ -118,6 +121,18 @@ def test_stock_entry_repack():
 			"handling_unit": pr_hu["handling_unit"],
 		},
 	)
+	scan = frappe.call(
+		"beam.beam.scan.scan",
+		**{
+			"barcode": pr_hu.handling_unit,
+			"context": {"frm": "Stock Entry", "doc": se.as_dict()},
+			"current_qty": 100,
+		},
+	)
+	assert scan[0]["action"] == "add_or_associate"
+	se.items[0].handling_unit = scan[0]["context"].get(
+		"handling_unit"
+	)  # simulates the effect of 'associate'
 	se.append(
 		"items",
 		{
@@ -147,7 +162,7 @@ def test_stock_entry_repack():
 	assert hu.stock_qty == 100
 
 
-@pytest.mark.order(4)
+@pytest.mark.order(15)
 def test_stock_entry_material_transfer_for_manufacture():
 	submit_all_purchase_receipts()
 	wo = frappe.get_value("Work Order", {"production_item": "Kaduka Key Lime Pie Filling"})
@@ -198,13 +213,18 @@ def test_stock_entry_material_transfer_for_manufacture():
 			assert row.handling_unit != row.to_handling_unit
 
 
-@pytest.mark.order(6)
+@pytest.mark.order(16)
 def test_stock_entry_for_manufacture():
 	submit_all_purchase_receipts()
 	wo = frappe.get_value("Work Order", {"production_item": "Kaduka Key Lime Pie Filling"})
 	se_tfm = frappe.get_value(
 		"Stock Entry", {"work_order": wo, "purpose": "Material Transfer for Manufacture"}
 	)
+	job_cards = frappe.get_all("Job Card", {"work_order": wo})
+	for job_card in job_cards:
+		job_card = frappe.get_doc("Job Card", job_card)
+		job_card.submit()
+
 	se = make_stock_entry(wo, "Manufacture", 40)
 	# simulate scanning
 	for row in se.get("items"):
@@ -261,7 +281,7 @@ def test_stock_entry_for_manufacture():
 			assert row.t_warehouse == sle.warehouse  # target warehouse
 
 
-@pytest.mark.order(7)
+@pytest.mark.order(17)
 def test_delivery_note():
 	se = frappe.new_doc("Stock Entry")
 	se.stock_entry_type = se.purpose = "Material Receipt"
@@ -304,7 +324,7 @@ def test_delivery_note():
 	assert hu.item_code == dn.items[0].item_code
 
 
-@pytest.mark.order(8)
+@pytest.mark.order(18)
 def test_sales_invoice():
 	se = frappe.new_doc("Stock Entry")
 	se.stock_entry_type = se.purpose = "Material Receipt"
@@ -348,7 +368,7 @@ def test_sales_invoice():
 	assert hu.item_code == si.items[0].item_code
 
 
-@pytest.mark.order(9)
+@pytest.mark.order(19)
 def test_packing_slip():
 	se = frappe.new_doc("Stock Entry")
 	se.stock_entry_type = se.purpose = "Material Receipt"
@@ -405,7 +425,7 @@ def test_packing_slip():
 		assert hu.stock_qty == 0
 
 
-@pytest.mark.order(10)
+@pytest.mark.order(20)
 def test_stock_entry_material_transfer():
 	# create clean material receipt to avoid conflicts with Repack test
 	semr = frappe.new_doc("Stock Entry")
@@ -494,7 +514,7 @@ def test_stock_entry_material_transfer():
 		assert row.t_warehouse == tsle.warehouse  # target warehouse
 
 
-@pytest.mark.order(11)
+@pytest.mark.order(21)
 def test_stock_entry_for_send_to_subcontractor():
 	submit_all_purchase_receipts()
 	se = frappe.new_doc("Stock Entry")
@@ -555,7 +575,7 @@ def test_stock_entry_for_send_to_subcontractor():
 		assert hu.qty > 0
 
 
-@pytest.mark.order(12)
+@pytest.mark.order(22)
 def test_subcontracting_receipt():
 	for row in frappe.get_all("Subcontracting Order", pluck="name"):
 		if not frappe.db.exists(
@@ -577,7 +597,7 @@ def test_subcontracting_receipt():
 				assert hu.stock_qty == row.returned_qty
 
 
-@pytest.mark.order(13)
+@pytest.mark.order(23)
 @pytest.mark.skip()  # Remove when validate_handling_unit_overconsumption is uncommented in hooks.py doc_events
 def test_handling_units_overconsumption_in_material_transfer_stock_entry():
 	# Tests validate_handling_unit_overconsumption Stock Entry incoming code block
@@ -633,7 +653,7 @@ def test_handling_units_overconsumption_in_material_transfer_stock_entry():
 	)
 
 
-@pytest.mark.order(14)
+@pytest.mark.order(24)
 @pytest.mark.skip()  # Remove when validate_handling_unit_overconsumption is uncommented in hooks.py doc_events
 def test_handling_units_overconsumption_in_delivery_note():
 	# Tests validate_handling_unit_overconsumption Delivery Note code block
