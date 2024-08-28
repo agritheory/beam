@@ -1,5 +1,4 @@
 <template>
-	<h1>Operation</h1>
 	<div class="container">
 		<div class="box">
 			{{ operation.description }}
@@ -34,21 +33,21 @@ const elapsedTime = computed(() => {
 })
 
 onMounted(async () => {
-	const orderResponse = await fetch(`/api/resource/Work Order/${route.params.workOrder}`)
-	const { data }: { data: Partial<WorkOrder> } = await orderResponse.json()
+	const orderResponse = await fetch(`/api/resource/Work Order/${route.params.orderId}`)
+	const { data }: { data: WorkOrder } = await orderResponse.json()
 	workOrder.value = data
 	operation.value = workOrder.value.operations.find(operation => operation.name === route.params.id) || {}
 
 	const filters = [['operation_id', '=', route.params.id]]
 	const params = new URLSearchParams({ filters: JSON.stringify(filters) })
 	const checkJobResponse = await fetch(`/api/resource/Job Card?${params}`)
-	const { data: jobData }: { data: Partial<JobCard>[] } = await checkJobResponse.json()
+	const { data: jobData }: { data: JobCard[] } = await checkJobResponse.json()
 	if (jobData.length === 0) {
 		return
 	}
 
 	const jobResponse = await fetch(`/api/resource/Job Card/${jobData[0].name}`)
-	const { data: job }: { data: Partial<JobCard> } = await jobResponse.json()
+	const { data: job }: { data: JobCard } = await jobResponse.json()
 	jobCard.value = job
 })
 

@@ -1,3 +1,6 @@
+# Copyright (c) 2024, AgriTheory and contributors
+# For license information, please see license.txt
+
 import datetime
 from itertools import groupby
 
@@ -165,7 +168,7 @@ def setup_manufacturing_settings(settings):
 	if frappe.db.exists("Account", {"account_name": "Work In Progress", "company": settings.company}):
 		return
 	wip = frappe.new_doc("Account")
-	wip.account_name = "Standard Costing Reconciliation"
+	wip.account_name = "Inventory Write Off"
 	wip.parent_account = "1400 - Stock Assets - APC"
 	wip.account_number = "1430"
 	wip.company = settings.company
@@ -182,6 +185,8 @@ def setup_beam_settings(settings):
 	beams.company = settings.company
 	beams.enable_handling_units = True
 	beams.append("warehouse_types", {"warehouse_type": "Quarantine"})
+	beams.receiving_workstation = "Receiving"
+	beams.shipping_workstation = "Shipping"
 	beams.save()
 
 
