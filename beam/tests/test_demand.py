@@ -30,16 +30,16 @@ def test_opening_demand():
 	water = get_demand(item_code="Water")
 	assert len(water) == 4
 
-	assert water[0].total_required_qty == 10.0
-	assert water[0].net_required_qty == 1.0
-	assert water[0].allocated_qty == 9.0
+	assert water[0].total_required_qty == 2.5
+	assert water[0].net_required_qty == 0.0
+	assert water[0].allocated_qty == 2.5
 	assert water[0].warehouse == "Refrigerator - APC"
 	assert water[0].parent == "MFG-WO-2024-00006"
 
 	assert water[1].total_required_qty == 10.0
-	assert water[1].net_required_qty == 10.0
-	assert water[1].allocated_qty == 0.0
-	assert water[1].warehouse == "Kitchen - APC"
+	assert water[1].net_required_qty == 3.5
+	assert water[1].allocated_qty == 6.5
+	assert water[1].warehouse == "Refrigerator - APC"
 	assert water[1].parent == "MFG-WO-2024-00007"
 
 	assert water[2].total_required_qty == 2.5
@@ -48,9 +48,9 @@ def test_opening_demand():
 	assert water[2].warehouse == "Kitchen - APC"
 	assert water[2].parent == "MFG-WO-2024-00008"
 
-	assert water[3].total_required_qty == 2.5
-	assert water[3].net_required_qty == 2.5
-	assert water[3].allocated_qty == 0
+	assert water[3].total_required_qty == 10.0
+	assert water[3].net_required_qty == 10.0
+	assert water[3].allocated_qty == 0.0
 	assert water[3].warehouse == "Kitchen - APC"
 	assert water[3].parent == "MFG-WO-2024-00009"
 
@@ -58,8 +58,8 @@ def test_opening_demand():
 	assert len(ice_water) == 1
 
 	assert ice_water[0].total_required_qty == 50
-	assert ice_water[0].net_required_qty == 39
-	assert ice_water[0].allocated_qty == 11
+	assert ice_water[0].net_required_qty == 39.0
+	assert ice_water[0].allocated_qty == 11.0
 	assert ice_water[0].warehouse == "Refrigerator - APC"
 	assert ice_water[0].parent == "MFG-WO-2024-00005"
 
@@ -96,16 +96,16 @@ def test_insufficient_total_demand_scenario():
 	water = get_demand(item_code="Water")
 	assert len(water) == 4
 
-	assert water[0].total_required_qty == 10
+	assert water[0].total_required_qty == 2.5
 	assert water[0].net_required_qty == 0.0
-	assert water[0].allocated_qty == 10.0
+	assert water[0].allocated_qty == 2.5
 	assert water[0].warehouse == "Refrigerator - APC"
 	assert water[0].parent == "MFG-WO-2024-00006"
 
 	assert water[1].total_required_qty == 10.0
-	assert water[1].net_required_qty == 10.0
-	assert water[1].allocated_qty == 0.0
-	assert water[1].warehouse == "Kitchen - APC"
+	assert water[1].net_required_qty == 0.0
+	assert water[1].allocated_qty == 10.0
+	assert water[1].warehouse == "Refrigerator - APC"
 	assert water[1].parent == "MFG-WO-2024-00007"
 
 	assert water[2].total_required_qty == 2.5
@@ -114,9 +114,9 @@ def test_insufficient_total_demand_scenario():
 	assert water[2].warehouse == "Kitchen - APC"
 	assert water[2].parent == "MFG-WO-2024-00008"
 
-	assert water[3].total_required_qty == 2.5
-	assert water[3].net_required_qty == 2.5
-	assert water[3].allocated_qty == 0
+	assert water[3].total_required_qty == 10.0
+	assert water[3].net_required_qty == 10.0
+	assert water[3].allocated_qty == 0.0
 	assert water[3].warehouse == "Kitchen - APC"
 	assert water[3].parent == "MFG-WO-2024-00009"
 

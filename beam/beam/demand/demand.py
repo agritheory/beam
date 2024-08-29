@@ -86,7 +86,8 @@ def get_manufacturing_demand(
 		work_order_items = frappe.get_all(
 			"Work Order Item",
 			filters=filters,
-			fields=["name", "item_code", "required_qty", "transferred_qty"],
+			fields=["name", "item_code", "required_qty", "transferred_qty", "idx"],
+			order_by="idx ASC",
 		)
 		workstation = frappe.get_all(
 			"Work Order Operation",
@@ -153,7 +154,8 @@ def get_sales_demand(name: str | None = None, item_code: str | None = None) -> l
 		sales_order_items = frappe.get_all(
 			"Sales Order Item",
 			filters=filters,
-			fields=["name", "item_code", "stock_qty", "delivered_qty"],
+			fields=["name", "item_code", "stock_qty", "delivered_qty", "idx"],
+			order_by="idx ASC",
 		)
 
 		for item in sales_order_items:
