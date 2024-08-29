@@ -42,25 +42,34 @@ def get_barcode_context(barcode: str) -> Union[frappe._dict, None]:
 
 
 def get_handling_unit(handling_unit: str, parent_doctype: Optional[str] = None) -> frappe._dict:
-	sl_entries = frappe.get_all(
-		"Stock Ledger Entry",
-		filters={"handling_unit": handling_unit, "is_cancelled": 0},
-		fields=[
-			"item_code",
-			"SUM(actual_qty) AS stock_qty",
-			"handling_unit",
-			"voucher_no",
-			"posting_date",
-			"posting_time",
-			"stock_uom",
-			"voucher_type",
-			"voucher_detail_no",
-			"warehouse",
-		],
-		group_by="handling_unit",
-		order_by="posting_date DESC",
-		limit=1,
+	from frappe.query_builder import DocType
+	from frappe.query_builder.functions import Sum
+
+	SLE = DocType("Stock Ledger Entry")
+
+	query = (
+		frappe.qb.from_(SLE)
+		.select(
+			SLE.item_code,
+			Sum(SLE.actual_qty).as_("stock_qty"),
+			SLE.handling_unit,
+			SLE.voucher_no,
+			SLE.posting_date,
+			SLE.posting_time,
+			SLE.stock_uom,
+			SLE.voucher_type,
+			SLE.voucher_detail_no,
+			SLE.warehouse
+		)
+		.where(
+			(SLE.handling_unit == handling_unit) & 
+			(SLE.is_cancelled == 0)
+		)
+		.groupby(SLE.warehouse)
+		.orderby(SLE.creation, order=frappe.qb.desc)
+		.limit(1)
 	)
+	sl_entries = query.run(as_dict=True)
 	if len(sl_entries) == 1:
 		sle = sl_entries[0]
 	else:

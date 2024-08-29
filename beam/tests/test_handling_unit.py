@@ -20,6 +20,27 @@ def submit_all_purchase_receipts():
 		pr.submit()
 
 
+@pytest.fixture()
+def semr():
+	# create clean material receipt to avoid conflicts with Repack test
+	semr = frappe.new_doc("Stock Entry")
+	semr.stock_entry_type = semr.purpose = "Material Receipt"
+	semr.append(
+		"items",
+		{
+			"item_code": "Parchment Paper",
+			"qty": 100,
+			"t_warehouse": "Storeroom - APC",
+			"basic_rate": frappe.get_value(
+				"Item Price", {"item_code": "Parchment Paper"}, "price_list_rate"
+			),
+		},
+	)
+	semr.save()
+	semr.submit()
+	return semr
+
+
 @pytest.mark.order(1)
 def test_purchase_receipt_handling_unit_generation():
 	for pr in frappe.get_all("Purchase Receipt"):
@@ -63,7 +84,9 @@ def test_stock_entry_material_receipt():
 			"item_code": "Ambrosia Pie",
 			"qty": 15,
 			"t_warehouse": "Baked Goods - APC",
-			"basic_rate": frappe.get_value("Item Price", {"item_code": "Ambrosia Pie"}, "price_list_rate"),
+			"basic_rate": frappe.get_value(
+				"Item Price", {"item_code": "Ambrosia Pie"}, "price_list_rate"
+			),
 		},
 	)
 	se.append(
@@ -158,9 +181,13 @@ def test_stock_entry_material_transfer_for_manufacture():
 			"Item", row.item_code, "enable_handling_unit"
 		):
 			continue
-		hu = frappe.get_value("Purchase Receipt Item", {"item_code": row.item_code}, "handling_unit")
+		hu = frappe.get_value(
+			"Purchase Receipt Item", {"item_code": row.item_code}, "handling_unit"
+		)
 		if not hu:
-			hu = frappe.get_value("Purchase Invoice Item", {"item_code": row.item_code}, "handling_unit")
+			hu = frappe.get_value(
+				"Purchase Invoice Item", {"item_code": row.item_code}, "handling_unit"
+			)
 		scan = frappe.call(
 			"beam.beam.scan.scan",
 			**{"barcode": str(hu), "context": {"frm": "Stock Entry", "doc": se}, "current_qty": 1},
@@ -217,7 +244,9 @@ def test_stock_entry_for_manufacture():
 		):  # finished and scrap items' handling units will be generated and wouldn't be scanned
 			continue
 		hu = frappe.get_value(
-			"Stock Entry Detail", {"parent": se_tfm, "item_code": row.item_code}, "to_handling_unit"
+			"Stock Entry Detail",
+			{"parent": se_tfm, "item_code": row.item_code},
+			"to_handling_unit",
 		)
 		scan = frappe.call(
 			"beam.beam.scan.scan",
@@ -238,7 +267,8 @@ def test_stock_entry_for_manufacture():
 		):
 			continue
 		sle = frappe.get_doc(
-			"Stock Ledger Entry", {"voucher_detail_no": row.name, "handling_unit": row.handling_unit}
+			"Stock Ledger Entry",
+			{"voucher_detail_no": row.name, "handling_unit": row.handling_unit},
 		)
 		if not row.is_finished_item and not row.is_scrap_item:
 			assert row.transfer_qty == -(sle.actual_qty)
@@ -249,7 +279,9 @@ def test_stock_entry_for_manufacture():
 			assert row.transfer_qty == sle.actual_qty
 			assert row.item_code == sle.item_code
 			create_handling_unit = frappe.get_value(
-				"BOM Scrap Item", {"item_code": row.item_code, "parent": _se.bom_no}, "create_handling_unit"
+				"BOM Scrap Item",
+				{"item_code": row.item_code, "parent": _se.bom_no},
+				"create_handling_unit",
 			)
 			if create_handling_unit:
 				assert row.handling_unit == sle.handling_unit
@@ -271,7 +303,9 @@ def test_delivery_note():
 			"item_code": "Ambrosia Pie",
 			"qty": 30,
 			"t_warehouse": "Baked Goods - APC",
-			"basic_rate": frappe.get_value("Item Price", {"item_code": "Ambrosia Pie"}, "price_list_rate"),
+			"basic_rate": frappe.get_value(
+				"Item Price", {"item_code": "Ambrosia Pie"}, "price_list_rate"
+			),
 		},
 	)
 	se.save()
@@ -314,7 +348,9 @@ def test_sales_invoice():
 			"item_code": "Ambrosia Pie",
 			"qty": 30,
 			"t_warehouse": "Baked Goods - APC",
-			"basic_rate": frappe.get_value("Item Price", {"item_code": "Ambrosia Pie"}, "price_list_rate"),
+			"basic_rate": frappe.get_value(
+				"Item Price", {"item_code": "Ambrosia Pie"}, "price_list_rate"
+			),
 		},
 	)
 	se.save()
@@ -358,7 +394,9 @@ def test_packing_slip():
 			"item_code": "Ambrosia Pie",
 			"qty": 30,
 			"t_warehouse": "Baked Goods - APC",
-			"basic_rate": frappe.get_value("Item Price", {"item_code": "Ambrosia Pie"}, "price_list_rate"),
+			"basic_rate": frappe.get_value(
+				"Item Price", {"item_code": "Ambrosia Pie"}, "price_list_rate"
+			),
 		},
 	)
 	se.save()
@@ -406,30 +444,22 @@ def test_packing_slip():
 
 
 @pytest.mark.order(10)
-def test_stock_entry_material_transfer():
-	# create clean material receipt to avoid conflicts with Repack test
-	semr = frappe.new_doc("Stock Entry")
-	semr.stock_entry_type = semr.purpose = "Material Receipt"
-	semr.append(
-		"items",
-		{
-			"item_code": "Parchment Paper",
-			"qty": 100,
-			"t_warehouse": "Storeroom - APC",
-			"basic_rate": frappe.get_value(
-				"Item Price", {"item_code": "Parchment Paper"}, "price_list_rate"
-			),
-		},
-	)
-	semr.save()
-	semr.submit()
+@pytest.mark.parametrize(
+	("se_type", "generate"),
+	(("Material Transfer", True),
+	("Material Transfer", False),
+	("Send to Subcontractor", True),
+	("Send to Subcontractor", False))
+)
+def test_stock_entry_material_transfer(semr, se_type, generate):
 	handling_unit = semr.items[0].handling_unit
+	frappe.db.set_value("BEAM Settings", "Ambrosia Pie Company", "always_generate_for_transfer", generate)
 
 	hu = get_handling_unit(handling_unit)
 	assert hu.stock_qty == 100
 
 	se = frappe.new_doc("Stock Entry")
-	se.stock_entry_type = se.purpose = "Material Transfer"
+	se.stock_entry_type = se.purpose = se_type
 	se.company = frappe.defaults.get_defaults().get("company")
 
 	# simulate scanning
@@ -461,6 +491,7 @@ def test_stock_entry_material_transfer():
 			"Item", row.item_code, "enable_handling_unit"
 		):
 			continue
+		assert row.handling_unit != row.to_handling_unit
 		sle = frappe.get_doc("Stock Ledger Entry", {"handling_unit": row.handling_unit})
 		hu = get_handling_unit(str(row.handling_unit))
 		assert row.transfer_qty == abs(sle.actual_qty)
@@ -481,6 +512,7 @@ def test_stock_entry_material_transfer():
 			"Item", row.item_code, "enable_handling_unit"
 		):
 			continue
+		assert row.handling_unit != row.to_handling_unit
 		sle = frappe.get_doc("Stock Ledger Entry", {"handling_unit": row.handling_unit})
 		hu = get_handling_unit(str(row.handling_unit))
 		assert row.transfer_qty == abs(sle.actual_qty)
@@ -504,7 +536,11 @@ def test_stock_entry_for_send_to_subcontractor():
 	# simulate scanning
 	scan = frappe.call(
 		"beam.beam.scan.scan",
-		**{"barcode": str(hu), "context": {"frm": "Stock Entry", "doc": se.as_dict()}, "current_qty": 1},
+		**{
+			"barcode": str(hu),
+			"context": {"frm": "Stock Entry", "doc": se.as_dict()},
+			"current_qty": 1,
+		},
 	)
 	assert scan[0]["action"] == "add_or_associate"
 	se.append(
@@ -590,7 +626,9 @@ def test_handling_units_overconsumption_in_material_transfer_stock_entry():
 				"item_code": "Butter",
 				"qty": 5,
 				"t_warehouse": "Refrigerator - APC",
-				"basic_rate": frappe.get_value("Item Price", {"item_code": "Butter"}, "price_list_rate"),
+				"basic_rate": frappe.get_value(
+					"Item Price", {"item_code": "Butter"}, "price_list_rate"
+				),
 			},
 		)
 		se.save()
@@ -646,7 +684,9 @@ def test_handling_units_overconsumption_in_delivery_note():
 				"item_code": "Ambrosia Pie",
 				"qty": 30,
 				"t_warehouse": "Baked Goods - APC",
-				"basic_rate": frappe.get_value("Item Price", {"item_code": "Ambrosia Pie"}, "price_list_rate"),
+				"basic_rate": frappe.get_value(
+					"Item Price", {"item_code": "Ambrosia Pie"}, "price_list_rate"
+				),
 			},
 		)
 		se.save()
@@ -679,3 +719,101 @@ def test_handling_units_overconsumption_in_delivery_note():
 		f"Row #1: Handling Unit for Ambrosia Pie cannot be more than {hu.stock_qty} {hu.stock_uom}. You have {row_qty:.1f} {row_stock_uom}"
 		in exc_info.value.args[0]
 	)
+
+
+@pytest.mark.parametrize(
+	("se_type", "generate"),
+	(
+		("Material Transfer", True),
+		("Material Transfer", False),
+		("Send to Subcontractor", True),
+		("Send to Subcontractor", False),
+	),
+)
+def test_handling_unit_transfer_preservation(semr, se_type, generate):
+	frappe.db.set_value(
+		"BEAM Settings", "Ambrosia Pie Company", "always_generate_for_transfer", generate
+	)
+	handling_unit = semr.items[0].handling_unit
+
+	hu = get_handling_unit(handling_unit)
+	assert hu.stock_qty == 100.0
+
+	se = frappe.new_doc("Stock Entry")
+	se.stock_entry_type = se.purpose = se_type
+	se.company = frappe.defaults.get_defaults().get("company")
+
+	# simulate scanning
+	scan = frappe.call(
+		"beam.beam.scan.scan",
+		**{
+			"barcode": str(hu.handling_unit),
+			"context": {"frm": "Stock Entry", "doc": se.as_dict()},
+			"current_qty": 1,
+		},
+	)
+	assert scan[0]["action"] == "add_or_associate"
+	se.append(
+		"items",
+		{
+			**scan[0]["context"],
+			"qty": 100,
+			"actual_qty": 100,
+			"transfer_qty": 100,
+			"s_warehouse": hu.warehouse,
+			"t_warehouse": "Kitchen - APC",
+		},
+	)
+	se.save()
+	se.submit()
+	for row in se.items:
+		if not frappe.get_value("Item", row.item_code, "is_stock_item") or not frappe.get_value(
+			"Item", row.item_code, "enable_handling_unit"
+		):
+			continue
+		# Preserving HU means multiple SLE exists for the same HU.
+		sle = frappe.get_doc("Stock Ledger Entry", {"handling_unit": row.handling_unit, "warehouse": row.s_warehouse, "actual_qty": ["=", -100]})
+		hu = get_handling_unit(str(row.handling_unit))
+		assert row.transfer_qty == abs(sle.actual_qty)
+		if generate:
+			assert row.handling_unit != row.to_handling_unit
+			assert hu.stock_qty == 0  # net qty
+			assert sle.warehouse == hu.warehouse
+		else:
+			assert hu.stock_qty == 100
+			assert row.t_warehouse == hu.warehouse
+			assert row.handling_unit == row.to_handling_unit
+		assert row.s_warehouse == sle.warehouse # source warehouse
+		assert row.item_code == sle.item_code == hu.item_code
+		
+
+		tsle = frappe.get_doc("Stock Ledger Entry", {"handling_unit": row.to_handling_unit}, order_by="creation")
+		hu = get_handling_unit(str(row.to_handling_unit))
+		assert row.transfer_qty == abs(tsle.actual_qty)
+		assert hu.stock_qty == 100  # net qty
+		assert row.t_warehouse == tsle.warehouse  # target warehouse
+
+	# test how split handling units are returned
+	se.cancel()
+	for row in se.items:
+		if not frappe.get_value("Item", row.item_code, "is_stock_item") or not frappe.get_value(
+			"Item", row.item_code, "enable_handling_unit"
+		):
+			continue
+		sle = frappe.get_doc("Stock Ledger Entry", {"handling_unit": row.handling_unit}, order_by="creation")
+		hu = get_handling_unit(str(row.handling_unit))
+		assert row.transfer_qty == abs(sle.actual_qty)
+		if generate:
+			assert row.handling_unit != row.to_handling_unit
+			assert hu.stock_qty == 0
+			assert row.s_warehouse == sle.warehouse
+		else:
+			assert row.handling_unit == row.to_handling_unit
+			assert hu.stock_qty == 100  # restored qty
+			assert row.t_warehouse == sle.warehouse  # source warehouse
+		assert row.item_code == sle.item_code
+
+		tsle = frappe.get_doc("Stock Ledger Entry", {"handling_unit": row.to_handling_unit}, order_by="creation")
+		hu = get_handling_unit(str(row.to_handling_unit))
+		assert hu.stock_qty == 100
+		assert row.t_warehouse == tsle.warehouse  # target warehouse
