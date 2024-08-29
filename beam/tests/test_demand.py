@@ -36,21 +36,21 @@ def test_opening_demand():
 	assert water[0].warehouse == "Refrigerator - APC"
 	assert water[0].parent == "MFG-WO-2024-00006"
 
-	assert water[1].total_required_qty == 2.5
-	assert water[1].net_required_qty == 2.5
+	assert water[1].total_required_qty == 10.0
+	assert water[1].net_required_qty == 10.0
 	assert water[1].allocated_qty == 0.0
 	assert water[1].warehouse == "Kitchen - APC"
 	assert water[1].parent == "MFG-WO-2024-00007"
 
 	assert water[2].total_required_qty == 2.5
 	assert water[2].net_required_qty == 2.5
-	assert water[2].allocated_qty == 0
+	assert water[2].allocated_qty == 0.0
 	assert water[2].warehouse == "Kitchen - APC"
 	assert water[2].parent == "MFG-WO-2024-00008"
 
-	assert water[3].total_required_qty == 10.0
-	assert water[3].net_required_qty == 10.0
-	assert water[3].allocated_qty == 0.0
+	assert water[3].total_required_qty == 2.5
+	assert water[3].net_required_qty == 2.5
+	assert water[3].allocated_qty == 0
 	assert water[3].warehouse == "Kitchen - APC"
 	assert water[3].parent == "MFG-WO-2024-00009"
 
@@ -102,21 +102,21 @@ def test_insufficient_total_demand_scenario():
 	assert water[0].warehouse == "Refrigerator - APC"
 	assert water[0].parent == "MFG-WO-2024-00006"
 
-	assert water[1].total_required_qty == 2.5
-	assert water[1].net_required_qty == 2.5
+	assert water[1].total_required_qty == 10.0
+	assert water[1].net_required_qty == 10.0
 	assert water[1].allocated_qty == 0.0
 	assert water[1].warehouse == "Kitchen - APC"
 	assert water[1].parent == "MFG-WO-2024-00007"
 
 	assert water[2].total_required_qty == 2.5
 	assert water[2].net_required_qty == 2.5
-	assert water[2].allocated_qty == 0
+	assert water[2].allocated_qty == 0.0
 	assert water[2].warehouse == "Kitchen - APC"
 	assert water[2].parent == "MFG-WO-2024-00008"
 
-	assert water[3].total_required_qty == 10.0
-	assert water[3].net_required_qty == 10.0
-	assert water[3].allocated_qty == 0.0
+	assert water[3].total_required_qty == 2.5
+	assert water[3].net_required_qty == 2.5
+	assert water[3].allocated_qty == 0
 	assert water[3].warehouse == "Kitchen - APC"
 	assert water[3].parent == "MFG-WO-2024-00009"
 
@@ -200,9 +200,9 @@ def test_allocation_creation_on_delivery():
 	pie = get_demand(item_code="Ambrosia Pie")
 	assert len(pie) == 1
 
-	assert pie[0].total_required_qty == 40
+	assert pie[0].total_required_qty == 35
 	assert pie[0].net_required_qty == 0
-	assert pie[0].allocated_qty == 40
+	assert pie[0].allocated_qty == 35
 	assert pie[0].warehouse == "Baked Goods - APC"
 	assert pie[0].parent == "SAL-ORD-2024-00001"
 
@@ -217,20 +217,23 @@ def test_allocation_reversal_on_delivery_cancel():
 
 	# demand + allocation from stock entry
 	assert pie[0].total_required_qty == 40
-	assert pie[0].net_required_qty == 5
-	assert pie[0].allocated_qty == 35  # 30 from stock entry plus 5 from delivery note
+	assert pie[0].net_required_qty == 0
+	assert pie[0].allocated_qty == 40
 	assert pie[0].warehouse == "Baked Goods - APC"
 	assert pie[0].parent == "SAL-ORD-2024-00001"
 
 
 @pytest.mark.order(13)
 def test_allocation_from_purchasing():
-	for pr in frappe.get_all(
+	receipts = frappe.get_all(
 		"Purchase Receipt", ["name", "'Purchase Receipt' AS doctype"]
-	) + frappe.get_all("Purchase Invoice", ["name", "'Purchase Invoice' AS doctype"]):
-		pr = frappe.get_doc(pr.doctype, pr.name)
-		for row in pr.items:
-			if row.handling_unit:  # flag for inventoriable item
-				# TODO: this should be improved with greater specificity, but detecting that creating inventory leads to modification of the demand db is OK for now
-				d = get_demand(pr.company, item_code=row.item_code)
+	) + frappe.get_all("Purchase Invoice", ["name", "'Purchase Invoice' AS doctype"])
+
+	for pr in receipts:
+		doc = frappe.get_doc(pr.doctype, pr.name)
+		for item in doc.items:
+			if item.handling_unit:  # flag for inventoriable item
+				# TODO: this should be improved with greater specificity, but detecting that
+				# creating inventory leads to modification of the demand db is OK for now
+				d = get_demand(item_code=item.item_code)
 				assert len(d) > 0

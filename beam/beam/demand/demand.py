@@ -383,21 +383,42 @@ def update_allocations(
 
 		existing_allocations: list[Allocation] = allocation_query.fetchall()
 		if existing_allocations:
+			allocation_effect = action.get("allocation_effect")
 			demand_effect = action.get("demand_effect")
+
 			for allocation in existing_allocations:
 				demand_query = cursor.execute(f"SELECT * FROM demand WHERE key = '{allocation.demand}'")
 				demand_row: Demand = demand_query.fetchone()
 
 				if demand_row:
-					if demand_effect == "increase":
-						new_allocated_qty = min(demand_row.total_required_qty, allocation.allocated_qty + row_qty)
-					elif demand_effect == "decrease":
+					# demand is still pending, add/reverse allocation;
+					# process demand before allocation
+
+					new_total_required_qty = demand_row.total_required_qty
+					if demand_effect:
+						if demand_effect == "increase":
+							new_total_required_qty = demand_row.total_required_qty + row_qty
+						elif demand_effect == "decrease":
+							new_total_required_qty = max(0, demand_row.total_required_qty - row_qty)
+
+						if new_total_required_qty <= 0:
+							# if demand is fully met, delete the demand row
+							cursor.execute(f"DELETE FROM demand WHERE key = '{demand_row.key}'")
+						else:
+							# if demand is partially met, update demand row
+							cursor.execute(
+								f"UPDATE demand SET total_required_qty = {new_total_required_qty} WHERE key = '{demand_row.key}'"
+							)
+
+					if allocation_effect == "increase":
+						new_allocated_qty = min(new_total_required_qty, allocation.allocated_qty + row_qty)
+					elif allocation_effect == "decrease":
 						new_allocated_qty = max(0, allocation.allocated_qty - row_qty)
-					elif demand_effect == "adjustment":
-						new_allocated_qty = min(demand_row.total_required_qty, row_qty)
+					elif allocation_effect == "adjustment":
+						new_allocated_qty = min(new_total_required_qty, row_qty)
 
 					if new_allocated_qty <= 0:
-						# if partial allocation is removed, delete the allocation row
+						# if partial allocation is reverted, delete the allocation row
 						cursor.execute(f"DELETE FROM allocation WHERE key = '{allocation.key}'")
 					else:
 						# if demand can be partially or fully met, update allocation row
@@ -405,19 +426,21 @@ def update_allocations(
 							f"UPDATE allocation SET allocated_qty = {new_allocated_qty} WHERE key = '{allocation.key}'"
 						)
 				else:
-					if demand_effect == "decrease":
-						new_allocated_qty = max(0, allocation.allocated_qty - row_qty)
-						if new_allocated_qty <= 0:
-							cursor.execute(f"DELETE FROM allocation WHERE key = '{allocation.key}'")
-						else:
-							cursor.execute(
-								f"UPDATE allocation SET allocated_qty = {new_allocated_qty} WHERE key = '{allocation.key}'"
-							)
+					# demand is already satisfied, reverse allocation
 
-						# re-create demand if allocation is being removed
-						build_demand_map(allocation.parent, allocation.item_code, cursor)
-					elif demand_effect in ["increase", "adjustment"]:
-						# TODO: are these cases even possible?
+					if allocation_effect == "increase":
+						new_allocated_qty = allocation.allocated_qty + row_qty
+						cursor.execute(
+							f"UPDATE allocation SET allocated_qty = {new_allocated_qty} WHERE key = '{allocation.key}'"
+						)
+					elif allocation_effect in ["increase", "adjustment"]:
+						# TODO: are these cases possible?
+						pass
+
+					if demand_effect == "increase":
+						build_demand_map(row.parent, row.item_code, cursor)
+					elif demand_effect == "decrease":
+						# TODO: is this case possible?
 						pass
 		else:
 			item_demand_map = get_item_demand_map(row=row)

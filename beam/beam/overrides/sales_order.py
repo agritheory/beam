@@ -1,3 +1,6 @@
+# Copyright (c) 2024, AgriTheory and contributors
+# For license information, please see license.txt
+
 from erpnext.selling.doctype.sales_order.sales_order import SalesOrder
 
 from beam.beam.demand.demand import add_demand_allocation, remove_demand_allocation

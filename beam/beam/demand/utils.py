@@ -9,44 +9,37 @@ from typing import TypedDict
 from frappe.utils import get_datetime
 
 
-class Demand(TypedDict, total=False):
+class Base(TypedDict, total=False):
 	assigned: str
 	company: str
 	creation: str | float | datetime.datetime
-	delivery_date: str | float | datetime.datetime
 	doctype: str
 	item_code: str
-	workstation: str
 	key: str
 	modified: str | float | datetime.datetime
 	name: str
 	parent: str
 	stock_uom: str
-	total_required_qty: str | float
 	warehouse: str
+	workstation: str
 
 
-class Allocation(TypedDict, total=False):
+class Demand(TypedDict, Base, total=False):
+	delivery_date: str | float | datetime.datetime
+	total_required_qty: str | float  # demand quantity that hasn't been satisfied
+
+
+class Allocation(TypedDict, Base, total=False):
 	allocated_date: str | float | datetime.datetime
 	allocated_qty: str | float
-	assigned: str
-	company: str
-	creation: str | float | datetime.datetime
-	delivery_date: str | float | datetime.datetime
 	demand: str
-	doctype: str
 	is_manual: str | float
-	item_code: str
-	workstation: str
-	key: str
-	modified: str | float | datetime.datetime
-	name: str
-	net_required_qty: str | float
-	parent: str
 	status: str
-	stock_uom: str
-	total_required_qty: str | float
-	warehouse: str
+
+	# not directly available in the database, but computed using the demand row
+	delivery_date: str | float | datetime.datetime
+	net_required_qty: str | float  # demand quantity that has yet to be allocated
+	total_required_qty: str | float  # demand quantity that hasn't been satisfied
 
 
 def get_epoch_from_datetime(dt: str | float | datetime.datetime | None = None) -> int | float:
