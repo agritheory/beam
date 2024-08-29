@@ -42,12 +42,12 @@ def generate_handling_units(doc, method=None):
 			in ("Material Transfer", "Send to Subcontractor", "Material Transfer for Manufacture")
 			and row.handling_unit
 		):
-			if settings.always_generate_for_transfer:
+			if not settings.always_generate_for_transfer and row.qty == get_handling_unit(row.handling_unit).qty:
+				row.to_handling_unit = row.handling_unit
+			else:
 				handling_unit = frappe.new_doc("Handling Unit")
 				handling_unit.save()
 				row.to_handling_unit = handling_unit.name
-			else:
-				row.to_handling_unit = row.handling_unit
 			continue
 
 		if doc.doctype == "Subcontracting Receipt" and not row.handling_unit:
