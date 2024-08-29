@@ -459,7 +459,6 @@ def test_stock_entry_material_transfer(semr, se_type, generate):
 	assert hu.stock_qty == 100
 
 	se = frappe.new_doc("Stock Entry")
-	print(se_type)
 	se.stock_entry_type = se.purpose = se_type
 	se.company = frappe.defaults.get_defaults().get("company")
 
