@@ -1,3 +1,6 @@
+<!-- Copyright (c) 2024, AgriTheory and contributors
+For license information, please see license.txt-->
+
 # Handling Unit Traceability Report
 
 The Handling Unit Traceability report provides a simple interface to track a Handling Unit over its life cycle through your company's processes. Filters for the Handling Unit ID, Delivery Note name, and Sales Invoice name allow for fine-tuning of the report's results.

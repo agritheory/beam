@@ -30,6 +30,12 @@ repos:
     hooks:
       - id: black
 
+  - repo: https://github.com/PyCQA/autoflake
+    rev: v2.3.1
+    hooks:
+      - id: autoflake
+        args: [--remove-all-unused-imports, --in-place]
+
   - repo: https://github.com/PyCQA/isort
     rev: 5.13.2
     hooks:
@@ -58,8 +64,6 @@ repos:
       - id: clean_customized_doctypes
         args: ['--app', 'beam']
       - id: validate_customizations
-      - id: validate_python_dependencies
-      - id: validate_javascript_dependencies
 
   - repo: local
     hooks:

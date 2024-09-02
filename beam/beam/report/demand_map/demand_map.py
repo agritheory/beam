@@ -1,13 +1,11 @@
 # Copyright (c) 2024, AgriTheory and contributors
 # For license information, please see license.txt
 
-import datetime
-from time import localtime
-
 from frappe import _
 from frappe.utils.data import flt
 
-from beam.beam.demand.demand import dict_factory, get_demand_db
+from beam.beam.demand.demand import get_demand_db
+from beam.beam.demand.utils import get_datetime_from_epoch
 
 
 def execute(filters=None):
@@ -105,7 +103,6 @@ def get_columns(filters):
 def get_data(filters):
 	rows = []
 	with get_demand_db() as conn:
-		conn.row_factory = dict_factory
 		cursor = conn.cursor()
 		filter_query = ""
 		if filters.item_code:
@@ -130,7 +127,6 @@ def get_data(filters):
 
 		for row in demand:
 			row.indent = 0
-			row.delivery_date = datetime.datetime(*localtime(row.delivery_date)[:6])
 			row.demand_warehouse = row.pop("warehouse")
 			rows.append(row)
 			allocations = cursor.execute(f"SELECT * FROM allocation WHERE demand = '{row.key}'").fetchall()
@@ -140,7 +136,7 @@ def get_data(filters):
 				allocation.indent = 1
 				allocation.total_required_qty = None
 				allocation.net_required_qty = None
-				allocation.delivery_date = datetime.datetime(*localtime(allocation.allocated_date)[:6])
+				allocation.delivery_date = get_datetime_from_epoch(allocation.allocated_date)
 				allocation.source_warehouse = allocation.pop("warehouse")
 				if allocation.source_warehouse != row.demand_warehouse:
 					allocation.source_warehouse = (

@@ -1,3 +1,6 @@
+# Copyright (c) 2024, AgriTheory and contributors
+# For license information, please see license.txt
+
 import frappe
 from erpnext.stock.doctype.stock_entry.stock_entry import StockEntry
 from frappe.utils import cstr, flt
