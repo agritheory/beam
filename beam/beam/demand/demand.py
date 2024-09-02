@@ -74,7 +74,7 @@ def get_manufacturing_demand(
 		"Work Order",
 		filters=filters,
 		fields=["name", "company", "wip_warehouse", "planned_start_date", "creation"],
-		order_by="expected_delivery_date ASC, creation ASC, name ASC",
+		order_by="planned_start_date ASC, creation ASC",
 	)
 
 	for work_order in pending_work_orders:
@@ -110,6 +110,7 @@ def get_manufacturing_demand(
 						"warehouse": work_order.wip_warehouse,
 						"workstation": workstation or "",
 						"name": item.name,
+						"idx": item.idx,
 						"item_code": item.item_code,
 						"delivery_date": work_order.planned_start_date,
 						"total_required_qty": item.required_qty - item.transferred_qty,
@@ -155,7 +156,7 @@ def get_sales_demand(name: str | None = None, item_code: str | None = None) -> l
 			"Sales Order Item",
 			filters=filters,
 			fields=["name", "item_code", "stock_qty", "delivered_qty", "idx"],
-			order_by="idx ASC",
+			order_by="delivery_date, idx ASC",
 		)
 
 		for item in sales_order_items:
@@ -171,6 +172,7 @@ def get_sales_demand(name: str | None = None, item_code: str | None = None) -> l
 						"warehouse": default_fg_warehouse,
 						"workstation": shipping_workstations.get(sales_order.company) or "",
 						"name": item.name,
+						"idx": item.idx,
 						"item_code": item.item_code,
 						"delivery_date": sales_order.delivery_date,
 						"total_required_qty": item.stock_qty - item.delivered_qty,
@@ -220,6 +222,7 @@ def build_demand_map(
 		row.delivery_date = str(row.delivery_date or get_epoch_from_datetime(row.delivery_date))
 		row.creation = str(row.creation or get_epoch_from_datetime(row.creation))
 		row.total_required_qty = str(row.total_required_qty)
+		row.idx = str(row.idx)
 		output.append(row)
 
 	if output:
@@ -535,6 +538,7 @@ def new_allocation(demand_row: Demand):
 			"company": demand_row.company,
 			"parent": demand_row.parent,
 			"name": demand_row.name,
+			"idx": str(demand_row.idx),
 			"item_code": demand_row.item_code,
 			"allocated_date": str(get_epoch_from_datetime()),
 			"modified": str(get_epoch_from_datetime()),
@@ -666,6 +670,7 @@ def get_demand(
 
 				d.warehouse,
 				d.name,
+				d.idx,
 				d.item_code,
 				d.delivery_date AS allocated_date,
 				d.delivery_date,
@@ -698,6 +703,7 @@ def get_demand(
 
 				a.warehouse,
 				a.name,
+				a.idx,
 				a.item_code,
 				a.allocated_date AS delivery_date,
 				a.allocated_date,
@@ -721,7 +727,7 @@ def get_demand(
 			FROM allocation a
 			WHERE allocated_qty > 0
 			{a_filters}
-			ORDER BY delivery_date, creation, parent ASC
+			ORDER BY delivery_date, idx, creation, parent ASC
 		"""
 
 		rows: list[Allocation | Demand] = cursor.execute(query).fetchall()
