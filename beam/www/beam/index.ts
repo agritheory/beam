@@ -34,36 +34,41 @@ if (import.meta.env.DEV) {
 	makeServer()
 }
 
+interface FrappeWindow extends Window {
+	frappe: any
+}
+declare const window: FrappeWindow
+
 const routes: RouteRecordRaw[] = [
 	{
 		path: '/',
 		name: 'home',
 		component: Home,
+		meta: { requiresAuth: true },
 	},
 	{
-		path: '',
-		name: 'home',
-		component: Home,
-	},
-	{
-		path: '/manufacture',
-		name: 'manufacture',
-		component: Manufacture,
+		path: '/workstation',
+		name: 'workstation',
+		component: Workstation,
+		meta: { requiresAuth: true },
 	},
 	{
 		path: '/work_order/:orderId/',
 		name: 'work_order',
 		component: WorkOrder,
+		meta: { requiresAuth: true },
 	},
 	{
 		path: '/job_card/:orderId/',
 		name: 'job_card',
 		component: JobCard,
+		meta: { requiresAuth: true },
 	},
 	{
 		path: '/work_order/:orderId/operation/:id',
 		name: 'operation',
 		component: Operation,
+		meta: { requiresAuth: true },
 	},
 	{
 		path: '/transfer',
@@ -74,27 +79,55 @@ const routes: RouteRecordRaw[] = [
 		path: '/receive',
 		name: 'receive',
 		component: Receive,
+		meta: { requiresAuth: true },
 	},
 	{
 		path: '/ship',
 		name: 'ship',
 		component: Ship,
+		meta: { requiresAuth: true },
+	},
+	{
+		path: '/transfer',
+		name: 'transfer',
+		component: Transfer,
+		meta: { requiresAuth: true },
+	},
+	{
+		path: '/manufacture',
+		name: 'manufacture',
+		component: Manufacture,
+		meta: { requiresAuth: true },
 	},
 	{
 		path: '/repack',
 		name: 'repack',
 		component: Repack,
+		meta: { requiresAuth: true },
 	},
-	// {
-	// 	path: '/workstation',
-	// 	name: 'workstation',
-	// 	component: Workstation,
-	// },
 ]
 
 const router = createRouter({
 	history: createWebHashHistory(),
 	routes,
+})
+
+router.beforeEach((to, from, next) => {
+	if (!window.frappe) {
+		// dev environment; simply proceed with path
+		next()
+	} else {
+		if (to.meta && to.meta.requiresAuth) {
+			if (window.frappe.user === 'Guest') {
+				next(false)
+				window.location.href = '/login'
+			} else {
+				next()
+			}
+		} else {
+			next()
+		}
+	}
 })
 
 const app = createApp(Beam)
