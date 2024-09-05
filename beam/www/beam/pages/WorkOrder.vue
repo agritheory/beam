@@ -14,6 +14,7 @@ import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
 import type { JobCard, ListViewItem, WorkOrder } from '../types'
+import { useFetch } from '../fetch'
 
 const route = useRoute()
 const workOrderId = route.params.orderId
@@ -24,8 +25,7 @@ const jobCards = ref<ListViewItem[]>([])
 
 onMounted(async () => {
 	// get work order
-	const orderResponse = await fetch(`/api/resource/Work Order/${workOrderId}`)
-	const { data }: { data: WorkOrder } = await orderResponse.json()
+	const { data } = await useFetch<WorkOrder>(`/api/resource/Work Order/${workOrderId}`)
 	workOrder.value = data
 
 	// build operation list
@@ -40,16 +40,13 @@ onMounted(async () => {
 	// get job cards
 	for (const operation of data.operations) {
 		const filters = [['operation_id', '=', operation.name]]
-		const params = new URLSearchParams({ filters: JSON.stringify(filters) })
-		const checkJobResponse = await fetch(`/api/resource/Job Card?${params}`)
-		const { data: jobData }: { data: JobCard[] } = await checkJobResponse.json()
-		if (jobData.length === 0) {
+		const { data: jobList } = await useFetch<JobCard[]>('/api/resource/Job Card', { filters: JSON.stringify(filters) })
+		if (jobList.length === 0) {
 			continue
 		}
 
-		for (const job of jobData) {
-			const jobResponse = await fetch(`/api/resource/Job Card/${job.name}`)
-			const { data: jobCard }: { data: JobCard } = await jobResponse.json()
+		for (const job of jobList) {
+			const { data: jobCard } = await useFetch<JobCard>(`/api/resource/Job Card/${job.name}`)
 			jobCards.value.push({
 				...jobCard,
 				label: jobCard.name,

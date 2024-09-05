@@ -7,33 +7,36 @@
 	</Navbar>
 	<ListView :items="workstations" />
 </template>
+
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
 import { Navbar } from '@stonecrop/beam'
-import type { Workstation } from '../types'
+import { onMounted, ref } from 'vue'
+
+import { useFetch } from '../fetch'
+import type { ListViewItem, Workstation } from '../types'
 
 const handlePrimaryAction = () => {}
 // const workstations = ['Manufacture', 'Receive', 'Repack', 'Ship']
-const workstations = ref<Partial<Workstation>[]>([])
+const workstations = ref<ListViewItem[]>([])
 
 onMounted(async () => {
-	const params = new URLSearchParams({
+	const { data } = await useFetch<Workstation[]>('/api/resource/Workstation', {
 		fields: JSON.stringify(['name', 'workstation_type', 'plant_floor']),
 		order_by: 'creation asc',
 	})
 
-	const url = new URL(`/api/resource/Workstation?${params}`, window.location.origin)
-	const response = await fetch(url)
-	let { data }: { data: Partial<Workstation>[] } = await response.json()
 	data.forEach(row => {
-		// row.count = { count: row.produced_qty, of: row.qty }
-		row.label = row.name
-		row.linkComponent = 'ListAnchor'
-		row.route = `#/workstation/${row.name}`
+		workstations.value.push({
+			...row,
+			// count: { count: row.produced_qty, of: row.qty },
+			label: row.name,
+			linkComponent: 'ListAnchor',
+			route: `#/workstation/${row.name}`,
+		})
 	})
-	workstations.value = data
 })
 </script>
+
 <style scoped>
 @import url('@stonecrop/beam/styles');
 </style>

@@ -604,7 +604,7 @@ def get_demand_warehouses(company: str | None = None) -> list[str]:
 	return get_descendant_warehouses(company, root_warehouse)
 
 
-def get_descendant_warehouses(company, warehouse) -> list[str]:
+def get_descendant_warehouses(company: str, warehouse: str) -> list[str]:
 	beam_settings = frappe.get_doc("BEAM Settings", company)
 
 	warehouse_types = [wt.warehouse_type for wt in beam_settings.warehouse_types]
@@ -634,14 +634,17 @@ def get_descendant_warehouses(company, warehouse) -> list[str]:
 
 @frappe.whitelist()
 def get_demand(
-	company=None,
-	item_code=None,
-	warehouse=None,
-	workstation=None,
-	assigned=None,
-	order_by="workstation, assigned",
-	status=None,
+	company: str | None = None,
+	item_code: str | None = None,
+	warehouse: str | None = None,
+	workstation: str | None = None,
+	assigned: str | None = None,
+	status: str | None = None,
+	order_by: str = "workstation, assigned",
+	page: int = 1,
 ) -> list[Demand]:
+	records_per_page = 20
+
 	filters = {}
 	if workstation:
 		filters["workstation"] = f"{workstation}"
@@ -658,84 +661,94 @@ def get_demand(
 	# if assigned:
 	# 	_filters += f" AND assigned LIKE %{assigned}%"
 
+	demand_query = f"""
+		SELECT
+			d.key,
+			'' AS demand,
+			d.doctype,
+			d.company,
+			d.parent,
+
+			d.warehouse,
+			d.name,
+			d.idx,
+			d.item_code,
+			d.delivery_date AS allocated_date,
+			d.delivery_date,
+
+			d.modified,
+			d.stock_uom,
+			COALESCE(
+				(SELECT SUM(a.allocated_qty) FROM allocation a WHERE a.demand = d.key),
+				0
+			) AS allocated_qty,
+			d.total_required_qty - COALESCE(
+				(SELECT SUM(a.allocated_qty) FROM allocation a WHERE a.demand = d.key),
+				0
+			) AS net_required_qty,
+			d.total_required_qty,
+
+			'' AS status,
+			d.assigned,
+			d.creation
+		FROM demand d
+		WHERE allocated_qty <= 0
+		{d_filters}
+	"""
+
+	allocation_query = f"""
+		SELECT
+			a.key,
+			a.demand,
+			a.doctype,
+			a.company,
+			a.parent,
+
+			a.warehouse,
+			a.name,
+			a.idx,
+			a.item_code,
+			a.allocated_date AS delivery_date,
+			a.allocated_date,
+
+			a.modified,
+			a.stock_uom,
+			a.allocated_qty,
+			COALESCE(
+				(SELECT d.total_required_qty FROM demand d WHERE a.demand = d.key),
+				0
+			) -
+			COALESCE(
+				(SELECT SUM(c.allocated_qty) FROM allocation c WHERE a.demand = c.demand),
+				0
+			) AS net_required_qty,
+			(SELECT d.total_required_qty FROM demand d WHERE a.demand = d.key) AS total_required_qty,
+
+			a.status,
+			a.assigned,
+			a.creation
+		FROM allocation a
+		WHERE allocated_qty > 0
+		{a_filters}
+		ORDER BY delivery_date, idx, creation, parent ASC
+	"""
+
+	record_offset = records_per_page * (page - 1)
+	query = (
+		f"{demand_query} UNION ALL {allocation_query} LIMIT {records_per_page} OFFSET {record_offset}"
+	)
+
 	with get_demand_db() as conn:
 		cursor = conn.cursor()
-		query = f"""
-			SELECT
-				d.key,
-				'' AS demand,
-				d.doctype,
-				d.company,
-				d.parent,
-
-				d.warehouse,
-				d.name,
-				d.idx,
-				d.item_code,
-				d.delivery_date AS allocated_date,
-				d.delivery_date,
-
-				d.modified,
-				d.stock_uom,
-				COALESCE(
-					(SELECT SUM(a.allocated_qty) FROM allocation a WHERE a.demand = d.key),
-					0
-				) AS allocated_qty,
-				d.total_required_qty - COALESCE(
-					(SELECT SUM(a.allocated_qty) FROM allocation a WHERE a.demand = d.key),
-					0
-				) AS net_required_qty,
-				d.total_required_qty,
-
-				'' AS status,
-				d.assigned,
-				d.creation
-			FROM demand d
-			WHERE allocated_qty <= 0
-			{d_filters}
-			UNION ALL
-			SELECT
-				a.key,
-				a.demand,
-				a.doctype,
-				a.company,
-				a.parent,
-
-				a.warehouse,
-				a.name,
-				a.idx,
-				a.item_code,
-				a.allocated_date AS delivery_date,
-				a.allocated_date,
-
-				a.modified,
-				a.stock_uom,
-				a.allocated_qty,
-				COALESCE(
-					(SELECT d.total_required_qty FROM demand d WHERE a.demand = d.key),
-					0
-				) -
-				COALESCE(
-					(SELECT SUM(c.allocated_qty) FROM allocation c WHERE a.demand = c.demand),
-					0
-				) AS net_required_qty,
-				(SELECT d.total_required_qty FROM demand d WHERE a.demand = d.key) AS total_required_qty,
-
-				a.status,
-				a.assigned,
-				a.creation
-			FROM allocation a
-			WHERE allocated_qty > 0
-			{a_filters}
-			ORDER BY delivery_date, idx, creation, parent ASC
-		"""
-
 		rows: list[Allocation | Demand] = cursor.execute(query).fetchall()
 		for row in rows:
-			row.net_required_qty = max(0.0, row.net_required_qty)
-			row.delivery_date = get_datetime_from_epoch(row.delivery_date)
-			row.allocated_date = get_datetime_from_epoch(row.allocated_date)
-			row.modified = get_datetime_from_epoch(row.modified)
-			row.creation = get_datetime_from_epoch(row.creation)
-
+			row.update(
+				{
+					"net_required_qty": max(0.0, row.net_required_qty),
+					"delivery_date": get_datetime_from_epoch(row.delivery_date),
+					"allocated_date": get_datetime_from_epoch(row.allocated_date),
+					"modified": get_datetime_from_epoch(row.modified),
+					"creation": get_datetime_from_epoch(row.creation),
+				}
+			)
 		return rows
