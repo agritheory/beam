@@ -7,36 +7,32 @@
 	</Navbar> -->
 	<ListView :items="transfer" />
 </template>
+
 <script setup lang="ts">
+// import { Navbar } from '@stonecrop/beam'
 import { onMounted, ref } from 'vue'
-import { Navbar } from '@stonecrop/beam'
+
+import { useFetchDemand } from '../fetch'
 import type { ListViewItem } from '../types'
 
-const handlePrimaryAction = () => {}
-let transfer = ref<Partial<ListViewItem>[]>([])
-let transfers = []
+// const handlePrimaryAction = () => {}
+const transfer = ref<Partial<ListViewItem>[]>([])
 
 onMounted(async () => {
-	const params = new URLSearchParams({
-		fields: JSON.stringify(['name', 'workstation_type', 'plant_floor']),
-		order_by: 'creation asc',
-	})
+	const { data } = await useFetchDemand({ order_by: 'creation asc' })
 
-	const url = new URL(`/api/method/beam.beam.demand.demand.get_demand`, window.location.origin) // incorporate params
-	const response = await fetch(url)
-	let data = await response.json()
-	// TODO: move this the server
-	data.message.forEach(row => {
+	// TODO: move this to the server
+	data.forEach(row => {
 		row.count = { count: row.allocated_qty, of: `${row.total_required_qty} ${row.stock_uom}` }
 		row.label = row.parent
 		row.linkComponent = 'ListAnchor'
 		row.description = `${row.item_code} - ${row.warehouse}`
 		row.route = `#/${row.doctype}/${row.parent}`
-		transfers.push(row)
+		transfer.value.push(row)
 	})
-	transfer.value = transfers
 })
 </script>
+
 <style scoped>
 @import url('@stonecrop/beam/styles');
 </style>

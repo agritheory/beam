@@ -5,19 +5,16 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 
+import { useFetch } from '../fetch'
 import type { ListViewItem, WorkOrder } from '../types'
 
 const items = ref<ListViewItem[]>([])
 
 onMounted(async () => {
-	const params = new URLSearchParams({
+	const { data } = await useFetch<WorkOrder[]>('/api/resource/Work Order', {
 		fields: JSON.stringify(['name', 'item_name', 'qty', 'produced_qty']),
 		order_by: 'creation asc',
 	})
-
-	const url = new URL(`/api/resource/Work Order?${params}`, window.location.origin)
-	const response = await fetch(url)
-	const { data }: { data: WorkOrder[] } = await response.json()
 
 	data.forEach(row => {
 		items.value.push({
@@ -30,6 +27,7 @@ onMounted(async () => {
 	})
 })
 </script>
+
 <style>
 @import url('@stonecrop/beam/styles');
 </style>
