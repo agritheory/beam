@@ -1,3 +1,6 @@
+// Copyright (c) 2024, AgriTheory and contributors
+// For license information, please see license.txt
+
 export type ParentDoctype = {
 	creation: string
 	modified_by: string
@@ -11,6 +14,13 @@ export type ChildDoctype = ParentDoctype & {
 	parent: string
 	parenttype: string
 	parentfield: string
+
+	// may not exist for all child doctypes
+	barcode?: string
+	handling_unit?: string
+	item_code?: string
+	stock_qty?: number
+	warehouse?: string
 }
 
 export type JobCard = ParentDoctype & {
@@ -50,4 +60,19 @@ export type ListViewItem = {
 	checked?: boolean
 	linkComponent?: string
 	route?: string
+}
+
+export type BaseContext = {
+	action: string
+	doctype: string
+	field: string
+	target: string
+}
+
+export type FormContext = BaseContext & {
+	context: ChildDoctype
+}
+
+export type ListContext = BaseContext & {
+	context: string
 }
