@@ -27,7 +27,7 @@ onMounted(async () => {
 		row.label = row.parent
 		row.linkComponent = 'ListAnchor'
 		row.description = `${row.item_code} - ${row.warehouse}`
-		row.route = `#/${row.doctype}/${row.parent}`
+		row.route = `#/${frappe.scrub(row.doctype)}/${row.parent}`
 		transfer.value.push(row)
 	})
 })
