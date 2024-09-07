@@ -25,6 +25,7 @@ export type WorkOrder = ParentDoctype & {
 	qty: number
 	produced_qty: number
 	planned_start_date: number
+	skip_transfer: boolean
 	required_items: WorkOrderItem[]
 	operations: WorkOrderOperation[]
 }

@@ -5,7 +5,11 @@
 	<h3 class="nav-title">{{ workOrder.name }}</h3>
 	<div>Planned Start: {{ workOrder.planned_start_date }}</div>
 	<br />
-	<div><button>Start</button><button>Stop</button><button>Complete</button></div>
+	<div>
+		<button v-show="!workOrder.skip_transfer">Start</button>
+		<button v-show="!workOrder.skip_transfer">Stop</button>
+		<button>{{ !workOrder.skip_transfer ? 'Complete' : 'Manufacture' }}</button>
+	</div>
 	<div class="container">
 		<div class="box">
 			<ListView :items="items" />
