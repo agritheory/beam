@@ -24,7 +24,8 @@ export type WorkOrder = ParentDoctype & {
 	item_name: string
 	qty: number
 	produced_qty: number
-
+	planned_start_date: number
+	required_items: WorkOrderItem[]
 	operations: WorkOrderOperation[]
 }
 
@@ -40,6 +41,15 @@ export type WorkOrderOperation = ChildDoctype & {
 	description?: string
 	operation: string
 	time_in_mins?: number
+}
+
+export type WorkOrderItem = ChildDoctype & {
+	name: string
+	item_code: string
+	item_name: string
+	source_warehouse: string
+	required_qty: number
+	transferred_qty: number
 }
 
 export type ListViewItem = {

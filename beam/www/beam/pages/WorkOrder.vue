@@ -1,10 +1,17 @@
 <template>
+	<Navbar @click="handlePrimaryAction">
+		<template #navbaraction>Home</template>
+	</Navbar>
+	<h3 class="nav-title">{{ workOrder.name }}</h3>
+	<div>Planned Start: {{ workOrder.planned_start_date }}</div>
+	<br />
+	<div><button>Start</button><button>Stop</button><button>Complete</button></div>
 	<div class="container">
 		<div class="box">
-			<ListView :items="operations" />
+			<ListView :items="items" />
 		</div>
 		<div class="box">
-			<ListView :items="jobCards" />
+			<ListView :items="operations" />
 		</div>
 	</div>
 </template>
@@ -13,7 +20,7 @@
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
-import type { JobCard, ListViewItem, WorkOrder } from '../types'
+import type { JobCard, ListViewItem, WorkOrder, WorkOrderOperation, WorkOrderItem } from '../types'
 import { useFetch } from '../fetch'
 
 const route = useRoute()
@@ -22,6 +29,7 @@ const workOrderId = route.params.orderId
 const workOrder = ref<Partial<WorkOrder>>({})
 const operations = ref<ListViewItem[]>([])
 const jobCards = ref<ListViewItem[]>([])
+const items = ref<ListViewItem[]>([])
 
 onMounted(async () => {
 	// get work order
@@ -35,6 +43,15 @@ onMounted(async () => {
 		count: { count: operation.completed_qty, of: workOrder.value.qty },
 		linkComponent: 'ListAnchor',
 		route: `#/work_order/${workOrderId}/operation/${operation.name}`,
+	}))
+
+	items.value = data.required_items.map(item => ({
+		...item,
+		label: item.item_code,
+		count: { count: item.transferred_qty, of: item.required_qty },
+		linkComponent: 'ListAnchor',
+		description: `${item.source_warehouse}`,
+		// route: `#/work_order/${workOrderId}/operation/${operation.name}`,
 	}))
 
 	// get job cards
