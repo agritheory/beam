@@ -35,6 +35,10 @@ const operations = ref<ListViewItem[]>([])
 const jobCards = ref<ListViewItem[]>([])
 const items = ref<ListViewItem[]>([])
 
+const handlePrimaryAction = () => {
+	console.log('handle primary action')
+}
+
 onMounted(async () => {
 	// get work order
 	const { data } = await useFetch<WorkOrder>(`/api/resource/Work Order/${workOrderId}`)
