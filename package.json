@@ -9,12 +9,16 @@
 	"scripts": {
 		"dev": "vite ./beam/www/beam --config=./beam/www/beam/vite.config.ts",
 		"build": "vite build --config=./beam/www/beam/vite.config.ts",
-		"build:watch": "vite build --watch --config=./beam/www/beam/vite.config.ts"
+		"build:watch": "vite build --watch --config=./beam/www/beam/vite.config.ts",
+		"register": "node ./beam/www/beam/component_resolver.js"
 	},
 	"dependencies": {
 		"@stonecrop/beam": "^0.2.28",
 		"@vitejs/plugin-vue": "^5.0.4",
+		"acorn": "^8.12.1",
+		"glob": "^11.0.0",
 		"onscan.js": "^1.5.2",
+		"unplugin-vue-components": "^0.27.4",
 		"vite": "^5.2.11",
 		"vue": "^3.4.37",
 		"vue-router": "^4.3.2"

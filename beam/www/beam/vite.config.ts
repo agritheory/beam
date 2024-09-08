@@ -4,12 +4,19 @@
 import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
 import { resolve } from 'path'
+import Components from 'unplugin-vue-components/vite'
+import { BEAMResolver } from './component_resolver'
 
 export default defineConfig({
 	server: {
 		open: './dev.html',
 	},
-	plugins: [vue()],
+	plugins: [
+		vue(),
+		Components({
+			resolvers: [BEAMResolver],
+		}),
+	],
 	build: {
 		emptyOutDir: false,
 		outDir: './beam/www/beam/',
