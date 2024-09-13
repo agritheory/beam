@@ -57,9 +57,8 @@ onMounted(async () => {
 		...item,
 		label: item.item_code,
 		count: { count: item.transferred_qty, of: item.required_qty },
-		linkComponent: 'ListAnchor',
+		linkComponent: 'ListItem',
 		description: `${item.source_warehouse}`,
-		// route: `#/work_order/${workOrderId}/operation/${operation.name}`,
 	}))
 
 	// get job cards
