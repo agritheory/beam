@@ -13,8 +13,8 @@
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
-import type { JobCard, ListViewItem, WorkOrder } from '../types'
 import { useFetch } from '../fetch'
+import type { JobCard, ListViewItem, WorkOrder } from '../types'
 
 const route = useRoute()
 const workOrderId = route.params.orderId

@@ -5,9 +5,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-
-const home = ref([
+const home = [
 	{
 		label: 'Manufacture',
 		route: '#/manufacture',
@@ -33,7 +31,7 @@ const home = ref([
 		route: '#/repack',
 		linkComponent: 'ListAnchor',
 	},
-])
+]
 </script>
 
 <style scoped>

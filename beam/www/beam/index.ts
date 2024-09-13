@@ -2,6 +2,7 @@
 // For license information, please see license.txt
 
 import { install as BeamPlugin } from '@stonecrop/beam'
+import { createPinia } from 'pinia'
 import { createApp } from 'vue'
 import { createRouter, createWebHashHistory } from 'vue-router'
 
@@ -28,7 +29,7 @@ router.beforeEach((to, from, next) => {
 		// dev environment; simply proceed with path
 		next()
 	} else {
-		if (to.meta?.requiresAuth) {
+		if (to.meta.requiresAuth) {
 			if (window.frappe.user === 'Guest') {
 				next(false)
 				// TODO: 6 Sep, 2024: tried redirecting to intended path, but Frappe
@@ -43,7 +44,9 @@ router.beforeEach((to, from, next) => {
 	}
 })
 
+const pinia = createPinia()
 const app = createApp(Beam)
 app.use(router)
 app.use(BeamPlugin)
+app.use(pinia)
 app.mount('#beam')

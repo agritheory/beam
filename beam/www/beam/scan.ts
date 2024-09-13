@@ -3,6 +3,7 @@
 
 import { type Router, useRouter } from 'vue-router'
 
+import { useDataStore } from './store.js'
 import type { FormContext, ListContext } from './types/index.js'
 
 declare const frappe: any
@@ -15,9 +16,11 @@ export function useScan() {
 
 class ScanHandler {
 	router: Router
+	store: ReturnType<typeof useDataStore>
 
 	constructor(router: Router) {
 		this.router = router
+		this.store = useDataStore()
 	}
 
 	async scan(barcode: string, qty: number) {
@@ -31,22 +34,22 @@ class ScanHandler {
 		}
 	}
 
-	getContext() {
+	async getContext() {
 		let context = {}
 
-		const meta = this.router.currentRoute.value.meta
-		if (meta.view === 'list' && frappe.boot.beam.listview.includes(meta.doctype)) {
-			context = { listview: meta.doctype }
-		} else if (meta.view === 'form' && frappe.boot.beam.frm.includes(meta.doctype)) {
-			// TODO: replace `cur_frm` with current active document
-			context = { frm: meta.doctype, doc: cur_frm.doc }
+		const route = this.router.currentRoute.value
+		if (route.meta.view === 'list' && frappe.boot.beam.listview.includes(route.meta.doctype)) {
+			context = { listview: route.meta.doctype }
+		} else if (route.meta.view === 'form' /* && frappe.boot.beam.frm.includes(route.meta.doctype) */) {
+			await this.store.fetchDoc(route.meta.doctype, route.params.orderId.toString())
+			context = { frm: route.meta.doctype, doc: this.store.doc }
 		}
 
 		return context
 	}
 
 	async getScannedContext(barcode: string, qty: number) {
-		const context = this.getContext()
+		const context = await this.getContext()
 
 		try {
 			const response: (FormContext | ListContext)[] = await frappe.xcall('beam.beam.scan.scan', {
@@ -65,7 +68,7 @@ class ScanHandler {
 				} else {
 					fn = this[String(action)] // TODO: this only calls the first function
 				}
-				return fn(response)
+				return await fn(response)
 			}
 		} catch (error) {
 			// TODO: handle API error
@@ -82,70 +85,56 @@ class ScanHandler {
 	}
 
 	add_or_associate(barcode_context: FormContext[]) {
-		const doc = cur_frm.doc // TODO: replace `cur_frm` with current active document
-
-		barcode_context.forEach(field => {
-			if (
-				!doc.items.some(row => {
-					if (
-						doc.doctype === 'Stock Entry' &&
-						[
-							'Send to Subcontractor',
-							'Material Transfer for Manufacture',
-							'Material Transfer',
-							'Material Receipt',
-							'Manufacture',
-						].includes(doc.stock_entry_type)
-					) {
-						return row.item_code === field.context.item_code || row.handling_unit
-					}
+		barcode_context.forEach(async field => {
+			const existing_rows = this.store.doc.items.filter(row => {
+				if (
+					this.store.doc.doctype === 'Stock Entry' &&
+					[
+						'Send to Subcontractor',
+						'Material Transfer for Manufacture',
+						'Material Transfer',
+						'Material Receipt',
+						'Manufacture',
+					].includes(this.store.doc.stock_entry_type)
+				) {
+					return row.item_code === field.context.item_code || row.handling_unit
+				} else {
 					return (
 						(row.item_code === field.context.item_code && row.stock_qty === field.context.stock_qty) ||
 						row.handling_unit === field.context.handling_unit
 					)
-				})
-			) {
-				if (!doc.items.length || !doc.items[0].item_code) {
-					doc.items = []
 				}
-				let child = cur_frm.add_child('items', field.context)
-				if (doc.doctype === 'Stock Entry') {
-					frappe.model.set_value(child.doctype, child.name, 's_warehouse', field.context.warehouse)
-				}
-			} else {
-				for (let row of doc.items) {
-					if (
-						doc.doctype === 'Stock Entry' &&
-						[
-							'Send to Subcontractor',
-							'Material Transfer for Manufacture',
-							'Material Transfer',
-							'Material Receipt',
-							'Manufacture',
-						].includes(doc.stock_entry_type) &&
-						row.item_code === field.context.item_code &&
-						!row.handling_unit
-					) {
-						frappe.model.set_value(row.doctype, row.name, field.field, field.target)
-						continue
-					}
-					if (
-						(row.item_code === field.context.item_code && row.stock_qty === field.context.stock_qty) ||
-						row.handling_unit === field.context.handling_unit
-					) {
-						if (doc.doctype === 'Stock Entry') {
-							if (field.field === 'basic_rate') {
-								cur_frm.events.set_basic_rate(cur_frm, row.doctype, row.name)
-							} else {
-								frappe.model.set_value(row.doctype, row.name, field.field, field.target)
+			})
+
+			if (existing_rows.length > 0) {
+				this.store.$patch(state => {
+					for (const row of existing_rows) {
+						for (const item of state.doc.items) {
+							if (item.name === row.name) {
+								item[field.field] = field.target
+
+								// TODO: should this happen on the client side?
+								// if (state.doc.doctype === 'Stock Entry' && field.field === 'basic_rate') {
+								// 	cur_frm.events.set_basic_rate(cur_frm, row.doctype, row.name)
+								// }
+
+								break
 							}
 						}
 					}
-				}
+				})
+			} else {
+				this.store.$patch(state => {
+					if (state.doc.doctype === 'Stock Entry') {
+						field.context.s_warehouse = field.context.warehouse
+					}
+
+					// TODO: make sure the other metadata is also present
+					const item = { ...field.context, idx: state.doc.items.length + 1 }
+					state.doc.items.push(item)
+				})
 			}
 		})
-
-		cur_frm.refresh_field('items')
 	}
 
 	set_warehouse(barcode_context: FormContext[]) {
@@ -159,69 +148,77 @@ class ScanHandler {
 		]
 
 		const context = barcode_context[0]
-		const doc = cur_frm.doc // TODO: replace `cur_frm` with current active document
+		if (context.doctype !== 'Stock Entry') {
+			return
+		}
 
-		if (context.doctype === 'Stock Entry') {
-			const entry_type = doc.stock_entry_type
-			if (source_warehouses.includes(entry_type)) {
-				cur_frm.set_value('from_warehouse', context.target)
-				for (let row of doc.items) {
-					frappe.model.set_value(row.doctype, row.name, 's_warehouse', context.target)
+		const entry_type = this.store.doc.stock_entry_type
+		if (source_warehouses.includes(entry_type)) {
+			this.store.$patch(state => {
+				state.doc.from_warehouse = context.target
+				for (const row of state.doc.items) {
+					row.s_warehouse = context.target
 				}
-			} else if (target_warehouses.includes(entry_type)) {
-				cur_frm.set_value('to_warehouse', context.target)
-				for (let row of doc.items) {
-					frappe.model.set_value(row.doctype, row.name, 't_warehouse', context.target)
+			})
+		} else if (target_warehouses.includes(entry_type)) {
+			this.store.$patch(state => {
+				state.doc.to_warehouse = context.target
+				for (const row of state.doc.items) {
+					row.t_warehouse = context.target
 				}
-			} else if (both_warehouses.includes(entry_type)) {
-				cur_frm.set_value('from_warehouse', context.target)
-				cur_frm.set_value('to_warehouse', context.target)
-				for (let row of doc.items) {
-					frappe.model.set_value(row.doctype, row.name, 's_warehouse', context.target)
-					frappe.model.set_value(row.doctype, row.name, 't_warehouse', context.target)
+			})
+		} else if (both_warehouses.includes(entry_type)) {
+			this.store.$patch(state => {
+				state.doc.from_warehouse = context.target
+				state.doc.to_warehouse = context.target
+				for (const row of state.doc.items) {
+					row.s_warehouse = context.target
+					row.t_warehouse = context.target
 				}
-			}
+			})
 		}
 	}
 
-	add_or_increment(barcode_context: FormContext[]) {
+	async add_or_increment(barcode_context: FormContext[]) {
 		const context = barcode_context[0]
-		const doc = cur_frm.doc // TODO: replace `cur_frm` with current active document
 
 		// if not item code, add row
 		// else find last row with item code and increment
-		if (
-			!doc.items.some(row => {
-				return (
-					(row.item_code === context.context.item_code && !row.handling_unit) || row.barcode === context.context.barcode
-				)
-			})
-		) {
-			if (!doc.items.length || !doc.items[0].item_code) {
-				doc.items = []
-			}
-			const row = cur_frm.add_child('items', context.context)
-			// a first-time scan of an item in Stock Entry does not automatically set the rate, so run it manually
-			if (doc.doctype === 'Stock Entry') {
-				cur_frm.events.set_basic_rate(cur_frm, row.doctype, row.name)
-			}
-		} else {
-			for (let row of doc.items) {
-				if (
-					(row.item_code === context.context.item_code && !row.handling_unit) ||
-					row.barcode === context.context.barcode
-				) {
-					frappe.model.set_value(row.doctype, row.name, 'qty', row.qty + 1)
-				}
-			}
-		}
+		const existing_rows = this.store.doc.items.filter(
+			row =>
+				(row.item_code === context.context.item_code && !row.handling_unit) || row.barcode === context.context.barcode
+		)
 
-		cur_frm.refresh_field('items')
+		if (existing_rows.length > 0) {
+			this.store.$patch(state => {
+				for (const row of existing_rows) {
+					for (const item of state.doc.items) {
+						if (item.name === row.name) {
+							item.qty += 1
+							break
+						}
+					}
+				}
+			})
+		} else {
+			this.store.$patch(state => {
+				// TODO: make sure the other metadata is also present
+				const item = { ...context.context, idx: state.doc.items.length + 1 }
+				state.doc.items.push(item)
+
+				// TODO: should this happen on the client side?
+				// if (state.doc.doctype === 'Stock Entry') {
+				// 	cur_frm.events.set_basic_rate(cur_frm, row.doctype, row.name)
+				// }
+			})
+		}
 	}
 
 	set_item_code_and_handling_unit(barcode_context: FormContext[]) {
 		barcode_context.forEach(action => {
-			cur_frm.set_value(action.field, action.target)
+			this.store.$patch(state => {
+				state.doc[action.field] = action.target
+			})
 		})
 	}
 }

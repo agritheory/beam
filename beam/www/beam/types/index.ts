@@ -1,26 +1,44 @@
 // Copyright (c) 2024, AgriTheory and contributors
 // For license information, please see license.txt
 
-export type ParentDoctype = {
+export type ParentDoctypeMeta = {
 	creation: string
+	doctype: string
 	modified_by: string
 	modified: string
 	name: string
 	owner: string
 }
 
-export type ChildDoctype = ParentDoctype & {
+export type ChildDoctypeMeta = ParentDoctypeMeta & {
 	idx: number
 	parent: string
 	parenttype: string
 	parentfield: string
+}
 
+export type ParentDoctype = ParentDoctypeMeta & {
+	// exists for most sales/purchase/stock documents (except for Work Order)
+	items?: ChildDoctype[]
+
+	// exists for stock entry only
+	from_warehouse?: string
+	stock_entry_type?: string
+	to_warehouse?: string
+}
+
+export type ChildDoctype = ChildDoctypeMeta & {
 	// may not exist for all child doctypes
 	barcode?: string
 	handling_unit?: string
 	item_code?: string
+	qty?: number
 	stock_qty?: number
 	warehouse?: string
+
+	// exists for stock entry only
+	s_warehouse?: string
+	t_warehouse?: string
 }
 
 export type JobCard = ParentDoctype & {

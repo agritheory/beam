@@ -8,8 +8,7 @@
 		"isolatedModules": true,
 		"noEmit": true,
 		"resolveJsonModule": true,
-		"skipLibCheck": true,
-		"useDefineForClassFields": true
+		"skipLibCheck": true
 	},
 	"include": ["**/*.ts", "**/*.vue"]
 }

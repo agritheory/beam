@@ -25,7 +25,6 @@ onMounted(async () => {
 	// TODO: (Mirage) mock new server endpoint in mirage
 	// const response = await fetch('/mirage/workstations')
 	// const data: Workstation[] = await response.json()
-	// console.log(data) //JSON.stringify(data))
 	// activeWorkstations.value = data.filter(workstation => workstation.status === 'Production')
 	// inactiveWorkstations.value = data.filter(workstation => workstation.status === 'Off')
 })
