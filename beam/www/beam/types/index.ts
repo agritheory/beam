@@ -26,6 +26,7 @@ export type WorkOrder = ParentDoctype & {
 	produced_qty: number
 
 	operations: WorkOrderOperation[]
+	required_items: ListTransferItem[]
 }
 
 export type Workstation = ParentDoctype & {
@@ -53,4 +54,13 @@ export type ListViewItem = {
 	checked?: boolean
 	linkComponent?: string
 	route?: string
+}
+
+export type ListTransferItem = {
+	item_name: string
+	name: string
+	source_warehouse: string
+	target_warehouse?: string
+	transferred_qty: number
+	required_qty: number
 }

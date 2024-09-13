@@ -1,11 +1,14 @@
 <template>
-	<div class="container">
-		<div class="box">
-			<ListView :items="operations" />
+	<div>
+		<div class="container">
+			<div class="box">
+				<ListView :items="operations" />
+			</div>
+			<div class="box">
+				<ListView :items="jobCards" />
+			</div>
 		</div>
-		<div class="box">
-			<ListView :items="jobCards" />
-		</div>
+		<Transfer :items="workOrder?.required_items" :workOrderId="workOrderId" />
 	</div>
 </template>
 
@@ -13,8 +16,9 @@
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
-import type { JobCard, ListViewItem, WorkOrder } from '../types'
+import type { JobCard, ListTransferItem, ListViewItem, WorkOrder } from '../types'
 import { useFetch } from '../fetch'
+import Transfer from '../components/Transfer.vue'
 
 const route = useRoute()
 const workOrderId = route.params.orderId
@@ -22,11 +26,20 @@ const workOrderId = route.params.orderId
 const workOrder = ref<Partial<WorkOrder>>({})
 const operations = ref<ListViewItem[]>([])
 const jobCards = ref<ListViewItem[]>([])
+const requiredItems = ref<ListTransferItem[]>([])
 
 onMounted(async () => {
 	// get work order
 	const { data } = await useFetch<WorkOrder>(`/api/resource/Work Order/${workOrderId}`)
 	workOrder.value = data
+
+	requiredItems.value = workOrder.value.required_items.map(item => ({
+		item_name: item.item_name,
+		name: item.name,
+		source_warehouse: item.source_warehouse,
+		transferred_qty: item.transferred_qty,
+		required_qty: item.required_qty,
+	}))
 
 	// build operation list
 	operations.value = data.operations.map(operation => ({
