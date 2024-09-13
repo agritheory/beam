@@ -1,3 +1,6 @@
+<!-- Copyright (c) 2024, AgriTheory and contributors
+For license information, please see license.txt-->
+
 # CHANGELOG
 
 ## v15.1.3 (2024-08-15)

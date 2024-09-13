@@ -1,3 +1,6 @@
+# Copyright (c) 2024, AgriTheory and contributors
+# For license information, please see license.txt
+
 import pathlib
 import sqlite3
 
@@ -17,8 +20,11 @@ def get_demand_db() -> sqlite3.Connection:
 		cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='demand';")
 		data = cursor.fetchone()
 		if data:
-			return sqlite3.connect(path)
-		return create_demand_db(cursor)
+			connection = sqlite3.connect(path)
+		else:
+			connection = create_demand_db(cursor)
+		connection.row_factory = dict_factory
+		return connection
 
 
 def create_demand_db(cursor: sqlite3.Cursor) -> sqlite3.Connection:
@@ -33,6 +39,7 @@ def create_demand_db(cursor: sqlite3.Cursor) -> sqlite3.Connection:
 				warehouse text,
 				workstation text,
 				name text,
+				idx int,
 				item_code text,
 				delivery_date int,
 				modified int,
@@ -54,6 +61,7 @@ def create_demand_db(cursor: sqlite3.Cursor) -> sqlite3.Connection:
 				warehouse text,
 				workstation text,
 				name text,
+				idx int,
 				item_code text,
 				allocated_date int,
 				modified int,
@@ -61,7 +69,8 @@ def create_demand_db(cursor: sqlite3.Cursor) -> sqlite3.Connection:
 				stock_uom text,
 				status text,
 				assigned text,
-				creation int
+				creation int,
+				is_manual boolean
 			)
 		"""
 	)
@@ -78,6 +87,14 @@ def create_demand_db(cursor: sqlite3.Cursor) -> sqlite3.Connection:
 	cursor.execute("CREATE INDEX idx_allocation_item_code ON allocation(item_code)")
 
 	return sqlite3.connect(path)
+
+
+def reset_demand_db() -> None:
+	with get_demand_db() as conn:
+		cursor = conn.cursor()
+		# sqlite does not implement a TRUNCATE command
+		cursor.execute("DELETE FROM demand")
+		cursor.execute("DELETE FROM allocation")
 
 
 def dict_factory(cursor: sqlite3.Cursor, row: sqlite3.Row) -> frappe._dict:

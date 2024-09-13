@@ -1,5 +1,7 @@
+# Copyright (c) 2024, AgriTheory and contributors
+# For license information, please see license.txt
+
 import frappe
-import pytest
 
 """
 1. Test that a scanned item code in a list view returns the correct values for filtering

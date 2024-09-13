@@ -1,3 +1,6 @@
+# Copyright (c) 2024, AgriTheory and contributors
+# For license information, please see license.txt
+
 import datetime
 from itertools import groupby
 
@@ -5,11 +8,11 @@ import frappe
 from erpnext.manufacturing.doctype.production_plan.production_plan import (
 	get_items_for_material_requests,
 )
+from erpnext.manufacturing.doctype.work_order.work_order import get_default_warehouse
 from erpnext.setup.utils import enable_all_roles_and_domains, set_defaults_for_tests
 from erpnext.stock.get_item_details import get_item_details
 from frappe.desk.page.setup_wizard.setup_wizard import setup_complete
 
-from beam.beam.demand.demand import build_demand_map
 from beam.tests.fixtures import boms, customers, items, operations, suppliers, workstations
 
 
@@ -43,7 +46,7 @@ def before_test():
 		frappe.db.set_value("Module Onboarding", modu, "is_complete", 1)
 	frappe.set_value("Website Settings", "Website Settings", "home_page", "login")
 	frappe.db.commit()
-	build_demand_map()
+	# build_demand_allocation_map()
 
 
 def create_test_data():
@@ -76,8 +79,8 @@ def create_test_data():
 	frappe.set_value("Company", settings.company, "tax_id", "04-1871930")
 	create_warehouses(settings)
 	setup_manufacturing_settings(settings)
-	setup_beam_settings(settings)
 	create_workstations()
+	setup_beam_settings(settings)
 	create_operations()
 	create_item_groups(settings)
 	create_suppliers(settings)
@@ -565,8 +568,12 @@ def create_production_plan(settings, prod_plan_from_doc):
 			},
 		)
 		pp.get_mr_items()
-	for item in pp.po_items:
-		item.planned_start_date = settings.day
+
+	pp.po_items = sorted(pp.po_items, key=lambda x: x.get("item_code"))
+
+	for idx, item in enumerate(pp.po_items):
+		item.planned_start_date = settings.day + datetime.timedelta(days=idx)
+
 	pp.get_sub_assembly_items()
 	start_time = datetime.datetime(settings.day.year, settings.day.month, settings.day.day, 0, 0)
 	for item in pp.sub_assembly_items:
@@ -574,6 +581,7 @@ def create_production_plan(settings, prod_plan_from_doc):
 		time = frappe.get_value("BOM Operation", {"parent": item.bom_no}, "sum(time_in_mins) AS time")
 		start_time += datetime.timedelta(minutes=time + 2)
 	pp.for_warehouse = "Storeroom - APC"
+	pp.sub_assembly_items = sorted(pp.sub_assembly_items, key=lambda x: x.get("production_item"))
 	raw_materials = get_items_for_material_requests(
 		pp.as_dict(), warehouses=None, get_parent_warehouse_data=None
 	)
@@ -633,17 +641,25 @@ def create_production_plan(settings, prod_plan_from_doc):
 			pr.append("items", {**item_details})
 		pr.save()
 		# pr.submit() # don't submit - needed to test handling unit generation
-
 	# TODO: call internal functions to make sub assembly items first
-	pp.make_work_order()
-	wos = frappe.get_all("Work Order", {"production_plan": pp.name}, order_by="creation")
+
+	wo_list, po_list = [], []
+	subcontracted_po = {}
+	default_warehouses = get_default_warehouse()
+	pp.make_work_order_for_subassembly_items(wo_list, subcontracted_po, default_warehouses)
+	pp.make_work_order_for_finished_goods(wo_list, default_warehouses)
+	wos = frappe.get_all("Work Order", {"production_plan": pp.name}, order_by="name ASC")
 	start_time = datetime.datetime(settings.day.year, settings.day.month, settings.day.day, 0, 0)
 	for wo in wos:
 		wo = frappe.get_doc("Work Order", wo)
 		wo.wip_warehouse = "Kitchen - APC"
 		wo.actual_start_date = wo.planned_start_date = start_time
+		wo.required_items = sorted(wo.required_items, key=lambda x: x.get("item_code"))
+		for idx, w in enumerate(wo.required_items, start=1):
+			w.idx = idx
 		wo.save()
 		wo.submit()
+		frappe.db.set_value("Work Order", wo.name, "creation", start_time)
 		job_cards = frappe.get_all("Job Card", {"work_order": wo.name})
 		for job_card in job_cards:
 			job_card = frappe.get_doc("Job Card", job_card)

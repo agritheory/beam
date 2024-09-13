@@ -16,6 +16,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
 import type { JobCard, WorkOrder, WorkOrderOperation } from '../types'
+import { useFetch } from '../fetch'
 
 const route = useRoute()
 const workOrder = ref<Partial<WorkOrder>>({})
@@ -33,21 +34,17 @@ const elapsedTime = computed(() => {
 })
 
 onMounted(async () => {
-	const orderResponse = await fetch(`/api/resource/Work Order/${route.params.orderId}`)
-	const { data }: { data: WorkOrder } = await orderResponse.json()
-	workOrder.value = data
-	operation.value = workOrder.value.operations.find(operation => operation.name === route.params.id) || {}
+	const { data: orderData } = await useFetch<WorkOrder>(`/api/resource/Work Order/${route.params.orderId}`)
+	workOrder.value = orderData
+	operation.value = orderData.operations.find(operation => operation.name === route.params.id) || {}
 
 	const filters = [['operation_id', '=', route.params.id]]
-	const params = new URLSearchParams({ filters: JSON.stringify(filters) })
-	const checkJobResponse = await fetch(`/api/resource/Job Card?${params}`)
-	const { data: jobData }: { data: JobCard[] } = await checkJobResponse.json()
-	if (jobData.length === 0) {
+	const { data: jobList } = await useFetch<JobCard[]>('/api/resource/Job Card', { filters: JSON.stringify(filters) })
+	if (jobList.length === 0) {
 		return
 	}
 
-	const jobResponse = await fetch(`/api/resource/Job Card/${jobData[0].name}`)
-	const { data: job }: { data: JobCard } = await jobResponse.json()
+	const { data: job } = await useFetch<JobCard>(`/api/resource/Job Card/${jobList[0].name}`)
 	jobCard.value = job
 })
 

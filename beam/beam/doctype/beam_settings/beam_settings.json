@@ -35,7 +35,6 @@
 			"label": "Enable Handling Units"
 		},
 		{
-			"default": "12",
 			"fieldname": "barcode_font_size",
 			"fieldtype": "Int",
 			"label": "Barcode Font Size"
@@ -76,7 +75,7 @@
 	],
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2024-08-19 15:23:36.892295",
+	"modified": "2024-08-20 15:23:36.892295",
 	"modified_by": "Administrator",
 	"module": "BEAM",
 	"name": "BEAM Settings",

@@ -1,3 +1,6 @@
+// Copyright (c) 2024, AgriTheory and contributors
+// For license information, please see license.txt
+
 import { JSONAPISerializer, Model, createServer } from 'miragejs'
 
 import jobCards from './job_cards.json'
