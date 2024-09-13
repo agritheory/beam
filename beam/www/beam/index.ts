@@ -1,19 +1,7 @@
 // Copyright (c) 2024, AgriTheory and contributors
 // For license information, please see license.txt
 
-import {
-	ActionFooter,
-	BeamModal,
-	BeamModalOutlet,
-	Confirm,
-	ItemCheck,
-	ItemCount,
-	ListAnchor,
-	ListItem,
-	ListView,
-	Navbar,
-	ScanInput,
-} from '@stonecrop/beam'
+import { install as BeamPlugin } from '@stonecrop/beam'
 import { createApp } from 'vue'
 import { createRouter, createWebHashHistory } from 'vue-router'
 
@@ -57,15 +45,5 @@ router.beforeEach((to, from, next) => {
 
 const app = createApp(Beam)
 app.use(router)
-app.component('ActionFooter', ActionFooter)
-app.component('BeamModal', BeamModal)
-app.component('BeamModalOutlet', BeamModalOutlet)
-app.component('Confirm', Confirm)
-app.component('ItemCheck', ItemCheck)
-app.component('ItemCount', ItemCount)
-app.component('ListAnchor', ListAnchor)
-app.component('ListItem', ListItem)
-app.component('ListView', ListView)
-app.component('Navbar', Navbar)
-app.component('ScanInput', ScanInput)
+app.use(BeamPlugin)
 app.mount('#beam')

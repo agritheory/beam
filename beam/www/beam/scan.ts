@@ -1,16 +1,11 @@
 // Copyright (c) 2024, AgriTheory and contributors
 // For license information, please see license.txt
 
-import onScan from 'onscan.js'
 import { type Router, useRouter } from 'vue-router'
 
 import type { FormContext, ListContext } from './types/index.js'
 
-interface BeamWindow extends Window {
-	scanHandler: ScanHandler
-}
 declare const frappe: any
-declare const window: BeamWindow
 
 export function useScan() {
 	const router = useRouter()
@@ -20,25 +15,14 @@ export function useScan() {
 
 class ScanHandler {
 	router: Router
-	scanner: onScan
 
 	constructor(router: Router) {
 		this.router = router
+	}
 
-		if (
-			!window.hasOwnProperty('scanHandler') ||
-			!window.scanHandler.hasOwnProperty('scanner') ||
-			!window.scanHandler.scanner.isAttachedTo(document)
-		) {
-			let me = this
-			this.scanner = onScan.attachTo(document, {
-				onScan: async function (sCode: string, iQty: number) {
-					await me.prepareContext()
-					await me.getScannedContext(sCode, iQty)
-				},
-			})
-			window.scanHandler = this
-		}
+	async scan(barcode: string, qty: number) {
+		await this.prepareContext()
+		await this.getScannedContext(barcode, qty)
 	}
 
 	async prepareContext() {
@@ -61,13 +45,13 @@ class ScanHandler {
 		return context
 	}
 
-	async getScannedContext(sCode: string, iQty: number) {
+	async getScannedContext(barcode: string, qty: number) {
 		const context = this.getContext()
 
 		try {
 			const response: (FormContext | ListContext)[] = await frappe.xcall('beam.beam.scan.scan', {
-				barcode: sCode,
-				current_qty: iQty,
+				barcode,
+				current_qty: qty,
 				context,
 			})
 
