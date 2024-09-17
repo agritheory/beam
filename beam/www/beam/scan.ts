@@ -65,10 +65,10 @@ class ScanHandler {
 					const path: string = frappe.boot.beam.client[action][0]
 					// call (first) custom built callback registered in hooks
 					fn = path.split('.').reduce((previous, current) => previous[current], window)
+					return await fn(response)
 				} else {
-					fn = this[String(action)] // TODO: this only calls the first function
+					return await this[action](response) // TODO: this only calls the first function
 				}
-				return await fn(response)
 			}
 		} catch (error) {
 			// TODO: handle API error
@@ -86,17 +86,18 @@ class ScanHandler {
 
 	add_or_associate(barcode_context: FormContext[]) {
 		barcode_context.forEach(async field => {
+			const is_stock_entry =
+				this.store.doc.doctype === 'Stock Entry' &&
+				[
+					'Send to Subcontractor',
+					'Material Transfer for Manufacture',
+					'Material Transfer',
+					'Material Receipt',
+					'Manufacture',
+				].includes(this.store.doc.stock_entry_type)
+
 			const existing_rows = this.store.doc.items.filter(row => {
-				if (
-					this.store.doc.doctype === 'Stock Entry' &&
-					[
-						'Send to Subcontractor',
-						'Material Transfer for Manufacture',
-						'Material Transfer',
-						'Material Receipt',
-						'Manufacture',
-					].includes(this.store.doc.stock_entry_type)
-				) {
+				if (is_stock_entry) {
 					return row.item_code === field.context.item_code || row.handling_unit
 				} else {
 					return (
@@ -138,6 +139,11 @@ class ScanHandler {
 	}
 
 	set_warehouse(barcode_context: FormContext[]) {
+		const context = barcode_context[0]
+		if (context.doctype !== 'Stock Entry') {
+			return
+		}
+
 		const source_warehouses = ['Material Consumption for Manufacture', 'Material Issue']
 		const target_warehouses = ['Material Receipt', 'Manufacture']
 		const both_warehouses = [
@@ -146,11 +152,6 @@ class ScanHandler {
 			'Send to Subcontractor',
 			'Repack',
 		]
-
-		const context = barcode_context[0]
-		if (context.doctype !== 'Stock Entry') {
-			return
-		}
 
 		const entry_type = this.store.doc.stock_entry_type
 		if (source_warehouses.includes(entry_type)) {

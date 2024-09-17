@@ -212,11 +212,12 @@
   resolved "https://registry.yarnpkg.com/@rollup/rollup-win32-x64-msvc/-/rollup-win32-x64-msvc-4.18.1.tgz#0cb240c147c0dfd0e3eaff4cc060a772d39e155c"
   integrity sha512-yjk2MAkQmoaPYCSu35RLJ62+dz358nE83VfTePJRp8CG7aMg25mEJYpXFiD+NcevhX8LxD5OP5tktPXnXN7GDw==
 
-"@stonecrop/beam@^0.2.29":
-  version "0.2.29"
-  resolved "https://registry.yarnpkg.com/@stonecrop/beam/-/beam-0.2.29.tgz#ae3c5967de25d9d96b66d8244a9d6fa29022aa5b"
-  integrity sha512-G4NilyGZTC+LHVQY8kI9wR3qPfH5mJl9ESLrQBrVsAtN0v0LftRUFt2Yg7uNfP2EdGDXSixzEMD88UtZ8XSMfw==
+"@stonecrop/beam@^0.2.33":
+  version "0.2.33"
+  resolved "https://registry.yarnpkg.com/@stonecrop/beam/-/beam-0.2.33.tgz#7a347ada383cac7afcb2a9c088e28071c9af2016"
+  integrity sha512-TnjKJpDbnaH+cRHCRsC3F0s6nUMSUYGsAbsmL3Ze7OOv5MsqZN6BQijRptN7Th887GhfJem/UCc91aDX0k08dA==
   dependencies:
+    onscan.js "^1.5.2"
     vue "^3.4.31"
 
 "@types/estree@1.0.5":
