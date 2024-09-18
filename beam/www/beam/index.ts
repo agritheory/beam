@@ -71,11 +71,6 @@ const routes: RouteRecordRaw[] = [
 		meta: { requiresAuth: true },
 	},
 	{
-		path: '/demand',
-		name: 'demand',
-		component: Demand,
-	},
-	{
 		path: '/receive',
 		name: 'receive',
 		component: Receive,
