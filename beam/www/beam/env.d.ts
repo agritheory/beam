@@ -2,3 +2,5 @@
 // For license information, please see license.txt
 
 /// <reference types="vite/client" />
+
+export {}
