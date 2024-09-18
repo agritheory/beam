@@ -10,5 +10,5 @@
 		"resolveJsonModule": true,
 		"skipLibCheck": true
 	},
-	"include": ["**/*.ts", "**/*.vue"]
+	"include": ["**/*.ts", "**/*.d.ts", "**/*.vue"]
 }

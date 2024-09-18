@@ -1,24 +1,67 @@
 // Copyright (c) 2024, AgriTheory and contributors
 // For license information, please see license.txt
 
-export type ParentDoctypeMeta = {
-	creation: string
+// beam view interfaces
+export type ListViewItem = {
+	label: string
+	description?: string
+	count?: {
+		count: number
+		of: number
+		uom?: string
+	}
+	checked?: boolean
+	linkComponent?: string
+	route?: string
+}
+
+// scan interfaces
+export type BaseContext = {
+	action: string
 	doctype: string
-	modified_by: string
-	modified: string
-	name: string
-	owner: string
+	field: string
+	target: string
+}
+
+export type FormContext = BaseContext & {
+	context: ChildDoctype
+}
+
+export type ListContext = BaseContext & {
+	context: string
+}
+
+export type ScanContext = {
+	frm?: string
+	listview?: string
+}
+
+export type ScanConfig = {
+	client?: Record<string, string[]>
+	frm?: string[]
+	listview?: string[]
+	scannable_doctypes?: string[]
+}
+
+// frappe document interfaces
+export type ParentDoctypeMeta = {
+	creation?: string
+	doctype?: string
+	modified_by?: string
+	modified?: string
+	name?: string
+	owner?: string
 }
 
 export type ChildDoctypeMeta = ParentDoctypeMeta & {
-	idx: number
-	parent: string
-	parenttype: string
-	parentfield: string
+	idx?: number
+	parent?: string
+	parenttype?: string
+	parentfield?: string
 }
 
 export type ParentDoctype = ParentDoctypeMeta & {
-	// exists for most sales/purchase/stock documents (except for Work Order)
+	// exists for most sales/purchase/stock documents
 	items?: ChildDoctype[]
 
 	// exists for stock entry only
@@ -65,32 +108,4 @@ export type WorkOrderOperation = ChildDoctype & {
 	description?: string
 	operation: string
 	time_in_mins?: number
-}
-
-export type ListViewItem = {
-	label: string
-	description?: string
-	count?: {
-		count: number
-		of: number
-		uom?: string
-	}
-	checked?: boolean
-	linkComponent?: string
-	route?: string
-}
-
-export type BaseContext = {
-	action: string
-	doctype: string
-	field: string
-	target: string
-}
-
-export type FormContext = BaseContext & {
-	context: ChildDoctype
-}
-
-export type ListContext = BaseContext & {
-	context: string
 }
