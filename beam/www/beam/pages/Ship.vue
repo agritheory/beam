@@ -1,4 +1,10 @@
 <template>
+	<Navbar @click="handlePrimaryAction">
+		<template #title>
+			<h1 class="nav-title">Ship</h1>
+		</template>
+		<template #navbaraction>Home</template>
+	</Navbar>
 	<ListView :items="items" />
 </template>
 

@@ -13,7 +13,7 @@ import type { ListTransferItem, ListViewItem } from '../types'
 
 const props = defineProps<{
 	items: ListTransferItem[]
-	workOrderId: string | string[]
+	id: string | string[]
 }>()
 
 const endpoint = '/api/method/erpnext.manufacturing.doctype.work_order.work_order.make_stock_entry'
@@ -49,7 +49,7 @@ const handleSave = async () => {
 			'X-Frappe-CSRF-Token': frappe.csrf_token,
 		},
 		body: JSON.stringify({
-			work_order_id: props.workOrderId,
+			work_order_id: props.id,
 			purpose: 'Material Transfer for Manufacture',
 		}),
 	})

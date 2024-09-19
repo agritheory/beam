@@ -29,6 +29,7 @@ import Repack from './pages/Repack.vue'
 import JobCard from './pages/JobCard.vue'
 import Operation from './pages/Operation.vue'
 import Demand from './pages/Demand.vue'
+import Move from './pages/Move.vue'
 
 if (import.meta.env.DEV) {
 	makeServer()
@@ -98,6 +99,12 @@ const routes: RouteRecordRaw[] = [
 		path: '/repack',
 		name: 'repack',
 		component: Repack,
+		meta: { requiresAuth: true },
+	},
+	{
+		path: '/move',
+		name: 'move',
+		component: Move,
 		meta: { requiresAuth: true },
 	},
 ]

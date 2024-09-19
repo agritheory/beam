@@ -19,8 +19,8 @@ const home = ref([
 		linkComponent: 'ListAnchor',
 	},
 	{
-		label: 'Transfer',
-		route: '#/transfer',
+		label: 'Move',
+		route: '#/move',
 		linkComponent: 'ListAnchor',
 	},
 	{

@@ -21,7 +21,7 @@
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
-import type { JobCard, ListViewItem, WorkOrder, WorkOrderOperation, WorkOrderItem } from '../types'
+import type { JobCard, ListViewItem, WorkOrder, WorkOrderOperation } from '../types'
 import { useFetch } from '../fetch'
 import Transfer from '../components/Transfer.vue'
 
