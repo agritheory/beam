@@ -1,22 +1,19 @@
 <template>
 	<Navbar @click="handlePrimaryAction">
+		<template #title>
+			<h1 class="nav-title">{{ workOrder.name }}</h1>
+		</template>
 		<template #navbaraction>Home</template>
 	</Navbar>
-	<h3 class="nav-title">{{ workOrder.name }}</h3>
-	<div>Planned Start: {{ workOrder.planned_start_date }}</div>
-	<br />
 	<div>
-		<button v-show="!workOrder.skip_transfer">Start</button>
-		<button v-show="!workOrder.skip_transfer">Stop</button>
-		<button>{{ !workOrder.skip_transfer ? 'Complete' : 'Manufacture' }}</button>
+		<p>Planned Start: {{ workOrder.planned_start_date }}</p>
 	</div>
-	<div class="container">
-		<div class="box">
-			<ListView :items="items" />
-		</div>
-		<div class="box">
-			<ListView :items="operations" />
-		</div>
+	<br />
+	<div class="box">
+		<Transfer :items="workOrder?.required_items" :workOrderId="workOrderId" />
+	</div>
+	<div class="box">
+		<ListView :items="operations" />
 	</div>
 </template>
 
@@ -26,6 +23,7 @@ import { useRoute } from 'vue-router'
 
 import type { JobCard, ListViewItem, WorkOrder, WorkOrderOperation, WorkOrderItem } from '../types'
 import { useFetch } from '../fetch'
+import Transfer from '../components/Transfer.vue'
 
 const route = useRoute()
 const workOrderId = route.params.orderId
@@ -43,6 +41,10 @@ onMounted(async () => {
 	// get work order
 	const { data } = await useFetch<WorkOrder>(`/api/resource/Work Order/${workOrderId}`)
 	workOrder.value = data
+	workOrder.value.required_items = workOrder.value.required_items.map(item => ({
+		...item,
+		wip_warehouse: workOrder.value.wip_warehouse,
+	}))
 
 	// build operation list
 	operations.value = data.operations.map(operation => ({

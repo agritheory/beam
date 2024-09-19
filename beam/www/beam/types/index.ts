@@ -27,7 +27,10 @@ export type WorkOrder = ParentDoctype & {
 	planned_start_date: number
 	skip_transfer: boolean
 	required_items: WorkOrderItem[]
+	wip_warehouse: string
+
 	operations: WorkOrderOperation[]
+	required_items: ListTransferItem[]
 }
 
 export type Workstation = ParentDoctype & {
@@ -37,6 +40,7 @@ export type Workstation = ParentDoctype & {
 }
 
 export type WorkOrderOperation = ChildDoctype & {
+	name: string
 	actual_operation_time: number
 	completed_qty: number
 	description?: string
@@ -64,4 +68,14 @@ export type ListViewItem = {
 	checked?: boolean
 	linkComponent?: string
 	route?: string
+}
+
+export type ListTransferItem = {
+	item_name: string
+	name: string
+	source_warehouse: string
+	target_warehouse?: string
+	transferred_qty: number
+	required_qty: number
+	wip_warehouse?: string
 }

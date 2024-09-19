@@ -14,6 +14,11 @@ const home = ref([
 		linkComponent: 'ListAnchor',
 	},
 	{
+		label: 'Demand',
+		route: '#/demand',
+		linkComponent: 'ListAnchor',
+	},
+	{
 		label: 'Transfer',
 		route: '#/transfer',
 		linkComponent: 'ListAnchor',

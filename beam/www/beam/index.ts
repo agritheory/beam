@@ -24,11 +24,11 @@ import Workstation from './pages/Workstation.vue'
 import WorkOrder from './pages/WorkOrder.vue'
 import Receive from './pages/Receive.vue'
 import Ship from './pages/Ship.vue'
-import Transfer from './pages/Transfer.vue'
 import Manufacture from './pages/Manufacture.vue'
 import Repack from './pages/Repack.vue'
 import JobCard from './pages/JobCard.vue'
 import Operation from './pages/Operation.vue'
+import Demand from './pages/Demand.vue'
 
 if (import.meta.env.DEV) {
 	makeServer()
@@ -71,11 +71,6 @@ const routes: RouteRecordRaw[] = [
 		meta: { requiresAuth: true },
 	},
 	{
-		path: '/transfer',
-		name: 'transfer',
-		component: Transfer,
-	},
-	{
 		path: '/receive',
 		name: 'receive',
 		component: Receive,
@@ -88,9 +83,9 @@ const routes: RouteRecordRaw[] = [
 		meta: { requiresAuth: true },
 	},
 	{
-		path: '/transfer',
-		name: 'transfer',
-		component: Transfer,
+		path: '/demand',
+		name: 'demand',
+		component: Demand,
 		meta: { requiresAuth: true },
 	},
 	{
