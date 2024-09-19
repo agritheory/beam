@@ -24,6 +24,7 @@ export type WorkOrder = ParentDoctype & {
 	item_name: string
 	qty: number
 	produced_qty: number
+	wip_warehouse: string
 
 	operations: WorkOrderOperation[]
 	required_items: ListTransferItem[]
@@ -63,4 +64,5 @@ export type ListTransferItem = {
 	target_warehouse?: string
 	transferred_qty: number
 	required_qty: number
+	wip_warehouse?: string
 }

@@ -31,6 +31,7 @@ onMounted(async () => {
 	// get work order
 	const { data } = await useFetch<WorkOrder>(`/api/resource/Work Order/${workOrderId}`)
 	workOrder.value = data
+	workOrder.value.required_items = workOrder.value.required_items.map(item => ({ ...item, wip_warehouse: workOrder.value.wip_warehouse }))
 
 	// build operation list
 	operations.value = data.operations.map(operation => ({
