@@ -24,9 +24,11 @@ import { useRoute } from 'vue-router'
 import type { JobCard, ListViewItem, WorkOrder, WorkOrderOperation } from '../types'
 import { useFetch } from '../fetch'
 import Transfer from '../components/Transfer.vue'
+import { useDataStore } from '../store'
 
 const route = useRoute()
-const workOrderId = route.params.orderId
+const store = useDataStore()
+const workOrderId = route.params.orderId.toString()
 
 const workOrder = ref<Partial<WorkOrder>>({})
 const operations = ref<ListViewItem[]>([])
@@ -39,7 +41,7 @@ const handlePrimaryAction = () => {
 
 onMounted(async () => {
 	// get work order
-	const { data } = await useFetch<WorkOrder>(`/api/resource/Work Order/${workOrderId}`)
+	workOrder.value = await store.getOne<WorkOrder>('Work Order', workOrderId)
 	workOrder.value = data
 	workOrder.value.required_items = workOrder.value.required_items.map(item => ({
 		...item,
@@ -47,7 +49,7 @@ onMounted(async () => {
 	}))
 
 	// build operation list
-	operations.value = data.operations.map(operation => ({
+	operations.value = workOrder.value.operations.map(operation => ({
 		...operation,
 		label: operation.operation,
 		count: { count: operation.completed_qty, of: workOrder.value.qty },
@@ -64,15 +66,17 @@ onMounted(async () => {
 	}))
 
 	// get job cards
-	for (const operation of data.operations) {
-		const filters = [['operation_id', '=', operation.name]]
-		const { data: jobList } = await useFetch<JobCard[]>('/api/resource/Job Card', { filters: JSON.stringify(filters) })
+	for (const operation of workOrder.value.operations) {
+		const jobList = await store.getAll<JobCard[]>('Job Card', {
+			filters: JSON.stringify([['operation_id', '=', operation.name]]),
+		})
+
 		if (jobList.length === 0) {
 			continue
 		}
 
 		for (const job of jobList) {
-			const { data: jobCard } = await useFetch<JobCard>(`/api/resource/Job Card/${job.name}`)
+			const jobCard = await store.getOne<JobCard>('Job Card', job.name)
 			jobCards.value.push({
 				...jobCard,
 				label: jobCard.name,

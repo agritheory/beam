@@ -1,35 +1,15 @@
 // Copyright (c) 2024, AgriTheory and contributors
 // For license information, please see license.txt
 
-import {
-	ActionFooter,
-	BeamModal,
-	BeamModalOutlet,
-	Confirm,
-	ItemCheck,
-	ItemCount,
-	ListAnchor,
-	ListItem,
-	ListView,
-	Navbar,
-	ScanInput,
-} from '@stonecrop/beam'
+import { install as BeamPlugin } from '@stonecrop/beam'
+import { createPinia } from 'pinia'
 import { createApp } from 'vue'
-import { createRouter, createWebHashHistory, type RouteRecordRaw } from 'vue-router'
+import { createRouter, createWebHashHistory } from 'vue-router'
 
 import Beam from './Beam.vue'
 import { makeServer } from './mocks/mirage'
-import Home from './pages/Home.vue'
-import Workstation from './pages/Workstation.vue'
-import WorkOrder from './pages/WorkOrder.vue'
-import Receive from './pages/Receive.vue'
-import Ship from './pages/Ship.vue'
-import Manufacture from './pages/Manufacture.vue'
-import Repack from './pages/Repack.vue'
-import JobCard from './pages/JobCard.vue'
-import Operation from './pages/Operation.vue'
-import Demand from './pages/Demand.vue'
-import Move from './pages/Move.vue'
+import routes from './routes'
+import { useDataStore } from './store'
 
 if (import.meta.env.DEV) {
 	makeServer()
@@ -40,109 +20,39 @@ interface FrappeWindow extends Window {
 }
 declare const window: FrappeWindow
 
-const routes: RouteRecordRaw[] = [
-	{
-		path: '/',
-		name: 'home',
-		component: Home,
-		meta: { requiresAuth: true },
-	},
-	{
-		path: '/workstation',
-		name: 'workstation',
-		component: Workstation,
-		meta: { requiresAuth: true },
-	},
-	{
-		path: '/work_order/:orderId/',
-		name: 'work_order',
-		component: WorkOrder,
-		meta: { requiresAuth: true },
-	},
-	{
-		path: '/job_card/:orderId/',
-		name: 'job_card',
-		component: JobCard,
-		meta: { requiresAuth: true },
-	},
-	{
-		path: '/work_order/:orderId/operation/:id',
-		name: 'operation',
-		component: Operation,
-		meta: { requiresAuth: true },
-	},
-	{
-		path: '/receive',
-		name: 'receive',
-		component: Receive,
-		meta: { requiresAuth: true },
-	},
-	{
-		path: '/ship',
-		name: 'ship',
-		component: Ship,
-		meta: { requiresAuth: true },
-	},
-	{
-		path: '/demand',
-		name: 'demand',
-		component: Demand,
-		meta: { requiresAuth: true },
-	},
-	{
-		path: '/manufacture',
-		name: 'manufacture',
-		component: Manufacture,
-		meta: { requiresAuth: true },
-	},
-	{
-		path: '/repack',
-		name: 'repack',
-		component: Repack,
-		meta: { requiresAuth: true },
-	},
-	{
-		path: '/move',
-		name: 'move',
-		component: Move,
-		meta: { requiresAuth: true },
-	},
-]
-
 const router = createRouter({
 	history: createWebHashHistory(),
 	routes,
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
 	if (!window.frappe) {
 		// dev environment; simply proceed with path
 		next()
 	} else {
-		if (to.meta && to.meta.requiresAuth) {
+		if (to.meta.requiresAuth) {
 			if (window.frappe.user === 'Guest') {
 				next(false)
-				window.location.href = '/login'
+				// TODO: 6 Sep, 2024: tried redirecting to intended path, but Frappe
+				// ignores everything after the hash
+				window.location.href = '/login?redirect-to=/beam#'
 			} else {
+				const store = useDataStore()
+				await store.init()
 				next()
 			}
 		} else {
+			// assuming user is logged in and authenticated for all Beam views
+			const store = useDataStore()
+			await store.init()
 			next()
 		}
 	}
 })
 
+const pinia = createPinia()
 const app = createApp(Beam)
 app.use(router)
-app.component('ActionFooter', ActionFooter)
-app.component('BeamModal', BeamModal)
-app.component('BeamModalOutlet', BeamModalOutlet)
-app.component('Confirm', Confirm)
-app.component('ItemCheck', ItemCheck)
-app.component('ItemCount', ItemCount)
-app.component('ListAnchor', ListAnchor)
-app.component('ListItem', ListItem)
-app.component('ListView', ListView)
-app.component('Navbar', Navbar)
-app.component('ScanInput', ScanInput)
+app.use(BeamPlugin)
+app.use(pinia)
 app.mount('#beam')

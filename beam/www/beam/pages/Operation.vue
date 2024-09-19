@@ -15,10 +15,12 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
+import { useDataStore } from '../store'
 import type { JobCard, WorkOrder, WorkOrderOperation } from '../types'
-import { useFetch } from '../fetch'
 
 const route = useRoute()
+const store = useDataStore()
+
 const workOrder = ref<Partial<WorkOrder>>({})
 const operation = ref<Partial<WorkOrderOperation>>({})
 const jobCard = ref<Partial<JobCard>>({})
@@ -34,18 +36,16 @@ const elapsedTime = computed(() => {
 })
 
 onMounted(async () => {
-	const { data: orderData } = await useFetch<WorkOrder>(`/api/resource/Work Order/${route.params.orderId}`)
-	workOrder.value = orderData
-	operation.value = orderData.operations.find(operation => operation.name === route.params.id) || {}
+	workOrder.value = await store.getOne<WorkOrder>('Work Order', route.params.orderId.toString())
+	operation.value = workOrder.value.operations.find(operation => operation.name === route.params.id) || {}
 
-	const filters = [['operation_id', '=', route.params.id]]
-	const { data: jobList } = await useFetch<JobCard[]>('/api/resource/Job Card', { filters: JSON.stringify(filters) })
-	if (jobList.length === 0) {
-		return
+	const jobList = await store.getAll<JobCard[]>('Job Card', {
+		filters: JSON.stringify([['operation_id', '=', route.params.id]]),
+	})
+
+	if (jobList.length > 0) {
+		jobCard.value = await store.getOne<JobCard>('Job Card', jobList[0].name)
 	}
-
-	const { data: job } = await useFetch<JobCard>(`/api/resource/Job Card/${jobList[0].name}`)
-	jobCard.value = job
 })
 
 const startOperation = () => {

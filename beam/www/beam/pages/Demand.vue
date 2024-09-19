@@ -12,14 +12,18 @@
 import { Navbar } from '@stonecrop/beam'
 import { onMounted, ref } from 'vue'
 
-import { useFetchDemand } from '../fetch'
+import { useDataStore } from '../store'
 import type { ListViewItem } from '../types'
 
-const handlePrimaryAction = () => {}
+declare const frappe: any
+
+const store = useDataStore()
 const transfer = ref<Partial<ListViewItem>[]>([])
 
 onMounted(async () => {
-	const { data } = await useFetchDemand({ order_by: 'creation asc' })
+	const { data } = await store.getDemand({ order_by: 'creation asc' })
+
+	// TODO: move this to the server
 	data.forEach(row => {
 		row.count = { count: row.allocated_qty, of: `${row.total_required_qty} ${row.stock_uom}` }
 		row.label = `${row.item_code} from ${row.warehouse}`
@@ -29,6 +33,8 @@ onMounted(async () => {
 		transfer.value.push(row)
 	})
 })
+
+// const handlePrimaryAction = () => {}
 </script>
 
 <style scoped>
