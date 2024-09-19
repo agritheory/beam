@@ -12,20 +12,19 @@
 import { Navbar } from '@stonecrop/beam'
 import { onMounted, ref } from 'vue'
 
-import { useFetch } from '../fetch'
+import { useDataStore } from '../store'
 import type { ListViewItem, Workstation } from '../types'
 
-const handlePrimaryAction = () => {}
-// const workstations = ['Manufacture', 'Receive', 'Repack', 'Ship']
+const store = useDataStore()
 const workstations = ref<ListViewItem[]>([])
 
 onMounted(async () => {
-	const { data } = await useFetch<Workstation[]>('/api/resource/Workstation', {
+	const stations = await store.getAll<Workstation[]>('Workstation', {
 		fields: JSON.stringify(['name', 'workstation_type', 'plant_floor']),
 		order_by: 'creation asc',
 	})
 
-	data.forEach(row => {
+	stations.forEach(row => {
 		workstations.value.push({
 			...row,
 			// count: { count: row.produced_qty, of: row.qty },
@@ -35,6 +34,8 @@ onMounted(async () => {
 		})
 	})
 })
+
+const handlePrimaryAction = () => {}
 </script>
 
 <style scoped>

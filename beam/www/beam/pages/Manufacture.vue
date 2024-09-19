@@ -5,18 +5,19 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 
-import { useFetch } from '../fetch'
+import { useDataStore } from '../store'
 import type { ListViewItem, WorkOrder } from '../types'
 
 const items = ref<ListViewItem[]>([])
+const store = useDataStore()
 
 onMounted(async () => {
-	const { data } = await useFetch<WorkOrder[]>('/api/resource/Work Order', {
+	const orders = await store.getAll<WorkOrder[]>('Work Order', {
 		fields: JSON.stringify(['name', 'item_name', 'qty', 'produced_qty']),
 		order_by: 'creation asc',
 	})
 
-	data.forEach(row => {
+	orders.forEach(row => {
 		items.value.push({
 			...row,
 			label: row.item_name,

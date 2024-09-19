@@ -11,15 +11,15 @@
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
+import { useDataStore } from '../store'
 import type { WorkOrder } from '../types'
-import { useFetch } from '../fetch'
 
 const route = useRoute()
+const store = useDataStore()
 const workOrder = ref<Partial<WorkOrder>>({})
 
 onMounted(async () => {
-	const { data } = await useFetch<WorkOrder>(`/api/resource/Work Order/${route.params.orderId}`)
-	workOrder.value = data
+	workOrder.value = await store.getOne<WorkOrder>('Work Order', route.params.orderId.toString())
 })
 </script>
 
