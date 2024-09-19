@@ -5,14 +5,14 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 
-import { useFetchDemand } from '../fetch'
+import { useDataStore } from '../store'
 import type { ListViewItem } from '../types'
 
-// const handlePrimaryAction = () => {}
+const store = useDataStore()
 const items = ref<Partial<ListViewItem>[]>([])
 
 onMounted(async () => {
-	const { data } = await useFetchDemand({ workstation: 'Shipping' })
+	const { data } = await store.getDemand({ workstation: 'Shipping' })
 
 	// TODO: move this to the server
 	data.forEach(row => {
@@ -24,6 +24,8 @@ onMounted(async () => {
 		items.value.push(row)
 	})
 })
+
+// const handlePrimaryAction = () => {}
 </script>
 
 <style>

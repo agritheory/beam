@@ -3,12 +3,13 @@
 
 import { install as BeamPlugin } from '@stonecrop/beam'
 import { createPinia } from 'pinia'
-import { createApp, markRaw } from 'vue'
+import { createApp } from 'vue'
 import { createRouter, createWebHashHistory } from 'vue-router'
 
 import Beam from './Beam.vue'
 import { makeServer } from './mocks/mirage'
 import routes from './routes'
+import { useDataStore } from './store'
 
 if (import.meta.env.DEV) {
 	makeServer()
@@ -24,7 +25,7 @@ const router = createRouter({
 	routes,
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
 	if (!window.frappe) {
 		// dev environment; simply proceed with path
 		next()
@@ -36,19 +37,20 @@ router.beforeEach((to, from, next) => {
 				// ignores everything after the hash
 				window.location.href = '/login?redirect-to=/beam#'
 			} else {
+				const store = useDataStore()
+				await store.init()
 				next()
 			}
 		} else {
+			// assuming user is logged in and authenticated for all Beam views
+			const store = useDataStore()
+			await store.init()
 			next()
 		}
 	}
 })
 
 const pinia = createPinia()
-pinia.use(({ store }) => {
-	store.router = markRaw(router)
-})
-
 const app = createApp(Beam)
 app.use(router)
 app.use(BeamPlugin)
