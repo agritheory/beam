@@ -1,11 +1,19 @@
 <template>
-	<div class="container">
-		<div class="box">
-			<ListView :items="operations" />
-		</div>
-		<div class="box">
-			<ListView :items="jobCards" />
-		</div>
+	<Navbar @click="handlePrimaryAction">
+		<template #title>
+			<h1 class="nav-title">{{ workOrder.name }}</h1>
+		</template>
+		<template #navbaraction>Home</template>
+	</Navbar>
+	<div>
+		<p>Planned Start: {{ workOrder.planned_start_date }}</p>
+	</div>
+	<br />
+	<div class="box">
+		<Transfer :items="workOrder?.required_items" :id="workOrderId" />
+	</div>
+	<div class="box">
+		<ListView :items="operations" />
 	</div>
 </template>
 
@@ -13,8 +21,9 @@
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { useDataStore } from '../store'
-import type { JobCard, ListViewItem, WorkOrder } from '../types'
+import Transfer from '@/components/Transfer.vue'
+import { useDataStore } from '@/store'
+import type { JobCard, ListViewItem, WorkOrder } from '@/types'
 
 const route = useRoute()
 const store = useDataStore()
@@ -23,10 +32,24 @@ const workOrderId = route.params.orderId.toString()
 const workOrder = ref<Partial<WorkOrder>>({})
 const operations = ref<ListViewItem[]>([])
 const jobCards = ref<ListViewItem[]>([])
+const items = ref<ListViewItem[]>([])
 
 onMounted(async () => {
 	// get work order
 	workOrder.value = await store.getOne<WorkOrder>('Work Order', workOrderId)
+	workOrder.value.required_items = workOrder.value.required_items.map(item => ({
+		...item,
+		wip_warehouse: workOrder.value.wip_warehouse,
+	}))
+
+	// build required items list
+	items.value = workOrder.value.required_items.map(item => ({
+		...item,
+		label: item.item_code,
+		count: { count: item.transferred_qty, of: item.required_qty },
+		linkComponent: 'ListItem',
+		description: `${item.source_warehouse}`,
+	}))
 
 	// build operation list
 	operations.value = workOrder.value.operations.map(operation => ({
@@ -43,10 +66,6 @@ onMounted(async () => {
 			filters: JSON.stringify([['operation_id', '=', operation.name]]),
 		})
 
-		if (jobList.length === 0) {
-			continue
-		}
-
 		for (const job of jobList) {
 			const jobCard = await store.getOne<JobCard>('Job Card', job.name)
 			jobCards.value.push({
@@ -59,6 +78,10 @@ onMounted(async () => {
 		}
 	}
 })
+
+const handlePrimaryAction = () => {
+	console.log('handle primary action')
+}
 </script>
 
 <style scoped>

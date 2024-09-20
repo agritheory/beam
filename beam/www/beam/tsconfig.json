@@ -8,7 +8,10 @@
 		"isolatedModules": true,
 		"noEmit": true,
 		"resolveJsonModule": true,
-		"skipLibCheck": true
+		"skipLibCheck": true,
+		"paths": {
+			"@/*": ["./*"]
+		}
 	},
 	"include": ["**/*.ts", "**/*.d.ts", "**/*.vue"]
 }

@@ -75,6 +75,7 @@ export type ChildDoctype = ChildDoctypeMeta & {
 	barcode?: string
 	handling_unit?: string
 	item_code?: string
+	item_name?: string
 	qty?: number
 	stock_qty?: number
 	warehouse?: string
@@ -88,18 +89,20 @@ export type JobCard = ParentDoctype & {
 	total_time_in_mins: number
 }
 
-export type WorkOrder = ParentDoctype & {
-	item_name: string
-	qty: number
-	produced_qty: number
-
-	operations: WorkOrderOperation[]
+export type StockEntry = ParentDoctype & {
+	items: WorkOrderItem[]
 }
 
-export type Workstation = ParentDoctype & {
-	production_capacity: number
-	status?: string
-	workstation_name: string
+export type WorkOrder = ParentDoctype & {
+	item_name: string
+	planned_start_date: number
+	produced_qty: number
+	qty: number
+	skip_transfer: boolean
+	wip_warehouse: string
+
+	operations: WorkOrderOperation[]
+	required_items: WorkOrderItem[]
 }
 
 export type WorkOrderOperation = ChildDoctype & {
@@ -108,4 +111,18 @@ export type WorkOrderOperation = ChildDoctype & {
 	description?: string
 	operation: string
 	time_in_mins?: number
+}
+
+export type WorkOrderItem = ChildDoctype & {
+	required_qty: number
+	source_warehouse: string
+	target_warehouse?: string
+	transferred_qty: number
+	wip_warehouse?: string
+}
+
+export type Workstation = ParentDoctype & {
+	production_capacity: number
+	status?: string
+	workstation_name: string
 }
