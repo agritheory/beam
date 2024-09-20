@@ -33,6 +33,10 @@ onMounted(async () => {
 		})
 	})
 })
+
+const handlePrimaryAction = () => {
+	console.log('handle primary action')
+}
 </script>
 
 <style>

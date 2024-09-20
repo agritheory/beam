@@ -3,7 +3,9 @@
 		<template #title>
 			<h1 class="nav-title">Demand</h1>
 		</template>
-		<template #navbaraction><RouterLink route="#/home">HOME</RouterLink></template>
+		<template #navbaraction>
+			<RouterLink :to="{ name: 'home' }">Home</RouterLink>
+		</template>
 	</Navbar>
 	<ListView :items="transfer" />
 </template>

@@ -88,25 +88,23 @@ export type JobCard = ParentDoctype & {
 	total_time_in_mins: number
 }
 
-export type WorkOrder = ParentDoctype & {
-	item_name: string
-	qty: number
-	produced_qty: number
-	planned_start_date: number
-	skip_transfer: boolean
-	required_items: ListViewItem[]
-	wip_warehouse: string
-	operations: WorkOrderOperation[]
+export type StockEntry = ParentDoctype & {
+	items: WorkOrderItem[]
 }
 
-export type Workstation = ParentDoctype & {
-	production_capacity: number
-	status?: string
-	workstation_name: string
+export type WorkOrder = ParentDoctype & {
+	item_name: string
+	planned_start_date: number
+	produced_qty: number
+	qty: number
+	skip_transfer: boolean
+	wip_warehouse: string
+
+	operations: WorkOrderOperation[]
+	required_items: WorkOrderItem[]
 }
 
 export type WorkOrderOperation = ChildDoctype & {
-	name: string
 	actual_operation_time: number
 	completed_qty: number
 	description?: string
@@ -114,18 +112,19 @@ export type WorkOrderOperation = ChildDoctype & {
 	time_in_mins?: number
 }
 
-export type ListTransferItem = {
+export type WorkOrderItem = ChildDoctype & {
+	item_code: string
 	item_name: string
 	name: string
+	required_qty: number
 	source_warehouse: string
 	target_warehouse?: string
 	transferred_qty: number
-	required_qty: number
 	wip_warehouse?: string
 }
 
-export type StockEntry = ParentDoctype & {
-	item_name: string
-	qty: number
-	items: ListTransferItem[]
+export type Workstation = ParentDoctype & {
+	production_capacity: number
+	status?: string
+	workstation_name: string
 }

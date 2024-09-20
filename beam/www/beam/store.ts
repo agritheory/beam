@@ -2,7 +2,7 @@
 // For license information, please see license.txt
 
 import { defineStore } from 'pinia'
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 import type {
@@ -24,6 +24,14 @@ export const useDataStore = defineStore('data', () => {
 	const context = ref<ScanContext>({})
 	const form = ref<Partial<JobCard | WorkOrder | Workstation>>({})
 
+	const headers = computed(() => {
+		// setup as a computed property to allow Frappe to set the CSRF token
+		return {
+			'Content-Type': 'application/json',
+			'X-Frappe-CSRF-Token': frappe.csrf_token,
+		}
+	})
+
 	watch(route, async () => {
 		if (route.meta.view === 'list' && config.value.listview.includes(route.meta.doctype)) {
 			context.value = { listview: route.meta.doctype }
@@ -41,13 +49,7 @@ export const useDataStore = defineStore('data', () => {
 		await setConfig()
 	}
 
-	const setConfig = async () => {
-		if (!Object.keys(config.value).length) {
-			config.value = await frappe.xcall('beam.beam.scan.config.get_scan_doctypes')
-		}
-	}
-
-	const getFetchUrl = (url: string, params?: Record<string, any>) => {
+	const formatUrl = (url: string, params?: Record<string, any>) => {
 		let fragment: string
 		if (params) {
 			const query = new URLSearchParams(params)
@@ -58,28 +60,57 @@ export const useDataStore = defineStore('data', () => {
 		return fragment
 	}
 
-	const get = async <T>(url: string, params?: Record<string, any>) => {
-		const fragment = getFetchUrl(url, params)
+	const get = async (url: string, params?: Record<string, any>) => {
+		const fragment = formatUrl(url, params)
 		const formattedUrl = new URL(fragment, window.location.origin)
-		const response = await fetch(formattedUrl)
-		const { data }: { data: T } = await response.json()
-		return data
+		return await fetch(formattedUrl, {
+			method: 'GET',
+			headers: headers.value,
+		})
+	}
+
+	const post = async (url: string, data: Record<string, any>) => {
+		const formattedUrl = new URL(url, window.location.origin)
+		return await fetch(formattedUrl, {
+			method: 'POST',
+			headers: headers.value,
+			body: JSON.stringify(data),
+		})
+	}
+
+	const put = async (url: string, data: Record<string, any>) => {
+		const formattedUrl = new URL(url, window.location.origin)
+		return await fetch(formattedUrl, {
+			method: 'PUT',
+			headers: headers.value,
+			body: JSON.stringify(data),
+		})
+	}
+
+	const setConfig = async () => {
+		if (!Object.keys(config.value).length) {
+			config.value = await frappe.xcall('beam.beam.scan.config.get_scan_doctypes')
+		}
 	}
 
 	const getOne = async <T>(doctype: string, name: string) => {
 		const url = `/api/resource/${doctype}/${name}`
-		return await get<T>(url)
+		const response = await get(url)
+		const { data }: { data: T } = await response.json()
+		return data
 	}
 
 	const getAll = async <T>(doctype: string, params?: Record<string, any>) => {
 		const url = `/api/resource/${doctype}`
-		return await get<T>(url, params)
+		const response = await get(url, params)
+		const { data }: { data: T } = await response.json()
+		return data
 	}
 
 	const getDemand = async (params?: Record<string, any>) => {
 		// automatically fetch all pages of demand data based on parameters
 		const demandUrl = '/api/method/beam.beam.demand.demand.get_demand'
-		const url = getFetchUrl(demandUrl, params)
+		const url = formatUrl(demandUrl, params)
 		return await getPaginated(url)
 	}
 
@@ -121,21 +152,64 @@ export const useDataStore = defineStore('data', () => {
 		})
 	}
 
+	const insert = async <T>(doctype: string, body: Record<string, any>) => {
+		const url = `/api/resource/${doctype}`
+		const response = await post(url, body)
+		const { data }: { data: T } = await response.json()
+		alert(response.ok ? 'Document created' : `Error: ${data.exception}`)
+		return { data, response }
+	}
+
+	const submit = async <T>(doctype: string, name: string) => {
+		const url = `/api/resource/${doctype}/${name}`
+		const response = await put(url, { docstatus: 1 })
+		const { data }: { data: T } = await response.json()
+		alert(response.ok ? 'Document status changed to Submitted' : `Error: ${data.exception}`)
+		return { data, response }
+	}
+
+	const cancel = async <T>(doctype: string, name: string) => {
+		const url = `/api/resource/${doctype}/${name}`
+		const response = await put(url, { docstatus: 2 })
+		const { data }: { data: T } = await response.json()
+		alert(response.ok ? 'Document status changed to Cancelled' : `Error: ${data.exception}`)
+		return { data, response }
+	}
+
+	const createStockEntry = async (data: Record<string, any>) => {
+		const url = '/api/method/erpnext.manufacturing.doctype.work_order.work_order.make_stock_entry'
+		return await post(url, data)
+	}
+
 	return {
 		// state
 		config,
 		context,
 		form,
 
-		// actions
+		// getters
+		headers,
+
+		// store actions
+		init,
+
+		// http actions
 		get,
+		post,
+		put,
+
+		// document actions
+		cancel,
+		insert,
+		save,
+		submit,
+
+		// other api actions
+		createStockEntry,
 		getAll,
 		getDemand,
 		getOne,
-		getFetchUrl,
 		getPaginated,
-		init,
-		save,
 		scan,
 	}
 })

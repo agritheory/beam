@@ -10,7 +10,7 @@
 	</div>
 	<br />
 	<div class="box">
-		<Transfer :items="workOrder?.required_items" :workOrderId="workOrderId" />
+		<Transfer :items="workOrder?.required_items" :id="workOrderId" />
 	</div>
 	<div class="box">
 		<ListView :items="operations" />
@@ -21,10 +21,9 @@
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
-import type { JobCard, ListViewItem, WorkOrder, WorkOrderOperation } from '../types'
-import { useFetch } from '../fetch'
 import Transfer from '../components/Transfer.vue'
 import { useDataStore } from '../store'
+import type { JobCard, ListViewItem, WorkOrder } from '../types'
 
 const route = useRoute()
 const store = useDataStore()
@@ -35,14 +34,9 @@ const operations = ref<ListViewItem[]>([])
 const jobCards = ref<ListViewItem[]>([])
 const items = ref<ListViewItem[]>([])
 
-const handlePrimaryAction = () => {
-	console.log('handle primary action')
-}
-
 onMounted(async () => {
 	// get work order
 	workOrder.value = await store.getOne<WorkOrder>('Work Order', workOrderId)
-	workOrder.value = data
 	workOrder.value.required_items = workOrder.value.required_items.map(item => ({
 		...item,
 		wip_warehouse: workOrder.value.wip_warehouse,
@@ -57,7 +51,7 @@ onMounted(async () => {
 		route: `#/work_order/${workOrderId}/operation/${operation.name}`,
 	}))
 
-	items.value = data.required_items.map(item => ({
+	items.value = workOrder.value.required_items.map(item => ({
 		...item,
 		label: item.item_code,
 		count: { count: item.transferred_qty, of: item.required_qty },
@@ -87,6 +81,10 @@ onMounted(async () => {
 		}
 	}
 })
+
+const handlePrimaryAction = () => {
+	console.log('handle primary action')
+}
 </script>
 
 <style scoped>
