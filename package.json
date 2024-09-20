@@ -13,11 +13,12 @@
 		"register": "node ./beam/www/beam/component_resolver.js"
 	},
 	"dependencies": {
-		"@stonecrop/beam": "^0.2.28",
+		"@stonecrop/beam": "^0.2.33",
 		"@vitejs/plugin-vue": "^5.0.4",
 		"acorn": "^8.12.1",
 		"glob": "^11.0.0",
 		"onscan.js": "^1.5.2",
+		"pinia": "^2.2.2",
 		"unplugin-vue-components": "^0.27.4",
 		"vite": "^5.2.11",
 		"vue": "^3.4.37",
