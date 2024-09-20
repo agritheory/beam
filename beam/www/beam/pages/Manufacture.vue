@@ -11,8 +11,8 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 
-import { useDataStore } from '../store'
-import type { ListViewItem, WorkOrder } from '../types'
+import { useDataStore } from '@/store'
+import type { ListViewItem, WorkOrder } from '@/types'
 
 const items = ref<ListViewItem[]>([])
 const store = useDataStore()

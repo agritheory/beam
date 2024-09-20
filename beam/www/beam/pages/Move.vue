@@ -12,8 +12,8 @@
 import { ref } from 'vue'
 import { useRoute } from 'vue-router'
 
-import Transfer from '../components/Transfer.vue'
-import type { ListViewItem, StockEntry } from '../types'
+import Transfer from '@/components/Transfer.vue'
+import type { ListViewItem, StockEntry } from '@/types'
 
 const route = useRoute()
 const stockEntryId = route.params.id

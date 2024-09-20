@@ -75,6 +75,7 @@ export type ChildDoctype = ChildDoctypeMeta & {
 	barcode?: string
 	handling_unit?: string
 	item_code?: string
+	item_name?: string
 	qty?: number
 	stock_qty?: number
 	warehouse?: string
@@ -113,9 +114,6 @@ export type WorkOrderOperation = ChildDoctype & {
 }
 
 export type WorkOrderItem = ChildDoctype & {
-	item_code: string
-	item_name: string
-	name: string
 	required_qty: number
 	source_warehouse: string
 	target_warehouse?: string

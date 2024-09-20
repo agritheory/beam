@@ -10,6 +10,11 @@ export default defineConfig({
 		open: './dev.html',
 	},
 	plugins: [vue()],
+	resolve: {
+		alias: {
+			'@': resolve(__dirname),
+		},
+	},
 	build: {
 		emptyOutDir: false,
 		outDir: './beam/www/beam/',

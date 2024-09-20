@@ -11,9 +11,10 @@ import type {
 	ListContext,
 	ScanConfig,
 	ScanContext,
+	StockEntry,
 	WorkOrder,
 	Workstation,
-} from './types/index.js'
+} from '@/types/index.js'
 
 declare const frappe: any
 
@@ -47,6 +48,12 @@ export const useDataStore = defineStore('data', () => {
 
 	const init = async () => {
 		await setConfig()
+	}
+
+	const setConfig = async () => {
+		if (!Object.keys(config.value).length) {
+			config.value = await frappe.xcall('beam.beam.scan.config.get_scan_doctypes')
+		}
 	}
 
 	const formatUrl = (url: string, params?: Record<string, any>) => {
@@ -85,12 +92,6 @@ export const useDataStore = defineStore('data', () => {
 			headers: headers.value,
 			body: JSON.stringify(data),
 		})
-	}
-
-	const setConfig = async () => {
-		if (!Object.keys(config.value).length) {
-			config.value = await frappe.xcall('beam.beam.scan.config.get_scan_doctypes')
-		}
 	}
 
 	const getOne = async <T>(doctype: string, name: string) => {
@@ -145,40 +146,47 @@ export const useDataStore = defineStore('data', () => {
 		return []
 	}
 
-	const save = async () => {
-		return await frappe.xcall('frappe.desk.form.save.savedocs', {
-			action: 'Save',
-			doc: form.value,
-		})
-	}
-
-	const insert = async <T>(doctype: string, body: Record<string, any>) => {
+	const insert = async <T>(doctype: string, body: T) => {
 		const url = `/api/resource/${doctype}`
 		const response = await post(url, body)
-		const { data }: { data: T } = await response.json()
-		alert(response.ok ? 'Document created' : `Error: ${data.exception}`)
-		return { data, response }
+		const { data, exception }: { data: T; exception: string } = await response.json()
+		alert(response.ok ? 'Document created' : exception)
+		return { data, exception, response }
+	}
+
+	const save = async <T>(doctype: string, name: string, body: Partial<T>) => {
+		const url = `/api/resource/${doctype}/${name}`
+		const response = await post(url, body)
+		const { data, exception }: { data: T; exception: string } = await response.json()
+		alert(response.ok ? 'Document updated' : exception)
+		return { data, exception, response }
 	}
 
 	const submit = async <T>(doctype: string, name: string) => {
 		const url = `/api/resource/${doctype}/${name}`
 		const response = await put(url, { docstatus: 1 })
-		const { data }: { data: T } = await response.json()
-		alert(response.ok ? 'Document status changed to Submitted' : `Error: ${data.exception}`)
-		return { data, response }
+		const { data, exception }: { data: T; exception: string } = await response.json()
+		alert(response.ok ? 'Document status changed to Submitted' : exception)
+		return { data, exception, response }
 	}
 
 	const cancel = async <T>(doctype: string, name: string) => {
 		const url = `/api/resource/${doctype}/${name}`
 		const response = await put(url, { docstatus: 2 })
-		const { data }: { data: T } = await response.json()
-		alert(response.ok ? 'Document status changed to Cancelled' : `Error: ${data.exception}`)
-		return { data, response }
+		const { data, exception }: { data: T; exception: string } = await response.json()
+		alert(response.ok ? 'Document status changed to Cancelled' : exception)
+		return { data, exception, response }
 	}
 
-	const createStockEntry = async (data: Record<string, any>) => {
+	const getMappedStockEntry = async (data: Record<string, any>) => {
 		const url = '/api/method/erpnext.manufacturing.doctype.work_order.work_order.make_stock_entry'
-		return await post(url, data)
+		const response = await post(url, data)
+		const { message }: { message: StockEntry } = await response.json()
+		if (!message) {
+			alert('Error: Could not map Work Order to Stock Entry')
+			return
+		}
+		return message
 	}
 
 	return {
@@ -198,16 +206,16 @@ export const useDataStore = defineStore('data', () => {
 		post,
 		put,
 
-		// document actions
+		// document workflow actions
 		cancel,
 		insert,
 		save,
 		submit,
 
 		// other api actions
-		createStockEntry,
 		getAll,
 		getDemand,
+		getMappedStockEntry,
 		getOne,
 		getPaginated,
 		scan,

@@ -253,7 +253,7 @@
   dependencies:
     undici-types "~6.19.2"
 
-"@vitejs/plugin-vue@^5.0.4":
+"@vitejs/plugin-vue@^5.1.4":
   version "5.1.4"
   resolved "https://registry.yarnpkg.com/@vitejs/plugin-vue/-/plugin-vue-5.1.4.tgz#72b8b705cfce36b00b59af196195146e356500c4"
   integrity sha512-N2XSI2n3sQqp5w7Y/AN/L2XDjBIRGqXko+eDp42sydYSBeJuSm5a1sLf8zakmo8u7tA8NmBgoDLA1HeOESjp9A==
@@ -514,7 +514,7 @@ undici-types@~6.19.2:
   resolved "https://registry.yarnpkg.com/undici-types/-/undici-types-6.19.8.tgz#35111c9d1437ab83a7cdc0abae2f26d88eda0a02"
   integrity sha512-ve2KP6f/JnbPBFyobGHuerC9g1FYGn/F8n1LWTwNxCEzd6IfqTwUQcNXgEtmmQ6DlRrC1hrSrBnCZPokRrDHjw==
 
-vite@^5.2.11:
+vite@^5.4.6:
   version "5.4.6"
   resolved "https://registry.yarnpkg.com/vite/-/vite-5.4.6.tgz#85a93a1228a7fb5a723ca1743e337a2588ed008f"
   integrity sha512-IeL5f8OO5nylsgzd9tq4qD2QqI0k2CQLGrWD0rCN0EQJZpBK5vJAx0I+GDkMOXxQX/OfFHMuLIx6ddAxGX/k+Q==
@@ -530,14 +530,14 @@ vue-demi@^0.14.10:
   resolved "https://registry.yarnpkg.com/vue-demi/-/vue-demi-0.14.10.tgz#afc78de3d6f9e11bf78c55e8510ee12814522f04"
   integrity sha512-nMZBOwuzabUO0nLgIcc6rycZEebF6eeUfaiQx9+WSk8e29IbLvPU9feI6tqW4kTo3hvoYAJkMh8n8D0fuISphg==
 
-vue-router@^4.3.2:
+vue-router@^4.4.5:
   version "4.4.5"
   resolved "https://registry.yarnpkg.com/vue-router/-/vue-router-4.4.5.tgz#bdf535e4cf32414ebdea6b4b403593efdb541388"
   integrity sha512-4fKZygS8cH1yCyuabAXGUAsyi1b2/o/OKgu/RUb+znIYOxPRxdkytJEx+0wGcpBE1pX6vUgh5jwWOKRGvuA/7Q==
   dependencies:
     "@vue/devtools-api" "^6.6.4"
 
-vue@^3.4.37, vue@^3.5.6:
+vue@^3.5.6:
   version "3.5.6"
   resolved "https://registry.yarnpkg.com/vue/-/vue-3.5.6.tgz#025b1d411627883577457797eff93e85e61ef9c1"
   integrity sha512-zv+20E2VIYbcJOzJPUWp03NOGFhMmpCKOfSxVTmCYyYFFko48H9tmuQFzYj7tu4qX1AeXlp9DmhIP89/sSxxhw==

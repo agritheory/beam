@@ -21,9 +21,9 @@
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
-import Transfer from '../components/Transfer.vue'
-import { useDataStore } from '../store'
-import type { JobCard, ListViewItem, WorkOrder } from '../types'
+import Transfer from '@/components/Transfer.vue'
+import { useDataStore } from '@/store'
+import type { JobCard, ListViewItem, WorkOrder } from '@/types'
 
 const route = useRoute()
 const store = useDataStore()
@@ -42,6 +42,15 @@ onMounted(async () => {
 		wip_warehouse: workOrder.value.wip_warehouse,
 	}))
 
+	// build required items list
+	items.value = workOrder.value.required_items.map(item => ({
+		...item,
+		label: item.item_code,
+		count: { count: item.transferred_qty, of: item.required_qty },
+		linkComponent: 'ListItem',
+		description: `${item.source_warehouse}`,
+	}))
+
 	// build operation list
 	operations.value = workOrder.value.operations.map(operation => ({
 		...operation,
@@ -51,23 +60,11 @@ onMounted(async () => {
 		route: `#/work_order/${workOrderId}/operation/${operation.name}`,
 	}))
 
-	items.value = workOrder.value.required_items.map(item => ({
-		...item,
-		label: item.item_code,
-		count: { count: item.transferred_qty, of: item.required_qty },
-		linkComponent: 'ListItem',
-		description: `${item.source_warehouse}`,
-	}))
-
 	// get job cards
 	for (const operation of workOrder.value.operations) {
 		const jobList = await store.getAll<JobCard[]>('Job Card', {
 			filters: JSON.stringify([['operation_id', '=', operation.name]]),
 		})
-
-		if (jobList.length === 0) {
-			continue
-		}
 
 		for (const job of jobList) {
 			const jobCard = await store.getOne<JobCard>('Job Card', job.name)
