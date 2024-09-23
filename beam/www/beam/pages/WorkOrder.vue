@@ -12,7 +12,7 @@
 	<div class="box">
 		<Transfer :items="workOrder?.required_items" :id="workOrderId" />
 	</div>
-	<div class="box">
+	<div class="box" v-show="operations.length">
 		<ListView :items="operations" />
 	</div>
 </template>
