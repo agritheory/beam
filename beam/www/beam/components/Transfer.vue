@@ -1,11 +1,14 @@
 <template>
-	<div class="control-buttons">
-		<button @click="create" :disabled="!!stockEntryId">Save</button>
-		<button @click="store.submit<StockEntry>('Stock Entry', stockEntryId)" :disabled="!stockEntryId">Submit</button>
-		<button @click="store.cancel<StockEntry>('Stock Entry', stockEntryId)" :disabled="!stockEntryId">Cancel</button>
-	</div>
+	<div>
+		<ControlButtons
+			:docstatus="stockEntryId"
+			:onCreate="create"
+			:onSubmit="() => store.submit<StockEntry>('Stock Entry', stockEntryId)"
+			:onCancel="() => store.cancel<StockEntry>('Stock Entry', stockEntryId)"
+		/>
 
-	<ListView :items="listItems" />
+		<ListView :items="listItems" />
+	</div>
 </template>
 
 <script setup lang="ts">
@@ -47,11 +50,3 @@ watchEffect(() => {
 	}))
 })
 </script>
-
-<style scoped>
-.control-buttons {
-	display: flex;
-	justify-content: flex-end;
-	gap: 1rem;
-}
-</style>
