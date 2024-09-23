@@ -1,12 +1,18 @@
 <template>
+	<Navbar @click="handlePrimaryAction">
+		<template #title>
+			<h1 class="nav-title">Ship</h1>
+		</template>
+		<template #navbaraction>Home</template>
+	</Navbar>
 	<ListView :items="items" />
 </template>
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 
-import { useDataStore } from '../store'
-import type { ListViewItem } from '../types'
+import { useDataStore } from '@/store'
+import type { ListViewItem } from '@/types'
 
 const store = useDataStore()
 const items = ref<Partial<ListViewItem>[]>([])

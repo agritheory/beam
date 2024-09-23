@@ -12,8 +12,8 @@
 import { Navbar } from '@stonecrop/beam'
 import { onMounted, ref } from 'vue'
 
-import { useDataStore } from '../store'
-import type { ListViewItem, Workstation } from '../types'
+import { useDataStore } from '@/store'
+import type { ListViewItem, Workstation } from '@/types'
 
 const store = useDataStore()
 const workstations = ref<ListViewItem[]>([])

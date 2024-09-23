@@ -15,7 +15,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 
-import { useScan } from './scan'
+import { useScan } from '@/scan'
 
 const { scanHandler } = useScan()
 const showModal = ref(false)

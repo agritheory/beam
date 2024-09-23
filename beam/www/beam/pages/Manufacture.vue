@@ -1,12 +1,18 @@
 <template>
+	<Navbar @click="handlePrimaryAction">
+		<template #title>
+			<h1 class="nav-title">Manufacture</h1>
+		</template>
+		<template #navbaraction>Home</template>
+	</Navbar>
 	<ListView :items="items" />
 </template>
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 
-import { useDataStore } from '../store'
-import type { ListViewItem, WorkOrder } from '../types'
+import { useDataStore } from '@/store'
+import type { ListViewItem, WorkOrder } from '@/types'
 
 const items = ref<ListViewItem[]>([])
 const store = useDataStore()
@@ -27,6 +33,10 @@ onMounted(async () => {
 		})
 	})
 })
+
+const handlePrimaryAction = () => {
+	console.log('handle primary action')
+}
 </script>
 
 <style>

@@ -12,8 +12,13 @@ const home = [
 		linkComponent: 'ListAnchor',
 	},
 	{
-		label: 'Transfer',
-		route: '#/transfer',
+		label: 'Demand',
+		route: '#/demand',
+		linkComponent: 'ListAnchor',
+	},
+	{
+		label: 'Move',
+		route: '#/move',
 		linkComponent: 'ListAnchor',
 	},
 	{

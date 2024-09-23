@@ -1,19 +1,21 @@
 <template>
-	<!-- <Navbar @click="handlePrimaryAction">
+	<Navbar>
 		<template #title>
-			<h3 class="nav-title">Transfer</h3>
+			<h1 class="nav-title">Demand</h1>
 		</template>
-		<template #navbaraction>Done</template>
-	</Navbar> -->
+		<template #navbaraction>
+			<RouterLink :to="{ name: 'home' }">Home</RouterLink>
+		</template>
+	</Navbar>
 	<ListView :items="transfer" />
 </template>
 
 <script setup lang="ts">
-// import { Navbar } from '@stonecrop/beam'
+import { Navbar } from '@stonecrop/beam'
 import { onMounted, ref } from 'vue'
 
-import { useDataStore } from '../store'
-import type { ListViewItem } from '../types'
+import { useDataStore } from '@/store'
+import type { ListViewItem } from '@/types'
 
 declare const frappe: any
 
@@ -26,9 +28,9 @@ onMounted(async () => {
 	// TODO: move this to the server
 	data.forEach(row => {
 		row.count = { count: row.allocated_qty, of: `${row.total_required_qty} ${row.stock_uom}` }
-		row.label = row.parent
+		row.label = `${row.item_code} from ${row.warehouse}`
 		row.linkComponent = 'ListAnchor'
-		row.description = `${row.item_code} - ${row.warehouse}`
+		row.description = row.parent
 		row.route = `#/${frappe.scrub(row.doctype)}/${row.parent}`
 		transfer.value.push(row)
 	})

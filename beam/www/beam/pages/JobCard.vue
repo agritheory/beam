@@ -11,8 +11,8 @@
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { useDataStore } from '../store'
-import type { WorkOrder } from '../types'
+import { useDataStore } from '@/store'
+import type { WorkOrder } from '@/types'
 
 const route = useRoute()
 const store = useDataStore()
