@@ -1,0 +1,11 @@
+{
+	"name": "Frappe Bench",
+	"forwardPorts": [8000, 9000, 6787],
+	"remoteUser": "frappe",
+	"shutdownAction": "stopCompose",
+	"postCreateCommand": "bash /workspace/.devcontainer/scripts/init.sh",
+
+	"dockerComposeFile": "./docker-compose.yml",
+	"service": "frappe",
+	"workspaceFolder": "/workspace/frappe-bench"
+}
