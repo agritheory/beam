@@ -1,7 +1,6 @@
 <template>
 	<div>
 		<ControlButtons
-			:docstatus="stockEntryId"
 			:onCreate="create"
 			:onSubmit="() => store.submit<StockEntry>('Stock Entry', stockEntryId)"
 			:onCancel="() => store.cancel<StockEntry>('Stock Entry', stockEntryId)"
@@ -16,6 +15,7 @@ import { ref, watchEffect } from 'vue'
 
 import { useDataStore } from '@/store'
 import type { ListViewItem, StockEntry, WorkOrderItem } from '@/types'
+import ControlButtons from './ControlButtons.vue';
 
 const { id, items } = defineProps<{
 	id: string
@@ -27,7 +27,7 @@ const store = useDataStore()
 const listItems = ref<ListViewItem[]>([])
 const stockEntryId = ref('')
 
-const create = async () => {
+const create = async (): Promise<{ data: any }> => {
 	const stockEntry = await store.getMappedStockEntry({
 		work_order_id: id,
 		purpose: 'Material Transfer for Manufacture',
@@ -37,6 +37,7 @@ const create = async () => {
 	if (data.name) {
 		stockEntryId.value = data.name
 	}
+	return { data }
 }
 
 watchEffect(() => {

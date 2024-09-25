@@ -91,6 +91,7 @@ export type JobCard = ParentDoctype & {
 
 export type StockEntry = ParentDoctype & {
 	items: WorkOrderItem[]
+	docstatus: number
 }
 
 export type WorkOrder = ParentDoctype & {
