@@ -3,7 +3,7 @@
 
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { type RouteLocationNormalized, useRoute } from 'vue-router'
 
 import type {
 	FormContext,
@@ -33,26 +33,36 @@ export const useDataStore = defineStore('data', () => {
 		}
 	})
 
-	watch(route, async () => {
-		if (route.meta.view === 'list' && config.value.listview.includes(route.meta.doctype)) {
-			context.value = { listview: route.meta.doctype }
-		} else if (route.meta.view === 'form' && config.value.frm.includes(route.meta.doctype)) {
-			context.value = { frm: route.meta.doctype }
-		}
+	watch(route, async () => await init())
 
-		form.value = {}
-		if (route.meta.view === 'form' && config.value.frm.includes(route.meta.doctype)) {
-			form.value = await getOne<JobCard | WorkOrder | Workstation>(route.meta.doctype, route.params.orderId.toString())
-		}
-	})
-
-	const init = async () => {
+	const init = async (currentRoute?: RouteLocationNormalized) => {
 		await setConfig()
+		await setForm(currentRoute || route)
+		await setScanContext(currentRoute || route)
 	}
 
 	const setConfig = async () => {
 		if (!Object.keys(config.value).length) {
 			config.value = await frappe.xcall('beam.beam.scan.config.get_scan_doctypes')
+		}
+	}
+
+	// TODO: somehow vue-router's composables are not working as intended here, so accepting route input
+	const setForm = async (currentRoute: RouteLocationNormalized) => {
+		const meta = currentRoute.meta
+		form.value = {}
+		if (meta.view === 'form' && config.value.frm.includes(meta.doctype)) {
+			const docname = currentRoute.params.orderId.toString()
+			form.value = await getOne<JobCard | WorkOrder | Workstation>(meta.doctype, docname)
+		}
+	}
+
+	const setScanContext = async (currentRoute: RouteLocationNormalized) => {
+		const meta = currentRoute.meta
+		if (meta.view === 'list' && config.value.listview.includes(meta.doctype)) {
+			context.value = { listview: meta.doctype }
+		} else if (meta.view === 'form' && config.value.frm.includes(meta.doctype)) {
+			context.value = { frm: meta.doctype }
 		}
 	}
 

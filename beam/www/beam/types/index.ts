@@ -19,6 +19,7 @@ export type ListViewItem = {
 export type BaseContext = {
 	action: string
 	doctype: string
+	parentfield?: string
 	field: string
 	target: string
 }

@@ -22,8 +22,8 @@ class ScanHandler {
 			let fn: Function
 			const action = response[0].action
 
-			if (action in this.store.config.value.client) {
-				const path = this.store.config.value.client[action][0]
+			if (action in this.store.config.client) {
+				const path = this.store.config.client[action][0]
 				// call (first) custom built callback registered in hooks
 				fn = path.split('.').reduce((previous, current) => previous[current], window)
 				return await fn(response)
@@ -70,12 +70,6 @@ class ScanHandler {
 						for (const item of state.form.value.items) {
 							if (item.name === row.name) {
 								item[action.field] = action.target
-
-								// TODO: should this happen on the client side?
-								// if (state.form.value.doctype === 'Stock Entry' && action.field === 'basic_rate') {
-								// 	cur_frm.events.set_basic_rate(cur_frm, row.doctype, row.name)
-								// }
-
 								break
 							}
 						}
@@ -137,17 +131,9 @@ class ScanHandler {
 	}
 
 	async add_or_increment(barcode_context: FormContext[]) {
-		const source_warehouses = ['Material Consumption for Manufacture', 'Material Issue']
-		const target_warehouses = ['Material Receipt', 'Manufacture']
-		const both_warehouses = [
-			'Material Transfer for Manufacture',
-			'Material Transfer',
-			'Send to Subcontractor',
-			'Repack',
-		]
-
 		barcode_context.forEach(async action => {
-			const existing_rows = this.store.form.value.items.filter(
+			const parentfield = action.parentfield || 'items'
+			const existing_rows = this.store.form[parentfield].filter(
 				row =>
 					(row.item_code === action.context.item_code && !row.handling_unit) || row.barcode === action.context.barcode
 			)
@@ -155,15 +141,24 @@ class ScanHandler {
 			if (existing_rows.length > 0) {
 				this.store.$patch(state => {
 					for (const row of existing_rows) {
-						for (const item of state.form.value.items) {
+						for (const item of state.form[parentfield]) {
 							if (item.name === row.name) {
-								item.qty += 1
+								item.transferred_qty = (item.transferred_qty ?? 0) + 1
 								break
 							}
 						}
 					}
 				})
 			} else {
+				const source_warehouses = ['Material Consumption for Manufacture', 'Material Issue']
+				const target_warehouses = ['Material Receipt', 'Manufacture']
+				const both_warehouses = [
+					'Material Transfer for Manufacture',
+					'Material Transfer',
+					'Send to Subcontractor',
+					'Repack',
+				]
+
 				this.store.$patch(state => {
 					const item = {
 						item_code: action.context.item_code,
@@ -172,7 +167,7 @@ class ScanHandler {
 					}
 
 					if (action.doctype === 'Stock Entry') {
-						const entry_type = state.form.value.stock_entry_type
+						const entry_type = state.form.stock_entry_type
 						if (source_warehouses.includes(entry_type)) {
 							item.s_warehouse = action.context.warehouse
 						} else if (target_warehouses.includes(entry_type)) {
@@ -183,12 +178,7 @@ class ScanHandler {
 						}
 					}
 
-					state.form.value.items.push(item)
-
-					// TODO: should this happen on the client side?
-					// if (state.form.value.doctype === 'Stock Entry') {
-					// 	cur_frm.events.set_basic_rate(cur_frm, row.doctype, row.name)
-					// }
+					state.form[parentfield].push(item)
 				})
 			}
 		})

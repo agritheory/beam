@@ -34,5 +34,6 @@ export default defineConfig({
 	},
 	define: {
 		'process.env': process.env,
+		__VUE_PROD_DEVTOOLS__: true,
 	},
 })

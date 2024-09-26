@@ -12,7 +12,7 @@
 		"build:watch": "vite build --watch --config=./beam/www/beam/vite.config.ts"
 	},
 	"dependencies": {
-		"@stonecrop/beam": "^0.2.33",
+		"@stonecrop/beam": "latest",
 		"@vitejs/plugin-vue": "^5.1.4",
 		"onscan.js": "^1.5.2",
 		"pinia": "^2.2.2",
