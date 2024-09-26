@@ -15,7 +15,7 @@ import { ref, watchEffect } from 'vue'
 
 import { useDataStore } from '@/store'
 import type { ListViewItem, StockEntry, WorkOrderItem } from '@/types'
-import ControlButtons from './ControlButtons.vue';
+import ControlButtons from '../components/ControlButtons.vue'
 
 const { id, items } = defineProps<{
 	id: string
@@ -27,17 +27,17 @@ const store = useDataStore()
 const listItems = ref<ListViewItem[]>([])
 const stockEntryId = ref('')
 
-const create = async (): Promise<{ data: any }> => {
+const create = async () => {
 	const stockEntry = await store.getMappedStockEntry({
 		work_order_id: id,
 		purpose: 'Material Transfer for Manufacture',
 	})
 
-	const { data } = await store.insert('Stock Entry', stockEntry)
+	const { data, exception, response } = await store.insert('Stock Entry', stockEntry)
 	if (data.name) {
 		stockEntryId.value = data.name
 	}
-	return { data }
+	return { data, exception, response }
 }
 
 watchEffect(() => {
