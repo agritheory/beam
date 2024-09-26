@@ -233,10 +233,10 @@
   resolved "https://registry.yarnpkg.com/@rollup/rollup-win32-x64-msvc/-/rollup-win32-x64-msvc-4.22.0.tgz#956948629f6b87de0bdf526b28d940221540bbb6"
   integrity sha512-YdicNOSJONVx/vuPkgPTyRoAPx3GbknBZRCOUkK84FJ/YTfs/F0vl/YsMscrB6Y177d+yDRcj+JWMPMCgshwrA==
 
-"@stonecrop/beam@^0.2.33":
-  version "0.2.34"
-  resolved "https://registry.yarnpkg.com/@stonecrop/beam/-/beam-0.2.34.tgz#dc1b74bacfe6237d37047f3965f1d1ec37355fa7"
-  integrity sha512-YP/pjo0impeQBBwTEMQ6U2BZ9TMtksSTokos3bgOGu0wAN9bHLKHstv05fqEGgECaT6oRIze+wl9Fav4jUXDnQ==
+"@stonecrop/beam@latest":
+  version "0.2.35"
+  resolved "https://registry.yarnpkg.com/@stonecrop/beam/-/beam-0.2.35.tgz#80f940199b228c4cbb271db154195e19380e0b7b"
+  integrity sha512-i4J/twA55yhKQ51CVKizR7U0cVw7sirwV7jMfABeGbdlEkiDQg4EvXawDa8xjgpbmA56xozRjImNaq8cSW3DXg==
   dependencies:
     onscan.js "^1.5.2"
     vue "^3.5.6"
