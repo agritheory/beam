@@ -5,13 +5,17 @@
 		</template>
 		<template #navbaraction>Home</template>
 	</Navbar>
+
 	<div>
 		<p>Planned Start: {{ store.form.planned_start_date }}</p>
 	</div>
+
 	<br />
+
 	<div class="box">
-		<Transfer :items="store.form.required_items" :id="workOrderId" :key="componentKey" />
+		<Transfer :id="workOrderId" />
 	</div>
+
 	<div class="box" v-show="operations.length">
 		<ListView :items="operations" />
 	</div>
@@ -26,33 +30,14 @@ import { useDataStore } from '@/store'
 import type { /* JobCard, */ ListViewItem, WorkOrder } from '@/types'
 
 const route = useRoute()
+const store = useDataStore()
 const workOrderId = route.params.orderId.toString()
 
-const store = useDataStore()
-store.$subscribe(() => componentKey.value++)
-
-// const items = ref<ListViewItem[]>([])
 // const jobCards = ref<ListViewItem[]>([])
 const operations = ref<ListViewItem[]>([])
-const componentKey = ref(0)
 
 onMounted(async () => {
 	const order = store.form as Partial<WorkOrder>
-
-	store.$patch(state => {
-		state.form.required_items.forEach(item => {
-			item.wip_warehouse = state.form.wip_warehouse
-		})
-	})
-
-	// build required items list
-	// items.value = order.required_items.map(item => ({
-	// 	...item,
-	// 	label: item.item_code,
-	// 	count: { count: item.transferred_qty, of: item.required_qty },
-	// 	linkComponent: 'ListItem',
-	// 	description: `${item.source_warehouse}`,
-	// }))
 
 	// build operation list
 	operations.value = order.operations.map(operation => ({
