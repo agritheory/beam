@@ -61,6 +61,8 @@ export type ChildDoctypeMeta = ParentDoctypeMeta & {
 }
 
 export type ParentDoctype = ParentDoctypeMeta & {
+	docstatus: number
+
 	// exists for most sales/purchase/stock documents
 	items?: ChildDoctype[]
 
@@ -91,7 +93,6 @@ export type JobCard = ParentDoctype & {
 
 export type StockEntry = ParentDoctype & {
 	items: WorkOrderItem[]
-	docstatus: number
 }
 
 export type WorkOrder = ParentDoctype & {
