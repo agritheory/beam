@@ -14,6 +14,7 @@
 	"dependencies": {
 		"@stonecrop/beam": "latest",
 		"@vitejs/plugin-vue": "^5.1.4",
+		"@vueuse/core": "^11.1.0",
 		"onscan.js": "^1.5.2",
 		"pinia": "^2.2.2",
 		"vite": "^5.4.6",

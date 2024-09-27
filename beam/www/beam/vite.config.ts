@@ -23,8 +23,8 @@ export default defineConfig({
 		lib: {
 			entry: resolve(__dirname, 'index.ts'),
 			name: 'beam',
-			formats: ['es'], // only create module output for Frappe
-			fileName: format => `index.js`, // creates module only output
+			formats: ['umd'], // only create module output for Frappe
+			fileName: () => 'index.js',
 		},
 		rollupOptions: {
 			output: {

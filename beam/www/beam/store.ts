@@ -19,6 +19,7 @@ import type {
 declare const frappe: any
 
 export const useDataStore = defineStore('data', () => {
+	const recordsPerPage = 20
 	const route = useRoute()
 
 	const config = ref<ScanConfig>({})
@@ -111,7 +112,13 @@ export const useDataStore = defineStore('data', () => {
 		return data
 	}
 
-	const getAll = async <T>(doctype: string, params?: Record<string, any>) => {
+	const getAll = async <T>(doctype: string, params?: Record<string, any>, page?: number) => {
+		if (page) {
+			const start = (page - 1) * recordsPerPage
+			const end = start + recordsPerPage
+			params = { ...params, limit_start: start, limit_page_length: end }
+		}
+
 		const url = `/api/resource/${doctype}`
 		const response = await get(url, params)
 		const { data }: { data: T } = await response.json()
@@ -120,25 +127,10 @@ export const useDataStore = defineStore('data', () => {
 
 	const getDemand = async (params?: Record<string, any>) => {
 		// automatically fetch all pages of demand data based on parameters
-		const demandUrl = '/api/method/beam.beam.demand.demand.get_demand'
-		const url = formatUrl(demandUrl, params)
-		return await getPaginated(url)
-	}
-
-	// ref: https://observablehq.com/@xari/paginated_fetch
-	const getPaginated = async (url: string, page: number = 1, previousResponse: any[] = []) => {
-		const pageFragment = `${url}&page=${page}`
-		const formattedUrl = new URL(pageFragment, window.location.origin)
-		const response = await fetch(formattedUrl)
-		const data = await response.json()
-
-		const combinedResponse = [...previousResponse, ...data.message]
-		if (data.message.length !== 0) {
-			page++
-			return await getPaginated(url, page, combinedResponse)
-		}
-
-		return { data: combinedResponse }
+		const url = '/api/method/beam.beam.demand.demand.get_demand'
+		const response = await get(url, params)
+		const { message } = await response.json()
+		return { data: message }
 	}
 
 	const scan = async (barcode: string, qty: number): Promise<(FormContext | ListContext)[]> => {
@@ -227,7 +219,6 @@ export const useDataStore = defineStore('data', () => {
 		getDemand,
 		getMappedStockEntry,
 		getOne,
-		getPaginated,
 		scan,
 	}
 })
