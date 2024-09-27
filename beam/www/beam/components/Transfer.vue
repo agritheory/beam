@@ -1,6 +1,5 @@
 <template>
 	<ControlButtons
-		:doctypeName="stockEntryId"
 		:onCreate="create"
 		:onSubmit="() => store.submit<StockEntry>('Stock Entry', stockEntryId)"
 		:onCancel="() => store.cancel<StockEntry>('Stock Entry', stockEntryId)"
