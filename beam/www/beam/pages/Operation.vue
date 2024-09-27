@@ -21,7 +21,6 @@ import type { JobCard, WorkOrder, WorkOrderOperation } from '@/types'
 const route = useRoute()
 const store = useDataStore()
 
-const workOrder = ref<Partial<WorkOrder>>({})
 const operation = ref<Partial<WorkOrderOperation>>({})
 const jobCard = ref<Partial<JobCard>>({})
 
@@ -36,8 +35,8 @@ const elapsedTime = computed(() => {
 })
 
 onMounted(async () => {
-	workOrder.value = await store.getOne<WorkOrder>('Work Order', route.params.orderId.toString())
-	operation.value = workOrder.value.operations.find(operation => operation.name === route.params.id) || {}
+	const workOrder = store.form as Partial<WorkOrder>
+	operation.value = workOrder.operations.find(operation => operation.name === route.params.id) || {}
 
 	const jobList = await store.getAll<JobCard[]>('Job Card', {
 		filters: JSON.stringify([['operation_id', '=', route.params.id]]),

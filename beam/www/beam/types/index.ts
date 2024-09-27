@@ -19,6 +19,7 @@ export type ListViewItem = {
 export type BaseContext = {
 	action: string
 	doctype: string
+	parentfield?: string
 	field: string
 	target: string
 }
@@ -70,6 +71,7 @@ export type ParentDoctype = ParentDoctypeMeta & {
 	from_warehouse?: string
 	stock_entry_type?: string
 	to_warehouse?: string
+	wip_warehouse?: string
 }
 
 export type ChildDoctype = ChildDoctypeMeta & {

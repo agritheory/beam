@@ -583,6 +583,16 @@ frm = {
 		],
 	},
 	"Item": {
+		"Work Order": [
+			{
+				"action": "add_or_increment",
+				"doctype": "Work Order Item",
+				"parentfield": "required_items",
+				"field": "item_code",
+				"target": "target.item_code",
+				"context": "target",
+			},
+		],
 		"Delivery Note": [
 			{
 				"action": "add_or_increment",

@@ -38,13 +38,13 @@ router.beforeEach(async (to, from, next) => {
 				window.location.href = '/login?redirect-to=/beam#'
 			} else {
 				const store = useDataStore()
-				await store.init()
+				await store.init(to)
 				next()
 			}
 		} else {
 			// assuming user is logged in and authenticated for all Beam views
 			const store = useDataStore()
-			await store.init()
+			await store.init(to)
 			next()
 		}
 	}

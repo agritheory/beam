@@ -5,7 +5,7 @@
 		</template>
 		<template #navbaraction>Home</template>
 	</Navbar>
-	<Transfer :items="stockEntry?.items" :id="stockEntry.name" />
+	<Transfer :id="stockEntry.name" />
 </template>
 
 <script setup lang="ts">
