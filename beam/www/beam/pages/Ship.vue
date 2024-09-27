@@ -31,7 +31,7 @@ onMounted(async () => {
 	})
 })
 
-// const handlePrimaryAction = () => {}
+const handlePrimaryAction = () => {}
 </script>
 
 <style>
