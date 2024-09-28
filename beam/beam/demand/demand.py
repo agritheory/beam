@@ -185,6 +185,66 @@ def get_sales_demand(name: str | None = None, item_code: str | None = None) -> l
 	return sales_demand
 
 
+def get_receiving_demand(name: str | None = None, item_code: str | None = None) -> list[Demand]:
+	receiving_demand = []
+	if name:
+		filters = {"docstatus": 1, "status": ["!=", "Closed"], "name": name}
+	else:
+		filters = {"docstatus": 1, "status": ["!=", "Closed"]}
+
+	# TODO refactor to union of Purchase Order, Blanket Orders, Subcontracting Order and un-received Purchase Invoices for inventoriable items
+	purchase_orders = frappe.get_all(
+		"Purchase Order",
+		filters=filters,
+		fields=["name", "company", "schedule_date", "creation"],
+		order_by="schedule_date ASC, creation ASC, name ASC",
+	)
+
+	receiving_workstations = {
+		s.company: s.receiving_workstation
+		for s in frappe.get_all("BEAM Settings", ["company", "receiving_workstation"])
+	}
+
+	for purchase_order in purchase_orders:
+		if item_code:
+			filters = {"parent": purchase_order.name, "item_code": item_code}
+		else:
+			filters = {"parent": purchase_order.name}
+
+		# TODO refactor to union of Purchase Order, Blanket Orders, Subcontracting Order and un-received Purchase Invoices for inventoriable items
+		purchase_order_items = frappe.get_all(
+			"Purchase Order Item",
+			filters=filters,
+			fields=["name", "item_code", "stock_qty", "idx", "warehouse"],
+			order_by="schedule_date, idx ASC",
+		)
+
+		for item in purchase_order_items:
+			# if item.stock_qty:
+			# 	continue
+
+			receiving_demand.append(
+				frappe._dict(
+					{
+						"doctype": "Sales Order",
+						"parent": purchase_order.name,
+						"company": purchase_order.company,
+						"warehouse": item.warehouse,
+						"workstation": receiving_workstations.get(purchase_order.company) or "",
+						"name": item.name,
+						"idx": item.idx,
+						"item_code": item.item_code,
+						"schedule_date": purchase_order.schedule_date,
+						"total_required_qty": item.stock_qty,
+						"stock_uom": frappe.db.get_value("Item", item.item_code, "stock_uom"),
+						"creation": purchase_order.creation,
+					}
+				)
+			)
+
+	return receiving_demand
+
+
 def build_demand_allocation_map() -> None:
 	reset_demand_db()
 	build_demand_map()
