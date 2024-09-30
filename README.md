@@ -1,10 +1,31 @@
+<!-- Copyright (c) 2024, AgriTheory and contributors
+For license information, please see license.txt-->
+
 ## BEAM
 
 Barcode Scanning for ERPNext
 
-#### License
+## Codespace
 
-MIT
+To run this project in a Github Codespace, click on the button below.
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/agritheory/beam?quickstart=1)
+
+After the codespace is ready, you can run the following command in the terminal to start the Frappe server:
+
+```shell
+bench start
+```
+
+You can also build the project by running the following commands in the terminal:
+
+```shell
+cd apps/beam
+yarn install
+bench build --app beam && bench clear-cache
+```
+
+If you're trying to review a pull request inside the codespace, you can follow the instructions in the [official guide](https://docs.github.com/en/codespaces/developing-in-a-codespace/using-github-codespaces-for-pull-requests#reviewing-a-pull-request-in-codespaces).
 
 ## Install Instructions
 
@@ -76,3 +97,7 @@ sudo usermod -a -G lpadmin {username} # the "frappe" user in most installations
 Go to `{server URL or localhost}:631` to access the CUPS web interface
 Configuration on a remote server will take extra steps to secure:
 https://askubuntu.com/questions/23936/how-do-you-administer-cups-remotely-using-the-web-interface
+
+#### License
+
+MIT
