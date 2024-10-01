@@ -13,7 +13,7 @@ import { ref } from 'vue'
 
 import { useDataStore } from '@/store'
 import type { ListViewItem, StockEntry } from '@/types'
-import ControlButtons from '../components/ControlButtons.vue'
+import ControlButtons from '@/components/ControlButtons.vue'
 
 const { id: sourceId } = defineProps<{ id: string }>()
 

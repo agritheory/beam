@@ -10,22 +10,24 @@
 </template>
 
 <script setup lang="ts" generic="T extends ParentDoctype">
-import { ParentDoctype } from '@/types';
+import { DocActionResponse, ParentDoctype } from '@/types';
 import { defineProps, ref } from 'vue'
 const docstatus = ref(0)
 const doctypeName = ref("")
 
 const props = defineProps<{
-	onCreate: () => Promise<{ data: T }>
-	onSubmit: () => Promise<{ data: T; exception: string; response: Response }>
-	onCancel: () => Promise<{ data: T; exception: string; response: Response }>
+	onCreate: () => Promise<DocActionResponse<T>>
+	onSubmit: () => Promise<DocActionResponse<T>>
+	onCancel: () => Promise<DocActionResponse<T>>
 }>()
 
 const onSave = async () => {
 	try {
 		const { data } = await props.onCreate()
-		doctypeName.value = data.name
-		if (data) docstatus.value = data.docstatus
+		if (data) {
+			doctypeName.value = data.name
+			docstatus.value = data.docstatus
+		}
 	} catch (err) {
 		console.error(err)
 	}

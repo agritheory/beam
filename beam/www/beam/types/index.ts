@@ -130,3 +130,9 @@ export type Workstation = ParentDoctype & {
 	status?: string
 	workstation_name: string
 }
+
+export type DocActionResponse<T> = {
+	data: T
+	exception: string
+	response: Response
+}
