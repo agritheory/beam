@@ -37,7 +37,8 @@
 		{
 			"fieldname": "barcode_font_size",
 			"fieldtype": "Int",
-			"label": "Barcode Font Size"
+			"label": "Barcode Font Size",
+			"default": "12"
 		},
 		{
 			"description": "These Warehouse Types will be excluded when checking for inventory availability",
