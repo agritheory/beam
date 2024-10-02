@@ -4,22 +4,24 @@
 		<template v-else>
 			<button class="btn" @click="onSave" :disabled="!(docstatus === 0 && doctypeName === '')">Save</button>
 			<button class="btn" @click="onSubmit" :disabled="!(docstatus === 0 && doctypeName !== '')">Submit</button>
-			<button class="btn" @click="onCancel" :disabled="!(docstatus === 1)">Cancel</button>
+			<button class="btn" @click="onCancel" :disabled="docstatus !== 1">Cancel</button>
 		</template>
 	</div>
 </template>
 
 <script setup lang="ts" generic="T extends ParentDoctype">
-import { DocActionResponse, ParentDoctype } from '@/types';
-import { defineProps, ref } from 'vue'
-const docstatus = ref(0)
-const doctypeName = ref("")
+import { ref } from 'vue'
+
+import type { DocActionResponse, ParentDoctype } from '@/types'
 
 const props = defineProps<{
 	onCreate: () => Promise<DocActionResponse<T>>
 	onSubmit: () => Promise<DocActionResponse<T>>
 	onCancel: () => Promise<DocActionResponse<T>>
 }>()
+
+const docstatus = ref(0)
+const doctypeName = ref('')
 
 const onSave = async () => {
 	try {
@@ -53,9 +55,8 @@ const onCancel = async () => {
 
 const onAmend = () => {
 	docstatus.value = 0
-	doctypeName.value = ""
+	doctypeName.value = ''
 }
-
 </script>
 
 <style scoped>

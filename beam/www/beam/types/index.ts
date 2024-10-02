@@ -47,6 +47,7 @@ export type ScanConfig = {
 // frappe document interfaces
 export type ParentDoctypeMeta = {
 	creation?: string
+	docstatus?: number
 	doctype?: string
 	modified_by?: string
 	modified?: string
@@ -62,8 +63,6 @@ export type ChildDoctypeMeta = ParentDoctypeMeta & {
 }
 
 export type ParentDoctype = ParentDoctypeMeta & {
-	docstatus: number
-
 	// exists for most sales/purchase/stock documents
 	items?: ChildDoctype[]
 

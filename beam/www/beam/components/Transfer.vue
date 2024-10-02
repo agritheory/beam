@@ -2,8 +2,7 @@
 	<ControlButtons
 		:onCreate="create"
 		:onSubmit="() => store.submit<StockEntry>('Stock Entry', stockEntryId)"
-		:onCancel="() => store.cancel<StockEntry>('Stock Entry', stockEntryId)"
-	/>
+		:onCancel="() => store.cancel<StockEntry>('Stock Entry', stockEntryId)" />
 
 	<ListView :items="listItems" :key="componentKey" />
 </template>
@@ -11,9 +10,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
+import ControlButtons from '@/components/ControlButtons.vue'
 import { useDataStore } from '@/store'
 import type { ListViewItem, StockEntry } from '@/types'
-import ControlButtons from '@/components/ControlButtons.vue'
 
 const { id: sourceId } = defineProps<{ id: string }>()
 
