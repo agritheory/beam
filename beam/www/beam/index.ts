@@ -7,13 +7,8 @@ import { createApp } from 'vue'
 import { createRouter, createWebHashHistory } from 'vue-router'
 
 import Beam from './Beam.vue'
-import { makeServer } from './mocks/mirage'
 import routes from './routes'
 import { useDataStore } from './store'
-
-if (import.meta.env.DEV) {
-	makeServer()
-}
 
 interface FrappeWindow extends Window {
 	frappe: any

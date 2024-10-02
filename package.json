@@ -7,7 +7,6 @@
 		"url": "https://github.com/agritheory/beam.git"
 	},
 	"scripts": {
-		"dev": "vite ./beam/www/beam --config=./beam/www/beam/vite.config.ts",
 		"build": "vite build --config=./beam/www/beam/vite.config.ts",
 		"build:watch": "vite build --watch --config=./beam/www/beam/vite.config.ts"
 	},
@@ -23,7 +22,6 @@
 	},
 	"devDependencies": {
 		"@types/node": "^20.12.12",
-		"miragejs": "^0.1.48",
 		"typescript": "^5.5.4"
 	},
 	"publishConfig": {
