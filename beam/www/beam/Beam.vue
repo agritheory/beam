@@ -6,7 +6,7 @@
 	<BeamModalOutlet @confirmmodal="confirmModal" @closemodal="closeModal"></BeamModalOutlet>
 
 	<!-- setup scan input listeners -->
-	<ScanInput :scanHandler="scan" />
+	<ScanInput :scanHandler="scan" @scanInstance="registerInstance" />
 
 	<!-- setup main view -->
 	<RouterView />
@@ -35,6 +35,10 @@ onMounted(async () => {
 
 const scan = async (barcode: string, qty: number) => {
 	await scanHandler.scan(barcode, qty)
+}
+
+const registerInstance = (instance: any) => {
+	window.scanner = instance
 }
 
 const closeModal = () => {

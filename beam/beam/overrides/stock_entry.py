@@ -107,6 +107,10 @@ def get_handling_unit_qty(voucher_no, handling_unit, warehouse):
 
 # This function validates stock entry items to prevent missing handling units.
 def validate_items_with_handling_unit(doc, method=None):
+	beam_settings = frappe.get_doc("BEAM Settings", doc.company)
+	if not beam_settings.enable_handling_units:
+		return
+
 	if doc.stock_entry_type != "Material Receipt":
 		for row in doc.items:
 			if not frappe.get_value("Item", row.item_code, "enable_handling_unit"):

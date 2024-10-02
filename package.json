@@ -13,8 +13,9 @@
 		"register": "node ./beam/www/beam/component_resolver.js"
 	},
 	"dependencies": {
-		"@stonecrop/beam": "^0.2.33",
+		"@stonecrop/beam": "latest",
 		"@vitejs/plugin-vue": "^5.1.4",
+		"@vueuse/core": "^11.1.0",
 		"acorn": "^8.12.1",
 		"glob": "^11.0.0",
 		"onscan.js": "^1.5.2",
