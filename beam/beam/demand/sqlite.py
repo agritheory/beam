@@ -5,6 +5,7 @@ import pathlib
 import sqlite3
 
 import frappe
+from erpnext.stock.doctype.inventory_dimension.inventory_dimension import get_inventory_dimensions
 from frappe.utils import get_site_path
 from frappe.utils.synchronization import filelock
 
@@ -29,8 +30,17 @@ def get_demand_db() -> sqlite3.Connection:
 
 def create_demand_db(cursor: sqlite3.Cursor) -> sqlite3.Connection:
 	path = get_demand_db_path()
+
+	inventory_dimensions = get_inventory_dimensions()
+	if inventory_dimensions:
+		inventory_dimensions = (
+			f""",{",".join([f"{dimension['fieldname']} text" for dimension in inventory_dimensions])}"""
+		)
+	else:
+		inventory_dimensions = ""
+
 	cursor.execute(
-		"""
+		f"""
 			CREATE TABLE demand(
 				key text,
 				doctype text,
@@ -47,11 +57,12 @@ def create_demand_db(cursor: sqlite3.Cursor) -> sqlite3.Connection:
 				stock_uom text,
 				assigned text,
 				creation int
+				{inventory_dimensions}
 			)
 		"""
 	)
 	cursor.execute(
-		"""
+		f"""
 			CREATE TABLE allocation(
 				key text,
 				demand text,
@@ -71,6 +82,7 @@ def create_demand_db(cursor: sqlite3.Cursor) -> sqlite3.Connection:
 				assigned text,
 				creation int,
 				is_manual boolean
+				{inventory_dimensions}
 			)
 		"""
 	)

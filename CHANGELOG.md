@@ -3,6 +3,18 @@ For license information, please see license.txt-->
 
 # CHANGELOG
 
+## v15.2.0 (2024-10-01)
+
+### Feature
+
+* feat: add devcontainer (#179)
+
+Co-authored-by: Rohan Bansal &lt;rohan@agritheory.dev&gt; ([`eeabbf8`](https://github.com/agritheory/beam/commit/eeabbf8ce90c604f77e084111f47680d15173eb3))
+
+### Refactor
+
+* refactor: pyproject to poetry(v15) (#159) ([`efa12a6`](https://github.com/agritheory/beam/commit/efa12a6807a2d42741a85f655a99f735652a024b))
+
 ## v15.1.3 (2024-08-15)
 
 ### Documentation
