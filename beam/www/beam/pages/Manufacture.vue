@@ -19,14 +19,16 @@ const store = useDataStore()
 
 onMounted(async () => {
 	const orders = await store.getAll<WorkOrder[]>('Work Order', {
-		fields: JSON.stringify(['name', 'item_name', 'qty', 'produced_qty']),
+		fields: JSON.stringify(['name', 'item_name', 'qty', 'produced_qty', 'planned_start_date']),
 		order_by: 'creation asc',
 	})
 
 	orders.forEach(row => {
+		const order = row.name?.split("-").pop()
 		items.value.push({
 			...row,
-			label: row.item_name,
+			label: `${order} - ${row.item_name}`,
+			description: row.planned_start_date.split(" ")[0],
 			count: { count: row.produced_qty, of: row.qty },
 			linkComponent: 'ListAnchor',
 			route: `#/work_order/${row.name}`,
