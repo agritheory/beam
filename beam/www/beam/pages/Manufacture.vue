@@ -25,10 +25,14 @@ onMounted(async () => {
 
 	orders.forEach(row => {
 		const order = row.name?.split("-").pop()
+		const plannedDate = new Date(row.planned_start_date)
+		let formattedDate = ""
+		if (!isNaN(plannedDate.getTime())) formattedDate = plannedDate.toISOString().split('T')[0]
+
 		items.value.push({
 			...row,
 			label: `${order} - ${row.item_name}`,
-			description: row.planned_start_date.split(" ")[0],
+			description: formattedDate,
 			count: { count: row.produced_qty, of: row.qty },
 			linkComponent: 'ListAnchor',
 			route: `#/work_order/${row.name}`,
