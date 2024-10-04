@@ -635,7 +635,10 @@ def get_descendant_warehouses(company: str, warehouse: str) -> list[str]:
 @frappe.whitelist()
 def get_demand(*args, **kwargs) -> list[Demand]:
 	records_per_page = 20
-	page = kwargs.get("page", 1)
+	try:
+		page = int(kwargs.get("page", 1))
+	except ValueError:
+		page = 1
 	order_by = kwargs.get("order_by", "workstation, assigned")
 
 	a_filters = d_filters = ""

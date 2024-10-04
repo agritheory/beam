@@ -30,7 +30,7 @@ useInfiniteScroll(
 	window,
 	async () => {
 		const { data } = await store.getDemand({ order_by: 'creation asc', page: page.value })
-		if (data.length === 0) {
+		if (!data || data.length === 0) {
 			canLoadMore.value = false
 			return
 		}
