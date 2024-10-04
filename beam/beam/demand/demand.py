@@ -5,6 +5,7 @@ from collections import deque
 from typing import TYPE_CHECKING, Any, Optional, Union
 
 import frappe
+from frappe.query_builder import DocType
 from frappe.utils.data import flt
 from frappe.utils.nestedset import get_descendants_of
 
@@ -63,62 +64,75 @@ def get_qty_from_sle(item_code: str, warehouse: str | None = None, company: str 
 def get_manufacturing_demand(
 	name: str | None = None, item_code: str | None = None
 ) -> list[Demand]:
-	manufacturing_demand = []
 
-	if name:
-		filters = {"docstatus": 1, "status": "Not Started", "name": name}
-	else:
-		filters = {"docstatus": 1, "status": "Not Started"}
+	WorkOrder = DocType("Work Order")
+	WorkOrderItem = DocType("Work Order Item")
+	WorkOrderOperation = DocType("Work Order Operation")
+	Item = DocType("Item")
 
-	pending_work_orders = frappe.get_all(
-		"Work Order",
-		filters=filters,
-		fields=["name", "company", "wip_warehouse", "planned_start_date", "creation"],
-		order_by="planned_start_date ASC, creation ASC",
+	workstation_subquery = (
+		frappe.qb.from_(WorkOrderOperation)
+		.select(WorkOrderOperation.workstation)
+		.where(WorkOrderOperation.parent == WorkOrder.name)
+		.orderby(WorkOrderOperation.idx)
+		.limit(1)
 	)
 
-	for work_order in pending_work_orders:
-		if item_code:
-			filters = {"parent": work_order.name, "item_code": item_code}
-		else:
-			filters = {"parent": work_order.name}
-
-		work_order_items = frappe.get_all(
-			"Work Order Item",
-			filters=filters,
-			fields=["name", "item_code", "required_qty", "transferred_qty", "idx"],
-			order_by="idx ASC",
+	work_order_query = (
+		frappe.qb.from_(WorkOrder)
+		.join(WorkOrderItem)
+		.on(WorkOrder.name == WorkOrderItem.parent)
+		.left_join(Item)
+		.on(Item.item_code == WorkOrderItem.item_code)
+		.select(
+			WorkOrder.name.as_("work_order_name"),
+			WorkOrder.company,
+			WorkOrder.wip_warehouse,
+			WorkOrder.planned_start_date,
+			WorkOrder.creation,
+			WorkOrderItem.name.as_("work_order_item_name"),
+			WorkOrderItem.item_code,
+			WorkOrderItem.required_qty,
+			WorkOrderItem.transferred_qty,
+			WorkOrderItem.idx,
+			(workstation_subquery.as_("workstation")),
+			Item.stock_uom,
 		)
-		workstation = frappe.get_all(
-			"Work Order Operation",
-			filters={"parent": work_order.name},
-			fields=["workstation"],
-			order_by="idx ASC",
+		.where(
+			(WorkOrder.docstatus == 1)
+			& (WorkOrder.status == "Not Started")
+			& (WorkOrderItem.required_qty > WorkOrderItem.transferred_qty)
 		)
-		workstation = workstation[0].get("workstation") if workstation else None
+		.orderby(WorkOrder.planned_start_date, WorkOrder.creation, WorkOrderItem.idx)
+	)
 
-		for item in work_order_items:
-			if item.transferred_qty - item.required_qty >= 0:
-				continue
+	if name:
+		work_order_query = work_order_query.where(WorkOrder.name == name)
 
-			manufacturing_demand.append(
-				frappe._dict(
-					{
-						"doctype": "Work Order",
-						"parent": work_order.name,
-						"company": work_order.company,
-						"warehouse": work_order.wip_warehouse,
-						"workstation": workstation or "",
-						"name": item.name,
-						"idx": item.idx,
-						"item_code": item.item_code,
-						"delivery_date": work_order.planned_start_date,
-						"total_required_qty": item.required_qty - item.transferred_qty,
-						"stock_uom": frappe.db.get_value("Item", item.item_code, "stock_uom"),
-						"creation": work_order.creation,
-					}
-				)
-			)
+	if item_code:
+		work_order_query = work_order_query.where(WorkOrderItem.item_code == item_code)
+
+	results = work_order_query.run(as_dict=True)
+
+	manufacturing_demand = [
+		frappe._dict(
+			{
+				"doctype": "Work Order",
+				"parent": row["work_order_name"],
+				"company": row["company"],
+				"warehouse": row["wip_warehouse"],
+				"workstation": row["workstation"] or "",
+				"name": row["work_order_item_name"],
+				"idx": row["idx"],
+				"item_code": row["item_code"],
+				"delivery_date": row["planned_start_date"],
+				"total_required_qty": flt(row["required_qty"]) - flt(row["transferred_qty"]),
+				"stock_uom": row["stock_uom"],
+				"creation": row["creation"],
+			}
+		)
+		for row in results
+	]
 
 	return manufacturing_demand
 
