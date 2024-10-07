@@ -175,63 +175,49 @@ def get_sales_demand(name: str | None = None, item_code: str | None = None) -> l
 
 
 def get_receiving_demand(name: str | None = None, item_code: str | None = None) -> list[Demand]:
-	receiving_demand = []
-	if name:
-		filters = {"docstatus": 1, "status": ["!=", "Closed"], "name": name}
-	else:
-		filters = {"docstatus": 1, "status": ["!=", "Closed"]}
+	PurchaseOrder = DocType("Purchase Order")
+	PurchaseOrderItem = DocType("Purchase Order Item")
+	Item = DocType("Item")
+	BEAMSettings = DocType("BEAM Settings")
 
-	# TODO refactor to union of Purchase Order, Blanket Orders, Subcontracting Order and un-received Purchase Invoices for inventoriable items
-	purchase_orders = frappe.get_all(
-		"Purchase Order",
-		filters=filters,
-		fields=["name", "company", "schedule_date", "creation"],
-		order_by="schedule_date ASC, creation ASC, name ASC",
+	receiving_workstation_subquery = (
+		frappe.qb.from_(BEAMSettings)
+		.select(BEAMSettings.receiving_workstation)
+		.where(BEAMSettings.company == PurchaseOrder.company)
+		.limit(1)
 	)
 
-	receiving_workstations = {
-		s.company: s.receiving_workstation
-		for s in frappe.get_all("BEAM Settings", ["company", "receiving_workstation"])
-	}
-
-	for purchase_order in purchase_orders:
-		if item_code:
-			filters = {"parent": purchase_order.name, "item_code": item_code}
-		else:
-			filters = {"parent": purchase_order.name}
-
-		# TODO refactor to union of Purchase Order, Blanket Orders, Subcontracting Order and un-received Purchase Invoices for inventoriable items
-		purchase_order_items = frappe.get_all(
-			"Purchase Order Item",
-			filters=filters,
-			fields=["name", "item_code", "stock_qty", "idx", "warehouse"],
-			order_by="schedule_date, idx ASC",
+	purchase_order_query = (
+		frappe.qb.from_(PurchaseOrder)
+		.join(PurchaseOrderItem)
+		.on(PurchaseOrder.name == PurchaseOrderItem.parent)
+		.left_join(Item)
+		.on(Item.item_code == PurchaseOrderItem.item_code)
+		.select(
+			ConstantColumn("Purchase Order").as_("doctype"),
+			PurchaseOrder.name.as_("parent"),
+			PurchaseOrder.company,
+			PurchaseOrderItem.warehouse,
+			(receiving_workstation_subquery.as_("workstation")),
+			PurchaseOrderItem.name.as_("name"),
+			PurchaseOrderItem.idx,
+			PurchaseOrderItem.item_code,
+			PurchaseOrder.schedule_date,
+			PurchaseOrderItem.stock_qty.as_("total_required_qty"),
+			Item.stock_uom,
+			PurchaseOrder.creation,
 		)
+		.where((PurchaseOrder.docstatus == 1) & (PurchaseOrder.status != "Closed"))
+		.orderby(PurchaseOrder.schedule_date, PurchaseOrder.creation, PurchaseOrderItem.idx)
+	)
 
-		for item in purchase_order_items:
-			# if item.stock_qty:
-			# 	continue
+	if name:
+		purchase_order_query = purchase_order_query.where(PurchaseOrder.name == name)
 
-			receiving_demand.append(
-				frappe._dict(
-					{
-						"doctype": "Sales Order",
-						"parent": purchase_order.name,
-						"company": purchase_order.company,
-						"warehouse": item.warehouse,
-						"workstation": receiving_workstations.get(purchase_order.company) or "",
-						"name": item.name,
-						"idx": item.idx,
-						"item_code": item.item_code,
-						"schedule_date": purchase_order.schedule_date,
-						"total_required_qty": item.stock_qty,
-						"stock_uom": frappe.db.get_value("Item", item.item_code, "stock_uom"),
-						"creation": purchase_order.creation,
-					}
-				)
-			)
+	if item_code:
+		purchase_order_query = purchase_order_query.where(PurchaseOrderItem.item_code == item_code)
 
-	return receiving_demand
+	return purchase_order_query.run(as_dict=True)
 
 
 def build_demand_allocation_map() -> None:

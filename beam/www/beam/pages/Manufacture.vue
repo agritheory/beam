@@ -24,9 +24,9 @@ onMounted(async () => {
 	})
 
 	orders.forEach(row => {
-		const order = row.name?.split("-").pop()
+		const order = row.name?.split('-').pop()
 		const plannedDate = new Date(row.planned_start_date)
-		let formattedDate = ""
+		let formattedDate = ''
 		if (!isNaN(plannedDate.getTime())) formattedDate = plannedDate.toISOString().split('T')[0]
 
 		items.value.push({
