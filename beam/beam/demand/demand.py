@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, Optional, Union
 import frappe
 from frappe.query_builder import DocType, Field
 from frappe.query_builder.custom import ConstantColumn
+from frappe.query_builder.functions import Coalesce
 from frappe.utils.data import flt
 from frappe.utils.nestedset import get_descendants_of
 
@@ -180,6 +181,7 @@ def get_receiving_demand(name: str | None = None, item_code: str | None = None) 
 	Item = DocType("Item")
 	BEAMSettings = DocType("BEAM Settings")
 
+	# Purchase Order
 	receiving_workstation_subquery = (
 		frappe.qb.from_(BEAMSettings)
 		.select(BEAMSettings.receiving_workstation)
@@ -207,7 +209,9 @@ def get_receiving_demand(name: str | None = None, item_code: str | None = None) 
 			Item.stock_uom,
 			PurchaseOrder.creation,
 		)
-		.where((PurchaseOrder.docstatus == 1) & (PurchaseOrder.status != "Closed"))
+		.where(
+			(PurchaseOrder.docstatus == 1) & (PurchaseOrder.status != "Closed") & (Item.is_stock_item == 1)
+		)
 		.orderby(PurchaseOrder.schedule_date, PurchaseOrder.creation, PurchaseOrderItem.idx)
 	)
 
@@ -217,7 +221,63 @@ def get_receiving_demand(name: str | None = None, item_code: str | None = None) 
 	if item_code:
 		purchase_order_query = purchase_order_query.where(PurchaseOrderItem.item_code == item_code)
 
-	return purchase_order_query.run(as_dict=True)
+	purchase_orders = purchase_order_query.run(as_dict=True)
+
+	# Purchase Invoice
+	PurchaseInvoice = frappe.qb.DocType("Purchase Invoice")
+	PurchaseInvoiceItem = frappe.qb.DocType("Purchase Invoice Item")
+
+	receiving_workstation_subquery = (
+		frappe.qb.from_(BEAMSettings)
+		.select(BEAMSettings.receiving_workstation)
+		.where(BEAMSettings.company == PurchaseInvoice.company)
+		.limit(1)
+	)
+
+	unreceived_purchase_invoices_query = (
+		frappe.qb.from_(PurchaseInvoice)
+		.join(PurchaseInvoiceItem)
+		.on(PurchaseInvoice.name == PurchaseInvoiceItem.parent)
+		.left_join(Item)
+		.on(Item.item_code == PurchaseInvoiceItem.item_code)
+		.select(
+			ConstantColumn("Purchase Invoice").as_("doctype"),
+			PurchaseInvoice.name.as_("parent"),
+			PurchaseInvoice.company,
+			PurchaseInvoiceItem.warehouse,
+			(receiving_workstation_subquery.as_("workstation")),
+			PurchaseInvoiceItem.name.as_("name"),
+			PurchaseInvoiceItem.idx,
+			PurchaseInvoiceItem.item_code,
+			PurchaseInvoice.due_date.as_("schedule_date"),
+			PurchaseInvoiceItem.qty.as_("total_required_qty"),
+			Item.stock_uom,
+			PurchaseInvoice.creation,
+		)
+		.where(
+			(PurchaseInvoice.docstatus == 1)
+			& (Coalesce(PurchaseInvoiceItem.purchase_order, "") == "")
+			& (PurchaseInvoiceItem.received_qty < PurchaseInvoiceItem.qty)
+			& (Item.is_stock_item == 1)
+		)
+		.orderby(PurchaseInvoice.due_date, PurchaseInvoice.creation, PurchaseInvoiceItem.idx)
+	)
+
+	if name:
+		unreceived_purchase_invoices_query = unreceived_purchase_invoices_query.where(
+			PurchaseInvoice.name == name
+		)
+
+	if item_code:
+		unreceived_purchase_invoices_query = unreceived_purchase_invoices_query.where(
+			PurchaseInvoiceItem.item_code == item_code
+		)
+
+	unreceived_purchase_invoices = unreceived_purchase_invoices_query.run(as_dict=True)
+
+	# Blanket Orders
+	# Subcontracting Order
+	return purchase_orders + unreceived_purchase_invoices
 
 
 def build_demand_allocation_map() -> None:
