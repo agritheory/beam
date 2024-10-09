@@ -103,6 +103,7 @@ export type WorkOrder = ParentDoctype & {
 	qty: number
 	skip_transfer: boolean
 	wip_warehouse: string
+	status: string
 
 	operations: WorkOrderOperation[]
 	required_items: WorkOrderItem[]

@@ -6,9 +6,10 @@
 		<template #navbaraction>Home</template>
 	</Navbar>
 
-	<div>
+	<!-- <div>
 		<p>Planned Start: {{ store.form.planned_start_date }}</p>
-	</div>
+	</div> -->
+	<BeamMetadata :order="workOrder" />
 
 	<br />
 
@@ -33,6 +34,14 @@ const route = useRoute()
 const store = useDataStore()
 const workOrderId = route.params.orderId.toString()
 
+const workOrder = ref({
+	orderNumber: workOrderId,
+	product: '',
+	quantity: 0,
+	total: 0,
+	complete: false,
+})
+
 // const jobCards = ref<ListViewItem[]>([])
 const operations = ref<ListViewItem[]>([])
 
@@ -48,6 +57,13 @@ onMounted(async () => {
 		route: `#/work_order/${workOrderId}/operation/${operation.name}`,
 	}))
 
+	workOrder.value = {
+		...workOrder.value,
+		product: order.item_name,
+		quantity: order.produced_qty,
+		total: order.qty,
+		complete: order.status === "Complete",
+	}
 	// get job cards
 	// for (const operation of order.operations) {
 	// 	const jobList = await store.getAll<JobCard[]>('Job Card', {
