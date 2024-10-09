@@ -2,10 +2,11 @@
 // For license information, please see license.txt
 
 import { useDataStore } from './store.js'
-import type { FormContext, ListContext } from './types/index.js'
+import type { FormContext, ListContext, FrappeWindow } from './types/index.js'
 
 export function useScan() {
 	const scanHandler = new ScanHandler()
+	window.scan = scanHandler
 	return { scanHandler }
 }
 
