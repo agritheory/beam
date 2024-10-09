@@ -98,7 +98,7 @@ export type StockEntry = ParentDoctype & {
 
 export type WorkOrder = ParentDoctype & {
 	item_name: string
-	planned_start_date: number
+	planned_start_date: string
 	produced_qty: number
 	qty: number
 	skip_transfer: boolean

@@ -19,14 +19,20 @@ const store = useDataStore()
 
 onMounted(async () => {
 	const orders = await store.getAll<WorkOrder[]>('Work Order', {
-		fields: JSON.stringify(['name', 'item_name', 'qty', 'produced_qty']),
+		fields: JSON.stringify(['name', 'item_name', 'qty', 'produced_qty', 'planned_start_date']),
 		order_by: 'creation asc',
 	})
 
 	orders.forEach(row => {
+		const order = row.name?.split("-").pop()
+		const plannedDate = new Date(row.planned_start_date)
+		let formattedDate = ""
+		if (!isNaN(plannedDate.getTime())) formattedDate = plannedDate.toISOString().split('T')[0]
+
 		items.value.push({
 			...row,
-			label: row.item_name,
+			label: `${order} - ${row.item_name}`,
+			description: formattedDate,
 			count: { count: row.produced_qty, of: row.qty },
 			linkComponent: 'ListAnchor',
 			route: `#/work_order/${row.name}`,
