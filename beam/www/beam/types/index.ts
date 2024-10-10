@@ -135,3 +135,7 @@ export type DocActionResponse<T> = {
 	exception: string
 	response: Response
 }
+
+export interface FrappeWindow extends Window {
+	frappe: any
+}

@@ -3,7 +3,9 @@
 		<template #title>
 			<h1 class="nav-title">Move</h1>
 		</template>
-		<template #navbaraction>Home</template>
+		<template #navbaraction>
+			<RouterLink :to="{ name: 'home' }">Home</RouterLink>
+		</template>
 	</Navbar>
 	<Transfer :id="stockEntry.name" />
 </template>
