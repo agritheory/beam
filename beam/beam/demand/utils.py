@@ -42,6 +42,11 @@ class Allocation(TypedDict, Base, total=False):
 	total_required_qty: str | float  # demand quantity that hasn't been satisfied
 
 
+class Receiving(TypedDict, Base, total=False):
+	schedule_date: str | float | datetime.datetime
+	stock_qty: str | float
+
+
 def get_epoch_from_datetime(dt: str | float | datetime.datetime | None = None) -> int | float:
 	if isinstance(dt, (int, float)):
 		return dt

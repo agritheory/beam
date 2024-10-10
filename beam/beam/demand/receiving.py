@@ -1,0 +1,196 @@
+# Copyright (c) 2024, AgriTheory and contributors
+# For license information, please see license.txt
+
+from typing import TYPE_CHECKING, Optional, Union
+
+import frappe
+from frappe.query_builder import DocType
+from frappe.query_builder.custom import ConstantColumn
+from frappe.query_builder.functions import Coalesce
+
+from beam.beam.demand.sqlite import get_demand_db
+from beam.beam.demand.utils import Receiving, get_epoch_from_datetime
+
+if TYPE_CHECKING:
+	from sqlite3 import Cursor
+
+	from erpnext.accounts.doctype.purchase_invoice.purchase_invoice import PurchaseInvoice
+	from erpnext.buying.doctype.purchase_invoice.purchase_invoice import PurchaseOrder
+
+
+def get_receiving_demand(name: str | None = None, item_code: str | None = None) -> list[Receiving]:
+	PurchaseOrder = DocType("Purchase Order")
+	PurchaseOrderItem = DocType("Purchase Order Item")
+	Item = DocType("Item")
+	BEAMSettings = DocType("BEAM Settings")
+
+	# Purchase Order
+	receiving_workstation_subquery = (
+		frappe.qb.from_(BEAMSettings)
+		.select(BEAMSettings.receiving_workstation)
+		.where(BEAMSettings.company == PurchaseOrder.company)
+		.limit(1)
+	)
+
+	purchase_order_query = (
+		frappe.qb.from_(PurchaseOrder)
+		.join(PurchaseOrderItem)
+		.on(PurchaseOrder.name == PurchaseOrderItem.parent)
+		.left_join(Item)
+		.on(Item.item_code == PurchaseOrderItem.item_code)
+		.select(
+			ConstantColumn("Purchase Order").as_("doctype"),
+			PurchaseOrder.name.as_("parent"),
+			PurchaseOrder.company,
+			PurchaseOrderItem.warehouse,
+			(receiving_workstation_subquery.as_("workstation")),
+			PurchaseOrderItem.name.as_("name"),
+			PurchaseOrderItem.idx,
+			PurchaseOrderItem.item_code,
+			PurchaseOrder.schedule_date,
+			PurchaseOrderItem.stock_qty.as_("stock_qty"),
+			Item.stock_uom,
+			PurchaseOrder.creation,
+		)
+		.where(
+			(PurchaseOrder.docstatus == 1) & (PurchaseOrder.status != "Closed") & (Item.is_stock_item == 1)
+		)
+		.orderby(PurchaseOrder.schedule_date, PurchaseOrder.creation, PurchaseOrderItem.idx)
+	)
+
+	if name:
+		purchase_order_query = purchase_order_query.where(PurchaseOrder.name == name)
+
+	if item_code:
+		purchase_order_query = purchase_order_query.where(PurchaseOrderItem.item_code == item_code)
+
+	purchase_orders = purchase_order_query.run(as_dict=True)
+
+	# Purchase Invoice
+	PurchaseInvoice = frappe.qb.DocType("Purchase Invoice")
+	PurchaseInvoiceItem = frappe.qb.DocType("Purchase Invoice Item")
+
+	receiving_workstation_subquery = (
+		frappe.qb.from_(BEAMSettings)
+		.select(BEAMSettings.receiving_workstation)
+		.where(BEAMSettings.company == PurchaseInvoice.company)
+		.limit(1)
+	)
+
+	unreceived_purchase_invoices_query = (
+		frappe.qb.from_(PurchaseInvoice)
+		.join(PurchaseInvoiceItem)
+		.on(PurchaseInvoice.name == PurchaseInvoiceItem.parent)
+		.left_join(Item)
+		.on(Item.item_code == PurchaseInvoiceItem.item_code)
+		.select(
+			ConstantColumn("Purchase Invoice").as_("doctype"),
+			PurchaseInvoice.name.as_("parent"),
+			PurchaseInvoice.company,
+			PurchaseInvoiceItem.warehouse,
+			(receiving_workstation_subquery.as_("workstation")),
+			PurchaseInvoiceItem.name.as_("name"),
+			PurchaseInvoiceItem.idx,
+			PurchaseInvoiceItem.item_code,
+			PurchaseInvoice.due_date.as_("schedule_date"),
+			PurchaseInvoiceItem.stock_qty.as_("stock_qty"),
+			Item.stock_uom,
+			PurchaseInvoice.creation,
+		)
+		.where(
+			(PurchaseInvoice.docstatus == 1)
+			& (Coalesce(PurchaseInvoiceItem.purchase_order, "") == "")
+			& (PurchaseInvoiceItem.received_qty < PurchaseInvoiceItem.stock_qty)
+			& (Item.is_stock_item == 1)
+		)
+		.orderby(PurchaseInvoice.due_date, PurchaseInvoice.creation, PurchaseInvoiceItem.idx)
+	)
+
+	if name:
+		unreceived_purchase_invoices_query = unreceived_purchase_invoices_query.where(
+			PurchaseInvoice.name == name
+		)
+
+	if item_code:
+		unreceived_purchase_invoices_query = unreceived_purchase_invoices_query.where(
+			PurchaseInvoiceItem.item_code == item_code
+		)
+
+	unreceived_purchase_invoices = unreceived_purchase_invoices_query.run(as_dict=True)
+
+	# Subcontracting Order
+	return purchase_orders + unreceived_purchase_invoices
+
+
+def modify_receiving(
+	doc: Union["PurchaseOrder", "PurchaseInvoice"], method: str | None = None
+) -> None:
+	if method == "on_submit":
+		add_receiving(doc.name)
+	elif method == "on_cancel":
+		remove_receiving(doc.name)
+
+
+def add_receiving(name: str) -> None:
+	build_receiving_map(name)
+
+
+def remove_receiving(name: str) -> None:
+	with get_demand_db() as conn:
+		cursor = conn.cursor()
+		# remove all receiving row(s)
+		receiving = get_receiving_list(name)
+		for row in receiving:
+			cursor.execute(f"DELETE FROM receiving WHERE key = '{row.key}'")
+
+
+def get_receiving_list(name: str | None = None, item_code: str | None = None) -> list[Receiving]:
+	if name:
+		with get_demand_db() as conn:
+			cursor = conn.cursor()
+
+			if item_code:
+				receiving_query = cursor.execute(
+					f"SELECT * FROM receiving WHERE parent = '{name}' AND item_code = '{item_code}'"
+				)
+			else:
+				receiving_query = cursor.execute(f"SELECT * FROM receiving WHERE parent = '{name}'")
+
+			receiving_demand: list[Receiving] = receiving_query.fetchall()
+			if receiving_demand:
+				return receiving_demand
+
+	return get_receiving_demand(name, item_code)
+
+
+def build_receiving_map(
+	name: str | None = None, item_code: str | None = None, cursor: Optional["Cursor"] = None
+) -> None:
+	output: list[Receiving] = []
+
+	for row in get_receiving_list(name, item_code):
+		row.key = row.key or frappe.generate_hash()
+		row.schedule_date = str(row.schedule_date or get_epoch_from_datetime(row.schedule_date))
+		row.creation = str(row.creation or get_epoch_from_datetime(row.creation))
+		row.stock_qty = str(row.stock_qty)
+		row.idx = str(row.idx)
+		output.append(row)
+
+	if output:
+		if cursor:
+			insert_receiving(output, cursor)
+		else:
+			with get_demand_db() as conn:
+				cursor = conn.cursor()
+				insert_receiving(output, cursor)
+
+
+def insert_receiving(output: list[Receiving], cursor: "Cursor") -> None:
+	for row in output:
+		receiving_row = {}
+		for key, value in row.items():
+			if value:
+				receiving_row[key] = value
+		keys = "', '".join(receiving_row.keys())
+		values = "', '".join(receiving_row.values())
+		cursor.execute(f"INSERT INTO receiving ('{keys}') VALUES ('{values}')")
