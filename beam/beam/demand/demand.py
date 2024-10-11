@@ -684,13 +684,16 @@ def get_demand(*args, **kwargs) -> list[Demand]:
 	demand = Table("demand")
 	allocation = Table("allocation")
 
-	d_filters = a_filters = []
+	d_filters = []
+	a_filters = []
+
 	if kwargs.get("filters"):
-		filters = kwargs.get("filters")
-		if filters:
-			for key, value in filters.items():
-				d_filters.append(demand[key].isin(value))
-				a_filters.append(allocation[key].isin(value))
+		filters = kwargs["filters"]
+		for key, value in filters.items():
+			if isinstance(value, str):
+				value = (value,)
+			d_filters.append(getattr(demand, key).isin(value))
+			a_filters.append(getattr(allocation, key).isin(value))
 
 	demand_query = (
 		Query.from_(demand)
