@@ -689,8 +689,8 @@ def get_demand(*args, **kwargs) -> list[Demand]:
 		filters = kwargs.get("filters")
 		if filters:
 			for key, value in filters.items():
-				d_filters.append(demand[key].is_in(value))
-				a_filters.append(allocation[key].is_in(value))
+				d_filters.append(demand[key].isin(value))
+				a_filters.append(allocation[key].isin(value))
 
 	demand_query = (
 		Query.from_(demand)
