@@ -802,11 +802,13 @@ def get_demand(*args, **kwargs) -> list[Demand]:
 		allocation_query = allocation_query.where(*a_filters)
 
 	record_offset = records_per_page * (page - 1)
-	final_query = demand_query.union(allocation_query).limit(records_per_page).offset(record_offset)
+	query = (
+		f"{demand_query} UNION ALL {allocation_query} LIMIT {records_per_page} OFFSET {record_offset}"
+	)
 
 	with get_demand_db() as conn:
 		cursor = conn.cursor()
-		rows: list[Allocation | Demand] = cursor.execute(final_query.get_sql()).fetchall()
+		rows: list[Allocation | Demand] = cursor.execute(query).fetchall()
 		for row in rows:
 			row.update(
 				{
