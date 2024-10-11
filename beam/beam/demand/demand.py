@@ -767,17 +767,13 @@ def get_demand(*args, **kwargs) -> list[Demand]:
 			allocation.allocated_qty,
 			(
 				fn.Coalesce(
-					(
-						Query.from_(demand).select(demand.total_required_qty).where(allocation.demand == demand.key)
-					),
+					Query.from_(demand).select(demand.total_required_qty).where(allocation.demand == demand.key),
 					0,
 				)
 				- fn.Coalesce(
-					fn.Sum(
-						Query.from_(allocation)
-						.select(allocation.allocated_qty)
-						.where(allocation.demand == allocation.demand)
-					),
+					Query.from_(Table("allocation").as_("c"))
+					.select(fn.Sum(Table("allocation").as_("c").allocated_qty))
+					.where(Table("allocation").as_("c").demand == allocation.demand),
 					0,
 				)
 			).as_("net_required_qty"),
