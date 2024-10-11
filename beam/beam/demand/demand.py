@@ -7,6 +7,9 @@ from typing import TYPE_CHECKING, Any, Optional, Union
 import frappe
 from frappe.utils.data import flt
 from frappe.utils.nestedset import get_descendants_of
+from pypika import Query, Table
+from pypika import functions as fn
+from pypika.terms import Order, ValueWrapper
 
 from beam.beam.demand.sqlite import get_demand_db, reset_demand_db
 from beam.beam.demand.utils import (
@@ -195,13 +198,18 @@ def get_demand_list(name: str | None = None, item_code: str | None = None) -> li
 	if name:
 		with get_demand_db() as conn:
 			cursor = conn.cursor()
+			demand_table = Table("demand")
 
 			if item_code:
-				demand_query = cursor.execute(
-					f"SELECT * FROM demand WHERE parent = '{name}' AND item_code = '{item_code}'"
+				demand_query = (
+					Query.from_(demand_table)
+					.select("*")
+					.where((demand_table.parent == name) & (demand_table.item_code == item_code))
 				)
 			else:
-				demand_query = cursor.execute(f"SELECT * FROM demand WHERE parent = '{name}'")
+				demand_query = Query.from_(demand_table).select("*").where(demand_table.parent == name)
+
+			demand_query = cursor.execute(demand_query.get_sql())
 
 			sales_demand: list[Demand] = demand_query.fetchall()
 			if sales_demand:
@@ -235,14 +243,11 @@ def build_demand_map(
 
 
 def insert_demand(output: list[Demand], cursor: "Cursor") -> None:
+	demand_table = Table("demand")
 	for row in output:
-		demand_row = {}
-		for key, value in row.items():
-			if value:
-				demand_row[key] = value
-		keys = "', '".join(demand_row.keys())
-		values = "', '".join(demand_row.values())
-		cursor.execute(f"INSERT INTO demand ('{keys}') VALUES ('{values}')")
+		demand_row = {key: value for key, value in row.items() if value}
+		insert_query = Query.into(demand_table).columns(*demand_row.keys()).insert(*demand_row.values())
+		cursor.execute(insert_query.get_sql())
 
 
 def modify_demand(doc: Union["SalesOrder", "WorkOrder"], method: str | None = None) -> None:
@@ -254,9 +259,10 @@ def modify_demand(doc: Union["SalesOrder", "WorkOrder"], method: str | None = No
 
 def get_allocation_list(name: str) -> list[Allocation]:
 	with get_demand_db() as conn:
+		allocation_table = Table("allocation")
 		cursor = conn.cursor()
-		query = f"SELECT * FROM allocation WHERE parent = '{name}'"
-		return cursor.execute(query).fetchall()
+		query = Query.from_(allocation_table).select("*").where(allocation_table.parent == name)
+		return cursor.execute(query.get_sql()).fetchall()
 
 
 def add_demand_allocation(name: str) -> None:
@@ -266,16 +272,23 @@ def add_demand_allocation(name: str) -> None:
 
 def remove_demand_allocation(name: str) -> None:
 	with get_demand_db() as conn:
+		allocation_table = Table("allocation")
+		demand_table = Table("demand")
 		cursor = conn.cursor()
+
 		# remove all allocated row(s)
 		allocations = get_allocation_list(name)
 		for allocation in allocations:
-			cursor.execute(f"DELETE FROM allocation WHERE key = '{allocation.key}'")
+			delete_query = (
+				Query.from_(allocation_table).delete().where(allocation_table.key == allocation.key)
+			)
+			cursor.execute(delete_query.get_sql())
 
 		# remove all demand row(s)
 		demand = get_demand_list(name)
 		for row in demand:
-			cursor.execute(f"DELETE FROM demand WHERE key = '{row.key}'")
+			delete_query = Query.from_(demand_table).delete().where(demand_table.key == row.key)
+			cursor.execute(delete_query.get_sql())
 
 
 def build_allocation_map(
@@ -307,29 +320,35 @@ def get_demand_query(
 		None,
 	] = None,
 ):
-	item_filter = f"WHERE item_code = '{row.item_code}'" if row else ""
+	demand_table = Table("demand")
+	allocation_table = Table("allocation")
+
+	query = (
+		Query.from_(demand_table)
+		.select(
+			demand_table.star,
+			fn.Coalesce(fn.Sum(allocation_table.allocated_qty), 0).as_("allocated_qty"),
+			(demand_table.total_required_qty - fn.Coalesce(fn.Sum(allocation_table.allocated_qty), 0)).as_(
+				"net_required_qty"
+			),
+		)
+		.left_join(allocation_table)
+		.on(allocation_table.demand == demand_table.key)
+	)
+
+	if row:
+		query = query.where(demand_table.item_code == row.item_code)
+
+	query = query.groupby(
+		demand_table.key,
+		demand_table.item_code,
+		demand_table.total_required_qty,
+		demand_table.delivery_date,
+	).orderby(demand_table.delivery_date)
 
 	with get_demand_db() as conn:
 		cursor = conn.cursor()
-		return cursor.execute(
-			f"""
-			SELECT
-				d.*,
-				COALESCE(
-					(SELECT SUM(a.allocated_qty) FROM allocation a WHERE a.demand = d.key),
-					0
-				) AS allocated_qty,
-				d.total_required_qty - COALESCE(
-					(SELECT SUM(a.allocated_qty) FROM allocation a WHERE a.demand = d.key),
-					0
-				) AS net_required_qty
-			FROM
-				demand d
-			{item_filter}
-			ORDER BY
-				delivery_date ASC;
-			"""
-		)
+		return cursor.execute(query.get_sql())
 
 
 def get_item_demand_map(
@@ -367,6 +386,9 @@ def update_allocations(
 	],
 	action: dict,
 ):
+	demand_table = Table("demand")
+	allocation_table = Table("allocation")
+
 	with get_demand_db() as conn:
 		cursor = conn.cursor()
 
@@ -376,13 +398,16 @@ def update_allocations(
 		warehouse_field = action.get("warehouse_field")
 		warehouse = row.get(warehouse_field)
 
-		allocation_query = cursor.execute(
-			f"""
-			SELECT *
-			FROM allocation
-			WHERE item_code = '{row.item_code}' AND warehouse = '{warehouse}' AND allocated_qty > 0
-			"""
+		allocation_query = (
+			Query.from_(allocation_table)
+			.select("*")
+			.where(
+				(allocation_table.item_code == row.item_code)
+				& (allocation_table.warehouse == warehouse)
+				& (allocation_table.allocated_qty > 0)
+			)
 		)
+		allocation_query = cursor.execute(allocation_query.get_sql())
 
 		# TODO: remove demand row if demand is fully satisfied
 
@@ -392,7 +417,10 @@ def update_allocations(
 			demand_effect = action.get("demand_effect")
 
 			for allocation in existing_allocations:
-				demand_query = cursor.execute(f"SELECT * FROM demand WHERE key = '{allocation.demand}'")
+				demand_query = (
+					Query.from_(demand_table).select("*").where(demand_table.key == allocation.demand)
+				)
+				demand_query = cursor.execute(demand_query.get_sql())
 				demand_row: Demand = demand_query.fetchone()
 
 				if demand_row:
@@ -408,12 +436,16 @@ def update_allocations(
 
 						if new_total_required_qty <= 0:
 							# if demand is fully met, delete the demand row
-							cursor.execute(f"DELETE FROM demand WHERE key = '{demand_row.key}'")
+							delete_query = Query.from_(demand_table).delete().where(demand_table.key == demand_row.key)
+							cursor.execute(delete_query.get_sql())
 						else:
 							# if demand is partially met, update demand row
-							cursor.execute(
-								f"UPDATE demand SET total_required_qty = {new_total_required_qty} WHERE key = '{demand_row.key}'"
+							update_query = (
+								Query.update(demand_table)
+								.set(demand_table.total_required_qty, new_total_required_qty)
+								.where(demand_table.key == demand_row.key)
 							)
+							cursor.execute(update_query.get_sql())
 
 					if allocation_effect == "increase":
 						new_allocated_qty = min(new_total_required_qty, allocation.allocated_qty + row_qty)
@@ -424,20 +456,29 @@ def update_allocations(
 
 					if new_allocated_qty <= 0:
 						# if partial allocation is reverted, delete the allocation row
-						cursor.execute(f"DELETE FROM allocation WHERE key = '{allocation.key}'")
+						delete_query = (
+							Query.from_(allocation_table).delete().where(allocation_table.key == allocation.key)
+						)
+						cursor.execute(delete_query.get_sql())
 					else:
 						# if demand can be partially or fully met, update allocation row
-						cursor.execute(
-							f"UPDATE allocation SET allocated_qty = {new_allocated_qty} WHERE key = '{allocation.key}'"
+						update_query = (
+							Query.update(allocation_table)
+							.set(allocation_table.allocated_qty, new_allocated_qty)
+							.where(allocation_table.key == allocation.key)
 						)
+						cursor.execute(update_query.get_sql())
 				else:
 					# demand is already satisfied, reverse allocation
 
 					if allocation_effect == "increase":
 						new_allocated_qty = allocation.allocated_qty + row_qty
-						cursor.execute(
-							f"UPDATE allocation SET allocated_qty = {new_allocated_qty} WHERE key = '{allocation.key}'"
+						update_query = (
+							Query.update(allocation_table)
+							.set(allocation_table.allocated_qty, new_allocated_qty)
+							.where(allocation_table.key == allocation.key)
 						)
+						cursor.execute(update_query.get_sql())
 					elif allocation_effect in ["increase", "adjustment"]:
 						# TODO: are these cases possible?
 						pass
@@ -477,9 +518,10 @@ def update_allocations(
 					break
 
 			for allocation in allocations:
-				cursor.execute(
-					f"""INSERT INTO allocation ('{"', '".join(allocation.keys())}') VALUES ('{"', '".join(allocation.values())}')"""
+				insert_query = (
+					Query.into(allocation_table).columns(*allocation.keys()).insert(*allocation.values())
 				)
+				cursor.execute(insert_query.get_sql())
 
 
 def create_allocations():
@@ -524,9 +566,11 @@ def create_allocations():
 				allocations.append(allocation)
 
 		for allocation in allocations:
-			cursor.execute(
-				f"""INSERT INTO allocation ('{"', '".join(allocation.keys())}') VALUES ('{"', '".join(allocation.values())}')"""
+			allocation_table = Table("allocation")
+			insert_query = (
+				Query.into(allocation_table).columns(*allocation.keys()).insert(*allocation.values())
 			)
+			cursor.execute(insert_query.get_sql())
 
 
 def new_allocation(demand_row: Demand):
@@ -632,106 +676,137 @@ def get_descendant_warehouses(company: str, warehouse: str) -> list[str]:
 	)
 
 
-@frappe.whitelist()
 def get_demand(*args, **kwargs) -> list[Demand]:
 	records_per_page = 20
 	page = int(kwargs.get("page", 1))
 	order_by = kwargs.get("order_by", "workstation, assigned")
 
-	a_filters = d_filters = ""
+	demand = Table("demand")
+	allocation = Table("allocation")
+
+	d_filters = a_filters = []
 	if kwargs.get("filters"):
 		filters = kwargs.get("filters")
 		if filters:
-			d_filters = "AND " + "\nAND ".join(
-				[f"d.{key} IN ('{value}')" for key, value in filters.items()]
+			for key, value in filters.items():
+				d_filters.append(demand[key].is_in(value))
+				a_filters.append(allocation[key].is_in(value))
+
+	demand_query = (
+		Query.from_(demand)
+		.select(
+			demand.key,
+			ValueWrapper("").as_("demand"),
+			demand.doctype,
+			demand.company,
+			demand.parent,
+			demand.warehouse,
+			demand.name,
+			demand.idx,
+			demand.item_code,
+			demand.delivery_date.as_("allocated_date"),
+			demand.delivery_date,
+			demand.modified,
+			demand.stock_uom,
+			fn.Coalesce(
+				(
+					Query.from_(allocation)
+					.select(fn.Sum(allocation.allocated_qty))
+					.where(allocation.demand == demand.key)
+				),
+				0,
+			).as_("allocated_qty"),
+			(
+				demand.total_required_qty
+				- fn.Coalesce(
+					(
+						Query.from_(allocation)
+						.select(fn.Sum(allocation.allocated_qty))
+						.where(allocation.demand == demand.key)
+					),
+					0,
+				)
+			).as_("net_required_qty"),
+			demand.total_required_qty,
+			ValueWrapper("").as_("status"),
+			demand.assigned,
+			demand.creation,
+		)
+		.where(
+			fn.Coalesce(
+				(
+					Query.from_(allocation)
+					.select(fn.Sum(allocation.allocated_qty))
+					.where(allocation.demand == demand.key)
+				),
+				0,
 			)
-			a_filters = "AND " + "\nAND ".join(
-				[f"a.{key} IN ('{value}')" for key, value in filters.items()]
-			)
+			<= 0
+		)
+	)
 
-		# if assigned:
-		# 	_filters += f" AND assigned LIKE %{assigned}%"
+	if d_filters:
+		demand_query = demand_query.where(*d_filters)
 
-	demand_query = f"""
-		SELECT
-			d.key,
-			'' AS demand,
-			d.doctype,
-			d.company,
-			d.parent,
+	allocation_query = (
+		Query.from_(allocation)
+		.select(
+			allocation.key,
+			allocation.demand,
+			allocation.doctype,
+			allocation.company,
+			allocation.parent,
+			allocation.warehouse,
+			allocation.name,
+			allocation.idx,
+			allocation.item_code,
+			allocation.allocated_date,
+			allocation.allocated_date.as_("delivery_date"),
+			allocation.modified,
+			allocation.stock_uom,
+			allocation.allocated_qty,
+			(
+				fn.Coalesce(
+					(
+						Query.from_(demand).select(demand.total_required_qty).where(allocation.demand == demand.key)
+					),
+					0,
+				)
+				- fn.Coalesce(
+					fn.Sum(
+						Query.from_(allocation)
+						.select(allocation.allocated_qty)
+						.where(allocation.demand == allocation.demand)
+					),
+					0,
+				)
+			).as_("net_required_qty"),
+			(
+				Query.from_(demand).select(demand.total_required_qty).where(allocation.demand == demand.key)
+			).as_("total_required_qty"),
+			allocation.status,
+			allocation.assigned,
+			allocation.creation,
+		)
+		.where(allocation.allocated_qty > 0)
+		.orderby(
+			allocation.delivery_date,
+			allocation.idx,
+			allocation.creation,
+			allocation.parent,
+			order=Order.asc,
+		)
+	)
 
-			d.warehouse,
-			d.name,
-			d.idx,
-			d.item_code,
-			d.delivery_date AS allocated_date,
-			d.delivery_date,
-
-			d.modified,
-			d.stock_uom,
-			COALESCE(
-				(SELECT SUM(a.allocated_qty) FROM allocation a WHERE a.demand = d.key),
-				0
-			) AS allocated_qty,
-			d.total_required_qty - COALESCE(
-				(SELECT SUM(a.allocated_qty) FROM allocation a WHERE a.demand = d.key),
-				0
-			) AS net_required_qty,
-			d.total_required_qty,
-
-			'' AS status,
-			d.assigned,
-			d.creation
-		FROM demand d
-		WHERE allocated_qty <= 0
-		{d_filters}
-	"""
-
-	allocation_query = f"""
-		SELECT
-			a.key,
-			a.demand,
-			a.doctype,
-			a.company,
-			a.parent,
-
-			a.warehouse,
-			a.name,
-			a.idx,
-			a.item_code,
-			a.allocated_date AS delivery_date,
-			a.allocated_date,
-
-			a.modified,
-			a.stock_uom,
-			a.allocated_qty,
-			COALESCE(
-				(SELECT d.total_required_qty FROM demand d WHERE a.demand = d.key),
-				0
-			) -
-			COALESCE(
-				(SELECT SUM(c.allocated_qty) FROM allocation c WHERE a.demand = c.demand),
-				0
-			) AS net_required_qty,
-			(SELECT d.total_required_qty FROM demand d WHERE a.demand = d.key) AS total_required_qty,
-
-			a.status,
-			a.assigned,
-			a.creation
-		FROM allocation a
-		WHERE allocated_qty > 0
-		{a_filters}
-		ORDER BY delivery_date, idx, creation, parent ASC
-	"""
+	if a_filters:
+		allocation_query = allocation_query.where(*a_filters)
 
 	record_offset = records_per_page * (page - 1)
-	query = (
-		f"{demand_query} UNION ALL {allocation_query} LIMIT {records_per_page} OFFSET {record_offset}"
-	)
+	final_query = demand_query.union(allocation_query).limit(records_per_page).offset(record_offset)
 
 	with get_demand_db() as conn:
 		cursor = conn.cursor()
-		rows: list[Allocation | Demand] = cursor.execute(query).fetchall()
+		rows: list[Allocation | Demand] = cursor.execute(final_query.get_sql()).fetchall()
 		for row in rows:
 			row.update(
 				{
