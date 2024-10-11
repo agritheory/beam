@@ -10,6 +10,7 @@
 		"company",
 		"barcode_font_size",
 		"enable_handling_units",
+		"ignore_drop_shipped_items",
 		"column_break_twrc",
 		"receiving_workstation",
 		"shipping_workstation",
@@ -38,8 +39,7 @@
 			"default": "12",
 			"fieldname": "barcode_font_size",
 			"fieldtype": "Int",
-			"label": "Barcode Font Size",
-			"default": "12"
+			"label": "Barcode Font Size"
 		},
 		{
 			"description": "These Warehouse Types will be excluded when checking for inventory availability",
@@ -73,11 +73,17 @@
 			"fieldname": "demand_tab",
 			"fieldtype": "Tab Break",
 			"label": "Demand"
+		},
+		{
+			"default": "0",
+			"fieldname": "ignore_drop_shipped_items",
+			"fieldtype": "Check",
+			"label": "Ignore Drop Shipped Items in Demand"
 		}
 	],
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2024-08-21 15:23:36.892295",
+	"modified": "2024-10-11 14:44:24.498502",
 	"modified_by": "Administrator",
 	"module": "BEAM",
 	"name": "BEAM Settings",

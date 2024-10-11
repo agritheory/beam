@@ -146,6 +146,11 @@ def get_sales_demand(name: str | None = None, item_code: str | None = None) -> l
 		for s in frappe.get_all("BEAM Settings", ["company", "shipping_workstation"])
 	}
 
+	ignore_drop_shipped_items = {
+		s.company: s.ignore_drop_shipped_items
+		for s in frappe.get_all("BEAM Settings", ["company", "ignore_drop_shipped_items"])
+	}
+
 	for sales_order in sales_orders:
 		if item_code:
 			filters = {"parent": sales_order.name, "item_code": item_code}
@@ -155,12 +160,14 @@ def get_sales_demand(name: str | None = None, item_code: str | None = None) -> l
 		sales_order_items = frappe.get_all(
 			"Sales Order Item",
 			filters=filters,
-			fields=["name", "item_code", "stock_qty", "delivered_qty", "idx"],
+			fields=["name", "item_code", "stock_qty", "delivered_qty", "idx", "delivered_by_supplier"],
 			order_by="delivery_date, idx ASC",
 		)
 
 		for item in sales_order_items:
-			if item.stock_qty - item.delivered_qty <= 0:
+			if (item.stock_qty - item.delivered_qty <= 0) or (
+				ignore_drop_shipped_items.get(sales_order.company, 0) and item.delivered_by_supplier
+			):
 				continue
 
 			sales_demand.append(
@@ -170,7 +177,7 @@ def get_sales_demand(name: str | None = None, item_code: str | None = None) -> l
 						"parent": sales_order.name,
 						"company": sales_order.company,
 						"warehouse": default_fg_warehouse,
-						"workstation": shipping_workstations.get(sales_order.company) or "",
+						"workstation": shipping_workstations.get(sales_order.company, ""),
 						"name": item.name,
 						"idx": item.idx,
 						"item_code": item.item_code,
