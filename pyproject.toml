@@ -39,6 +39,9 @@ indent = "\t"
 
 [tool.semantic_release]
 version_toml = ["pyproject.toml:tool.poetry.version"]
+version_variable = [
+    "beam/__init__.py:__version__"
+]
 
 [tool.semantic_release.branches.version]
 match = "version-15"
