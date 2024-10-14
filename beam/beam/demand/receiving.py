@@ -7,6 +7,7 @@ import frappe
 from frappe.query_builder import DocType
 from frappe.query_builder.custom import ConstantColumn
 from frappe.query_builder.functions import Coalesce
+from pypika import Query, Table
 
 from beam.beam.demand.sqlite import get_demand_db
 from beam.beam.demand.utils import Receiving, get_epoch_from_datetime
@@ -140,21 +141,30 @@ def remove_receiving(name: str) -> None:
 		cursor = conn.cursor()
 		# remove all receiving row(s)
 		receiving = get_receiving_list(name)
+		receiving_table = Table("receiving")
 		for row in receiving:
-			cursor.execute(f"DELETE FROM receiving WHERE key = '{row.key}'")
+			delete_query = Query.from_(receiving_table).delete().where(receiving_table.key == row.key)
+			cursor.execute(delete_query.get_sql())
 
 
 def get_receiving_list(name: str | None = None, item_code: str | None = None) -> list[Receiving]:
 	if name:
 		with get_demand_db() as conn:
 			cursor = conn.cursor()
+			receiving_table = Table("receiving")
 
 			if item_code:
-				receiving_query = cursor.execute(
-					f"SELECT * FROM receiving WHERE parent = '{name}' AND item_code = '{item_code}'"
+				receiving_query = (
+					Query.from_(receiving_table)
+					.select("*")
+					.where((receiving_table.parent == name) & (receiving_table.item_code == item_code))
 				)
 			else:
-				receiving_query = cursor.execute(f"SELECT * FROM receiving WHERE parent = '{name}'")
+				receiving_query = (
+					Query.from_(receiving_table).select("*").where(receiving_table.parent == name)
+				)
+
+			receiving_query = cursor.execute(receiving_query.get_sql())
 
 			receiving_demand: list[Receiving] = receiving_query.fetchall()
 			if receiving_demand:
@@ -186,11 +196,10 @@ def build_receiving_map(
 
 
 def insert_receiving(output: list[Receiving], cursor: "Cursor") -> None:
+	receiving_table = Table("receiving")
 	for row in output:
-		receiving_row = {}
-		for key, value in row.items():
-			if value:
-				receiving_row[key] = value
-		keys = "', '".join(receiving_row.keys())
-		values = "', '".join(receiving_row.values())
-		cursor.execute(f"INSERT INTO receiving ('{keys}') VALUES ('{values}')")
+		receiving_row = {key: value for key, value in row.items() if value}
+		insert_query = (
+			Query.into(receiving_table).columns(*receiving_row.keys()).insert(*receiving_row.values())
+		)
+		cursor.execute(insert_query.get_sql())
