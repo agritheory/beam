@@ -3,6 +3,14 @@ For license information, please see license.txt-->
 
 # CHANGELOG
 
+## v15.3.0 (2024-10-02)
+
+### Feature
+
+* feat: handle units from beam settings (#189)
+
+Co-authored-by: Lauty &lt;38353324+lauty95@users.noreply.github.com&gt; ([`6af1a2a`](https://github.com/agritheory/beam/commit/6af1a2a00aab987f51e112c5c14c6896f160fc29))
+
 ## v15.2.0 (2024-10-01)
 
 ### Feature

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "beam"
-version = "15.2.0"
+version = "15.3.0"
 authors = ["AgriTheory <support@agritheory.dev>"]
 description = "Barcode Scanning for ERPNext"
 readme = "README.md"
