@@ -196,4 +196,5 @@ cypress/videos
 .idea/
 
 beam/www/beam/index.js
+beam/www/beam/index.js.map
 beam/www/beam/style.css
