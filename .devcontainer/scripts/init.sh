@@ -1,5 +1,9 @@
 #!bin/bash
 
+echo "Building Devcontainer from branch: " 
+branch_name=$(git rev-parse --abbrev-ref HEAD)
+echo $branch_name
+
 set -e
 
 if [[ -f "/workspaces/beam/frappe-bench/apps/frappe" ]]
@@ -37,9 +41,10 @@ sed -i '/redis/d' ./Procfile
 bench new-site dev.localhost --mariadb-root-password 123 --admin-password admin --no-mariadb-socket
 
 bench get-app erpnext --branch version-15
-bench get-app https://github.com/agritheory/beam --branch version-15
+bench get-app hrms --branch version-15
+bench get-app https://github.com/agritheory/beam --branch $branch_name
 
-bench --site dev.localhost install-app erpnext beam
+bench --site dev.localhost install-app erpnext hrms beam
 bench --site dev.localhost set-config developer_mode 1
 bench --site dev.localhost clear-cache
 bench use dev.localhost
