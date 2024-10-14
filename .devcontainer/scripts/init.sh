@@ -1,7 +1,7 @@
 #!bin/bash
 
 echo "Building Devcontainer from branch: " 
-branch_name=${GITHUB_REF#refs/heads/}
+branch_name=$(git rev-parse --abbrev-ref HEAD)
 echo $branch_name
 
 set -e
@@ -42,7 +42,7 @@ bench new-site dev.localhost --mariadb-root-password 123 --admin-password admin 
 
 bench get-app erpnext --branch version-15
 bench get-app hrms --branch version-15
-bench get-app https://github.com/agritheory/beam --branch $GITHUB_REF
+bench get-app https://github.com/agritheory/beam --branch $branch_name
 
 bench --site dev.localhost install-app erpnext hrms beam
 bench --site dev.localhost set-config developer_mode 1
