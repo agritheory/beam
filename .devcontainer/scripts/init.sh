@@ -1,5 +1,8 @@
 #!bin/bash
 
+echo "Building Devcontainer from branch: " 
+echo $GITHUB_REF
+
 set -e
 
 if [[ -f "/workspaces/beam/frappe-bench/apps/frappe" ]]
