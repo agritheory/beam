@@ -1,24 +1,34 @@
 # CHANGELOG
 
+
+## v15.3.1 (2024-10-14)
+
+### Fixes
+
+* fix: codespace branch selection respected (#207) ([`ac399d1`](https://github.com/agritheory/beam/commit/ac399d125829797793d25742fbeca595079a89b7))
+
+
 ## v15.3.0 (2024-10-02)
 
-### Feature
+### Features
 
 * feat: handle units from beam settings (#189)
 
-Co-authored-by: Lauty &lt;38353324+lauty95@users.noreply.github.com&gt; ([`6af1a2a`](https://github.com/agritheory/beam/commit/6af1a2a00aab987f51e112c5c14c6896f160fc29))
+Co-authored-by: Lauty <38353324+lauty95@users.noreply.github.com> ([`6af1a2a`](https://github.com/agritheory/beam/commit/6af1a2a00aab987f51e112c5c14c6896f160fc29))
+
 
 ## v15.2.0 (2024-10-01)
 
-### Feature
+### Features
 
 * feat: add devcontainer (#179)
 
-Co-authored-by: Rohan Bansal &lt;rohan@agritheory.dev&gt; ([`eeabbf8`](https://github.com/agritheory/beam/commit/eeabbf8ce90c604f77e084111f47680d15173eb3))
+Co-authored-by: Rohan Bansal <rohan@agritheory.dev> ([`eeabbf8`](https://github.com/agritheory/beam/commit/eeabbf8ce90c604f77e084111f47680d15173eb3))
 
-### Refactor
+### Refactoring
 
 * refactor: pyproject to poetry(v15) (#159) ([`efa12a6`](https://github.com/agritheory/beam/commit/efa12a6807a2d42741a85f655a99f735652a024b))
+
 
 ## v15.1.3 (2024-08-15)
 
@@ -26,60 +36,64 @@ Co-authored-by: Rohan Bansal &lt;rohan@agritheory.dev&gt; ([`eeabbf8`](https://g
 
 * docs:  add network printer settings example (#147) ([`8550763`](https://github.com/agritheory/beam/commit/8550763f30460cd91b3a542cd7f295ce6b6e392b))
 
-### Fix
+### Fixes
 
 * fix: eval basic_rate (#152) ([`b20df8d`](https://github.com/agritheory/beam/commit/b20df8daf539a074e976bd1ec551b2d01ea97f66))
 
+
 ## v15.1.2 (2024-06-27)
 
-### Fix
+### Fixes
 
 * fix: hooked listview typo (#134) ([`b712f9e`](https://github.com/agritheory/beam/commit/b712f9e6710875c39a0a418ea2d78ce54d00006d))
 
+
 ## v15.1.1 (2024-06-04)
 
-### Ci
+### Continuous Integration
 
 * ci: update conftest for json (#101) ([`1f670c3`](https://github.com/agritheory/beam/commit/1f670c3e57c239e2fdc5d54b34044d858ac52c8a))
 
 * ci: refactor env variable, remove unused code (#97) ([`da908af`](https://github.com/agritheory/beam/commit/da908af16099f65920d1b32f2629010231af3d5c))
 
-### Fix
+### Fixes
 
 * fix: update printing dependencies (#125)
 
-Co-authored-by: Rohan Bansal &lt;rohan@agritheory.dev&gt; ([`49530cf`](https://github.com/agritheory/beam/commit/49530cfa35cefb3a88f9a51954869c932654e2f9))
+Co-authored-by: Rohan Bansal <rohan@agritheory.dev> ([`49530cf`](https://github.com/agritheory/beam/commit/49530cfa35cefb3a88f9a51954869c932654e2f9))
 
 ### Unknown
 
 * Port HU tests / staging to V15 (#118)
 
-Co-authored-by: ViralKansodiya-Fosserp &lt;141210323+viralkansodiya@users.noreply.github.com&gt;
-Co-authored-by: viralpatel15 &lt;viralkansodiya167@gmail.com&gt;
-Co-authored-by: Heather Kusmierz &lt;heather.kusmierz@gmail.com&gt; ([`7fd6960`](https://github.com/agritheory/beam/commit/7fd6960f9f58478b6118bb5448678c1afdf34962))
+Co-authored-by: ViralKansodiya-Fosserp <141210323+viralkansodiya@users.noreply.github.com>
+Co-authored-by: viralpatel15 <viralkansodiya167@gmail.com>
+Co-authored-by: Heather Kusmierz <heather.kusmierz@gmail.com> ([`7fd6960`](https://github.com/agritheory/beam/commit/7fd6960f9f58478b6118bb5448678c1afdf34962))
 
 * Merge v14 into v15 (#114)
 
-Co-authored-by: ViralKansodiya-Fosserp &lt;141210323+viralkansodiya@users.noreply.github.com&gt;
-Co-authored-by: Tyler Matteson &lt;tyler@agritheory.com&gt;
-Co-authored-by: Rohan Bansal &lt;rohan@agritheory.dev&gt;
-Co-authored-by: AgriTheory &lt;support@agritheory.dev&gt; ([`41ddda6`](https://github.com/agritheory/beam/commit/41ddda6e47ed42c2b8a7b2074ef785992b4bd6eb))
+Co-authored-by: ViralKansodiya-Fosserp <141210323+viralkansodiya@users.noreply.github.com>
+Co-authored-by: Tyler Matteson <tyler@agritheory.com>
+Co-authored-by: Rohan Bansal <rohan@agritheory.dev>
+Co-authored-by: AgriTheory <support@agritheory.dev> ([`41ddda6`](https://github.com/agritheory/beam/commit/41ddda6e47ed42c2b8a7b2074ef785992b4bd6eb))
 
 * Barcode Font Size should be set in BEAM settings (#103) ([`feb53b2`](https://github.com/agritheory/beam/commit/feb53b2374b7c59c67d07cd9453c9f94869cff35))
 
+
 ## v15.1.0 (2024-03-26)
 
-### Ci
+### Continuous Integration
 
 * ci: open release for version-15 ([`15c44a2`](https://github.com/agritheory/beam/commit/15c44a2882814b5be5935cb9e91dc6e19fea4af3))
 
-### Feature
+### Features
 
 * feat: add BEAM Settings for v15 (#96) ([`ea73c02`](https://github.com/agritheory/beam/commit/ea73c02575c68f8da83e7617c954403b63948fe7))
 
+
 ## v15.0.0 (2024-03-07)
 
-### Ci
+### Continuous Integration
 
 * ci: version-15 ([`c9deda4`](https://github.com/agritheory/beam/commit/c9deda4c733bad99da5da80a6c4eb3a713d010ce))
 
@@ -89,13 +103,14 @@ Co-authored-by: AgriTheory &lt;support@agritheory.dev&gt; ([`41ddda6`](https://g
 
 * CUPS service (#79)
 
-Co-authored-by: Lucas Vazquez &lt;lucas.vazquez@enviame.io&gt; ([`ac2c3ad`](https://github.com/agritheory/beam/commit/ac2c3add89346b51bc0e3084cf5dd8d2bdfa260c))
+Co-authored-by: Lucas Vazquez <lucas.vazquez@enviame.io> ([`ac2c3ad`](https://github.com/agritheory/beam/commit/ac2c3add89346b51bc0e3084cf5dd8d2bdfa260c))
 
 * Stock Entry hu query filter (#84) ([`d6d1b5f`](https://github.com/agritheory/beam/commit/d6d1b5faca7ef85e17ea8ef255b9577def4b16ea))
 
+
 ## v14.8.4 (2023-11-29)
 
-### Fix
+### Fixes
 
 * fix: disable overconsumption check ([`90c4be9`](https://github.com/agritheory/beam/commit/90c4be961e420a0aca130f86dd40cca8bedaa163))
 
@@ -107,15 +122,17 @@ fix: disable overconsumption check ([`964f4fc`](https://github.com/agritheory/be
 
 * Use accepted qty in hu for purchase receipt (#72) ([`5780b16`](https://github.com/agritheory/beam/commit/5780b16972cdf70f998c516b777d9aebc64a87b1))
 
+
 ## v14.8.3 (2023-10-05)
 
-### Fix
+### Fixes
 
 * fix: validate customizations (#76) ([`5c04b77`](https://github.com/agritheory/beam/commit/5c04b77cb567067a8f396f244e47550f2f0f91f6))
 
+
 ## v14.8.2 (2023-10-04)
 
-### Fix
+### Fixes
 
 * fix: check for existence of item group before membership (#77) ([`b062e79`](https://github.com/agritheory/beam/commit/b062e79d33a0561f1ef3c78a5629976567364fa9))
 
@@ -123,29 +140,31 @@ fix: disable overconsumption check ([`964f4fc`](https://github.com/agritheory/be
 
 * Cancelled SLEs ignored by `get_handling_unit` (#67)
 
-Co-authored-by: github-actions &lt;github-actions@github.com&gt;
-Co-authored-by: fproldan &lt;franciscoproldan@gmail.com&gt;
-Co-authored-by: Heather Kusmierz &lt;heather.kusmierz@gmail.com&gt; ([`65632de`](https://github.com/agritheory/beam/commit/65632deb328a3f9d69f0c64c97b536b89fb52d6d))
+Co-authored-by: github-actions <github-actions@github.com>
+Co-authored-by: fproldan <franciscoproldan@gmail.com>
+Co-authored-by: Heather Kusmierz <heather.kusmierz@gmail.com> ([`65632de`](https://github.com/agritheory/beam/commit/65632deb328a3f9d69f0c64c97b536b89fb52d6d))
+
 
 ## v14.8.1 (2023-09-13)
 
-### Ci
+### Continuous Integration
 
 * ci: update release action user and email (#68) ([`08bc19b`](https://github.com/agritheory/beam/commit/08bc19bd58d55a4389858b1fed94edfbf8de68f1))
 
-### Fix
+### Fixes
 
 * fix: handle stock entry warehouse correctly, fix scan in transfer sto… (#69) ([`886d8c6`](https://github.com/agritheory/beam/commit/886d8c6438c34f252f7da27553ddeb6ecf857470))
 
+
 ## v14.8.0 (2023-09-06)
 
-### Feature
+### Features
 
 * feat: dn_detail in packing slip ([`e7010d0`](https://github.com/agritheory/beam/commit/e7010d09109d392c5610552a1be0ae84425c3ed4))
 
 * feat: parent_doctype arg in get_handling_unit ([`4b8a223`](https://github.com/agritheory/beam/commit/4b8a22321d7c69f9df91d81d27696dda725f0fbc))
 
-### Fix
+### Fixes
 
 * fix: remove log ([`06af179`](https://github.com/agritheory/beam/commit/06af179152fb76e5fbfd616ac81fd5778c6338b6))
 
@@ -155,6 +174,7 @@ Co-authored-by: Heather Kusmierz &lt;heather.kusmierz@gmail.com&gt; ([`65632de`]
 
 Scans in Packing Slip form should also return and set dn_detail ([`6651f00`](https://github.com/agritheory/beam/commit/6651f00b3166c946f82a60981d1e0dc177014301))
 
+
 ## v14.7.0 (2023-08-31)
 
 ### Unknown
@@ -163,11 +183,12 @@ Scans in Packing Slip form should also return and set dn_detail ([`6651f00`](htt
 
 Net qty fix ([`3fdf19d`](https://github.com/agritheory/beam/commit/3fdf19dfba4e9b301db021a9ff2f63d8471e8598))
 
-* Merge branch &#39;version-14&#39; into net_qty_fix ([`d2fd37e`](https://github.com/agritheory/beam/commit/d2fd37ec53783fd42f1bfe97be4ce110fcaca7c0))
+* Merge branch 'version-14' into net_qty_fix ([`d2fd37e`](https://github.com/agritheory/beam/commit/d2fd37ec53783fd42f1bfe97be4ce110fcaca7c0))
+
 
 ## v14.6.0 (2023-08-24)
 
-### Chore
+### Chores
 
 * chore: fix item typo ([`b25cefe`](https://github.com/agritheory/beam/commit/b25cefed02341050542ddd394668c4186f720a53))
 
@@ -179,7 +200,7 @@ Net qty fix ([`3fdf19d`](https://github.com/agritheory/beam/commit/3fdf19dfba4e9
 
 * docs: add traceability report ([`d95a34a`](https://github.com/agritheory/beam/commit/d95a34aaa20f57328900dcaa29bedd4700863880))
 
-### Feature
+### Features
 
 * feat: no copy for hu fields, hide hu field based configured doctypes ([`ac62bd8`](https://github.com/agritheory/beam/commit/ac62bd8547123512dbca35506f9b293097684618))
 
@@ -189,15 +210,16 @@ Net qty fix ([`3fdf19d`](https://github.com/agritheory/beam/commit/3fdf19dfba4e9
 
 feat: no copy for hu fields, hide hu field based configured doctypes ([`faf3d70`](https://github.com/agritheory/beam/commit/faf3d70572c26e9830b10be29d5001d9a30d01f0))
 
-* Merge branch &#39;version-14&#39; of github.com:agritheory/beam into issue_36 ([`4fe6190`](https://github.com/agritheory/beam/commit/4fe619052d6df0f0f4eaff899a45f60d170e79de))
+* Merge branch 'version-14' of github.com:agritheory/beam into issue_36 ([`4fe6190`](https://github.com/agritheory/beam/commit/4fe619052d6df0f0f4eaff899a45f60d170e79de))
 
 * Merge pull request #62 from agritheory/trace_docs
 
 docs: add handling unit traceability report ([`4d03dd1`](https://github.com/agritheory/beam/commit/4d03dd1e4d9fd596f3ea7895b72d21cf3a8e8734))
 
+
 ## v14.5.1 (2023-08-24)
 
-### Chore
+### Chores
 
 * chore: fix item typo ([`b3da188`](https://github.com/agritheory/beam/commit/b3da18892dc99b3b9b6425f848139c76bcd7514f))
 
@@ -213,11 +235,11 @@ docs: add handling unit traceability report ([`4d03dd1`](https://github.com/agri
 
 * docs: update HU docs w/ net qty details ([`2c82e97`](https://github.com/agritheory/beam/commit/2c82e970171d182967485bd93102dce38bb757ee))
 
-### Feature
+### Features
 
 * feat: no copy for hu fields, hide hu field based configured doctypes ([`1d89434`](https://github.com/agritheory/beam/commit/1d894348f4cfd921f75971ee44563af51e2d3cc8))
 
-### Fix
+### Fixes
 
 * fix: get_form_action ([`d3fb02f`](https://github.com/agritheory/beam/commit/d3fb02f514adefa1552bb78dd27f108bd9ec1913))
 
@@ -237,9 +259,10 @@ docs: add handling unit traceability report ([`4d03dd1`](https://github.com/agri
 
 * wip: better net qty logic ([`cad8178`](https://github.com/agritheory/beam/commit/cad8178f03377f8308a9a2f83ecaca099b3e6865))
 
+
 ## v14.5.0 (2023-08-23)
 
-### Feature
+### Features
 
 * feat: Add setting on the BOM Scrap Item to toggle if Handling Unit should be created for scrap ([`d3567d3`](https://github.com/agritheory/beam/commit/d3567d3e3a96612d1018d50ab0695273c3a4840d))
 
@@ -249,13 +272,14 @@ docs: add handling unit traceability report ([`4d03dd1`](https://github.com/agri
 
 Add setting on the BOM Scrap Item to toggle if Handling Unit should be created for scrap ([`6a1dec3`](https://github.com/agritheory/beam/commit/6a1dec3b82f964aef0cb726d7ed7f7f3ee43c953))
 
+
 ## v14.4.0 (2023-08-22)
 
-### Chore
+### Chores
 
 * chore: make HU PK immutable ([`a493326`](https://github.com/agritheory/beam/commit/a493326f5ac0560b9b1264cd954cad66f8e05b8f))
 
-### Feature
+### Features
 
 * feat: wip traceability ([`6622be9`](https://github.com/agritheory/beam/commit/6622be975bc439870733b1e95a3c05a31203eff6))
 
@@ -271,7 +295,7 @@ Add setting on the BOM Scrap Item to toggle if Handling Unit should be created f
 
 * feat: wip report ([`6df65eb`](https://github.com/agritheory/beam/commit/6df65ebd1831f75b04725bdac196170cd74d8402))
 
-### Fix
+### Fixes
 
 * fix: remove setup script ([`cfa28a0`](https://github.com/agritheory/beam/commit/cfa28a0ac4d48937ed6c636543f9e6d68b5f9a1d))
 
@@ -283,19 +307,20 @@ Add setting on the BOM Scrap Item to toggle if Handling Unit should be created f
 
 Traceability Reporting ([`cd58dbf`](https://github.com/agritheory/beam/commit/cd58dbff78105e01e5b61ad59ecd1e6f63414263))
 
-* Merge branch &#39;version-14&#39; of github.com:agritheory/beam into issue_12 ([`1a6216a`](https://github.com/agritheory/beam/commit/1a6216a54720a7555be20dc8744aa28fee624095))
+* Merge branch 'version-14' of github.com:agritheory/beam into issue_12 ([`1a6216a`](https://github.com/agritheory/beam/commit/1a6216a54720a7555be20dc8744aa28fee624095))
 
 * fix ([`478783e`](https://github.com/agritheory/beam/commit/478783e376d511c19b7a971d6de1ed464b429c2f))
 
-* Merge branch &#39;version-14&#39; of github.com:agritheory/beam into issue_12 ([`25f88d8`](https://github.com/agritheory/beam/commit/25f88d8c2ea86d0aba025c9b890623294fa2ef48))
+* Merge branch 'version-14' of github.com:agritheory/beam into issue_12 ([`25f88d8`](https://github.com/agritheory/beam/commit/25f88d8c2ea86d0aba025c9b890623294fa2ef48))
+
 
 ## v14.3.1 (2023-08-22)
 
-### Chore
+### Chores
 
 * chore: update test date for erpnext codebase changes ([`986e218`](https://github.com/agritheory/beam/commit/986e218aafbe9707c368f61ba072f84ab49d2e35))
 
-### Ci
+### Continuous Integration
 
 * ci: remove testing artifacts ([`900c33e`](https://github.com/agritheory/beam/commit/900c33e8c234b1433d791f444eecad1039ef62f8))
 
@@ -311,7 +336,7 @@ Traceability Reporting ([`cd58dbf`](https://github.com/agritheory/beam/commit/cd
 
 * ci: migrate to python semantic release ([`f5fc8e9`](https://github.com/agritheory/beam/commit/f5fc8e9dba79ac0374694317f0cca5f0ec4b97ba))
 
-### Fix
+### Fixes
 
 * fix: update overconsumption logic to be sensitive to inbound/ outbound transfers ([`8ea7b2a`](https://github.com/agritheory/beam/commit/8ea7b2a12c40ff7002b330a2a3f83788c5632852))
 
@@ -323,7 +348,7 @@ Traceability Reporting ([`cd58dbf`](https://github.com/agritheory/beam/commit/cd
 
 Fix overconsumption ([`1ff8d27`](https://github.com/agritheory/beam/commit/1ff8d27a7d22c7e17266abd9838b9647a7e3f502))
 
-* Merge branch &#39;version-14&#39; into fix_overconsumption ([`fa586bd`](https://github.com/agritheory/beam/commit/fa586bd57027146968575bf25a95ed7352451aff))
+* Merge branch 'version-14' into fix_overconsumption ([`fa586bd`](https://github.com/agritheory/beam/commit/fa586bd57027146968575bf25a95ed7352451aff))
 
 * Merge pull request #55 from agritheory/py_sem_rel_14
 
@@ -332,6 +357,7 @@ ci: add test workflow, migrate to Python semantic release ([`52ed795`](https://g
 * Merge pull request #54 from agritheory/test_data_fixes
 
 chore: update test date for erpnext codebase changes ([`a5a7ede`](https://github.com/agritheory/beam/commit/a5a7ede47b63b19d5d36732337562dc488b1f2b7))
+
 
 ## v14.3.0 (2023-07-21)
 
@@ -345,13 +371,13 @@ chore: update test date for erpnext codebase changes ([`a5a7ede`](https://github
 
 * docs: document features - first pass ([`960bf17`](https://github.com/agritheory/beam/commit/960bf1782d5a0afb6592eac7f152669c728c180b))
 
-### Feature
+### Features
 
 * feat: rename function, add purchase return case ([`fbad47a`](https://github.com/agritheory/beam/commit/fbad47ab8dc6d724835bea2910489cb79dee92cd))
 
 * feat: Validate handling unit overconsumption ([`bf34994`](https://github.com/agritheory/beam/commit/bf349947a39954388e2f513d898ef07dc58776a5))
 
-### Fix
+### Fixes
 
 * fix: wip use stock_qty and precision ([`d0799d5`](https://github.com/agritheory/beam/commit/d0799d5d5693a29c129619b46c76dae593461e46))
 
@@ -367,9 +393,10 @@ docs: document features - first pass ([`fb5b7ac`](https://github.com/agritheory/
 
 * wip: more documentation and stubs ([`0834808`](https://github.com/agritheory/beam/commit/083480843fa639714b8ffb5fb115e96d97beb7f5))
 
+
 ## v14.2.0 (2023-07-18)
 
-### Feature
+### Features
 
 * feat: update listview action ([`549810a`](https://github.com/agritheory/beam/commit/549810a74eb16ca97dd7ed941b194fef75a09729))
 
@@ -379,9 +406,10 @@ docs: document features - first pass ([`fb5b7ac`](https://github.com/agritheory/
 
 Scanning Handling Unit in Listview should filter instead of route ([`2869963`](https://github.com/agritheory/beam/commit/286996364eed49542e2bc37aea6ca3770479854f))
 
+
 ## v14.1.3 (2023-07-11)
 
-### Fix
+### Fixes
 
 * fix: ignore permissions on barcode creation ([`57586ed`](https://github.com/agritheory/beam/commit/57586ed95a32071471a7ba18aebd77a19372064b))
 
@@ -391,9 +419,10 @@ Scanning Handling Unit in Listview should filter instead of route ([`2869963`](h
 
 fix: ignore permissions on barcode creation ([`57ce99d`](https://github.com/agritheory/beam/commit/57ce99da3a1fc18409944131a0b6aec28418d879))
 
+
 ## v14.1.2 (2023-07-10)
 
-### Fix
+### Fixes
 
 * fix: net HU quantities in send to subcontractor should generate a new HU for the amount sent (#40) ([`5ee3c96`](https://github.com/agritheory/beam/commit/5ee3c965689d20eecafa7dde4146e45fc9317096))
 
@@ -461,13 +490,13 @@ fix: ignore permissions on barcode creation ([`57ce99d`](https://github.com/agri
 
 ---------
 
-Co-authored-by: Francisco Roldán &lt;franciscoproldan@gmail.com&gt;
+Co-authored-by: Francisco Roldán <franciscoproldan@gmail.com>
 
 * chore: remove purchase invoice item customization
 
 ---------
 
-Co-authored-by: Tyler Matteson &lt;tyler@agritheory.com&gt; ([`0e98e9d`](https://github.com/agritheory/beam/commit/0e98e9dd4546c2aff58d72058594a69f33728571))
+Co-authored-by: Tyler Matteson <tyler@agritheory.com> ([`0e98e9d`](https://github.com/agritheory/beam/commit/0e98e9dd4546c2aff58d72058594a69f33728571))
 
 * Multiple UOMs (#31)
 
@@ -519,7 +548,7 @@ Co-authored-by: Tyler Matteson &lt;tyler@agritheory.com&gt; ([`0e98e9d`](https:/
 
 ---------
 
-Co-authored-by: Francisco Roldán &lt;franciscoproldan@gmail.com&gt; ([`e39b2b1`](https://github.com/agritheory/beam/commit/e39b2b1bac1cb194a7dba850a0be456626a649ef))
+Co-authored-by: Francisco Roldán <franciscoproldan@gmail.com> ([`e39b2b1`](https://github.com/agritheory/beam/commit/e39b2b1bac1cb194a7dba850a0be456626a649ef))
 
 * Make action configuration hookable (#33)
 
@@ -591,11 +620,12 @@ monkeypatch in test is not working correctly, needs docs
 
 ---------
 
-Co-authored-by: Rohan Bansal &lt;rohan@parsimony.com&gt; ([`2323b82`](https://github.com/agritheory/beam/commit/2323b825d7e7e94d72be868861bc7d6c6e2b1910))
+Co-authored-by: Rohan Bansal <rohan@parsimony.com> ([`2323b82`](https://github.com/agritheory/beam/commit/2323b825d7e7e94d72be868861bc7d6c6e2b1910))
+
 
 ## v14.1.1 (2023-06-23)
 
-### Fix
+### Fixes
 
 * fix: normalize return values for scanning ([`6ba7e00`](https://github.com/agritheory/beam/commit/6ba7e0063a25188eab86a79ddf6a57aa8d33366c))
 
@@ -605,9 +635,10 @@ Co-authored-by: Rohan Bansal &lt;rohan@parsimony.com&gt; ([`2323b82`](https://gi
 
 fix: normalize return values for scanning ([`24adda3`](https://github.com/agritheory/beam/commit/24adda3830e21419c989dd4c382c8a87ecddde93))
 
+
 ## v14.1.0 (2023-06-15)
 
-### Ci
+### Continuous Integration
 
 * ci: fix json diff job ([`54f6766`](https://github.com/agritheory/beam/commit/54f6766ca9d7c6f42bac78573896370b70ff47b6))
 
@@ -615,11 +646,11 @@ fix: normalize return values for scanning ([`24adda3`](https://github.com/agrith
 
 * docs: fix readme ([`999eb22`](https://github.com/agritheory/beam/commit/999eb22d4927ff706eb2c44f8117ac10826b0401))
 
-### Feature
+### Features
 
 * feat: handle scanning of non-handling units ([`048aee3`](https://github.com/agritheory/beam/commit/048aee35b9c28805ce06abb72f1c8a16f0a0e3b1))
 
-### Fix
+### Fixes
 
 * fix: remove reference to client code ([`ef74169`](https://github.com/agritheory/beam/commit/ef741698a78fd989332e9e6867600898cccd42ec))
 
@@ -641,13 +672,20 @@ feat: handle scanning of non-handling units ([`db158dc`](https://github.com/agri
 
 docs: fix readme ([`087158b`](https://github.com/agritheory/beam/commit/087158bd68c0a9a608ffd8bf225616e12c106502))
 
+
 ## v14.0.1 (2023-05-26)
 
-### Ci
+### Code Style
+
+* style: add typing ([`aadc989`](https://github.com/agritheory/beam/commit/aadc98943f86fb3c7e8ed3d72e0de3df931708ba))
+
+* style: black formatting ([`32a8cfa`](https://github.com/agritheory/beam/commit/32a8cfa38e672b31b2a22ddd302fb9967f2dd141))
+
+### Continuous Integration
 
 * ci: fix some mypy errors ([`a6e0361`](https://github.com/agritheory/beam/commit/a6e0361326fc03515e8cbdc0606f3679401299c0))
 
-### Fix
+### Fixes
 
 * fix: fix mypy errors and doc testing documentation ([`4bd8267`](https://github.com/agritheory/beam/commit/4bd8267942d1d39c9b9590dd26f158a13dee6fc5))
 
@@ -667,12 +705,6 @@ docs: fix readme ([`087158b`](https://github.com/agritheory/beam/commit/087158bd
 
 * fix: sle query ([`ea7f3c4`](https://github.com/agritheory/beam/commit/ea7f3c43a1404bfe3ba1c7894a190c53ffc87ab9))
 
-### Style
-
-* style: add typing ([`aadc989`](https://github.com/agritheory/beam/commit/aadc98943f86fb3c7e8ed3d72e0de3df931708ba))
-
-* style: black formatting ([`32a8cfa`](https://github.com/agritheory/beam/commit/32a8cfa38e672b31b2a22ddd302fb9967f2dd141))
-
 ### Unknown
 
 * Merge pull request #3 from agritheory/v14_update
@@ -687,9 +719,10 @@ V14 update ([`d2480f4`](https://github.com/agritheory/beam/commit/d2480f44636147
 
 * wip: test fixtures ([`7b3c865`](https://github.com/agritheory/beam/commit/7b3c865748bfb8ddb4f85786ba8ab5f22320994c))
 
+
 ## v14.0.0 (2023-05-19)
 
-### Feature
+### Features
 
 * feat: Initialize App ([`40674e1`](https://github.com/agritheory/beam/commit/40674e1f3e4296f2dcc702eeecef92c6b6db7d42))
 
