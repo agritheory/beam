@@ -1,7 +1,8 @@
 #!bin/bash
 
 echo "Building Devcontainer from branch: " 
-echo $GITHUB_REF
+branch_name=${GITHUB_REF#refs/heads/}
+echo $branch_name
 
 set -e
 
