@@ -1,4 +1,5 @@
-import json
+# Copyright (c) 2024, AgriTheory and contributors
+# For license information, please see license.txt
 
 import frappe
 from erpnext.stock.stock_ledger import NegativeStockError
@@ -45,6 +46,17 @@ def generate_handling_units(doc, method=None):
 			handling_unit = frappe.new_doc("Handling Unit")
 			handling_unit.save()
 			row.to_handling_unit = handling_unit.name
+			continue
+
+		if (
+			doc.doctype == "Stock Entry"
+			and doc.purpose == "Repack"
+			and row.t_warehouse
+			and not row.handling_unit
+		):
+			handling_unit = frappe.new_doc("Handling Unit")
+			handling_unit.save()
+			row.handling_unit = handling_unit.name
 			continue
 
 		if doc.doctype == "Subcontracting Receipt" and not row.handling_unit:

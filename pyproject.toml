@@ -25,6 +25,9 @@ addopts = "--cov=beam --cov-report term-missing"
 [tool.black]
 line-length = 99
 
+[tool.codespell]
+skip = '*.md'
+
 [tool.isort]
 line_length = 99
 multi_line_output = 3

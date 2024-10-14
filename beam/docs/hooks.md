@@ -1,3 +1,6 @@
+<!-- Copyright (c) 2024, AgriTheory and contributors
+For license information, please see license.txt-->
+
 # Extending Beam With Custom Hooks
 
 Beam can be extended by adding configurations to your application's `hooks.py`.

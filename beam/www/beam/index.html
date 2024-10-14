@@ -1,0 +1,30 @@
+{% extends "templates/web.html" %}
+
+{% block content %}
+<div>
+	<div id="beam"></div>
+</div>
+<link rel="stylesheet" href="/beam/index.css">
+<script>
+	window.csrf_token = '{{ csrf_token }}'
+	frappe.user = '{{ user }}'
+</script>
+{% endblock %}
+
+{%- block style -%}
+<style>
+	.navbar {
+		display: none;
+	}
+	.web-footer {
+		display: none;
+	}
+	.container {
+		padding-left: .5rem;
+		padding-right: .5rem;
+	}
+	#beam {
+		all: unset;
+	}
+</style>
+{% endblock %}
