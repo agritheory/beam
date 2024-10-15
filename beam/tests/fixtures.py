@@ -1,3 +1,6 @@
+# Copyright (c) 2024, AgriTheory and contributors
+# For license information, please see license.txt
+
 suppliers = [
 	(
 		"Freedom Provisions",
@@ -60,6 +63,8 @@ workstations = [
 	("Refrigerator Station", "200"),
 	("Oven Station", "20"),
 	("Mixer Station", "10"),
+	("Receiving", "100"),
+	("Shipping", "100"),
 ]
 
 operations = [

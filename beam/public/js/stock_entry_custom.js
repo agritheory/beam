@@ -1,3 +1,6 @@
+// Copyright (c) 2024, AgriTheory and contributors
+// For license information, please see license.txt
+
 frappe.ui.form.on('Stock Entry', {
 	async before_cancel(frm) {
 		await set_recombine_handling_units(frm)
@@ -21,7 +24,7 @@ frappe.ui.form.on('Stock Entry', {
 async function show_handling_unit_recombine_dialog(frm) {
 	const data = await get_handling_units(frm)
 	if (!data) {
-		return resolve({})
+		return new Promise(resolve => {})
 	}
 	let fields = [
 		{

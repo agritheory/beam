@@ -44,6 +44,7 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+*.js.map
 MANIFEST
 
 # PyInstaller
@@ -195,5 +196,8 @@ cypress/videos
 # JetBrains IDEs
 .idea/
 
+# built BEAM files
+
 beam/www/beam/index.js
+beam/www/beam/index.js.map
 beam/www/beam/style.css

@@ -1,3 +1,6 @@
+# Copyright (c) 2024, AgriTheory and contributors
+# For license information, please see license.txt
+
 import json
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -5,6 +8,8 @@ from unittest.mock import MagicMock
 import frappe
 import pytest
 from frappe.utils import get_bench_path
+
+from beam.beam.demand.demand import build_demand_allocation_map
 
 
 def _get_logger(*args, **kwargs):
@@ -39,4 +44,6 @@ def db_instance():
 	frappe.init(site=currentsite, sites_path=sites)
 	frappe.connect()
 	frappe.db.commit = MagicMock()
+
+	build_demand_allocation_map()
 	yield frappe.db

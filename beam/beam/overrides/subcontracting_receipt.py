@@ -1,12 +1,11 @@
+# Copyright (c) 2024, AgriTheory and contributors
+# For license information, please see license.txt
+
 import frappe
-from erpnext.controllers.stock_controller import StockController
-from erpnext.stock.doctype.serial_no.serial_no import get_serial_nos
-from erpnext.stock.utils import get_incoming_rate
 from erpnext.subcontracting.doctype.subcontracting_receipt.subcontracting_receipt import (
 	SubcontractingReceipt,
 )
-from frappe import _
-from frappe.utils import cint, cstr, flt, get_link_to_form
+from frappe.utils import cint, cstr, flt
 
 
 class BEAMSubcontractingReceipt(SubcontractingReceipt):
@@ -88,14 +87,13 @@ def get_sle(self):
 			if stock_entry := frappe.db.exists(
 				"Stock Entry", {"subcontracting_order": row.subcontracting_order, "docstatus": 1}
 			):
-				sle_hu = frappe.db.sql(
-					f"""
-                                        Select name, handling_unit, item_code
-                                        From `tabStock Ledger Entry`
-                                        where voucher_type = "Stock Entry" and voucher_no = '{stock_entry}' and
-                                        warehouse = '{self.supplier_warehouse}'
-                                        """,
-					as_dict=True,
+				sle_hu_map[row.subcontracting_order] = frappe.get_all(
+					"Stock Ledger Entry",
+					filters={
+						"voucher_type": "Stock Entry",
+						"voucher_no": stock_entry,
+						"warehouse": self.supplier_warehouse,
+					},
+					fields=["name", "handling_unit", "item_code"],
 				)
-				sle_hu_map[row.subcontracting_order] = sle_hu
 	return sle_hu_map

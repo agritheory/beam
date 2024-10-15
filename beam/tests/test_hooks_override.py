@@ -1,8 +1,9 @@
+# Copyright (c) 2024, AgriTheory and contributors
+# For license information, please see license.txt
+
 import frappe
 import pytest
 from frappe import get_hooks
-
-from beam.tests.conftest import monkeymodule
 
 
 @pytest.fixture()
@@ -42,6 +43,7 @@ def patch_frappe_get_hooks(monkeymodule, *args, **kwargs):
 	monkeymodule.setattr("frappe.get_hooks", patched_hooks)
 
 
+@pytest.mark.order(30)
 def test_beam_frm_hooks_override(patch_frappe_get_hooks):
 	item_barcode = frappe.get_value("Item Barcode", {"parent": "Kaduka Key Lime Pie"}, "barcode")
 	dn = frappe.new_doc("Delivery Note")

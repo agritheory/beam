@@ -4,7 +4,7 @@ fail_fast: false
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.3.0
+    rev: v4.6.0
     hooks:
       - id: trailing-whitespace
         files: 'beam.*'
@@ -20,30 +20,29 @@ repos:
       - id: debug-statements
 
   - repo: https://github.com/asottile/pyupgrade
-    rev: v2.34.0
+    rev: v3.17.0
     hooks:
       - id: pyupgrade
-        args: ['--py38-plus']
+        args: ['--py310-plus']
 
   - repo: https://github.com/frappe/black
     rev: 951ccf4d5bb0d692b457a5ebc4215d755618eb68
     hooks:
       - id: black
 
-  - repo: local
+  - repo: https://github.com/PyCQA/autoflake
+    rev: v2.3.1
     hooks:
-      - id: prettier
-        name: prettier
-        entry: npx prettier . --write --ignore-path .prettierignore
-        language: node
+      - id: autoflake
+        args: [--remove-all-unused-imports, --in-place]
 
   - repo: https://github.com/PyCQA/isort
-    rev: 5.12.0
+    rev: 5.13.2
     hooks:
       - id: isort
 
   - repo: https://github.com/PyCQA/flake8
-    rev: 5.0.4
+    rev: 7.1.0
     hooks:
       - id: flake8
         additional_dependencies: ['flake8-bugbear']
@@ -65,8 +64,13 @@ repos:
       - id: clean_customized_doctypes
         args: ['--app', 'beam']
       - id: validate_customizations
-      - id: validate_python_dependencies
-      - id: validate_javascript_dependencies
+
+  - repo: local
+    hooks:
+      - id: prettier
+        name: prettier
+        entry: npx prettier -w . --config .prettierrc.cjs --ignore-path .prettierignore
+        language: system
 
 ci:
   autoupdate_schedule: weekly

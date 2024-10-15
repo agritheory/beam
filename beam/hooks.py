@@ -1,4 +1,5 @@
-from . import __version__ as app_version
+# Copyright (c) 2024, AgriTheory and contributors
+# For license information, please see license.txt
 
 app_name = "beam"
 app_title = "BEAM"
@@ -16,7 +17,7 @@ app_include_js = ["beam.bundle.js"]
 
 # include js, css files in header of web template
 # web_include_css = "/assets/beam/css/beam.css"
-# web_include_js = "/assets/beam/js/beam.js"
+web_include_js = ["beam-web.bundle.js"]
 
 # include custom scss in every website theme (without file extension ".scss")
 # website_theme_scss = "beam/public/scss/website"
@@ -100,8 +101,10 @@ extend_bootinfo = "beam.beam.boot.boot_session"
 # ---------------
 # Override standard doctype classes
 override_doctype_class = {
+	"Sales Order": "beam.beam.overrides.sales_order.BEAMSalesOrder",
 	"Stock Entry": "beam.beam.overrides.stock_entry.BEAMStockEntry",
 	"Subcontracting Receipt": "beam.beam.overrides.subcontracting_receipt.BEAMSubcontractingReceipt",
+	"Work Order": "beam.beam.overrides.work_order.BEAMWorkOrder",
 }
 
 
@@ -110,52 +113,38 @@ override_doctype_class = {
 # Hook on document methods and events
 
 doc_events = {
-	"Item": {
-		"validate": [
-			"beam.beam.barcodes.create_beam_barcode",
-		]
+	("Item", "Warehouse"): {
+		"validate": ["beam.beam.barcodes.create_beam_barcode"],
 	},
-	"Warehouse": {
-		"validate": [
-			"beam.beam.barcodes.create_beam_barcode",
-		]
+	# (
+	# 	"Purchase Receipt",
+	# 	"Stock Entry",
+	# 	"Sales Invoice",
+	# 	"Delivery Note",
+	# ): {"validate": ["beam.beam.handling_unit.validate_handling_unit_overconsumption"]},
+	(
+		"Delivery Note",
+		"Purchase Invoice",
+		"Purchase Receipt",
+		"Sales Invoice",
+		"Stock Entry",
+		"Stock Reconciliation",
+	): {
+		"on_submit": ["beam.beam.demand.demand.modify_allocations"],
+		"on_cancel": ["beam.beam.demand.demand.modify_allocations"],
 	},
-	"Purchase Receipt": {
-		"before_submit": [
-			"beam.beam.handling_unit.generate_handling_units",
-		],
-		"validate": [
-			# "beam.beam.handling_unit.validate_handling_unit_overconsumption",
-		],
-	},
-	"Purchase Invoice": {
-		"before_submit": [
-			"beam.beam.handling_unit.generate_handling_units",
-		],
+	("Purchase Receipt", "Purchase Invoice", "Subcontracting Receipt"): {
+		"before_submit": ["beam.beam.handling_unit.generate_handling_units"],
 	},
 	"Stock Entry": {
-		"validate": [
-			# "beam.beam.handling_unit.validate_handling_unit_overconsumption",
-		],
 		"before_submit": [
 			"beam.beam.handling_unit.generate_handling_units",
 			"beam.beam.overrides.stock_entry.validate_items_with_handling_unit",
 		],
 	},
-	"Sales Invoice": {
-		"validate": [
-			# "beam.beam.handling_unit.validate_handling_unit_overconsumption",
-		],
-	},
-	"Delivery Note": {
-		"validate": [
-			# "beam.beam.handling_unit.validate_handling_unit_overconsumption",
-		],
-	},
-	"Subcontracting Receipt": {
-		"before_submit": [
-			"beam.beam.handling_unit.generate_handling_units",
-		],
+	("Sales Order", "Work Order"): {
+		"on_submit": ["beam.beam.demand.demand.modify_demand"],
+		"on_cancel": ["beam.beam.demand.demand.modify_demand"],
 	},
 }
 
@@ -187,11 +176,10 @@ doc_events = {
 
 # Overriding Methods
 # ------------------------------
-#
-# override_whitelisted_methods = {
-# 	"frappe.desk.doctype.event.event.get_events": "beam.event.get_events"
-# }
-#
+
+# override_whitelisted_methods = {"demand": "beam.beam..graphql_server"}
+
+
 # each overriding function accepts a `data` argument;
 # generated from the base implementation of the doctype dashboard,
 # along with any modifications made in other Frappe apps
@@ -248,3 +236,276 @@ doc_events = {
 # auth_hooks = [
 # 	"beam.auth.validate"
 # ]
+
+demand = {
+	"Delivery Note": {
+		"on_submit": [
+			{
+				"warehouse_field": "warehouse",
+				"quantity_field": "stock_qty",
+				"demand_effect": "decrease",
+				"allocation_effect": "decrease",
+			}
+		],
+		"on_cancel": [
+			{
+				"warehouse_field": "warehouse",
+				"quantity_field": "stock_qty",
+				"demand_effect": "increase",
+				"allocation_effect": "increase",
+			}
+		],
+	},
+	"Purchase Invoice": {
+		"on_submit": [
+			{
+				"warehouse_field": "warehouse",
+				"quantity_field": "stock_qty",
+				"demand_effect": "increase",
+				"allocation_effect": "decrease",
+				"conditions": {"update_stock": True, "is_return": False},
+			},
+			{
+				"warehouse_field": "warehouse",
+				"quantity_field": "stock_qty",
+				"demand_effect": "decrease",
+				"allocation_effect": "increase",
+				"conditions": {"update_stock": True, "is_return": True},
+			},
+		],
+		"on_cancel": [
+			{
+				"warehouse_field": "warehouse",
+				"quantity_field": "stock_qty",
+				"demand_effect": "decrease",
+				"allocation_effect": "increase",
+				"conditions": {"update_stock": True, "is_return": False},
+			},
+			{
+				"warehouse_field": "warehouse",
+				"quantity_field": "stock_qty",
+				"demand_effect": "increase",
+				"allocation_effect": "decrease",
+				"conditions": {"update_stock": True, "is_return": True},
+			},
+		],
+	},
+	"Purchase Receipt": {
+		"on_submit": [
+			{
+				"warehouse_field": "warehouse",
+				"quantity_field": "stock_qty",
+				"demand_effect": "decrease",
+				"allocation_effect": "increase",
+			}
+		],
+		"on_cancel": [
+			{
+				"warehouse_field": "warehouse",
+				"quantity_field": "stock_qty",
+				"demand_effect": "increase",
+				"allocation_effect": "decrease",
+			}
+		],
+	},
+	"Sales Invoice": {
+		"on_submit": [
+			{
+				"warehouse_field": "warehouse",
+				"quantity_field": "stock_qty",
+				"demand_effect": "decrease",
+				"allocation_effect": "increase",
+				"conditions": {"update_stock": True, "is_return": False},
+			},
+			{
+				"warehouse_field": "warehouse",
+				"quantity_field": "stock_qty",
+				"demand_effect": "increase",
+				"allocation_effect": "decrease",
+				"conditions": {"update_stock": True, "is_return": True},
+			},
+		],
+		"on_cancel": [
+			{
+				"warehouse_field": "warehouse",
+				"quantity_field": "stock_qty",
+				"demand_effect": "increase",
+				"allocation_effect": "decrease",
+				"conditions": {"update_stock": True, "is_return": False},
+			},
+			{
+				"warehouse_field": "warehouse",
+				"quantity_field": "stock_qty",
+				"demand_effect": "decrease",
+				"allocation_effect": "increase",
+				"conditions": {"update_stock": True, "is_return": True},
+			},
+		],
+	},
+	"Stock Entry": {
+		"on_submit": [
+			{
+				"warehouse_field": "s_warehouse",
+				"quantity_field": "transfer_qty",
+				"allocation_effect": "decrease",
+				"conditions": {"purpose": "Material Transfer for Manufacture"},
+			},
+			{
+				"warehouse_field": "t_warehouse",
+				"quantity_field": "transfer_qty",
+				"allocation_effect": "increase",
+				"conditions": {"purpose": "Material Transfer for Manufacture"},
+			},
+			{
+				"warehouse_field": "s_warehouse",
+				"quantity_field": "transfer_qty",
+				"allocation_effect": "decrease",
+				"conditions": {"purpose": "Material Issue"},
+			},
+			{
+				"warehouse_field": "t_warehouse",
+				"quantity_field": "transfer_qty",
+				"allocation_effect": "increase",
+				"conditions": {"purpose": "Material Receipt"},
+			},
+			{
+				"warehouse_field": "s_warehouse",
+				"quantity_field": "transfer_qty",
+				"allocation_effect": "decrease",
+				"conditions": {"purpose": "Material Transfer"},
+			},
+			{
+				"warehouse_field": "t_warehouse",
+				"quantity_field": "transfer_qty",
+				"allocation_effect": "increase",
+				"conditions": {"purpose": "Material Transfer"},
+			},
+			{
+				"warehouse_field": "s_warehouse",
+				"quantity_field": "transfer_qty",
+				"allocation_effect": "decrease",
+				"conditions": {"purpose": "Manufacture"},
+			},
+			{
+				"warehouse_field": "t_warehouse",
+				"quantity_field": "transfer_qty",
+				"allocation_effect": "increase",
+				"conditions": {"purpose": "Manufacture"},
+			},
+			{
+				"warehouse_field": "s_warehouse",
+				"quantity_field": "transfer_qty",
+				"allocation_effect": "decrease",
+				"conditions": {"purpose": "Repack"},
+			},
+			{
+				"warehouse_field": "t_warehouse",
+				"quantity_field": "transfer_qty",
+				"allocation_effect": "increase",
+				"conditions": {"purpose": "Repack"},
+			},
+			{
+				"warehouse_field": "s_warehouse",
+				"quantity_field": "transfer_qty",
+				"allocation_effect": "decrease",
+				"conditions": {"purpose": "Send to Subcontractor"},
+			},
+			{
+				"warehouse_field": "t_warehouse",
+				"quantity_field": "transfer_qty",
+				"allocation_effect": "increase",
+				"conditions": {"purpose": "Send to Subcontractor"},
+			},
+		],
+		"on_cancel": [
+			{
+				"warehouse_field": "s_warehouse",
+				"quantity_field": "transfer_qty",
+				"allocation_effect": "increase",
+				"conditions": {"purpose": "Material Transfer for Manufacture"},
+			},
+			{
+				"warehouse_field": "t_warehouse",
+				"quantity_field": "transfer_qty",
+				"allocation_effect": "decrease",
+				"conditions": {"purpose": "Material Transfer for Manufacture"},
+			},
+			{
+				"warehouse_field": "s_warehouse",
+				"quantity_field": "transfer_qty",
+				"allocation_effect": "increase",
+				"conditions": {"purpose": "Material Issue"},
+			},
+			{
+				"warehouse_field": "s_warehouse",
+				"quantity_field": "transfer_qty",
+				"allocation_effect": "decrease",
+				"conditions": {"purpose": "Material Receipt"},
+			},
+			{
+				"warehouse_field": "s_warehouse",
+				"quantity_field": "transfer_qty",
+				"allocation_effect": "increase",
+				"conditions": {"purpose": "Material Transfer"},
+			},
+			{
+				"warehouse_field": "t_warehouse",
+				"quantity_field": "transfer_qty",
+				"allocation_effect": "decrease",
+				"conditions": {"purpose": "Material Transfer"},
+			},
+			{
+				"warehouse_field": "s_warehouse",
+				"quantity_field": "transfer_qty",
+				"allocation_effect": "increase",
+				"conditions": {"purpose": "Manufacture"},
+			},
+			{
+				"warehouse_field": "t_warehouse",
+				"quantity_field": "transfer_qty",
+				"allocation_effect": "decrease",
+				"conditions": {"purpose": "Manufacture"},
+			},
+			{
+				"warehouse_field": "s_warehouse",
+				"quantity_field": "transfer_qty",
+				"allocation_effect": "increase",
+				"conditions": {"purpose": "Repack"},
+			},
+			{
+				"warehouse_field": "t_warehouse",
+				"quantity_field": "transfer_qty",
+				"allocation_effect": "decrease",
+				"conditions": {"purpose": "Repack"},
+			},
+			{
+				"warehouse_field": "s_warehouse",
+				"quantity_field": "transfer_qty",
+				"allocation_effect": "increase",
+				"conditions": {"purpose": "Send to Subcontractor"},
+			},
+			{
+				"warehouse_field": "t_warehouse",
+				"quantity_field": "transfer_qty",
+				"allocation_effect": "decrease",
+				"conditions": {"purpose": "Send to Subcontractor"},
+			},
+		],
+	},
+	"Stock Reconciliation": {
+		"on_submit": [
+			{
+				"warehouse_field": "warehouse",
+				"quantity_field": "qty",
+				"allocation_effect": "adjustment",
+			}
+		],
+		"on_cancel": [
+			{
+				"warehouse_field": "warehouse",
+				"quantity_field": "qty",
+				"allocation_effect": "adjustment",
+			}
+		],
+	},
+}
