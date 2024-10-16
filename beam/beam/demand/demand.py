@@ -5,6 +5,8 @@ from collections import deque
 from typing import TYPE_CHECKING, Any, Optional, Union
 
 import frappe
+from frappe.query_builder import DocType, Field
+from frappe.query_builder.custom import ConstantColumn
 from frappe.utils.data import flt
 from frappe.utils.nestedset import get_descendants_of
 from pypika import Query, Table
@@ -66,126 +68,113 @@ def get_qty_from_sle(item_code: str, warehouse: str | None = None, company: str 
 def get_manufacturing_demand(
 	name: str | None = None, item_code: str | None = None
 ) -> list[Demand]:
-	manufacturing_demand = []
 
-	if name:
-		filters = {"docstatus": 1, "status": "Not Started", "name": name}
-	else:
-		filters = {"docstatus": 1, "status": "Not Started"}
+	WorkOrder = DocType("Work Order")
+	WorkOrderItem = DocType("Work Order Item")
+	WorkOrderOperation = DocType("Work Order Operation")
+	Item = DocType("Item")
 
-	pending_work_orders = frappe.get_all(
-		"Work Order",
-		filters=filters,
-		fields=["name", "company", "wip_warehouse", "planned_start_date", "creation"],
-		order_by="planned_start_date ASC, creation ASC",
+	workstation_subquery = (
+		frappe.qb.from_(WorkOrderOperation)
+		.select(WorkOrderOperation.workstation)
+		.where(WorkOrderOperation.parent == WorkOrder.name)
+		.orderby(WorkOrderOperation.idx)
+		.limit(1)
 	)
 
-	for work_order in pending_work_orders:
-		if item_code:
-			filters = {"parent": work_order.name, "item_code": item_code}
-		else:
-			filters = {"parent": work_order.name}
+	total_required_qty = Field("required_qty") - Field("transferred_qty")
 
-		work_order_items = frappe.get_all(
-			"Work Order Item",
-			filters=filters,
-			fields=["name", "item_code", "required_qty", "transferred_qty", "idx"],
-			order_by="idx ASC",
+	work_order_query = (
+		frappe.qb.from_(WorkOrder)
+		.join(WorkOrderItem)
+		.on(WorkOrder.name == WorkOrderItem.parent)
+		.left_join(Item)
+		.on(Item.item_code == WorkOrderItem.item_code)
+		.select(
+			ConstantColumn("Work Order").as_("doctype"),
+			WorkOrder.name.as_("parent"),
+			WorkOrder.company,
+			WorkOrder.wip_warehouse.as_("warehouse"),
+			(workstation_subquery.as_("workstation")),
+			WorkOrderItem.name.as_("name"),
+			WorkOrderItem.idx,
+			WorkOrderItem.item_code,
+			WorkOrder.planned_start_date.as_("delivery_date"),
+			(total_required_qty).as_("total_required_qty"),
+			Item.stock_uom,
+			WorkOrder.creation,
 		)
-		workstation = frappe.get_all(
-			"Work Order Operation",
-			filters={"parent": work_order.name},
-			fields=["workstation"],
-			order_by="idx ASC",
+		.where(
+			(WorkOrder.docstatus == 1)
+			& (WorkOrder.status == "Not Started")
+			& (WorkOrderItem.required_qty > WorkOrderItem.transferred_qty)
 		)
-		workstation = workstation[0].get("workstation") if workstation else None
+		.orderby(WorkOrder.planned_start_date, WorkOrder.creation, WorkOrderItem.idx)
+	)
 
-		for item in work_order_items:
-			if item.transferred_qty - item.required_qty >= 0:
-				continue
+	if name:
+		work_order_query = work_order_query.where(WorkOrder.name == name)
 
-			manufacturing_demand.append(
-				frappe._dict(
-					{
-						"doctype": "Work Order",
-						"parent": work_order.name,
-						"company": work_order.company,
-						"warehouse": work_order.wip_warehouse,
-						"workstation": workstation or "",
-						"name": item.name,
-						"idx": item.idx,
-						"item_code": item.item_code,
-						"delivery_date": work_order.planned_start_date,
-						"total_required_qty": item.required_qty - item.transferred_qty,
-						"stock_uom": frappe.db.get_value("Item", item.item_code, "stock_uom"),
-						"creation": work_order.creation,
-					}
-				)
-			)
+	if item_code:
+		work_order_query = work_order_query.where(WorkOrderItem.item_code == item_code)
 
-	return manufacturing_demand
+	return work_order_query.run(as_dict=True)
 
 
 def get_sales_demand(name: str | None = None, item_code: str | None = None) -> list[Demand]:
-	sales_demand = []
+	SalesOrder = DocType("Sales Order")
+	SalesOrderItem = DocType("Sales Order Item")
+	Item = DocType("Item")
+	BEAMSettings = DocType("BEAM Settings")
+
 	default_fg_warehouse = frappe.db.get_single_value(
 		"Manufacturing Settings", "default_fg_warehouse"
 	)
 
-	if name:
-		filters = {"docstatus": 1, "status": ["!=", "Closed"], "name": name}
-	else:
-		filters = {"docstatus": 1, "status": ["!=", "Closed"]}
-
-	sales_orders = frappe.get_all(
-		"Sales Order",
-		filters=filters,
-		fields=["name", "company", "delivery_date", "creation"],
-		order_by="delivery_date ASC, creation ASC, name ASC",
+	shipping_workstation_subquery = (
+		frappe.qb.from_(BEAMSettings)
+		.select(BEAMSettings.shipping_workstation)
+		.where(BEAMSettings.company == SalesOrder.company)
+		.limit(1)
 	)
 
-	shipping_workstations = {
-		s.company: s.shipping_workstation
-		for s in frappe.get_all("BEAM Settings", ["company", "shipping_workstation"])
-	}
+	total_required_qty = Field("stock_qty") - Field("delivered_qty")
 
-	for sales_order in sales_orders:
-		if item_code:
-			filters = {"parent": sales_order.name, "item_code": item_code}
-		else:
-			filters = {"parent": sales_order.name}
-
-		sales_order_items = frappe.get_all(
-			"Sales Order Item",
-			filters=filters,
-			fields=["name", "item_code", "stock_qty", "delivered_qty", "idx"],
-			order_by="delivery_date, idx ASC",
+	sales_order_query = (
+		frappe.qb.from_(SalesOrder)
+		.join(SalesOrderItem)
+		.on(SalesOrder.name == SalesOrderItem.parent)
+		.left_join(Item)
+		.on(Item.item_code == SalesOrderItem.item_code)
+		.select(
+			ConstantColumn("Sales Order").as_("doctype"),
+			SalesOrder.name.as_("parent"),
+			SalesOrder.company,
+			ConstantColumn(default_fg_warehouse).as_("warehouse"),
+			(shipping_workstation_subquery.as_("workstation")),
+			SalesOrderItem.name.as_("name"),
+			SalesOrderItem.idx,
+			SalesOrderItem.item_code,
+			SalesOrder.delivery_date,
+			(total_required_qty).as_("total_required_qty"),
+			Item.stock_uom,
+			SalesOrder.creation,
 		)
+		.where(
+			(SalesOrder.docstatus == 1)
+			& (SalesOrder.status != "Closed")
+			& (SalesOrderItem.stock_qty > SalesOrderItem.delivered_qty)
+		)
+		.orderby(SalesOrder.delivery_date, SalesOrder.creation, SalesOrderItem.idx)
+	)
 
-		for item in sales_order_items:
-			if item.stock_qty - item.delivered_qty <= 0:
-				continue
+	if name:
+		sales_order_query = sales_order_query.where(SalesOrder.name == name)
 
-			sales_demand.append(
-				frappe._dict(
-					{
-						"doctype": "Sales Order",
-						"parent": sales_order.name,
-						"company": sales_order.company,
-						"warehouse": default_fg_warehouse,
-						"workstation": shipping_workstations.get(sales_order.company) or "",
-						"name": item.name,
-						"idx": item.idx,
-						"item_code": item.item_code,
-						"delivery_date": sales_order.delivery_date,
-						"total_required_qty": item.stock_qty - item.delivered_qty,
-						"stock_uom": frappe.db.get_value("Item", item.item_code, "stock_uom"),
-						"creation": sales_order.creation,
-					}
-				)
-			)
+	if item_code:
+		sales_order_query = sales_order_query.where(SalesOrderItem.item_code == item_code)
 
-	return sales_demand
+	return sales_order_query.run(as_dict=True)
 
 
 def build_demand_allocation_map() -> None:
