@@ -5,7 +5,7 @@ from collections import deque
 from typing import TYPE_CHECKING, Any, Optional, Union
 
 import frappe
-from frappe.query_builder import DocType, Field
+from frappe.query_builder import Criterion, DocType, Field
 from frappe.query_builder.custom import ConstantColumn
 from frappe.utils.data import flt
 from frappe.utils.nestedset import get_descendants_of
@@ -131,13 +131,6 @@ def get_sales_demand(name: str | None = None, item_code: str | None = None) -> l
 		"Manufacturing Settings", "default_fg_warehouse"
 	)
 
-	shipping_workstation_subquery = (
-		frappe.qb.from_(BEAMSettings)
-		.select(BEAMSettings.shipping_workstation)
-		.where(BEAMSettings.company == SalesOrder.company)
-		.limit(1)
-	)
-
 	total_required_qty = Field("stock_qty") - Field("delivered_qty")
 
 	sales_order_query = (
@@ -146,12 +139,14 @@ def get_sales_demand(name: str | None = None, item_code: str | None = None) -> l
 		.on(SalesOrder.name == SalesOrderItem.parent)
 		.left_join(Item)
 		.on(Item.item_code == SalesOrderItem.item_code)
+		.left_join(BEAMSettings)
+		.on(BEAMSettings.company == SalesOrder.company)
 		.select(
 			ConstantColumn("Sales Order").as_("doctype"),
 			SalesOrder.name.as_("parent"),
 			SalesOrder.company,
 			ConstantColumn(default_fg_warehouse).as_("warehouse"),
-			(shipping_workstation_subquery.as_("workstation")),
+			(BEAMSettings.shipping_workstation).as_("workstation"),
 			SalesOrderItem.name.as_("name"),
 			SalesOrderItem.idx,
 			SalesOrderItem.item_code,
@@ -164,6 +159,21 @@ def get_sales_demand(name: str | None = None, item_code: str | None = None) -> l
 			(SalesOrder.docstatus == 1)
 			& (SalesOrder.status != "Closed")
 			& (SalesOrderItem.stock_qty > SalesOrderItem.delivered_qty)
+		)
+		.where(
+			Criterion.any(
+				[
+					(
+						(BEAMSettings.ignore_drop_shipped_items.isnull())
+						| (BEAMSettings.ignore_drop_shipped_items == 0)
+					),
+					(
+						(BEAMSettings.ignore_drop_shipped_items.notnull())
+						& (BEAMSettings.ignore_drop_shipped_items == 1)
+						& (SalesOrderItem.delivered_by_supplier != 1)
+					),
+				]
+			)
 		)
 		.orderby(SalesOrder.delivery_date, SalesOrder.creation, SalesOrderItem.idx)
 	)

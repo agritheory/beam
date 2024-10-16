@@ -358,3 +358,61 @@ def test_allocation_from_purchasing():
 				# creating inventory leads to modification of the demand db is OK for now
 				d = get_demand(filters={"item_code": item.item_code})
 				assert len(d) > 0
+
+
+@pytest.mark.order(35)  # run after other tests
+def test_ignore_drop_shipped_items_in_demand():
+	# Create temporary drop shipped item
+	supplier = "Freedom Provisions"
+	i = frappe.new_doc("Item")
+	i.item_code = i.item_name = "Pie Servingware"
+	i.item_group = "Products"
+	i.is_stock_item = 1
+	i.stock_uom = "Nos"
+	i.is_purchase_item = 1
+	i.is_sales_item = 1
+	i.delivered_by_supplier = 1
+	i.append("supplier_items", {"supplier": supplier})
+	i.save()
+
+	d = get_sales_demand(item_code=i.item_code)
+	assert len(d) == 0
+
+	# create sales order with drop shipped item
+	so = frappe.new_doc("Sales Order")
+	so.customer = random.choice(customers)
+	so.selling_price_list = "Standard Selling"
+	so.append(
+		"items",
+		{
+			"item_code": i.item_code,
+			"delivery_date": add_days(today(), 7),
+			"qty": 10,
+			"rate": 2,
+			"delivered_by_supplier": 1,
+			"supplier": supplier,
+		},
+	)
+	so.save()
+	so.submit()
+
+	bs = frappe.get_doc("BEAM Settings", {"company": so.company})
+	assert bs.ignore_drop_shipped_items == 0
+
+	d = get_sales_demand(item_code=i.item_code)
+	assert len(d) == 1
+	assert d[0].get("total_required_qty") == 10
+
+	# update settings to ignore drop shipped items
+	bs.ignore_drop_shipped_items = 1
+	bs.save()
+
+	d = get_sales_demand(item_code=i.item_code)
+	assert len(d) == 0
+
+	# reset settings and cancel/delete Sales Order
+	bs.ignore_drop_shipped_items = 0
+	bs.save()
+
+	so.cancel()
+	so.delete()
