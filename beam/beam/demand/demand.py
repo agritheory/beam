@@ -392,7 +392,7 @@ def update_allocations(
 		cursor = conn.cursor()
 
 		quantity_field = action.get("quantity_field")
-		row_qty = row.get(quantity_field) if quantity_field else None
+		row_qty = row.get(quantity_field) if quantity_field else 0
 
 		warehouse_field = action.get("warehouse_field")
 		warehouse = row.get(warehouse_field)
@@ -429,9 +429,9 @@ def update_allocations(
 					new_total_required_qty = float(demand_row["total_required_qty"])
 					if demand_effect:
 						if demand_effect == "increase":
-							new_total_required_qty = demand_row["total_required_qty"] + row_qty
+							new_total_required_qty = float(demand_row["total_required_qty"]) + row_qty
 						elif demand_effect == "decrease":
-							new_total_required_qty = max(0, demand_row["total_required_qty"] - row_qty)
+							new_total_required_qty = max(0, float(demand_row["total_required_qty"]) - row_qty)
 
 						if new_total_required_qty <= 0:
 							# if demand is fully met, delete the demand row
@@ -449,9 +449,9 @@ def update_allocations(
 							cursor.execute(update_query.get_sql())
 
 					if allocation_effect == "increase":
-						new_allocated_qty = min(new_total_required_qty, allocation["allocated_qty"] + row_qty)
+						new_allocated_qty = min(new_total_required_qty, float(allocation["allocated_qty"]) + row_qty)
 					elif allocation_effect == "decrease":
-						new_allocated_qty = max(0, allocation["allocated_qty"] - row_qty)
+						new_allocated_qty = max(0, float(allocation["allocated_qty"]) - row_qty)
 					elif allocation_effect == "adjustment":
 						new_allocated_qty = min(new_total_required_qty, row_qty)
 
@@ -473,7 +473,7 @@ def update_allocations(
 					# demand is already satisfied, reverse allocation
 
 					if allocation_effect == "increase":
-						new_allocated_qty = allocation["allocated_qty"] + row_qty
+						new_allocated_qty = float(allocation["allocated_qty"]) + row_qty
 						update_query = (
 							Query.update(allocation_table)
 							.set(allocation_table.allocated_qty, new_allocated_qty)
@@ -515,7 +515,9 @@ def update_allocations(
 					demand_queue.popleft()
 				else:
 					# Partial demand is met
-					current_demand["total_required_qty"] -= allocated_qty
+					current_demand["total_required_qty"] = (
+						float(current_demand["total_required_qty"]) - allocated_qty
+					)
 					break
 
 			for allocation in allocations:
