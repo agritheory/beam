@@ -143,7 +143,7 @@ def remove_receiving(name: str) -> None:
 		receiving = get_receiving_list(name)
 		receiving_table = Table("receiving")
 		for row in receiving:
-			delete_query = Query.from_(receiving_table).delete().where(receiving_table.key == row.key)
+			delete_query = Query.from_(receiving_table).delete().where(receiving_table.key == row["key"])
 			cursor.execute(delete_query.get_sql())
 
 
@@ -179,11 +179,11 @@ def build_receiving_map(
 	output: list[Receiving] = []
 
 	for row in get_receiving_list(name, item_code):
-		row.key = row.key or frappe.generate_hash()
-		row.schedule_date = str(row.schedule_date or get_epoch_from_datetime(row.schedule_date))
-		row.creation = str(row.creation or get_epoch_from_datetime(row.creation))
-		row.stock_qty = str(row.stock_qty)
-		row.idx = str(row.idx)
+		row["key"] = row["key"] or frappe.generate_hash()
+		row["schedule_date"] = str(row["schedule_date"] or get_epoch_from_datetime(row["schedule_date"]))
+		row["creation"] = str(row["creation"] or get_epoch_from_datetime(row["creation"]))
+		row["stock_qty"] = str(row["stock_qty"])
+		row["idx"] = str(row["idx"])
 		output.append(row)
 
 	if output:
