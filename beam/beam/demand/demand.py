@@ -225,11 +225,11 @@ def build_demand_map(
 	output: list[Demand] = []
 
 	for row in get_demand_list(name, item_code):
-		row["key"] = row["key"] or frappe.generate_hash()
-		row["delivery_date"] = str(row["delivery_date"] or get_epoch_from_datetime(row["delivery_date"]))
-		row["creation"] = str(row["creation"] or get_epoch_from_datetime(row["creation"]))
-		row["total_required_qty"] = str(row["total_required_qty"])
-		row["idx"] = str(row["idx"])
+		row.key = row.get("key") or frappe.generate_hash()
+		row.delivery_date = str(row.delivery_date or get_epoch_from_datetime(row.delivery_date))
+		row.creation = str(row.creation or get_epoch_from_datetime(row.creation))
+		row.total_required_qty = str(row.total_required_qty)
+		row.idx = str(row.idx)
 		output.append(row)
 
 	if output:
@@ -279,14 +279,14 @@ def remove_demand_allocation(name: str) -> None:
 		allocations = get_allocation_list(name)
 		for allocation in allocations:
 			delete_query = (
-				Query.from_(allocation_table).delete().where(allocation_table.key == allocation["key"])
+				Query.from_(allocation_table).delete().where(allocation_table.key == allocation.key)
 			)
 			cursor.execute(delete_query.get_sql())
 
 		# remove all demand row(s)
 		demand = get_demand_list(name)
 		for row in demand:
-			delete_query = Query.from_(demand_table).delete().where(demand_table.key == row["key"])
+			delete_query = Query.from_(demand_table).delete().where(demand_table.key == row.key)
 			cursor.execute(delete_query.get_sql())
 
 
@@ -366,10 +366,10 @@ def get_item_demand_map(
 
 	item_demand_map = frappe._dict()
 	for demand_row in demand_rows:
-		if demand_row["item_code"] in item_demand_map:
-			item_demand_map[demand_row["item_code"]].append(demand_row)
+		if demand_row.item_code in item_demand_map:
+			item_demand_map[demand_row.item_code].append(demand_row)
 		else:
-			item_demand_map[demand_row["item_code"]] = [demand_row]
+			item_demand_map[demand_row.item_code] = [demand_row]
 
 	return item_demand_map
 
@@ -417,7 +417,7 @@ def update_allocations(
 
 			for allocation in existing_allocations:
 				demand_query = (
-					Query.from_(demand_table).select("*").where(demand_table.key == allocation["demand"])
+					Query.from_(demand_table).select("*").where(demand_table.key == allocation.demand)
 				)
 				demand_query = cursor.execute(demand_query.get_sql())
 				demand_row: Demand = demand_query.fetchone()
@@ -426,39 +426,37 @@ def update_allocations(
 					# demand is still pending, add/reverse allocation;
 					# process demand before allocation
 
-					new_total_required_qty = float(demand_row["total_required_qty"])
+					new_total_required_qty = float(demand_row.total_required_qty)
 					if demand_effect:
 						if demand_effect == "increase":
-							new_total_required_qty = float(demand_row["total_required_qty"]) + row_qty
+							new_total_required_qty = float(demand_row.total_required_qty) + row_qty
 						elif demand_effect == "decrease":
-							new_total_required_qty = max(0, float(demand_row["total_required_qty"]) - row_qty)
+							new_total_required_qty = max(0, float(demand_row.total_required_qty) - row_qty)
 
 						if new_total_required_qty <= 0:
 							# if demand is fully met, delete the demand row
-							delete_query = (
-								Query.from_(demand_table).delete().where(demand_table.key == demand_row["key"])
-							)
+							delete_query = Query.from_(demand_table).delete().where(demand_table.key == demand_row.key)
 							cursor.execute(delete_query.get_sql())
 						else:
 							# if demand is partially met, update demand row
 							update_query = (
 								Query.update(demand_table)
 								.set(demand_table.total_required_qty, new_total_required_qty)
-								.where(demand_table.key == demand_row["key"])
+								.where(demand_table.key == demand_row.key)
 							)
 							cursor.execute(update_query.get_sql())
 
 					if allocation_effect == "increase":
-						new_allocated_qty = min(new_total_required_qty, float(allocation["allocated_qty"]) + row_qty)
+						new_allocated_qty = min(new_total_required_qty, float(allocation.allocated_qty) + row_qty)
 					elif allocation_effect == "decrease":
-						new_allocated_qty = max(0, float(allocation["allocated_qty"]) - row_qty)
+						new_allocated_qty = max(0, float(allocation.allocated_qty) - row_qty)
 					elif allocation_effect == "adjustment":
 						new_allocated_qty = min(new_total_required_qty, row_qty)
 
 					if new_allocated_qty <= 0:
 						# if partial allocation is reverted, delete the allocation row
 						delete_query = (
-							Query.from_(allocation_table).delete().where(allocation_table.key == allocation["key"])
+							Query.from_(allocation_table).delete().where(allocation_table.key == allocation.key)
 						)
 						cursor.execute(delete_query.get_sql())
 					else:
@@ -466,18 +464,18 @@ def update_allocations(
 						update_query = (
 							Query.update(allocation_table)
 							.set(allocation_table.allocated_qty, new_allocated_qty)
-							.where(allocation_table.key == allocation["key"])
+							.where(allocation_table.key == allocation.key)
 						)
 						cursor.execute(update_query.get_sql())
 				else:
 					# demand is already satisfied, reverse allocation
 
 					if allocation_effect == "increase":
-						new_allocated_qty = float(allocation["allocated_qty"]) + row_qty
+						new_allocated_qty = float(allocation.allocated_qty) + row_qty
 						update_query = (
 							Query.update(allocation_table)
 							.set(allocation_table.allocated_qty, new_allocated_qty)
-							.where(allocation_table.key == allocation["key"])
+							.where(allocation_table.key == allocation.key)
 						)
 						cursor.execute(update_query.get_sql())
 					elif allocation_effect in ["increase", "adjustment"]:
@@ -499,25 +497,19 @@ def update_allocations(
 			allocations: list[Allocation] = []
 			while demand_queue:
 				current_demand = demand_queue[0]
-				net_required_qty = float(current_demand["net_required_qty"])
+				net_required_qty = float(current_demand.net_required_qty)
 
 				allocated_qty = min(row_qty, net_required_qty)
-				allocations.append(
-					{
-						**new_allocation(current_demand),
-						"warehouse": warehouse,
-						"allocated_qty": str(allocated_qty),
-					}
-				)
+				new_alloc = new_allocation(current_demand)
+				new_alloc.update({"warehouse": warehouse, "allocated_qty": str(allocated_qty)})
+				allocations.append(new_alloc)
 
 				if row_qty >= net_required_qty:
 					# Full demand can be met
 					demand_queue.popleft()
 				else:
 					# Partial demand is met
-					current_demand["total_required_qty"] = (
-						float(current_demand["total_required_qty"]) - allocated_qty
-					)
+					current_demand.total_required_qty = float(current_demand.total_required_qty) - allocated_qty
 					break
 
 			for allocation in allocations:
@@ -817,11 +809,11 @@ def get_demand(*args, **kwargs) -> list[Allocation | Demand]:
 		for row in rows:
 			row.update(
 				{
-					"net_required_qty": max(0.0, float(row["net_required_qty"])),
-					"delivery_date": get_datetime_from_epoch(row["delivery_date"]),
-					"allocated_date": get_datetime_from_epoch(row["allocated_date"]),
-					"modified": get_datetime_from_epoch(row["modified"]),
-					"creation": get_datetime_from_epoch(row["creation"]),
+					"net_required_qty": max(0.0, float(row.net_required_qty)),
+					"delivery_date": get_datetime_from_epoch(row.delivery_date),
+					"allocated_date": get_datetime_from_epoch(row.allocated_date),
+					"modified": get_datetime_from_epoch(row.modified),
+					"creation": get_datetime_from_epoch(row.creation),
 				}
 			)
 		return rows

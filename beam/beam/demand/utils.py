@@ -4,12 +4,12 @@
 import calendar
 import datetime
 from time import localtime
-from typing import TypedDict
 
+from frappe import _dict
 from frappe.utils import get_datetime
 
 
-class Base(TypedDict, total=False):
+class Base(_dict):
 	assigned: str
 	company: str
 	creation: str | float | datetime.datetime | None
@@ -25,14 +25,14 @@ class Base(TypedDict, total=False):
 	workstation: str
 
 
-class Demand(TypedDict, Base, total=False):
+class Demand(Base):
 	allocated_date: str | float | datetime.datetime | None
 	delivery_date: str | float | datetime.datetime | None
 	net_required_qty: str | float  # not set directly, calculated in set_demand_query, used in item_demand_map
 	total_required_qty: str | float  # demand quantity that hasn't been satisfied
 
 
-class Allocation(TypedDict, Base, total=False):
+class Allocation(Base):
 	allocated_date: str | float | datetime.datetime | None
 	allocated_qty: str | float
 	demand: str
@@ -45,7 +45,7 @@ class Allocation(TypedDict, Base, total=False):
 	total_required_qty: str | float  # demand quantity that hasn't been satisfied
 
 
-class Receiving(TypedDict, Base, total=False):
+class Receiving(Base):
 	schedule_date: str | float | datetime.datetime
 	stock_qty: str | float
 
