@@ -5,7 +5,7 @@ from collections import deque
 from typing import TYPE_CHECKING, Any, Optional, Union
 
 import frappe
-from frappe.query_builder import DocType, Field
+from frappe.query_builder import Criterion, DocType, Field
 from frappe.query_builder.custom import ConstantColumn
 from frappe.utils.data import flt
 from frappe.utils.nestedset import get_descendants_of
@@ -131,13 +131,6 @@ def get_sales_demand(name: str | None = None, item_code: str | None = None) -> l
 		"Manufacturing Settings", "default_fg_warehouse"
 	)
 
-	shipping_workstation_subquery = (
-		frappe.qb.from_(BEAMSettings)
-		.select(BEAMSettings.shipping_workstation)
-		.where(BEAMSettings.company == SalesOrder.company)
-		.limit(1)
-	)
-
 	total_required_qty = Field("stock_qty") - Field("delivered_qty")
 
 	sales_order_query = (
@@ -146,12 +139,14 @@ def get_sales_demand(name: str | None = None, item_code: str | None = None) -> l
 		.on(SalesOrder.name == SalesOrderItem.parent)
 		.left_join(Item)
 		.on(Item.item_code == SalesOrderItem.item_code)
+		.left_join(BEAMSettings)
+		.on(BEAMSettings.company == SalesOrder.company)
 		.select(
 			ConstantColumn("Sales Order").as_("doctype"),
 			SalesOrder.name.as_("parent"),
 			SalesOrder.company,
 			ConstantColumn(default_fg_warehouse).as_("warehouse"),
-			(shipping_workstation_subquery.as_("workstation")),
+			(BEAMSettings.shipping_workstation).as_("workstation"),
 			SalesOrderItem.name.as_("name"),
 			SalesOrderItem.idx,
 			SalesOrderItem.item_code,
@@ -164,6 +159,21 @@ def get_sales_demand(name: str | None = None, item_code: str | None = None) -> l
 			(SalesOrder.docstatus == 1)
 			& (SalesOrder.status != "Closed")
 			& (SalesOrderItem.stock_qty > SalesOrderItem.delivered_qty)
+		)
+		.where(
+			Criterion.any(
+				[
+					(
+						(BEAMSettings.ignore_drop_shipped_items.isnull())
+						| (BEAMSettings.ignore_drop_shipped_items == 0)
+					),
+					(
+						(BEAMSettings.ignore_drop_shipped_items.notnull())
+						& (BEAMSettings.ignore_drop_shipped_items == 1)
+						& (SalesOrderItem.delivered_by_supplier != 1)
+					),
+				]
+			)
 		)
 		.orderby(SalesOrder.delivery_date, SalesOrder.creation, SalesOrderItem.idx)
 	)
@@ -215,7 +225,7 @@ def build_demand_map(
 	output: list[Demand] = []
 
 	for row in get_demand_list(name, item_code):
-		row.key = row.key or frappe.generate_hash()
+		row.key = row.get("key") or frappe.generate_hash()
 		row.delivery_date = str(row.delivery_date or get_epoch_from_datetime(row.delivery_date))
 		row.creation = str(row.creation or get_epoch_from_datetime(row.creation))
 		row.total_required_qty = str(row.total_required_qty)
@@ -382,7 +392,7 @@ def update_allocations(
 		cursor = conn.cursor()
 
 		quantity_field = action.get("quantity_field")
-		row_qty = row.get(quantity_field) if quantity_field else None
+		row_qty = row.get(quantity_field) if quantity_field else 0
 
 		warehouse_field = action.get("warehouse_field")
 		warehouse = row.get(warehouse_field)
@@ -416,12 +426,12 @@ def update_allocations(
 					# demand is still pending, add/reverse allocation;
 					# process demand before allocation
 
-					new_total_required_qty = demand_row.total_required_qty
+					new_total_required_qty = float(demand_row.total_required_qty)
 					if demand_effect:
 						if demand_effect == "increase":
-							new_total_required_qty = demand_row.total_required_qty + row_qty
+							new_total_required_qty = float(demand_row.total_required_qty) + row_qty
 						elif demand_effect == "decrease":
-							new_total_required_qty = max(0, demand_row.total_required_qty - row_qty)
+							new_total_required_qty = max(0, float(demand_row.total_required_qty) - row_qty)
 
 						if new_total_required_qty <= 0:
 							# if demand is fully met, delete the demand row
@@ -437,9 +447,9 @@ def update_allocations(
 							cursor.execute(update_query.get_sql())
 
 					if allocation_effect == "increase":
-						new_allocated_qty = min(new_total_required_qty, allocation.allocated_qty + row_qty)
+						new_allocated_qty = min(new_total_required_qty, float(allocation.allocated_qty) + row_qty)
 					elif allocation_effect == "decrease":
-						new_allocated_qty = max(0, allocation.allocated_qty - row_qty)
+						new_allocated_qty = max(0, float(allocation.allocated_qty) - row_qty)
 					elif allocation_effect == "adjustment":
 						new_allocated_qty = min(new_total_required_qty, row_qty)
 
@@ -461,7 +471,7 @@ def update_allocations(
 					# demand is already satisfied, reverse allocation
 
 					if allocation_effect == "increase":
-						new_allocated_qty = allocation.allocated_qty + row_qty
+						new_allocated_qty = float(allocation.allocated_qty) + row_qty
 						update_query = (
 							Query.update(allocation_table)
 							.set(allocation_table.allocated_qty, new_allocated_qty)
@@ -487,23 +497,19 @@ def update_allocations(
 			allocations: list[Allocation] = []
 			while demand_queue:
 				current_demand = demand_queue[0]
-				net_required_qty = current_demand["net_required_qty"]
+				net_required_qty = float(current_demand.net_required_qty)
 
 				allocated_qty = min(row_qty, net_required_qty)
-				allocations.append(
-					{
-						**new_allocation(current_demand),
-						"warehouse": warehouse,
-						"allocated_qty": str(allocated_qty),
-					}
-				)
+				new_alloc = new_allocation(current_demand)
+				new_alloc.update({"warehouse": warehouse, "allocated_qty": str(allocated_qty)})
+				allocations.append(new_alloc)
 
 				if row_qty >= net_required_qty:
 					# Full demand can be met
 					demand_queue.popleft()
 				else:
 					# Partial demand is met
-					current_demand["total_required_qty"] -= allocated_qty
+					current_demand.total_required_qty = float(current_demand.total_required_qty) - allocated_qty
 					break
 
 			for allocation in allocations:
@@ -562,7 +568,7 @@ def create_allocations():
 			cursor.execute(insert_query.get_sql())
 
 
-def new_allocation(demand_row: Demand):
+def new_allocation(demand_row) -> Allocation:
 	return frappe._dict(
 		{
 			"key": frappe.generate_hash(),
@@ -637,7 +643,10 @@ def get_demand_warehouses(company: str | None = None) -> list[str]:
 	return get_descendant_warehouses(company, root_warehouse)
 
 
-def get_descendant_warehouses(company: str, warehouse: str) -> list[str]:
+def get_descendant_warehouses(company: str | None, warehouse: str) -> list[str]:
+	if not company:
+		company = frappe.defaults.get_defaults().get("company")
+
 	beam_settings = frappe.get_doc("BEAM Settings", company)
 
 	warehouse_types = [wt.warehouse_type for wt in beam_settings.warehouse_types]
@@ -665,7 +674,7 @@ def get_descendant_warehouses(company: str, warehouse: str) -> list[str]:
 	)
 
 
-def get_demand(*args, **kwargs) -> list[Demand]:
+def get_demand(*args, **kwargs) -> list[Allocation | Demand]:
 	records_per_page = 20
 	page = int(kwargs.get("page", 1))
 	order_by = kwargs.get("order_by", "workstation, assigned")
@@ -800,7 +809,7 @@ def get_demand(*args, **kwargs) -> list[Demand]:
 		for row in rows:
 			row.update(
 				{
-					"net_required_qty": max(0.0, row.net_required_qty),
+					"net_required_qty": max(0.0, float(row.net_required_qty)),
 					"delivery_date": get_datetime_from_epoch(row.delivery_date),
 					"allocated_date": get_datetime_from_epoch(row.allocated_date),
 					"modified": get_datetime_from_epoch(row.modified),

@@ -10,6 +10,7 @@
 		"company",
 		"barcode_font_size",
 		"enable_handling_units",
+		"ignore_drop_shipped_items",
 		"column_break_twrc",
 		"receiving_workstation",
 		"shipping_workstation",
@@ -35,11 +36,16 @@
 			"label": "Enable Handling Units"
 		},
 		{
+			"default": "0",
+			"fieldname": "ignore_drop_shipped_items",
+			"fieldtype": "Check",
+			"label": "Ignore Drop Shipped Items in Demand"
+		},
+		{
 			"default": "12",
 			"fieldname": "barcode_font_size",
 			"fieldtype": "Int",
-			"label": "Barcode Font Size",
-			"default": "12"
+			"label": "Barcode Font Size"
 		},
 		{
 			"description": "These Warehouse Types will be excluded when checking for inventory availability",

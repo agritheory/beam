@@ -185,7 +185,7 @@ def build_receiving_map(
 	output: list[Receiving] = []
 
 	for row in get_receiving_list(name, item_code):
-		row.key = row.key or frappe.generate_hash()
+		row.key = row.get("key") or frappe.generate_hash()
 		row.schedule_date = str(row.schedule_date or get_epoch_from_datetime(row.schedule_date))
 		row.creation = str(row.creation or get_epoch_from_datetime(row.creation))
 		row.stock_qty = str(row.stock_qty)
