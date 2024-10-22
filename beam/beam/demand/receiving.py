@@ -54,7 +54,10 @@ def get_receiving_demand(name: str | None = None, item_code: str | None = None) 
 			PurchaseOrder.creation,
 		)
 		.where(
-			(PurchaseOrder.docstatus == 1) & (PurchaseOrder.status != "Closed") & (Item.is_stock_item == 1)
+			(PurchaseOrder.docstatus == 1)
+			& (PurchaseOrder.status != "Closed")
+			& (Item.is_stock_item == 1)
+			& (PurchaseOrderItem.delivered_by_supplier != 1)
 		)
 		.orderby(PurchaseOrder.schedule_date, PurchaseOrder.creation, PurchaseOrderItem.idx)
 	)
