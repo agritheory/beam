@@ -8,9 +8,10 @@ from frappe.query_builder import DocType
 from frappe.query_builder.custom import ConstantColumn
 from frappe.query_builder.functions import Coalesce
 from pypika import Query, Table
+from pypika.terms import ValueWrapper
 
 from beam.beam.demand.sqlite import get_demand_db
-from beam.beam.demand.utils import Receiving, get_epoch_from_datetime
+from beam.beam.demand.utils import Receiving, get_datetime_from_epoch, get_epoch_from_datetime
 
 if TYPE_CHECKING:
 	from sqlite3 import Cursor
@@ -19,7 +20,9 @@ if TYPE_CHECKING:
 	from erpnext.buying.doctype.purchase_invoice.purchase_invoice import PurchaseOrder
 
 
-def get_receiving_demand(name: str | None = None, item_code: str | None = None) -> list[Receiving]:
+def _get_receiving_demand(
+	name: str | None = None, item_code: str | None = None
+) -> list[Receiving]:
 	PurchaseOrder = DocType("Purchase Order")
 	PurchaseOrderItem = DocType("Purchase Order Item")
 	Item = DocType("Item")
@@ -173,7 +176,7 @@ def get_receiving_list(name: str | None = None, item_code: str | None = None) ->
 			if receiving_demand:
 				return receiving_demand
 
-	return get_receiving_demand(name, item_code)
+	return _get_receiving_demand(name, item_code)
 
 
 def build_receiving_map(
@@ -206,3 +209,59 @@ def insert_receiving(output: list[Receiving], cursor: "Cursor") -> None:
 			Query.into(receiving_table).columns(*receiving_row.keys()).insert(*receiving_row.values())
 		)
 		cursor.execute(insert_query.get_sql())
+
+
+def get_receiving_demand(*args, **kwargs) -> list[Receiving]:
+	records_per_page = 20
+	page = int(kwargs.get("page", 1))
+	order_by = kwargs.get("order_by", "workstation, assigned")
+
+	receiving = Table("receiving")
+
+	r_filters = []
+
+	if kwargs.get("filters"):
+		filters = kwargs["filters"]
+		for key, value in filters.items():
+			if isinstance(value, str):
+				value = (value,)
+			r_filters.append(getattr(receiving, key).isin(value))
+
+	receiving_query = Query.from_(receiving).select(
+		receiving.key,
+		receiving.doctype,
+		receiving.company,
+		receiving.parent,
+		receiving.warehouse,
+		receiving.name,
+		receiving.idx,
+		receiving.item_code,
+		receiving.schedule_date,
+		receiving.modified,
+		receiving.stock_uom,
+		receiving.stock_qty,
+		ValueWrapper("").as_("status"),
+		receiving.assigned,
+		receiving.creation,
+	)
+
+	if r_filters:
+		receiving_query = receiving_query.where(*r_filters)
+
+	record_offset = records_per_page * (page - 1)
+
+	query = f"{receiving_query}  LIMIT {records_per_page} OFFSET {record_offset}"
+
+	with get_demand_db() as conn:
+		cursor = conn.cursor()
+		rows: list[Receiving] = cursor.execute(query).fetchall()
+		for row in rows:
+			row.update(
+				{
+					"stock_qty": max(0.0, row.stock_qty),
+					"schedule_date": get_datetime_from_epoch(row.schedule_date),
+					"modified": get_datetime_from_epoch(row.modified),
+					"creation": get_datetime_from_epoch(row.creation),
+				}
+			)
+		return rows
