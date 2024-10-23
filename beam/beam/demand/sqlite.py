@@ -137,6 +137,13 @@ def reset_demand_db() -> None:
 		cursor.execute("DELETE FROM receiving")
 
 
+def reset_receiving_db() -> None:
+	with get_demand_db() as conn:
+		cursor = conn.cursor()
+		# sqlite does not implement a TRUNCATE command
+		cursor.execute("DELETE FROM receiving")
+
+
 def dict_factory(cursor: sqlite3.Cursor, row: sqlite3.Row) -> frappe._dict:
 	_dict = frappe._dict()
 	for idx, col in enumerate(cursor.description):

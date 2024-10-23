@@ -10,7 +10,7 @@ from frappe.query_builder.functions import Coalesce
 from pypika import Query, Table
 from pypika.terms import ValueWrapper
 
-from beam.beam.demand.sqlite import get_demand_db
+from beam.beam.demand.sqlite import get_demand_db, reset_receiving_db
 from beam.beam.demand.utils import Receiving, get_datetime_from_epoch, get_epoch_from_datetime
 
 if TYPE_CHECKING:
@@ -179,6 +179,11 @@ def get_receiving_list(name: str | None = None, item_code: str | None = None) ->
 	return _get_receiving_demand(name, item_code)
 
 
+def reset_build_receiving_map() -> None:
+	reset_receiving_db()
+	build_receiving_map()
+
+
 def build_receiving_map(
 	name: str | None = None, item_code: str | None = None, cursor: Optional["Cursor"] = None
 ) -> None:
@@ -250,7 +255,7 @@ def get_receiving_demand(*args, **kwargs) -> list[Receiving]:
 
 	record_offset = records_per_page * (page - 1)
 
-	query = f"{receiving_query}  LIMIT {records_per_page} OFFSET {record_offset}"
+	query = f"{receiving_query} LIMIT {records_per_page} OFFSET {record_offset}"
 
 	with get_demand_db() as conn:
 		cursor = conn.cursor()
