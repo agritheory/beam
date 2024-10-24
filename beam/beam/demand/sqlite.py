@@ -86,6 +86,29 @@ def create_demand_db(cursor: sqlite3.Cursor) -> sqlite3.Connection:
 			)
 		"""
 	)
+	cursor.execute(
+		f"""
+			CREATE TABLE receiving(
+				key text,
+				doctype text,
+				company text,
+				parent text,
+				warehouse text,
+				workstation text,
+				name text,
+				idx int,
+				item_code text,
+				schedule_date int,
+				modified int,
+				stock_qty real,
+				received_qty real,
+				stock_uom text,
+				assigned text,
+				creation int
+				{inventory_dimensions}
+			)
+		"""
+	)
 	cursor.execute("CREATE INDEX idx_demand_key ON demand(key)")
 	cursor.execute("CREATE INDEX idx_demand_company ON demand(company)")
 	cursor.execute("CREATE INDEX idx_demand_warehouse ON demand(warehouse)")
@@ -98,6 +121,11 @@ def create_demand_db(cursor: sqlite3.Cursor) -> sqlite3.Connection:
 	cursor.execute("CREATE INDEX idx_allocation_warehouse ON allocation(warehouse)")
 	cursor.execute("CREATE INDEX idx_allocation_item_code ON allocation(item_code)")
 
+	cursor.execute("CREATE INDEX idx_receiving_key ON receiving(key)")
+	cursor.execute("CREATE INDEX idx_receiving_company ON receiving(company)")
+	cursor.execute("CREATE INDEX idx_receiving_warehouse ON receiving(warehouse)")
+	cursor.execute("CREATE INDEX idx_receiving_item_code ON receiving(item_code)")
+	cursor.execute("CREATE INDEX idx_receiving_schedule_date ON receiving(schedule_date)")
 	return sqlite3.connect(path)
 
 
@@ -107,6 +135,14 @@ def reset_demand_db() -> None:
 		# sqlite does not implement a TRUNCATE command
 		cursor.execute("DELETE FROM demand")
 		cursor.execute("DELETE FROM allocation")
+		cursor.execute("DELETE FROM receiving")
+
+
+def reset_receiving_db() -> None:
+	with get_demand_db() as conn:
+		cursor = conn.cursor()
+		# sqlite does not implement a TRUNCATE command
+		cursor.execute("DELETE FROM receiving")
 
 
 def dict_factory(cursor: sqlite3.Cursor, row: sqlite3.Row) -> frappe._dict:

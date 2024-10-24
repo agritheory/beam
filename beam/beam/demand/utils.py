@@ -4,19 +4,20 @@
 import calendar
 import datetime
 from time import localtime
-from typing import TypedDict
 
+from frappe import _dict
 from frappe.utils import get_datetime
 
 
-class Base(TypedDict, total=False):
+class Base(_dict):
 	assigned: str
 	company: str
-	creation: str | float | datetime.datetime
+	creation: str | float | datetime.datetime | None
 	doctype: str
+	idx: str | int
 	item_code: str
 	key: str
-	modified: str | float | datetime.datetime
+	modified: str | float | datetime.datetime | None
 	name: str
 	parent: str
 	stock_uom: str
@@ -24,22 +25,29 @@ class Base(TypedDict, total=False):
 	workstation: str
 
 
-class Demand(TypedDict, Base, total=False):
-	delivery_date: str | float | datetime.datetime
+class Demand(Base):
+	allocated_date: str | float | datetime.datetime | None
+	delivery_date: str | float | datetime.datetime | None
+	net_required_qty: str | float  # not set directly, calculated in set_demand_query, used in item_demand_map
 	total_required_qty: str | float  # demand quantity that hasn't been satisfied
 
 
-class Allocation(TypedDict, Base, total=False):
-	allocated_date: str | float | datetime.datetime
+class Allocation(Base):
+	allocated_date: str | float | datetime.datetime | None
 	allocated_qty: str | float
 	demand: str
 	is_manual: str | float
 	status: str
 
 	# not directly available in the database, but computed using the demand row
-	delivery_date: str | float | datetime.datetime
+	delivery_date: str | float | datetime.datetime | None
 	net_required_qty: str | float  # demand quantity that has yet to be allocated
 	total_required_qty: str | float  # demand quantity that hasn't been satisfied
+
+
+class Receiving(Base):
+	schedule_date: str | float | datetime.datetime
+	stock_qty: str | float
 
 
 def get_epoch_from_datetime(dt: str | float | datetime.datetime | None = None) -> int | float:
@@ -51,10 +59,16 @@ def get_epoch_from_datetime(dt: str | float | datetime.datetime | None = None) -
 	return calendar.timegm(time_tuple)
 
 
-def get_datetime_from_epoch(seconds: str | float) -> datetime.datetime | None:
-	if isinstance(seconds, str):
+def get_datetime_from_epoch(
+	seconds: str | float | datetime.datetime | None,
+) -> datetime.datetime | None:
+	if isinstance(seconds, datetime.datetime):
+		return seconds
+
+	if isinstance(seconds, str) or seconds is None:
 		return get_datetime(seconds)
 
-	local_epoch = localtime(seconds)
-	local_epoch_list = local_epoch[:6]
-	return datetime.datetime(*local_epoch_list)
+	if isinstance(seconds, float):
+		local_epoch = localtime(seconds)
+		local_epoch_list = local_epoch[:6]
+		return datetime.datetime(*local_epoch_list)

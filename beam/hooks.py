@@ -122,14 +122,7 @@ doc_events = {
 	# 	"Sales Invoice",
 	# 	"Delivery Note",
 	# ): {"validate": ["beam.beam.handling_unit.validate_handling_unit_overconsumption"]},
-	(
-		"Delivery Note",
-		"Purchase Invoice",
-		"Purchase Receipt",
-		"Sales Invoice",
-		"Stock Entry",
-		"Stock Reconciliation",
-	): {
+	("Delivery Note", "Purchase Receipt", "Sales Invoice", "Stock Entry", "Stock Reconciliation",): {
 		"on_submit": ["beam.beam.demand.demand.modify_allocations"],
 		"on_cancel": ["beam.beam.demand.demand.modify_allocations"],
 	},
@@ -145,6 +138,20 @@ doc_events = {
 	("Sales Order", "Work Order"): {
 		"on_submit": ["beam.beam.demand.demand.modify_demand"],
 		"on_cancel": ["beam.beam.demand.demand.modify_demand"],
+	},
+	"Purchase Order": {
+		"on_submit": ["beam.beam.demand.receiving.modify_receiving"],
+		"on_cancel": ["beam.beam.demand.receiving.modify_receiving"],
+	},
+	"Purchase Invoice": {
+		"on_submit": [
+			"beam.beam.demand.receiving.modify_receiving",
+			"beam.beam.demand.demand.modify_allocations",
+		],
+		"on_cancel": [
+			"beam.beam.demand.receiving.modify_receiving",
+			"beam.beam.demand.demand.modify_allocations",
+		],
 	},
 }
 
