@@ -133,6 +133,14 @@ export const useDataStore = defineStore('data', () => {
 		return { data: message }
 	}
 
+	const getReceiving = async (params?: Record<string, any>) => {
+		// automatically fetch all pages of demand data based on parameters
+		const url = '/api/method/beam.beam.demand.receiving.get_receiving_demand'
+		const response = await get(url, params)
+		const { message } = await response.json()
+		return { data: message }
+	}
+
 	const scan = async (barcode: string, qty: number): Promise<(FormContext | ListContext)[]> => {
 		try {
 			return await frappe.xcall('beam.beam.scan.scan', {
@@ -217,6 +225,7 @@ export const useDataStore = defineStore('data', () => {
 		// other api actions
 		getAll,
 		getDemand,
+		getReceiving,
 		getMappedStockEntry,
 		getOne,
 		scan,

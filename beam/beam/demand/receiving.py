@@ -53,6 +53,7 @@ def _get_receiving_demand(
 			PurchaseOrderItem.item_code,
 			PurchaseOrder.schedule_date,
 			PurchaseOrderItem.stock_qty.as_("stock_qty"),
+			PurchaseOrderItem.received_qty,
 			Item.stock_uom,
 			PurchaseOrder.creation,
 		)
@@ -101,6 +102,7 @@ def _get_receiving_demand(
 			PurchaseInvoiceItem.item_code,
 			PurchaseInvoice.due_date.as_("schedule_date"),
 			PurchaseInvoiceItem.stock_qty.as_("stock_qty"),
+			PurchaseInvoiceItem.received_qty,
 			Item.stock_uom,
 			PurchaseInvoice.creation,
 		)
@@ -194,6 +196,7 @@ def build_receiving_map(
 		row.schedule_date = str(row.schedule_date or get_epoch_from_datetime(row.schedule_date))
 		row.creation = str(row.creation or get_epoch_from_datetime(row.creation))
 		row.stock_qty = str(row.stock_qty)
+		row.received_qty = str(row.received_qty)
 		row.idx = str(row.idx)
 		output.append(row)
 
@@ -216,6 +219,7 @@ def insert_receiving(output: list[Receiving], cursor: "Cursor") -> None:
 		cursor.execute(insert_query.get_sql())
 
 
+@frappe.whitelist()
 def get_receiving_demand(*args, **kwargs) -> list[Receiving]:
 	records_per_page = 20
 	page = int(kwargs.get("page", 1))
@@ -245,6 +249,7 @@ def get_receiving_demand(*args, **kwargs) -> list[Receiving]:
 		receiving.modified,
 		receiving.stock_uom,
 		receiving.stock_qty,
+		receiving.received_qty,
 		ValueWrapper("").as_("status"),
 		receiving.assigned,
 		receiving.creation,
@@ -264,6 +269,7 @@ def get_receiving_demand(*args, **kwargs) -> list[Receiving]:
 			row.update(
 				{
 					"stock_qty": max(0.0, row.stock_qty),
+					"received_qty": max(0.0, row.received_qty or 0.0),
 					"schedule_date": get_datetime_from_epoch(row.schedule_date),
 					"modified": get_datetime_from_epoch(row.modified),
 					"creation": get_datetime_from_epoch(row.creation),

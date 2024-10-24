@@ -101,6 +101,7 @@ def create_demand_db(cursor: sqlite3.Cursor) -> sqlite3.Connection:
 				schedule_date int,
 				modified int,
 				stock_qty real,
+				received_qty real,
 				stock_uom text,
 				assigned text,
 				creation int
