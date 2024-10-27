@@ -28,10 +28,16 @@ onMounted(async () => {
 		row.label = `${row.doctype} - ${row.parent}`
 		row.linkComponent = 'ListAnchor'
 		row.description = `${row.item_code} - ${row.warehouse}`
-		row.route = `#/${row.doctype}/${row.parent}`
+		row.route = `#/Delivery Note/new-delivery-note` // or draft delivery note if it exists
 		items.value.push(row)
 	})
 })
+
+function newDeliveryNote(so) {
+	// match save and name API
+	// return document name
+	return so // not correct
+}
 
 const handlePrimaryAction = () => {}
 </script>

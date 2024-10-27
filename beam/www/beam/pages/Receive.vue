@@ -41,7 +41,7 @@ useInfiniteScroll(
 			row.label = `${row.item_code} from ${row.warehouse}`
 			row.linkComponent = 'ListAnchor'
 			row.description = row.parent
-			row.route = `#/${frappe.scrub(row.doctype)}/${row.parent}`
+			row.route = `#/purchase-receipt/${row.parent || 'new-purchase-receipt'}` //
 			transfer.value.push(row)
 		})
 

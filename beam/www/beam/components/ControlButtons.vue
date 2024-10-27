@@ -61,8 +61,17 @@ const onAmend = () => {
 
 <style scoped>
 .control-buttons {
-	display: flex;
-	justify-content: flex-end;
-	gap: 1rem;
+	background: white; /* change to variable */
+	width: calc(100% - 2ch);
+	display: inline-grid;
+	grid-template-columns: repeat(3, 1fr [col-start]);
+	column-gap: 1ch;
+	padding-left: 1ch;
+	padding-right: 1ch;
+	position: fixed;
+	bottom: 0;
 }
+/* .control-buttons button {
+
+} */
 </style>

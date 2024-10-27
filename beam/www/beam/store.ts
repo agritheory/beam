@@ -51,7 +51,7 @@ export const useDataStore = defineStore('data', () => {
 		return { data: message }
 	}
 
-	// TODO: somehow vue-router's composables are not working as intended here, so accepting route input
+	// TODO: somehow vue-router's composable is not working as intended here, so accepting route input
 	const setForm = async (currentRoute: RouteLocationNormalized) => {
 		const meta = currentRoute.meta
 		form.value = {}

@@ -1,5 +1,5 @@
 <template>
-	<Navbar @click="handlePrimaryAction">
+	<Navbar>
 		<template #title>
 			<h1 class="nav-title">Manufacture</h1>
 		</template>
@@ -48,10 +48,6 @@ onMounted(async () => {
 		})
 	})
 })
-
-const handlePrimaryAction = () => {
-	console.log('handle primary action')
-}
 </script>
 
 <style>
