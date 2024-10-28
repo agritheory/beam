@@ -2,7 +2,9 @@
 // For license information, please see license.txt
 
 import { useDataStore } from './store.js'
-import type { FormContext, ListContext, FrappeWindow } from './types/index.js'
+import type { FormContext, ListContext, FrappeWindow, StockEntry } from './types/index.js'
+
+declare const window: FrappeWindow
 
 export function useScan() {
 	const scanHandler = new ScanHandler()
@@ -10,7 +12,7 @@ export function useScan() {
 	return { scanHandler }
 }
 
-class ScanHandler {
+export class ScanHandler {
 	store: ReturnType<typeof useDataStore>
 
 	constructor() {
@@ -23,8 +25,9 @@ class ScanHandler {
 			let fn: Function
 			const action = response[0].action
 
-			if (action in this.store.config.client) {
-				const path = this.store.config.client[action][0]
+			const scanHooks = this.store.config.client
+			if (scanHooks.length > 0 && action in scanHooks) {
+				const path: string = scanHooks[action][0]
 				// call (first) custom built callback registered in hooks
 				fn = path.split('.').reduce((previous, current) => previous[current], window)
 				return await fn(response)
@@ -52,7 +55,7 @@ class ScanHandler {
 					'Material Transfer',
 					'Material Receipt',
 					'Manufacture',
-				].includes(this.store.form.value.stock_entry_type)
+				].includes((this.store.form.value as StockEntry).stock_entry_type)
 
 			const existing_rows = this.store.form.value.items.filter(row => {
 				if (is_stock_entry) {
@@ -103,31 +106,28 @@ class ScanHandler {
 				'Repack',
 			]
 
-			const entry_type = this.store.form.value.stock_entry_type
-			if (source_warehouses.includes(entry_type)) {
-				this.store.$patch(state => {
-					state.form.value.from_warehouse = action.target
-					for (const row of state.form.value.items) {
+			const entry_type = (this.store.form.value as StockEntry).stock_entry_type
+			this.store.$patch(state => {
+				const form = state.form.value as StockEntry
+				if (source_warehouses.includes(entry_type)) {
+					form.from_warehouse = action.target
+					for (const row of form.items) {
 						row.s_warehouse = action.target
 					}
-				})
-			} else if (target_warehouses.includes(entry_type)) {
-				this.store.$patch(state => {
-					state.form.value.to_warehouse = action.target
-					for (const row of state.form.value.items) {
+				} else if (target_warehouses.includes(entry_type)) {
+					form.to_warehouse = action.target
+					for (const row of form.items) {
 						row.t_warehouse = action.target
 					}
-				})
-			} else if (both_warehouses.includes(entry_type)) {
-				this.store.$patch(state => {
-					state.form.value.from_warehouse = action.target
-					state.form.value.to_warehouse = action.target
-					for (const row of state.form.value.items) {
+				} else if (both_warehouses.includes(entry_type)) {
+					form.from_warehouse = action.target
+					form.to_warehouse = action.target
+					for (const row of form.items) {
 						row.s_warehouse = action.target
 						row.t_warehouse = action.target
 					}
-				})
-			}
+				}
+			})
 		})
 	}
 
@@ -168,7 +168,7 @@ class ScanHandler {
 					}
 
 					if (action.doctype === 'Stock Entry') {
-						const entry_type = state.form.stock_entry_type
+						const entry_type = (state.form.value as StockEntry).stock_entry_type
 						if (source_warehouses.includes(entry_type)) {
 							item.s_warehouse = action.context.warehouse
 						} else if (target_warehouses.includes(entry_type)) {

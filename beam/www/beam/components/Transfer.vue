@@ -57,6 +57,7 @@ const create = async () => {
 	return { data, exception, response }
 }
 </script>
+
 <style scoped>
 .begin {
 	width: 100%;

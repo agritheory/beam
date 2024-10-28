@@ -25,11 +25,6 @@ repos:
       - id: pyupgrade
         args: ['--py310-plus']
 
-  - repo: https://github.com/PyCQA/isort
-    rev: 5.13.2
-    hooks:
-      - id: isort
-
   - repo: https://github.com/agritheory/black
     rev: 951ccf4d5bb0d692b457a5ebc4215d755618eb68
     hooks:

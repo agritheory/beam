@@ -12,12 +12,12 @@
 	</div>
 	<ControlButtons
 		:onCreate="create"
-		:onSubmit="() => store.submit<StockEntry>('Stock Entry', stockEntryId)"
-		:onCancel="() => store.cancel<StockEntry>('Stock Entry', stockEntryId)" />
+		:onSubmit="() => store.submit<DeliveryNote>('Stock Entry', deliveryNoteId)"
+		:onCancel="() => store.cancel<DeliveryNote>('Stock Entry', deliveryNoteId)" />
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { ref } from 'vue'
 import { useRoute } from 'vue-router'
 
 import ControlButtons from '@/components/ControlButtons.vue'
@@ -26,12 +26,15 @@ import type { ListViewItem, DeliveryNote } from '@/types'
 
 const route = useRoute()
 const store = useDataStore()
-const DeliveryNoteId = route.params.orderId.toString()
+const deliveryNoteId = route.params.orderId.toString()
 const items = ref<ListViewItem[]>([])
 
-onMounted(async () => {
+const create = async () => {
+	// TODO: implement create
 	const deliveryNote = store.form as Partial<DeliveryNote>
-})
+	const { data, exception, response } = await store.insert('Delivery Note', deliveryNote)
+	return { data, exception, response }
+}
 </script>
 
 <style scoped>

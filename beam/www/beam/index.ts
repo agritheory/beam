@@ -9,6 +9,9 @@ import { routes, handleHotUpdate } from 'vue-router/auto-routes'
 
 import Beam from './Beam.vue'
 import { useDataStore } from './store'
+import { FrappeWindow } from './types/index.js'
+
+declare const window: FrappeWindow
 
 const router = createRouter({
 	history: createWebHashHistory(),

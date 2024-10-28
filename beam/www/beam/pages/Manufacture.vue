@@ -16,6 +16,8 @@ import { onMounted, ref } from 'vue'
 import { useDataStore } from '@/store'
 import type { ListViewItem, WorkOrder } from '@/types'
 
+declare const frappe: any
+
 const items = ref<ListViewItem[]>([])
 const store = useDataStore()
 
