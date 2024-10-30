@@ -5,6 +5,10 @@ import datetime
 from itertools import groupby
 
 import frappe
+from erpnext.buying.doctype.purchase_order.purchase_order import (
+	make_purchase_invoice,
+	make_purchase_receipt,
+)
 from erpnext.manufacturing.doctype.production_plan.production_plan import (
 	get_items_for_material_requests,
 )
@@ -41,12 +45,10 @@ def before_test():
 	enable_all_roles_and_domains()
 	set_defaults_for_tests()
 	frappe.db.commit()
-	create_test_data()
 	for modu in frappe.get_all("Module Onboarding"):
 		frappe.db.set_value("Module Onboarding", modu, "is_complete", 1)
 	frappe.set_value("Website Settings", "Website Settings", "home_page", "login")
-	frappe.db.commit()
-	# build_demand_allocation_map()
+	create_test_data()
 
 
 def create_test_data():
@@ -612,36 +614,40 @@ def create_production_plan(settings, prod_plan_from_doc):
 		sorted((m for m in mr.items if m.supplier), key=lambda d: d.supplier),
 		lambda x: x.get("supplier"),
 	):
-		items = list(_items)
 		if supplier == "No Supplier":
-			# make a stock entry here?
 			continue
-		if supplier == "Freedom Provisions":
-			pr = frappe.new_doc("Purchase Invoice")
-			pr.update_stock = True
-		else:
-			pr = frappe.new_doc("Purchase Receipt")
-		pr.company = settings.company
-		pr.supplier = supplier
-		pr.posting_date = settings.day
-		pr.set_posting_time = True
-		pr.buying_price_list = "Bakery Buying"
+		items = list(_items)
+		po = frappe.new_doc("Purchase Order")
+		po.company = settings.company
+		po.supplier = supplier
+		po.transaction_date = po.schedule_date = settings.day
+		po.buying_price_list = "Bakery Buying"
 		for item in items:
 			item_details = get_item_details(
 				{
 					"item_code": item.item_code,
 					"qty": item.qty,
-					"supplier": pr.supplier,
-					"company": pr.company,
-					"doctype": pr.doctype,
-					"currency": pr.currency,
-					"buying_price_list": pr.buying_price_list,
+					"supplier": po.supplier,
+					"company": po.company,
+					"doctype": po.doctype,
+					"currency": po.currency,
+					"buying_price_list": po.buying_price_list,
 				}
 			)
-			pr.append("items", {**item_details})
+			po.append("items", {**item_details})
+		po.save()
+		po.submit()
+
+		if supplier == "Freedom Provisions":
+			pr = make_purchase_invoice(po.name)
+			pr.update_stock = True
+		else:
+			pr = make_purchase_receipt(po.name)
+
+		pr.set_posting_time = True
+		pr.posting_date = settings.day
 		pr.save()
 		# pr.submit() # don't submit - needed to test handling unit generation
-	# TODO: call internal functions to make sub assembly items first
 
 	wo_list, po_list = [], []
 	subcontracted_po = {}

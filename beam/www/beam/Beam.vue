@@ -52,4 +52,20 @@ const confirmModal = () => {
 
 <style>
 @import url('@stonecrop/beam/styles');
+.navbar-action a {
+	color: inherit;
+	text-decoration: none;
+}
+.navbar-action a:visited {
+	color: inherit;
+	text-decoration: none;
+}
+.navbar-action a:hover {
+	color: inherit;
+	text-decoration: none;
+}
+.navbar-action a:active {
+	color: inherit;
+	text-decoration: none;
+}
 </style>

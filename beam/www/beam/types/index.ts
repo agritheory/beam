@@ -47,6 +47,7 @@ export type ScanConfig = {
 // frappe document interfaces
 export type ParentDoctypeMeta = {
 	creation?: string
+	docstatus?: number
 	doctype?: string
 	modified_by?: string
 	modified?: string
@@ -69,6 +70,7 @@ export type ParentDoctype = ParentDoctypeMeta & {
 	from_warehouse?: string
 	stock_entry_type?: string
 	to_warehouse?: string
+	wip_warehouse?: string
 }
 
 export type ChildDoctype = ChildDoctypeMeta & {
@@ -96,7 +98,7 @@ export type StockEntry = ParentDoctype & {
 
 export type WorkOrder = ParentDoctype & {
 	item_name: string
-	planned_start_date: number
+	planned_start_date: string
 	produced_qty: number
 	qty: number
 	skip_transfer: boolean
@@ -126,4 +128,14 @@ export type Workstation = ParentDoctype & {
 	production_capacity: number
 	status?: string
 	workstation_name: string
+}
+
+export type DocActionResponse<T> = {
+	data: T
+	exception: string
+	response: Response
+}
+
+export interface FrappeWindow extends Window {
+	frappe: any
 }

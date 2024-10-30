@@ -10,6 +10,7 @@ import pytest
 from frappe.utils import get_bench_path
 
 from beam.beam.demand.demand import build_demand_allocation_map
+from beam.beam.demand.receiving import reset_build_receiving_map
 
 
 def _get_logger(*args, **kwargs):
@@ -46,4 +47,5 @@ def db_instance():
 	frappe.db.commit = MagicMock()
 
 	build_demand_allocation_map()
+	reset_build_receiving_map()
 	yield frappe.db

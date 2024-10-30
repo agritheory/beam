@@ -7,18 +7,8 @@ import { createApp } from 'vue'
 import { createRouter, createWebHashHistory } from 'vue-router'
 
 import Beam from './Beam.vue'
-import { makeServer } from './mocks/mirage'
 import routes from './routes'
 import { useDataStore } from './store'
-
-if (import.meta.env.DEV) {
-	makeServer()
-}
-
-interface FrappeWindow extends Window {
-	frappe: any
-}
-declare const window: FrappeWindow
 
 const router = createRouter({
 	history: createWebHashHistory(),
@@ -26,27 +16,22 @@ const router = createRouter({
 })
 
 router.beforeEach(async (to, from, next) => {
-	if (!window.frappe) {
-		// dev environment; simply proceed with path
-		next()
-	} else {
-		if (to.meta.requiresAuth) {
-			if (window.frappe.user === 'Guest') {
-				next(false)
-				// TODO: 6 Sep, 2024: tried redirecting to intended path, but Frappe
-				// ignores everything after the hash
-				window.location.href = '/login?redirect-to=/beam#'
-			} else {
-				const store = useDataStore()
-				await store.init(to)
-				next()
-			}
+	if (to.meta.requiresAuth) {
+		if (window.frappe.user === 'Guest') {
+			next(false)
+			// TODO: 6 Sep, 2024: tried redirecting to intended path, but Frappe
+			// ignores everything after the hash
+			window.location.href = '/login?redirect-to=/beam#'
 		} else {
-			// assuming user is logged in and authenticated for all Beam views
 			const store = useDataStore()
 			await store.init(to)
 			next()
 		}
+	} else {
+		// assuming user is logged in and authenticated for all Beam views
+		const store = useDataStore()
+		await store.init(to)
+		next()
 	}
 })
 

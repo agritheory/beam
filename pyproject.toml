@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "beam"
-version = "15.2.0"
+version = "15.3.1"
 authors = ["AgriTheory <support@agritheory.dev>"]
 description = "Barcode Scanning for ERPNext"
 readme = "README.md"
@@ -39,6 +39,9 @@ indent = "\t"
 
 [tool.semantic_release]
 version_toml = ["pyproject.toml:tool.poetry.version"]
+version_variable = [
+    "beam/__init__.py:__version__"
+]
 
 [tool.semantic_release.branches.version]
 match = "version-15"

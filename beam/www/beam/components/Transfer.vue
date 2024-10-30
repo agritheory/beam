@@ -1,9 +1,8 @@
 <template>
-	<div class="control-buttons">
-		<button @click="create" :disabled="!!stockEntryId">Save</button>
-		<button @click="store.submit<StockEntry>('Stock Entry', stockEntryId)" :disabled="!stockEntryId">Submit</button>
-		<button @click="store.cancel<StockEntry>('Stock Entry', stockEntryId)" :disabled="!stockEntryId">Cancel</button>
-	</div>
+	<ControlButtons
+		:onCreate="create"
+		:onSubmit="() => store.submit<StockEntry>('Stock Entry', stockEntryId)"
+		:onCancel="() => store.cancel<StockEntry>('Stock Entry', stockEntryId)" />
 
 	<ListView :items="listItems" :key="componentKey" />
 </template>
@@ -11,6 +10,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
+import ControlButtons from '@/components/ControlButtons.vue'
 import { useDataStore } from '@/store'
 import type { ListViewItem, StockEntry } from '@/types'
 
@@ -48,17 +48,10 @@ const create = async () => {
 		purpose: 'Material Transfer for Manufacture',
 	})
 
-	const { data } = await store.insert('Stock Entry', stockEntry)
+	const { data, exception, response } = await store.insert('Stock Entry', stockEntry)
 	if (data.name) {
 		stockEntryId.value = data.name
 	}
+	return { data, exception, response }
 }
 </script>
-
-<style scoped>
-.control-buttons {
-	display: flex;
-	justify-content: flex-end;
-	gap: 1rem;
-}
-</style>

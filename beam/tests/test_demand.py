@@ -148,7 +148,7 @@ def test_opening_demand():
 	build_demand_allocation_map()
 
 	# get demand assert that correct quantities and allocations exist
-	water = get_demand(item_code="Water")
+	water = get_demand(filters={"item_code": "Water"})
 	assert len(water) == 4
 
 	assert water[0].parent == "MFG-WO-2024-00001"
@@ -175,7 +175,7 @@ def test_opening_demand():
 	assert water[3].allocated_qty == 0.0
 	assert water[3].warehouse == "Kitchen - APC"
 
-	ice_water = get_demand(item_code="Ice Water")
+	ice_water = get_demand(filters={"item_code": "Ice Water"})
 	assert len(ice_water) == 1
 
 	assert ice_water[0].parent == "MFG-WO-2024-00005"
@@ -214,7 +214,7 @@ def test_insufficient_total_demand_scenario():
 	)
 	se.save()
 	se.submit()
-	water = get_demand(item_code="Water")
+	water = get_demand(filters={"item_code": "Water"})
 	assert len(water) == 4
 
 	assert water[0].parent == "MFG-WO-2024-00001"
@@ -242,7 +242,7 @@ def test_insufficient_total_demand_scenario():
 	assert water[3].warehouse == "Kitchen - APC"
 
 	# assert partial allocations
-	ice_water = get_demand(item_code="Ice Water")
+	ice_water = get_demand(filters={"item_code": "Ice Water"})
 	assert len(ice_water) == 1
 
 	assert ice_water[0].total_required_qty == 50
@@ -254,7 +254,7 @@ def test_insufficient_total_demand_scenario():
 
 @pytest.mark.order(31)  # run after other tests
 def test_demand_removal_on_order_cancel():
-	pie = get_demand(item_code="Ambrosia Pie")
+	pie = get_demand(filters={"item_code": "Ambrosia Pie"})
 	assert len(pie) == 1
 
 	so = frappe.new_doc("Sales Order")
@@ -272,13 +272,13 @@ def test_demand_removal_on_order_cancel():
 	so.save()
 	so.submit()
 
-	pie = get_demand(item_code="Ambrosia Pie")
+	pie = get_demand(filters={"item_code": "Ambrosia Pie"})
 	assert len(pie) == 2
 
 	so.cancel()
 	so.delete()
 
-	pie = get_demand(item_code="Ambrosia Pie")
+	pie = get_demand(filters={"item_code": "Ambrosia Pie"})
 	assert len(pie) == 1
 
 
@@ -299,7 +299,7 @@ def test_allocation_creation_on_delivery():
 	se.submit()
 
 	# assert partial allocations
-	pie = get_demand(item_code="Ambrosia Pie")
+	pie = get_demand(filters={"item_code": "Ambrosia Pie"})
 	assert len(pie) == 1
 
 	assert pie[0].total_required_qty == 40
@@ -318,7 +318,7 @@ def test_allocation_creation_on_delivery():
 	dn.submit()
 
 	# assert partial allocations
-	pie = get_demand(item_code="Ambrosia Pie")
+	pie = get_demand(filters={"item_code": "Ambrosia Pie"})
 	assert len(pie) == 1
 
 	assert pie[0].total_required_qty == 35
@@ -333,7 +333,7 @@ def test_allocation_reversal_on_delivery_cancel():
 	dn = frappe.get_doc("Delivery Note", "MAT-DN-2024-00001")
 	dn.cancel()
 
-	pie = get_demand(item_code="Ambrosia Pie")
+	pie = get_demand(filters={"item_code": "Ambrosia Pie"})
 	assert len(pie) == 1
 
 	# demand + allocation from stock entry
@@ -356,5 +356,63 @@ def test_allocation_from_purchasing():
 			if item.handling_unit:  # flag for inventoriable item
 				# TODO: this should be improved with greater specificity, but detecting that
 				# creating inventory leads to modification of the demand db is OK for now
-				d = get_demand(item_code=item.item_code)
+				d = get_demand(filters={"item_code": item.item_code})
 				assert len(d) > 0
+
+
+@pytest.mark.order(35)  # run after other tests
+def test_ignore_drop_shipped_items_in_demand():
+	# Create temporary drop shipped item
+	supplier = "Freedom Provisions"
+	i = frappe.new_doc("Item")
+	i.item_code = i.item_name = "Pie Servingware"
+	i.item_group = "Products"
+	i.is_stock_item = 1
+	i.stock_uom = "Nos"
+	i.is_purchase_item = 1
+	i.is_sales_item = 1
+	i.delivered_by_supplier = 1
+	i.append("supplier_items", {"supplier": supplier})
+	i.save()
+
+	d = get_sales_demand(item_code=i.item_code)
+	assert len(d) == 0
+
+	# create sales order with drop shipped item
+	so = frappe.new_doc("Sales Order")
+	so.customer = random.choice(customers)
+	so.selling_price_list = "Standard Selling"
+	so.append(
+		"items",
+		{
+			"item_code": i.item_code,
+			"delivery_date": add_days(today(), 7),
+			"qty": 10,
+			"rate": 2,
+			"delivered_by_supplier": 1,
+			"supplier": supplier,
+		},
+	)
+	so.save()
+	so.submit()
+
+	bs = frappe.get_doc("BEAM Settings", {"company": so.company})
+	assert bs.ignore_drop_shipped_items == 0
+
+	d = get_sales_demand(item_code=i.item_code)
+	assert len(d) == 1
+	assert d[0].get("total_required_qty") == 10
+
+	# update settings to ignore drop shipped items
+	bs.ignore_drop_shipped_items = 1
+	bs.save()
+
+	d = get_sales_demand(item_code=i.item_code)
+	assert len(d) == 0
+
+	# reset settings and cancel/delete Sales Order
+	bs.ignore_drop_shipped_items = 0
+	bs.save()
+
+	so.cancel()
+	so.delete()
