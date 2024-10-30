@@ -9,7 +9,7 @@
 	"scripts": {
 		"build": "vite build --config=./beam/www/beam/vite.config.ts",
 		"build:watch": "vite build --watch --config=./beam/www/beam/vite.config.ts",
-		"register": "node ./beam/www/beam/component_resolver.js"
+		"register": "node ./beam/www/beam/component_resolver.ts"
 	},
 	"dependencies": {
 		"@stonecrop/beam": "latest",

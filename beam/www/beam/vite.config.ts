@@ -3,21 +3,13 @@
 
 import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
-import { defineConfig } from 'vite'
 import Components from 'unplugin-vue-components/vite'
+import { defineConfig } from 'vite'
 
-import { BEAMResolver } from './component_resolver'
+import { BEAMResolver } from './component_resolver.js'
 
 export default defineConfig({
-	server: {
-		open: './dev.html',
-	},
-	plugins: [
-		vue(),
-		Components({
-			resolvers: [BEAMResolver],
-		}),
-	],
+	plugins: [vue(), Components({ resolvers: [BEAMResolver()] })],
 	resolve: {
 		alias: {
 			'@': resolve(__dirname),
@@ -39,9 +31,5 @@ export default defineConfig({
 				assetFileNames: 'index.[ext]',
 			},
 		},
-	},
-	define: {
-		'process.env': process.env,
-		__VUE_PROD_DEVTOOLS__: true,
 	},
 })
