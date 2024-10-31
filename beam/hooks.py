@@ -240,9 +240,7 @@ doc_events = {
 # Authentication and authorization
 # --------------------------------
 
-# auth_hooks = [
-# 	"beam.auth.validate"
-# ]
+auth_hooks = ["beam.beam.boot.redirect_to_beam"]
 
 demand = {
 	"Delivery Note": {
