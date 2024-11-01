@@ -1,5 +1,5 @@
 exclude: 'node_modules|.git'
-default_stages: [pre-commit]
+default_stages: [prepare-commit-msg]
 fail_fast: false
 
 repos:
@@ -25,6 +25,11 @@ repos:
       - id: pyupgrade
         args: ['--py310-plus']
 
+  - repo: https://github.com/PyCQA/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+
   - repo: https://github.com/agritheory/black
     rev: 951ccf4d5bb0d692b457a5ebc4215d755618eb68
     hooks:
@@ -35,11 +40,6 @@ repos:
     hooks:
       - id: autoflake
         args: [--remove-all-unused-imports, --in-place]
-
-  - repo: https://github.com/PyCQA/isort
-    rev: 5.13.2
-    hooks:
-      - id: isort
 
   - repo: https://github.com/PyCQA/flake8
     rev: 7.1.1

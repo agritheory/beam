@@ -5,7 +5,6 @@ import { install as BeamPlugin } from '@stonecrop/beam'
 import { createPinia } from 'pinia'
 import { createApp } from 'vue'
 import { createRouter, createWebHashHistory } from 'vue-router'
-
 import Beam from './Beam.vue'
 import routes from './routes'
 import { useDataStore } from './store'

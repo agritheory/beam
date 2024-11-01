@@ -15,7 +15,9 @@
 		"receiving_workstation",
 		"shipping_workstation",
 		"demand_tab",
-		"warehouse_types"
+		"warehouse_types",
+		"mobile_tab",
+		"table_tdzr"
 	],
 	"fields": [
 		{
@@ -79,11 +81,21 @@
 			"fieldname": "demand_tab",
 			"fieldtype": "Tab Break",
 			"label": "Demand"
+		},
+		{
+			"fieldname": "mobile_tab",
+			"fieldtype": "Tab Break",
+			"label": "Mobile"
+		},
+		{
+			"fieldname": "table_tdzr",
+			"fieldtype": "Table",
+			"options": "BEAM Mobile Route"
 		}
 	],
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2024-08-21 15:23:36.892295",
+	"modified": "2024-10-31 16:35:51.897937",
 	"modified_by": "Administrator",
 	"module": "BEAM",
 	"name": "BEAM Settings",

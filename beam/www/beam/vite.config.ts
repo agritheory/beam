@@ -4,12 +4,20 @@
 import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
 import Components from 'unplugin-vue-components/vite'
+import VueRouter from 'unplugin-vue-router/vite'
 import { defineConfig } from 'vite'
+import { routes } from './routes'
 
-import { BEAMResolver } from './component_resolver.js'
+import { BEAMResolver, RouteResolver } from './component_resolver.js'
 
 export default defineConfig({
-	plugins: [vue(), Components({ resolvers: [BEAMResolver()] })],
+	plugins: [
+		Components({ resolvers: [BEAMResolver()] }),
+		VueRouter({
+			beforeWriteFiles(root) {},
+		}),
+		vue(),
+	],
 	resolve: {
 		alias: {
 			'@': resolve(__dirname),
@@ -31,5 +39,9 @@ export default defineConfig({
 				assetFileNames: 'index.[ext]',
 			},
 		},
+	},
+	define: {
+		'process.env': process.env,
+		__VUE_PROD_DEVTOOLS__: true,
 	},
 })

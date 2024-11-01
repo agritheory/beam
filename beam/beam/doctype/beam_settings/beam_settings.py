@@ -6,7 +6,8 @@ from frappe.model.document import Document
 
 
 class BEAMSettings(Document):
-	pass
+	def __onload(self):
+		pass
 
 
 @frappe.whitelist()
