@@ -1,75 +1,12 @@
-// Copyright (c) 2024, AgriTheory and contributors
-// For license information, please see license.txt
-
 import { readFileSync } from 'fs'
 import { globSync } from 'glob'
 import { resolve } from 'path'
-import type { ComponentResolver } from 'unplugin-vue-components'
 
-import type { AppList, HookConfig, HookRoute } from './types/config.js'
+import type { AppList, HookConfig, HookRoute } from '@/types/config.js'
 
 const HOOK_NAME = 'beam_mobile'
 
-export function BEAMResolver(): ComponentResolver {
-	const components = getComponents()
-	return {
-		type: 'component',
-		resolve: name => {
-			if (components[name]) {
-				return {
-					name,
-					from: components[name],
-				}
-			}
-		},
-	}
-}
-
-export function getRoutes(): HookConfig['routes'] {
-	const appConfigs = getAppConfigs()
-	let routes = {}
-	for (const config of appConfigs) {
-		if (config.routes) {
-			console.log(`Custom BEAM routes found in ${config.file}`)
-			const _routes = transformRoutes(config.routes)
-			routes = mergeConfigs(routes, _routes)
-		}
-	}
-	return Object.values(routes)
-}
-
-export function getComponents(): HookConfig['components'] {
-	const appConfigs = getAppConfigs()
-	let components = {}
-	for (const config of appConfigs) {
-		if (config.components) {
-			console.log(`Custom BEAM components found in ${config.file}`)
-			components = mergeConfigs(components, config.components)
-		}
-	}
-	return components
-}
-
-export function getComponentPaths(): Record<string, string> {
-	const appsPath = resolve(process.cwd(), '..')
-	const appConfigs = getAppConfigs()
-	let paths = {}
-	for (const config of appConfigs) {
-		if (config.components) {
-			const componentPaths = Object.entries(config.components).reduce(
-				(acc, [name, path]) => {
-					acc[name] = resolve(appsPath, path)
-					return acc
-				},
-				{} as Record<string, string>
-			)
-			paths = mergeConfigs(paths, componentPaths)
-		}
-	}
-	return paths
-}
-
-function getAppConfigs(): HookConfig[] {
+export function getAppConfigs(): HookConfig[] {
 	const appHooks = getAppHooks()
 	const configs = []
 	for (const hookFile of appHooks) {
@@ -85,7 +22,7 @@ function getAppConfigs(): HookConfig[] {
 	return configs
 }
 
-function getAppHooks(): string[] {
+export function getAppHooks(): string[] {
 	// respects installed app order
 	const appsPath = resolve(process.cwd(), '..')
 	const appsListPath = resolve(appsPath, '../sites/apps.json')
@@ -111,7 +48,7 @@ function getAppHooks(): string[] {
 	})
 }
 
-function extractConfig(fileContent: string): HookConfig | undefined {
+export function extractConfig(fileContent: string): HookConfig | undefined {
 	const hookRegex = new RegExp(`${HOOK_NAME}\\s*=\\s*({[^]*?})(?=\\s*$|\\s*#|\\s*[\r\n])`)
 	const match = fileContent.match(hookRegex)
 
@@ -127,7 +64,7 @@ function extractConfig(fileContent: string): HookConfig | undefined {
 	}
 }
 
-function preFormatHooks(rawText: string): string {
+export function preFormatHooks(rawText: string): string {
 	return (
 		rawText
 			// Remove comments first
@@ -146,14 +83,14 @@ function preFormatHooks(rawText: string): string {
 	)
 }
 
-function mergeConfigs(...configs: Array<Record<string, any> | undefined>): Record<string, any> {
+export function mergeConfigs(...configs: Array<Record<string, any> | undefined>): Record<string, any> {
 	return configs.reduce((result, config) => {
 		Object.entries(config ?? {}).forEach(([key, value]) => (result[key] = value))
 		return result
 	}, {})
 }
 
-function transformRoutes(routes: HookConfig['routes']): Record<string, HookRoute> {
+export function transformRoutes(routes: HookConfig['routes']): Record<string, HookRoute> {
 	return routes.reduce((acc, route) => {
 		acc[route.path] = route
 		return acc

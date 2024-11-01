@@ -7,11 +7,12 @@ import Components from 'unplugin-vue-components/vite'
 import VueRouter from 'unplugin-vue-router/vite'
 import { defineConfig } from 'vite'
 
-import { BEAMResolver, getComponentPaths, getRoutes } from './resolvers.js'
+import { getComponentPluginOptions } from './plugins/component.js'
+import { getComponentPaths, getRoutes } from './plugins/router.js'
 
 export default defineConfig({
 	plugins: [
-		Components({ dts: 'beam/www/beam/components.d.ts', resolvers: [BEAMResolver()] }),
+		Components({ ...getComponentPluginOptions() }),
 		VueRouter({
 			routesFolder: resolve(__dirname, 'routes'),
 			dts: 'beam/www/beam/typed-router.d.ts',
