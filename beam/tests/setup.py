@@ -17,7 +17,16 @@ from erpnext.setup.utils import enable_all_roles_and_domains, set_defaults_for_t
 from erpnext.stock.get_item_details import get_item_details
 from frappe.desk.page.setup_wizard.setup_wizard import setup_complete
 
-from beam.tests.fixtures import boms, customers, items, operations, suppliers, workstations
+from beam.patches.v15.setup_beam_mobile_settings import execute as setup_beam_mobile_settings
+from beam.tests.fixtures import (
+	boms,
+	customers,
+	employees,
+	items,
+	operations,
+	suppliers,
+	workstations,
+)
 
 
 def before_test():
@@ -87,6 +96,7 @@ def create_test_data():
 	create_item_groups(settings)
 	create_suppliers(settings)
 	create_customers(settings)
+	create_employees(settings)
 	create_items(settings)
 	create_boms(settings)
 	prod_plan_from_doc = "Sales Order"
@@ -97,6 +107,7 @@ def create_test_data():
 	create_production_plan(settings, prod_plan_from_doc)
 	create_purchase_receipt_for_received_qty_test(settings)
 	create_network_printer_settings(settings)
+	setup_beam_mobile_settings(settings.company)
 
 
 def create_suppliers(settings):
@@ -728,3 +739,44 @@ def create_network_printer_settings(settings):
 			nps.port = ps["port"]
 			nps.printer_name = ps["name"]
 			nps.save()
+
+
+def create_employees(settings, only_create=None):
+	for employee in employees:
+		if only_create and employee.get("employee_name") not in only_create:
+			continue
+
+		if frappe.db.exists("Employee", {"employee_name": employee.get("employee_name")}):
+			continue
+
+		if not frappe.db.exists("Designation", employee.get("designation")):
+			desg = frappe.new_doc("Designation")
+			desg.designation_name = employee.get("designation")
+			desg.save()
+
+		empl = frappe.new_doc("Employee")
+		name = employee.pop("name")
+		empl.first_name = name.split(" ")[0]
+		empl.last_name = name.split(" ")[1]
+		empl.update(employee)
+		empl.reports_to = None
+		if settings.company:
+			empl.company = settings.company
+		empl.save()
+
+		user = frappe.new_doc("User")
+		user.email = f"{empl.first_name[0].lower()}{empl.last_name.lower()}@cfc.co"
+		user.first_name = empl.first_name
+		user.last_name = empl.last_name
+		user.send_welcome_email = 0
+		user.enabled = 1
+		user.language = settings.language
+		user.time_zone = settings.time_zone
+		for r in employee.get("roles", []):
+			user.append("roles", {"role": r})
+
+		user.save()
+		empl.user_id = user.email
+		if employee.get("reports_to"):
+			empl.reports_to = frappe.get_value("Employee", {"employee_name": employee.get("reports_to")})
+		empl.save()

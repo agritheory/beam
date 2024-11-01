@@ -43,7 +43,7 @@ doctype_js = {"Stock Entry": "public/js/stock_entry_custom.js"}
 
 # website user home page (by Role)
 # role_home_page = {
-# 	"Role": "home_page"
+# 	"BEAM Mobile User": "/beam/"
 # }
 
 # Generators
