@@ -6,17 +6,26 @@
 		<template #navbaraction> Log out </template>
 	</Navbar>
 	<nav>
-		<ListView :items="home" />
+		<ListView :items="homeList" />
 	</nav>
 </template>
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useDataStore } from '@/store'
 
 const store = useDataStore()
 
 const companyName = ref('')
 const home = ref([])
+
+const homeList = computed(() => {
+	let hl = []
+	home.value.forEach(r => {
+		r.linkComponent = 'ListAnchor'
+		hl.push(r)
+	})
+	return hl
+})
 
 const logout = async () => {
 	await store.logout()
