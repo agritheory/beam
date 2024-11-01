@@ -3,9 +3,7 @@
 		<template #title>
 			<h1 class="nav-title">{{ companyName }}</h1>
 		</template>
-		<template #navbaraction>
-			Log out
-		</template>
+		<template #navbaraction> Log out </template>
 	</Navbar>
 	<nav>
 		<ListView :items="home" />
@@ -13,7 +11,7 @@
 </template>
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useDataStore } from '@/store' 
+import { useDataStore } from '@/store'
 
 const store = useDataStore()
 
@@ -24,10 +22,10 @@ const logout = async () => {
 	await store.logout()
 }
 
-onMounted(async () =>{
- let getHome = await store.getHome()
- home.value = getHome.data.routes
- companyName.value = getHome.data.company
+onMounted(async () => {
+	let getHome = await store.getHome()
+	home.value = getHome.data.routes
+	companyName.value = getHome.data.company
 })
 </script>
 

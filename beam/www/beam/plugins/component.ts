@@ -1,3 +1,6 @@
+// Copyright (c) 2024, AgriTheory and contributors
+// For license information, please see license.txt
+
 import type { ComponentResolver, Options } from 'unplugin-vue-components'
 
 import { HookConfig } from '@/types/config.js'
