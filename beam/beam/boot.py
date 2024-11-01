@@ -11,5 +11,16 @@ def boot_session(bootinfo):
 
 def redirect_to_beam():
 	user_agent = frappe.request.headers.get("User-Agent", "").lower()
-	if any(agent in user_agent for agent in ["iphone", "android", "blackberry", "ipad", "mobile"]):
+	mobile_keywords = [
+		"android",
+		"webos",
+		"iphone",
+		"ipad",
+		"ipod",
+		"blackberry",
+		"iemobile",
+		"opera mini",
+		"mobile",
+	]
+	if any(agent in user_agent for agent in mobile_keywords):
 		frappe.local.response["home_page"] = "/beam/"
