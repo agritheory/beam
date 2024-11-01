@@ -37,15 +37,9 @@ export const useDataStore = defineStore('data', () => {
 	watch(route, async () => await init())
 
 	const init = async (currentRoute?: RouteLocationNormalized) => {
-		await setConfig()
+		await getScanDoctypes()
 		await setForm(currentRoute || route)
 		await setScanContext(currentRoute || route)
-	}
-
-	const setConfig = async () => {
-		if (!Object.keys(config.value).length) {
-			config.value = await frappe.xcall('beam.beam.scan.config.get_scan_doctypes')
-		}
 	}
 
 	// TODO: somehow vue-router's composables are not working as intended here, so accepting route input
@@ -125,6 +119,14 @@ export const useDataStore = defineStore('data', () => {
 		return data
 	}
 
+	const getScanDoctypes = async (params?: Record<string, any>) => {
+		const url = '/api/method/beam.beam.scan.config.get_scan_doctypes'
+		const response = await get(url, params)
+		const { message } = await response.json()
+		config.value = message
+		return { data: message }
+	}
+
 	const getDemand = async (params?: Record<string, any>) => {
 		// automatically fetch all pages of demand data based on parameters
 		const url = '/api/method/beam.beam.demand.demand.get_demand'
@@ -199,6 +201,19 @@ export const useDataStore = defineStore('data', () => {
 		return message
 	}
 
+	const logout = async () => {
+		const url = '/api/method/logout'
+		await get(url)
+		window.location.href = '/login?redirect-to=/beam#'
+	}
+
+	const getHome = async (params?: Record<string, any>) => {
+		const url = '/api/method/beam.beam.doctype.beam_settings.beam_settings.get_beam_home'
+		const response = await get(url, params)
+		const { message } = await response.json()
+		return { data: message }
+	}
+
 	return {
 		// state
 		config,
@@ -229,5 +244,7 @@ export const useDataStore = defineStore('data', () => {
 		getMappedStockEntry,
 		getOne,
 		scan,
+		logout,
+		getHome,
 	}
 })

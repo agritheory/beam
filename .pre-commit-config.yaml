@@ -1,5 +1,5 @@
 exclude: 'node_modules|.git'
-default_stages: [prepare-commit-msg, pre-commit]
+default_stages: [commit]
 fail_fast: false
 
 repos:

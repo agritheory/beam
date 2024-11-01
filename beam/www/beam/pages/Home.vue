@@ -1,42 +1,34 @@
 <template>
+	<Navbar @click="logout">
+		<template #title>
+			<h1 class="nav-title">{{ companyName }}</h1>
+		</template>
+		<template #navbaraction>
+			Log out
+		</template>
+	</Navbar>
 	<nav>
 		<ListView :items="home" />
 	</nav>
 </template>
-
 <script setup lang="ts">
-const home = [
-	{
-		label: 'Manufacture',
-		route: '#/manufacture',
-		linkComponent: 'ListAnchor',
-	},
-	{
-		label: 'Demand',
-		route: '#/demand',
-		linkComponent: 'ListAnchor',
-	},
-	{
-		label: 'Move',
-		route: '#/move',
-		linkComponent: 'ListAnchor',
-	},
-	{
-		label: 'Receive',
-		route: '#/receive',
-		linkComponent: 'ListAnchor',
-	},
-	{
-		label: 'Ship',
-		route: '#/ship',
-		linkComponent: 'ListAnchor',
-	},
-	{
-		label: 'Repack',
-		route: '#/repack',
-		linkComponent: 'ListAnchor',
-	},
-]
+import { ref, onMounted } from 'vue'
+import { useDataStore } from '@/store' 
+
+const store = useDataStore()
+
+const companyName = ref('')
+const home = ref([])
+
+const logout = async () => {
+	await store.logout()
+}
+
+onMounted(async () =>{
+ let getHome = await store.getHome()
+ home.value = getHome.data.routes
+ companyName.value = getHome.data.company
+})
 </script>
 
 <style scoped>
