@@ -50,18 +50,23 @@ export function getComponents(): HookConfig['components'] {
 	return components
 }
 
-export function getComponentPath(component: string) {
+export function getComponentPaths(): Record<string, string> {
 	const appsPath = resolve(process.cwd(), '..')
 	const appConfigs = getAppConfigs()
-
-	// let the entire loop run to support Frappe app order resolution
-	let componentPath = ''
+	let paths = {}
 	for (const config of appConfigs) {
-		if (config.components?.[component]) {
-			componentPath = resolve(appsPath, config.components[component])
+		if (config.components) {
+			const componentPaths = Object.entries(config.components).reduce(
+				(acc, [name, path]) => {
+					acc[name] = resolve(appsPath, path)
+					return acc
+				},
+				{} as Record<string, string>
+			)
+			paths = mergeConfigs(paths, componentPaths)
 		}
 	}
-	return componentPath
+	return paths
 }
 
 function getAppConfigs(): HookConfig[] {

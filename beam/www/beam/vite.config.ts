@@ -7,7 +7,7 @@ import Components from 'unplugin-vue-components/vite'
 import VueRouter from 'unplugin-vue-router/vite'
 import { defineConfig } from 'vite'
 
-import { BEAMResolver, getComponentPath, getRoutes } from './resolvers.js'
+import { BEAMResolver, getComponentPaths, getRoutes } from './resolvers.js'
 
 export default defineConfig({
 	plugins: [
@@ -24,10 +24,10 @@ export default defineConfig({
 
 				// add routes from all apps that have defined Beam routes
 				const routes = getRoutes()
+				const componentPaths = getComponentPaths()
 				for (const route of routes) {
-					const componentPath = getComponentPath(route.component)
-					if (componentPath) {
-						const routeNode = root.insert(route.path, componentPath)
+					if (componentPaths[route.component]) {
+						const routeNode = root.insert(route.path, componentPaths[route.component])
 						routeNode.name = route.name
 						routeNode.addToMeta({ ...route.meta })
 					}
