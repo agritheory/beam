@@ -10,3 +10,19 @@ if (window.location.pathname === '/beam') {
 		}
 	}
 }
+
+// remove redirect-to query parameter on login page for mobile users
+document.addEventListener('DOMContentLoaded', function () {
+	if (window.location.pathname === '/login') {
+		function isMobileDevice() {
+			return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+		}
+		if (isMobileDevice()) {
+			const url = new URL(window.location.href)
+			if (url.searchParams.has('redirect-to')) {
+				url.searchParams.delete('redirect-to')
+				window.history.replaceState({}, document.title, url.toString())
+			}
+		}
+	}
+})
