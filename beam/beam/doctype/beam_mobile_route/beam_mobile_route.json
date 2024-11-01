@@ -1,0 +1,67 @@
+{
+	"actions": [],
+	"allow_rename": 1,
+	"creation": "2024-10-31 16:33:23.848152",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": ["label", "component", "route", "column_break_apfm", "dt", "role", "select_vche"],
+	"fields": [
+		{
+			"fieldname": "component",
+			"fieldtype": "Select",
+			"in_list_view": 1,
+			"label": "Component",
+			"reqd": 1
+		},
+		{
+			"fieldname": "dt",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"label": "DocType",
+			"options": "DocType",
+			"reqd": 1
+		},
+		{
+			"fieldname": "role",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"label": "Role",
+			"options": "Role"
+		},
+		{
+			"fieldname": "route",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "Route",
+			"reqd": 1
+		},
+		{
+			"fieldname": "column_break_apfm",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "label",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "Label",
+			"reqd": 1
+		},
+		{
+			"fieldname": "select_vche",
+			"fieldtype": "Select"
+		}
+	],
+	"index_web_pages_for_search": 1,
+	"istable": 1,
+	"links": [],
+	"modified": "2024-10-31 16:40:44.469623",
+	"modified_by": "Administrator",
+	"module": "BEAM",
+	"name": "BEAM Mobile Route",
+	"owner": "Administrator",
+	"permissions": [],
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": []
+}

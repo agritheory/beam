@@ -197,7 +197,12 @@ cypress/videos
 .idea/
 
 # built BEAM files
-
 beam/www/beam/index.js
 beam/www/beam/index.js.map
 beam/www/beam/index.css
+
+# unplugin-vue-components outputs
+beam/www/beam/components.d.ts
+
+# unplugin-vue-router outputs
+beam/www/beam/typed-router.d.ts

@@ -4,7 +4,7 @@
 			<h1 class="nav-title">Workstations</h1>
 		</template>
 		<template #navbaraction>
-			<RouterLink :to="{ name: '/demand' }">Done</RouterLink>
+			<RouterLink :to="{ name: 'demand' }">Done</RouterLink>
 		</template>
 	</Navbar>
 	<ListView :items="workstations" />

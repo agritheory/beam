@@ -5,15 +5,19 @@ import { install as BeamPlugin } from '@stonecrop/beam'
 import { createPinia } from 'pinia'
 import { createApp } from 'vue'
 import { createRouter, createWebHashHistory } from 'vue-router'
+import { routes, handleHotUpdate } from 'vue-router/auto-routes'
 
 import Beam from './Beam.vue'
-import routes from './routes'
 import { useDataStore } from './store'
 
 const router = createRouter({
 	history: createWebHashHistory(),
 	routes,
 })
+
+if (import.meta.hot) {
+	handleHotUpdate(router)
+}
 
 router.beforeEach(async (to, from, next) => {
 	if (to.meta.requiresAuth) {
