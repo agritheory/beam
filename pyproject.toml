@@ -26,7 +26,7 @@ addopts = "--cov=beam --cov-report term-missing"
 line-length = 99
 
 [tool.codespell]
-skip = '*.md'
+skip = '*.md, yarn.lock'
 
 [tool.isort]
 line_length = 99

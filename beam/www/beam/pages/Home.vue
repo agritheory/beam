@@ -5,8 +5,6 @@
 </template>
 
 <script setup lang="ts">
-// get routes from server
-
 const home = [
 	{
 		label: 'Manufacture',

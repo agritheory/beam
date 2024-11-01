@@ -520,19 +520,25 @@ demand = {
 
 beam_mobile = {
 	"components": {
-		"Home": "./pages/Home.vue",
-		"Workstation": "./pages/Workstation.vue",
-		"WorkOrder": "./pages/WorkOrder.vue",
-		"Receive": "./pages/Receive.vue",
-		"Ship": "./pages/Ship.vue",
-		"Demand": "./pages/Demand.vue",
-		"Manufacture": "./pages/Manufacture.vue",
-		"Move": "./pages/Move.vue",
-		"Repack": "./pages/Repack.vue",
-		"JobCard": "./pages/JobCard.vue",
-		"Operation": "./pages/Operation.vue",
+		"Home": "./beam/beam/www/beam/pages/Home.vue",
+		"Workstation": "./beam/beam/www/beam/pages/Workstation.vue",
+		"WorkOrder": "./beam/beam/www/beam/pages/WorkOrder.vue",
+		"Receive": "./beam/beam/www/beam/pages/Receive.vue",
+		"Ship": "./beam/beam/www/beam/pages/Ship.vue",
+		"Demand": "./beam/beam/www/beam/pages/Demand.vue",
+		"Manufacture": "./beam/beam/www/beam/pages/Manufacture.vue",
+		"Move": "./beam/beam/www/beam/pages/Move.vue",
+		"Repack": "./beam/beam/www/beam/pages/Repack.vue",
+		"JobCard": "./beam/beam/www/beam/pages/JobCard.vue",
+		"Operation": "./beam/beam/www/beam/pages/Operation.vue",
 	},
 	"routes": [
+		{
+			"path": "/",
+			"name": "home",
+			"component": "Home",
+			"meta": {"requiresAuth": True, "doctype": None, "view": "list"},
+		},
 		{
 			"path": "/workstation",
 			"name": "workstation",

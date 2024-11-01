@@ -7,9 +7,10 @@
 		"url": "https://github.com/agritheory/beam.git"
 	},
 	"scripts": {
+		"dev": "vite --config=./beam/www/beam/vite.config.ts",
 		"build": "vite build --config=./beam/www/beam/vite.config.ts",
 		"build:watch": "vite build --watch --config=./beam/www/beam/vite.config.ts",
-		"register": "node ./beam/www/beam/component_resolver.ts"
+		"register": "node ./beam/www/beam/resolvers.ts"
 	},
 	"dependencies": {
 		"@stonecrop/beam": "latest",
