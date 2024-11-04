@@ -8,6 +8,8 @@ from beam.beam.doctype.beam_settings.beam_settings import create_beam_settings
 
 
 def execute(company=None):
+	frappe.reload_doc("beam", "doctype", "beam_settings")
+
 	default_config = [
 		{
 			"label": "Manufacture",

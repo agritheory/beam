@@ -40,7 +40,6 @@ def get_beam_home():
 	# apply roles
 	user = frappe.session.user
 	beam_settings = frappe.get_last_doc("BEAM Settings")
-	print("get_beam_home")
 	return beam_settings.get_beam_mobile_home_for_user(user)
 
 

@@ -3,39 +3,43 @@
 		<template #title>
 			<h2 class="nav-title">{{ companyName }}</h2>
 		</template>
-		<template #navbaraction> Log out </template>
+		<template #navbaraction>Log out</template>
 	</Navbar>
+
 	<nav>
 		<ListView :items="homeList" />
 	</nav>
 </template>
+
 <script setup lang="ts">
 import { computed, ref, onMounted } from 'vue'
+
 import { useDataStore } from '@/store'
+import type { ListViewItem } from '@/types'
 
 const store = useDataStore()
 
 const companyName = ref('')
-const home = ref([])
+const home = ref<ListViewItem[]>([])
+
+onMounted(async () => {
+	const getHome = await store.getHome()
+	home.value = getHome.data.routes
+	companyName.value = getHome.data.company
+})
 
 const homeList = computed(() => {
-	let hl = []
-	home.value.forEach(r => {
-		r.linkComponent = 'ListAnchor'
-		hl.push(r)
+	const items = []
+	home.value.forEach(item => {
+		item.linkComponent = 'ListAnchor'
+		items.push(item)
 	})
-	return hl
+	return items
 })
 
 const logout = async () => {
 	await store.logout()
 }
-
-onMounted(async () => {
-	let getHome = await store.getHome()
-	home.value = getHome.data.routes
-	companyName.value = getHome.data.company
-})
 </script>
 
 <style scoped>
