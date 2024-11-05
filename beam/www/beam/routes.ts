@@ -14,6 +14,7 @@ import Move from './pages/Move.vue'
 import Repack from './pages/Repack.vue'
 import JobCard from './pages/JobCard.vue'
 import Operation from './pages/Operation.vue'
+import DeliveryNote from './pages/DeliveryNote.vue'
 
 const routes: RouteRecordRaw[] = [
 	{
@@ -81,6 +82,12 @@ const routes: RouteRecordRaw[] = [
 		name: 'repack',
 		component: Repack,
 		meta: { requiresAuth: true, doctype: 'Stock Entry', view: 'list' },
+	},
+	{
+		path: '/delivery_note/:delivery_note/',
+		name: 'delivery_note',
+		component: DeliveryNote,
+		meta: { requiresAuth: true, doctype: 'Delivery Note', view: 'form' },
 	},
 ]
 

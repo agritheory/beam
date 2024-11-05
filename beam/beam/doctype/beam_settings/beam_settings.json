@@ -10,11 +10,14 @@
 		"company",
 		"barcode_font_size",
 		"enable_handling_units",
+		"ignore_drop_shipped_items",
 		"column_break_twrc",
 		"receiving_workstation",
 		"shipping_workstation",
 		"demand_tab",
-		"warehouse_types"
+		"warehouse_types",
+		"mobile_tab",
+		"routes"
 	],
 	"fields": [
 		{
@@ -35,11 +38,16 @@
 			"label": "Enable Handling Units"
 		},
 		{
+			"default": "0",
+			"fieldname": "ignore_drop_shipped_items",
+			"fieldtype": "Check",
+			"label": "Ignore Drop Shipped Items in Demand"
+		},
+		{
 			"default": "12",
 			"fieldname": "barcode_font_size",
 			"fieldtype": "Int",
-			"label": "Barcode Font Size",
-			"default": "12"
+			"label": "Barcode Font Size"
 		},
 		{
 			"description": "These Warehouse Types will be excluded when checking for inventory availability",
@@ -73,11 +81,21 @@
 			"fieldname": "demand_tab",
 			"fieldtype": "Tab Break",
 			"label": "Demand"
+		},
+		{
+			"fieldname": "mobile_tab",
+			"fieldtype": "Tab Break",
+			"label": "Mobile"
+		},
+		{
+			"fieldname": "routes",
+			"fieldtype": "Table",
+			"options": "BEAM Mobile Route"
 		}
 	],
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2024-08-21 15:23:36.892295",
+	"modified": "2024-11-01 09:35:08.451907",
 	"modified_by": "Administrator",
 	"module": "BEAM",
 	"name": "BEAM Settings",

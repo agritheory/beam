@@ -1,10 +1,10 @@
 exclude: 'node_modules|.git'
-default_stages: [commit]
+default_stages: [prepare-commit-msg, pre-commit]
 fail_fast: false
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v5.0.0
     hooks:
       - id: trailing-whitespace
         files: 'beam.*'
@@ -20,12 +20,12 @@ repos:
       - id: debug-statements
 
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.17.0
+    rev: v3.19.0
     hooks:
       - id: pyupgrade
         args: ['--py310-plus']
 
-  - repo: https://github.com/frappe/black
+  - repo: https://github.com/agritheory/black
     rev: 951ccf4d5bb0d692b457a5ebc4215d755618eb68
     hooks:
       - id: black
@@ -36,13 +36,8 @@ repos:
       - id: autoflake
         args: [--remove-all-unused-imports, --in-place]
 
-  - repo: https://github.com/PyCQA/isort
-    rev: 5.13.2
-    hooks:
-      - id: isort
-
   - repo: https://github.com/PyCQA/flake8
-    rev: 7.1.0
+    rev: 7.1.1
     hooks:
       - id: flake8
         additional_dependencies: ['flake8-bugbear']
@@ -55,7 +50,7 @@ repos:
           - tomli
 
   - repo: https://github.com/agritheory/test_utils
-    rev: v0.16.0
+    rev: v0.16.1
     hooks:
       - id: update_pre_commit_config
       - id: validate_copyright

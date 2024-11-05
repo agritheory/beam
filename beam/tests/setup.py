@@ -5,6 +5,10 @@ import datetime
 from itertools import groupby
 
 import frappe
+from erpnext.buying.doctype.purchase_order.purchase_order import (
+	make_purchase_invoice,
+	make_purchase_receipt,
+)
 from erpnext.manufacturing.doctype.production_plan.production_plan import (
 	get_items_for_material_requests,
 )
@@ -13,7 +17,16 @@ from erpnext.setup.utils import enable_all_roles_and_domains, set_defaults_for_t
 from erpnext.stock.get_item_details import get_item_details
 from frappe.desk.page.setup_wizard.setup_wizard import setup_complete
 
-from beam.tests.fixtures import boms, customers, items, operations, suppliers, workstations
+from beam.patches.v15.setup_beam_mobile_settings import execute as setup_beam_mobile_settings
+from beam.tests.fixtures import (
+	boms,
+	customers,
+	employees,
+	items,
+	operations,
+	suppliers,
+	workstations,
+)
 
 
 def before_test():
@@ -41,12 +54,10 @@ def before_test():
 	enable_all_roles_and_domains()
 	set_defaults_for_tests()
 	frappe.db.commit()
-	create_test_data()
 	for modu in frappe.get_all("Module Onboarding"):
 		frappe.db.set_value("Module Onboarding", modu, "is_complete", 1)
 	frappe.set_value("Website Settings", "Website Settings", "home_page", "login")
-	frappe.db.commit()
-	# build_demand_allocation_map()
+	create_test_data()
 
 
 def create_test_data():
@@ -85,6 +96,7 @@ def create_test_data():
 	create_item_groups(settings)
 	create_suppliers(settings)
 	create_customers(settings)
+	create_employees(settings)
 	create_items(settings)
 	create_boms(settings)
 	prod_plan_from_doc = "Sales Order"
@@ -95,6 +107,7 @@ def create_test_data():
 	create_production_plan(settings, prod_plan_from_doc)
 	create_purchase_receipt_for_received_qty_test(settings)
 	create_network_printer_settings(settings)
+	setup_beam_mobile_settings(settings.company)
 
 
 def create_suppliers(settings):
@@ -612,36 +625,40 @@ def create_production_plan(settings, prod_plan_from_doc):
 		sorted((m for m in mr.items if m.supplier), key=lambda d: d.supplier),
 		lambda x: x.get("supplier"),
 	):
-		items = list(_items)
 		if supplier == "No Supplier":
-			# make a stock entry here?
 			continue
-		if supplier == "Freedom Provisions":
-			pr = frappe.new_doc("Purchase Invoice")
-			pr.update_stock = True
-		else:
-			pr = frappe.new_doc("Purchase Receipt")
-		pr.company = settings.company
-		pr.supplier = supplier
-		pr.posting_date = settings.day
-		pr.set_posting_time = True
-		pr.buying_price_list = "Bakery Buying"
+		items = list(_items)
+		po = frappe.new_doc("Purchase Order")
+		po.company = settings.company
+		po.supplier = supplier
+		po.transaction_date = po.schedule_date = settings.day
+		po.buying_price_list = "Bakery Buying"
 		for item in items:
 			item_details = get_item_details(
 				{
 					"item_code": item.item_code,
 					"qty": item.qty,
-					"supplier": pr.supplier,
-					"company": pr.company,
-					"doctype": pr.doctype,
-					"currency": pr.currency,
-					"buying_price_list": pr.buying_price_list,
+					"supplier": po.supplier,
+					"company": po.company,
+					"doctype": po.doctype,
+					"currency": po.currency,
+					"buying_price_list": po.buying_price_list,
 				}
 			)
-			pr.append("items", {**item_details})
+			po.append("items", {**item_details})
+		po.save()
+		po.submit()
+
+		if supplier == "Freedom Provisions":
+			pr = make_purchase_invoice(po.name)
+			pr.update_stock = True
+		else:
+			pr = make_purchase_receipt(po.name)
+
+		pr.set_posting_time = True
+		pr.posting_date = settings.day
 		pr.save()
 		# pr.submit() # don't submit - needed to test handling unit generation
-	# TODO: call internal functions to make sub assembly items first
 
 	wo_list, po_list = [], []
 	subcontracted_po = {}
@@ -722,3 +739,44 @@ def create_network_printer_settings(settings):
 			nps.port = ps["port"]
 			nps.printer_name = ps["name"]
 			nps.save()
+
+
+def create_employees(settings, only_create=None):
+	for employee in employees:
+		if only_create and employee.get("employee_name") not in only_create:
+			continue
+
+		if frappe.db.exists("Employee", {"employee_name": employee.get("employee_name")}):
+			continue
+
+		if not frappe.db.exists("Designation", employee.get("designation")):
+			desg = frappe.new_doc("Designation")
+			desg.designation_name = employee.get("designation")
+			desg.save()
+
+		empl = frappe.new_doc("Employee")
+		name = employee.pop("name")
+		empl.first_name = name.split(" ")[0]
+		empl.last_name = name.split(" ")[1]
+		empl.update(employee)
+		empl.reports_to = None
+		if settings.company:
+			empl.company = settings.company
+		empl.save()
+
+		user = frappe.new_doc("User")
+		user.email = f"{empl.first_name[0].lower()}{empl.last_name.lower()}@cfc.co"
+		user.first_name = empl.first_name
+		user.last_name = empl.last_name
+		user.send_welcome_email = 0
+		user.enabled = 1
+		user.language = settings.language
+		user.time_zone = settings.time_zone
+		for r in employee.get("roles", []):
+			user.append("roles", {"role": r})
+
+		user.save()
+		empl.user_id = user.email
+		if employee.get("reports_to"):
+			empl.reports_to = frappe.get_value("Employee", {"employee_name": employee.get("reports_to")})
+		empl.save()

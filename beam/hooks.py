@@ -43,7 +43,7 @@ doctype_js = {"Stock Entry": "public/js/stock_entry_custom.js"}
 
 # website user home page (by Role)
 # role_home_page = {
-# 	"Role": "home_page"
+# 	"BEAM Mobile User": "/beam/"
 # }
 
 # Generators
@@ -122,14 +122,7 @@ doc_events = {
 	# 	"Sales Invoice",
 	# 	"Delivery Note",
 	# ): {"validate": ["beam.beam.handling_unit.validate_handling_unit_overconsumption"]},
-	(
-		"Delivery Note",
-		"Purchase Invoice",
-		"Purchase Receipt",
-		"Sales Invoice",
-		"Stock Entry",
-		"Stock Reconciliation",
-	): {
+	("Delivery Note", "Purchase Receipt", "Sales Invoice", "Stock Entry", "Stock Reconciliation",): {
 		"on_submit": ["beam.beam.demand.demand.modify_allocations"],
 		"on_cancel": ["beam.beam.demand.demand.modify_allocations"],
 	},
@@ -145,6 +138,20 @@ doc_events = {
 	("Sales Order", "Work Order"): {
 		"on_submit": ["beam.beam.demand.demand.modify_demand"],
 		"on_cancel": ["beam.beam.demand.demand.modify_demand"],
+	},
+	"Purchase Order": {
+		"on_submit": ["beam.beam.demand.receiving.modify_receiving"],
+		"on_cancel": ["beam.beam.demand.receiving.modify_receiving"],
+	},
+	"Purchase Invoice": {
+		"on_submit": [
+			"beam.beam.demand.receiving.modify_receiving",
+			"beam.beam.demand.demand.modify_allocations",
+		],
+		"on_cancel": [
+			"beam.beam.demand.receiving.modify_receiving",
+			"beam.beam.demand.demand.modify_allocations",
+		],
 	},
 }
 
@@ -233,9 +240,7 @@ doc_events = {
 # Authentication and authorization
 # --------------------------------
 
-# auth_hooks = [
-# 	"beam.auth.validate"
-# ]
+auth_hooks = ["beam.beam.boot.redirect_to_beam"]
 
 demand = {
 	"Delivery Note": {
@@ -508,4 +513,89 @@ demand = {
 			}
 		],
 	},
+}
+
+
+beam_mobile = {
+	"components": {
+		"Home": "./beam/beam/www/beam/pages/Home.vue",
+		"Workstation": "./beam/beam/www/beam/pages/Workstation.vue",
+		"WorkOrder": "./beam/beam/www/beam/pages/WorkOrder.vue",
+		"Receive": "./beam/beam/www/beam/pages/Receive.vue",
+		"Ship": "./beam/beam/www/beam/pages/Ship.vue",
+		"Demand": "./beam/beam/www/beam/pages/Demand.vue",
+		"Manufacture": "./beam/beam/www/beam/pages/Manufacture.vue",
+		"Move": "./beam/beam/www/beam/pages/Move.vue",
+		"Repack": "./beam/beam/www/beam/pages/Repack.vue",
+		"JobCard": "./beam/beam/www/beam/pages/JobCard.vue",
+		"Operation": "./beam/beam/www/beam/pages/Operation.vue",
+	},
+	"routes": [
+		{
+			"path": "/",
+			"name": "home",
+			"component": "Home",
+			"meta": {"requiresAuth": True, "doctype": None, "view": "list"},
+		},
+		{
+			"path": "/workstation",
+			"name": "workstation",
+			"component": "Workstation",
+			"meta": {"requiresAuth": True, "doctype": "Workstation", "view": "list"},
+		},
+		{
+			"path": "/work_order/:orderId/",
+			"name": "work_order",
+			"component": "WorkOrder",
+			"meta": {"requiresAuth": True, "doctype": "Work Order", "view": "form"},
+		},
+		{
+			"path": "/job_card/:orderId/",
+			"name": "job_card",
+			"component": "JobCard",
+			"meta": {"requiresAuth": True, "doctype": "Work Order", "view": "form"},
+		},
+		{
+			"path": "/work_order/:orderId/operation/:id",
+			"name": "operation",
+			"component": "Operation",
+			"meta": {"requiresAuth": True, "doctype": "Work Order", "view": "form"},
+		},
+		{
+			"path": "/receive",
+			"name": "receive",
+			"component": "Receive",
+			"meta": {"requiresAuth": True, "doctype": "Purchase Receipt", "view": "list"},
+		},
+		{
+			"path": "/ship",
+			"name": "ship",
+			"component": "Ship",
+			"meta": {"requiresAuth": True, "doctype": "Delivery Note", "view": "list"},
+		},
+		{
+			"path": "/demand",
+			"name": "demand",
+			"component": "Demand",
+			"meta": {"requiresAuth": True, "doctype": "Stock Entry", "view": "list"},
+		},
+		{
+			"path": "/move",
+			"name": "move",
+			"component": "Move",
+			"meta": {"requiresAuth": True, "doctype": "Stock Entry", "view": "list"},
+		},
+		{
+			"path": "/manufacture",
+			"name": "manufacture",
+			"component": "Manufacture",
+			"meta": {"requiresAuth": True, "doctype": "Work Order", "view": "list"},
+		},
+		{
+			"path": "/repack",
+			"name": "repack",
+			"component": "Repack",
+			"meta": {"requiresAuth": True, "doctype": "Stock Entry", "view": "list"},
+		},
+	],
 }

@@ -2,9 +2,9 @@
 	<div class="control-buttons">
 		<button class="btn" @click="onAmend" v-if="docstatus === 2">Amend</button>
 		<template v-else>
-			<button class="btn" @click="onSave" :disabled="!(docstatus === 0 && doctypeName === '')">Save</button>
-			<button class="btn" @click="onSubmit" :disabled="!(docstatus === 0 && doctypeName !== '')">Submit</button>
-			<button class="btn" @click="onCancel" :disabled="docstatus !== 1">Cancel</button>
+			<button class="beam_btn" @click="onSave" :disabled="!(docstatus === 0 && doctypeName === '')">Save</button>
+			<button class="beam_btn" @click="onSubmit" :disabled="!(docstatus === 0 && doctypeName !== '')">Submit</button>
+			<button class="beam_btn" @click="onCancel" :disabled="docstatus !== 1">Cancel</button>
 		</template>
 	</div>
 </template>
@@ -61,8 +61,18 @@ const onAmend = () => {
 
 <style scoped>
 .control-buttons {
-	display: flex;
-	justify-content: flex-end;
-	gap: 1rem;
+	background: white; /* change to variable */
+	width: 100%;
+	display: inline-grid;
+	grid-template-columns: repeat(3, 1fr [col-start]);
+	column-gap: 1ch;
+	padding-left: 1ch;
+	padding-right: 1ch;
+	position: fixed;
+	bottom: 0;
+	margin-bottom: 0.5rem;
 }
+/* .control-buttons button {
+
+} */
 </style>

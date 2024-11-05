@@ -6,6 +6,7 @@ import { computed, ref, watch } from 'vue'
 import { type RouteLocationNormalized, useRoute } from 'vue-router'
 
 import type {
+	BeamHome,
 	FormContext,
 	JobCard,
 	ListContext,
@@ -37,18 +38,20 @@ export const useDataStore = defineStore('data', () => {
 	watch(route, async () => await init())
 
 	const init = async (currentRoute?: RouteLocationNormalized) => {
-		await setConfig()
+		await getScanDoctypes()
 		await setForm(currentRoute || route)
 		await setScanContext(currentRoute || route)
 	}
 
-	const setConfig = async () => {
-		if (!Object.keys(config.value).length) {
-			config.value = await frappe.xcall('beam.beam.scan.config.get_scan_doctypes')
-		}
+	const getScanDoctypes = async (params?: Record<string, any>) => {
+		const url = '/api/method/beam.beam.scan.config.get_scan_doctypes'
+		const response = await get(url, params)
+		const { message }: { message: ScanConfig } = await response.json()
+		config.value = message
+		return { data: message }
 	}
 
-	// TODO: somehow vue-router's composables are not working as intended here, so accepting route input
+	// TODO: somehow vue-router's composable is not working as intended here, so accepting route input
 	const setForm = async (currentRoute: RouteLocationNormalized) => {
 		const meta = currentRoute.meta
 		form.value = {}
@@ -125,9 +128,24 @@ export const useDataStore = defineStore('data', () => {
 		return data
 	}
 
+	const getHome = async (params?: Record<string, any>) => {
+		const url = '/api/method/beam.beam.doctype.beam_settings.beam_settings.get_beam_home'
+		const response = await get(url, params)
+		const { message }: { message: BeamHome } = await response.json()
+		return { data: message }
+	}
+
 	const getDemand = async (params?: Record<string, any>) => {
 		// automatically fetch all pages of demand data based on parameters
 		const url = '/api/method/beam.beam.demand.demand.get_demand'
+		const response = await get(url, params)
+		const { message } = await response.json()
+		return { data: message }
+	}
+
+	const getReceiving = async (params?: Record<string, any>) => {
+		// automatically fetch all pages of demand data based on parameters
+		const url = '/api/method/beam.beam.demand.receiving.get_receiving_demand'
 		const response = await get(url, params)
 		const { message } = await response.json()
 		return { data: message }
@@ -191,6 +209,12 @@ export const useDataStore = defineStore('data', () => {
 		return message
 	}
 
+	const logout = async () => {
+		const url = '/api/method/logout'
+		await get(url)
+		window.location.href = '/login?redirect-to=/beam#'
+	}
+
 	return {
 		// state
 		config,
@@ -217,8 +241,11 @@ export const useDataStore = defineStore('data', () => {
 		// other api actions
 		getAll,
 		getDemand,
+		getHome,
 		getMappedStockEntry,
 		getOne,
+		getReceiving,
+		logout,
 		scan,
 	}
 })

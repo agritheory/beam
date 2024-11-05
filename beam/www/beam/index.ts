@@ -5,14 +5,12 @@ import { install as BeamPlugin } from '@stonecrop/beam'
 import { createPinia } from 'pinia'
 import { createApp } from 'vue'
 import { createRouter, createWebHashHistory } from 'vue-router'
+import { routes, handleHotUpdate } from 'vue-router/auto-routes'
 
 import Beam from './Beam.vue'
-import routes from './routes'
 import { useDataStore } from './store'
+import { FrappeWindow } from './types/index.js'
 
-interface FrappeWindow extends Window {
-	frappe: any
-}
 declare const window: FrappeWindow
 
 const router = createRouter({
@@ -20,28 +18,27 @@ const router = createRouter({
 	routes,
 })
 
+if (import.meta.hot) {
+	handleHotUpdate(router)
+}
+
 router.beforeEach(async (to, from, next) => {
-	if (!window.frappe) {
-		// dev environment; simply proceed with path
-		next()
-	} else {
-		if (to.meta.requiresAuth) {
-			if (window.frappe.user === 'Guest') {
-				next(false)
-				// TODO: 6 Sep, 2024: tried redirecting to intended path, but Frappe
-				// ignores everything after the hash
-				window.location.href = '/login?redirect-to=/beam#'
-			} else {
-				const store = useDataStore()
-				await store.init(to)
-				next()
-			}
+	if (to.meta.requiresAuth) {
+		if (window.frappe.user === 'Guest') {
+			next(false)
+			// TODO: 6 Sep, 2024: tried redirecting to intended path, but Frappe
+			// ignores everything after the hash
+			window.location.href = '/login?redirect-to=/beam#'
 		} else {
-			// assuming user is logged in and authenticated for all Beam views
 			const store = useDataStore()
 			await store.init(to)
 			next()
 		}
+	} else {
+		// assuming user is logged in and authenticated for all Beam views
+		const store = useDataStore()
+		await store.init(to)
+		next()
 	}
 })
 

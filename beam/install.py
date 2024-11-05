@@ -7,8 +7,18 @@ import frappe
 from frappe.utils import get_site_path
 
 from beam.beam.demand.demand import build_demand_allocation_map
+from beam.beam.demand.receiving import reset_build_receiving_map
 from beam.beam.scan.config import get_scan_doctypes
 from beam.customize import load_customizations
+from beam.patches.v15.setup_beam_mobile_settings import execute
+
+
+def create_beam_mobile_user_role():
+	if not frappe.db.exists("Role", "BEAM Mobile User"):
+		role = frappe.get_doc(
+			{"doctype": "Role", "role_name": "BEAM Mobile User", "desk_access": 0, "home_page": "/beam"}
+		)
+		role.insert(ignore_permissions=True)
 
 
 def after_install():
@@ -51,3 +61,6 @@ def after_install():
 	print("Setting up demand database")
 	pathlib.Path(f"{get_site_path()}/demand.db").unlink(missing_ok=True)
 	build_demand_allocation_map()
+	reset_build_receiving_map()
+	create_beam_mobile_user_role()
+	execute()

@@ -1,10 +1,12 @@
 <template>
+	<ListView :items="listItems" :key="componentKey" />
+	<div class="begin" v-if="listItems.length == 0">
+		<span>Scan to Begin</span>
+	</div>
 	<ControlButtons
 		:onCreate="create"
 		:onSubmit="() => store.submit<StockEntry>('Stock Entry', stockEntryId)"
 		:onCancel="() => store.cancel<StockEntry>('Stock Entry', stockEntryId)" />
-
-	<ListView :items="listItems" :key="componentKey" />
 </template>
 
 <script setup lang="ts">
@@ -55,3 +57,11 @@ const create = async () => {
 	return { data, exception, response }
 }
 </script>
+
+<style scoped>
+.begin {
+	width: 100%;
+	text-align: center;
+	font-size: 150%;
+}
+</style>

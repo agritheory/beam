@@ -3,7 +3,9 @@
 		<template #title>
 			<h1 class="nav-title">Ship</h1>
 		</template>
-		<template #navbaraction>Home</template>
+		<template #navbaraction>
+			<RouterLink :to="{ name: 'home' }">Home</RouterLink>
+		</template>
 	</Navbar>
 	<ListView :items="items" />
 </template>
@@ -26,10 +28,16 @@ onMounted(async () => {
 		row.label = `${row.doctype} - ${row.parent}`
 		row.linkComponent = 'ListAnchor'
 		row.description = `${row.item_code} - ${row.warehouse}`
-		row.route = `#/${row.doctype}/${row.parent}`
+		row.route = `#/Delivery Note/new-delivery-note` // or draft delivery note if it exists
 		items.value.push(row)
 	})
 })
+
+function newDeliveryNote(so) {
+	// match save and name API
+	// return document name
+	return so // not correct
+}
 
 const handlePrimaryAction = () => {}
 </script>

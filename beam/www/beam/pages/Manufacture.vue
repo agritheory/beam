@@ -1,9 +1,11 @@
 <template>
-	<Navbar @click="handlePrimaryAction">
+	<Navbar>
 		<template #title>
 			<h1 class="nav-title">Manufacture</h1>
 		</template>
-		<template #navbaraction>Home</template>
+		<template #navbaraction>
+			<RouterLink :to="{ name: 'home' }">Home</RouterLink>
+		</template>
 	</Navbar>
 	<ListView :items="items" />
 </template>
@@ -13,6 +15,8 @@ import { onMounted, ref } from 'vue'
 
 import { useDataStore } from '@/store'
 import type { ListViewItem, WorkOrder } from '@/types'
+
+declare const frappe: any
 
 const items = ref<ListViewItem[]>([])
 const store = useDataStore()
@@ -24,25 +28,28 @@ onMounted(async () => {
 	})
 
 	orders.forEach(row => {
-		const order = row.name?.split("-").pop()
 		const plannedDate = new Date(row.planned_start_date)
-		let formattedDate = ""
-		if (!isNaN(plannedDate.getTime())) formattedDate = plannedDate.toISOString().split('T')[0]
+		let formattedDate = ''
+		if (!isNaN(plannedDate.getTime())) {
+			formattedDate = plannedDate.toLocaleString(frappe.boot.time_zone, {
+				year: 'numeric',
+				month: 'numeric',
+				day: 'numeric',
+				hour: '2-digit',
+				minute: '2-digit',
+			})
+		}
 
 		items.value.push({
 			...row,
-			label: `${order} - ${row.item_name}`,
-			description: formattedDate,
+			label: `${row.name} - ${row.item_name}`,
+			description: `Start: ${formattedDate}`,
 			count: { count: row.produced_qty, of: row.qty },
 			linkComponent: 'ListAnchor',
 			route: `#/work_order/${row.name}`,
 		})
 	})
 })
-
-const handlePrimaryAction = () => {
-	console.log('handle primary action')
-}
 </script>
 
 <style>

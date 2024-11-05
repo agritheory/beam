@@ -5,8 +5,13 @@ from collections import deque
 from typing import TYPE_CHECKING, Any, Optional, Union
 
 import frappe
+from frappe.query_builder import Criterion, DocType, Field
+from frappe.query_builder.custom import ConstantColumn
 from frappe.utils.data import flt
 from frappe.utils.nestedset import get_descendants_of
+from pypika import Query, Table
+from pypika import functions as fn
+from pypika.terms import Order, ValueWrapper
 
 from beam.beam.demand.sqlite import get_demand_db, reset_demand_db
 from beam.beam.demand.utils import (
@@ -63,126 +68,123 @@ def get_qty_from_sle(item_code: str, warehouse: str | None = None, company: str 
 def get_manufacturing_demand(
 	name: str | None = None, item_code: str | None = None
 ) -> list[Demand]:
-	manufacturing_demand = []
 
-	if name:
-		filters = {"docstatus": 1, "status": "Not Started", "name": name}
-	else:
-		filters = {"docstatus": 1, "status": "Not Started"}
+	WorkOrder = DocType("Work Order")
+	WorkOrderItem = DocType("Work Order Item")
+	WorkOrderOperation = DocType("Work Order Operation")
+	Item = DocType("Item")
 
-	pending_work_orders = frappe.get_all(
-		"Work Order",
-		filters=filters,
-		fields=["name", "company", "wip_warehouse", "planned_start_date", "creation"],
-		order_by="planned_start_date ASC, creation ASC",
+	workstation_subquery = (
+		frappe.qb.from_(WorkOrderOperation)
+		.select(WorkOrderOperation.workstation)
+		.where(WorkOrderOperation.parent == WorkOrder.name)
+		.orderby(WorkOrderOperation.idx)
+		.limit(1)
 	)
 
-	for work_order in pending_work_orders:
-		if item_code:
-			filters = {"parent": work_order.name, "item_code": item_code}
-		else:
-			filters = {"parent": work_order.name}
+	total_required_qty = Field("required_qty") - Field("transferred_qty")
 
-		work_order_items = frappe.get_all(
-			"Work Order Item",
-			filters=filters,
-			fields=["name", "item_code", "required_qty", "transferred_qty", "idx"],
-			order_by="idx ASC",
+	work_order_query = (
+		frappe.qb.from_(WorkOrder)
+		.join(WorkOrderItem)
+		.on(WorkOrder.name == WorkOrderItem.parent)
+		.left_join(Item)
+		.on(Item.item_code == WorkOrderItem.item_code)
+		.select(
+			ConstantColumn("Work Order").as_("doctype"),
+			WorkOrder.name.as_("parent"),
+			WorkOrder.company,
+			WorkOrder.wip_warehouse.as_("warehouse"),
+			(workstation_subquery.as_("workstation")),
+			WorkOrderItem.name.as_("name"),
+			WorkOrderItem.idx,
+			WorkOrderItem.item_code,
+			WorkOrder.planned_start_date.as_("delivery_date"),
+			(total_required_qty).as_("total_required_qty"),
+			Item.stock_uom,
+			WorkOrder.creation,
 		)
-		workstation = frappe.get_all(
-			"Work Order Operation",
-			filters={"parent": work_order.name},
-			fields=["workstation"],
-			order_by="idx ASC",
+		.where(
+			(WorkOrder.docstatus == 1)
+			& (WorkOrder.status == "Not Started")
+			& (WorkOrderItem.required_qty > WorkOrderItem.transferred_qty)
 		)
-		workstation = workstation[0].get("workstation") if workstation else None
+		.orderby(WorkOrder.planned_start_date, WorkOrder.creation, WorkOrderItem.idx)
+	)
 
-		for item in work_order_items:
-			if item.transferred_qty - item.required_qty >= 0:
-				continue
+	if name:
+		work_order_query = work_order_query.where(WorkOrder.name == name)
 
-			manufacturing_demand.append(
-				frappe._dict(
-					{
-						"doctype": "Work Order",
-						"parent": work_order.name,
-						"company": work_order.company,
-						"warehouse": work_order.wip_warehouse,
-						"workstation": workstation or "",
-						"name": item.name,
-						"idx": item.idx,
-						"item_code": item.item_code,
-						"delivery_date": work_order.planned_start_date,
-						"total_required_qty": item.required_qty - item.transferred_qty,
-						"stock_uom": frappe.db.get_value("Item", item.item_code, "stock_uom"),
-						"creation": work_order.creation,
-					}
-				)
-			)
+	if item_code:
+		work_order_query = work_order_query.where(WorkOrderItem.item_code == item_code)
 
-	return manufacturing_demand
+	return work_order_query.run(as_dict=True)
 
 
 def get_sales_demand(name: str | None = None, item_code: str | None = None) -> list[Demand]:
-	sales_demand = []
+	SalesOrder = DocType("Sales Order")
+	SalesOrderItem = DocType("Sales Order Item")
+	Item = DocType("Item")
+	BEAMSettings = DocType("BEAM Settings")
+
 	default_fg_warehouse = frappe.db.get_single_value(
 		"Manufacturing Settings", "default_fg_warehouse"
 	)
 
-	if name:
-		filters = {"docstatus": 1, "status": ["!=", "Closed"], "name": name}
-	else:
-		filters = {"docstatus": 1, "status": ["!=", "Closed"]}
+	total_required_qty = Field("stock_qty") - Field("delivered_qty")
 
-	sales_orders = frappe.get_all(
-		"Sales Order",
-		filters=filters,
-		fields=["name", "company", "delivery_date", "creation"],
-		order_by="delivery_date ASC, creation ASC, name ASC",
+	sales_order_query = (
+		frappe.qb.from_(SalesOrder)
+		.join(SalesOrderItem)
+		.on(SalesOrder.name == SalesOrderItem.parent)
+		.left_join(Item)
+		.on(Item.item_code == SalesOrderItem.item_code)
+		.left_join(BEAMSettings)
+		.on(BEAMSettings.company == SalesOrder.company)
+		.select(
+			ConstantColumn("Sales Order").as_("doctype"),
+			SalesOrder.name.as_("parent"),
+			SalesOrder.company,
+			ConstantColumn(default_fg_warehouse).as_("warehouse"),
+			(BEAMSettings.shipping_workstation).as_("workstation"),
+			SalesOrderItem.name.as_("name"),
+			SalesOrderItem.idx,
+			SalesOrderItem.item_code,
+			SalesOrder.delivery_date,
+			(total_required_qty).as_("total_required_qty"),
+			Item.stock_uom,
+			SalesOrder.creation,
+		)
+		.where(
+			(SalesOrder.docstatus == 1)
+			& (SalesOrder.status != "Closed")
+			& (SalesOrderItem.stock_qty > SalesOrderItem.delivered_qty)
+		)
+		.where(
+			Criterion.any(
+				[
+					(
+						(BEAMSettings.ignore_drop_shipped_items.isnull())
+						| (BEAMSettings.ignore_drop_shipped_items == 0)
+					),
+					(
+						(BEAMSettings.ignore_drop_shipped_items.notnull())
+						& (BEAMSettings.ignore_drop_shipped_items == 1)
+						& (SalesOrderItem.delivered_by_supplier != 1)
+					),
+				]
+			)
+		)
+		.orderby(SalesOrder.delivery_date, SalesOrder.creation, SalesOrderItem.idx)
 	)
 
-	shipping_workstations = {
-		s.company: s.shipping_workstation
-		for s in frappe.get_all("BEAM Settings", ["company", "shipping_workstation"])
-	}
+	if name:
+		sales_order_query = sales_order_query.where(SalesOrder.name == name)
 
-	for sales_order in sales_orders:
-		if item_code:
-			filters = {"parent": sales_order.name, "item_code": item_code}
-		else:
-			filters = {"parent": sales_order.name}
+	if item_code:
+		sales_order_query = sales_order_query.where(SalesOrderItem.item_code == item_code)
 
-		sales_order_items = frappe.get_all(
-			"Sales Order Item",
-			filters=filters,
-			fields=["name", "item_code", "stock_qty", "delivered_qty", "idx"],
-			order_by="delivery_date, idx ASC",
-		)
-
-		for item in sales_order_items:
-			if item.stock_qty - item.delivered_qty <= 0:
-				continue
-
-			sales_demand.append(
-				frappe._dict(
-					{
-						"doctype": "Sales Order",
-						"parent": sales_order.name,
-						"company": sales_order.company,
-						"warehouse": default_fg_warehouse,
-						"workstation": shipping_workstations.get(sales_order.company) or "",
-						"name": item.name,
-						"idx": item.idx,
-						"item_code": item.item_code,
-						"delivery_date": sales_order.delivery_date,
-						"total_required_qty": item.stock_qty - item.delivered_qty,
-						"stock_uom": frappe.db.get_value("Item", item.item_code, "stock_uom"),
-						"creation": sales_order.creation,
-					}
-				)
-			)
-
-	return sales_demand
+	return sales_order_query.run(as_dict=True)
 
 
 def build_demand_allocation_map() -> None:
@@ -195,13 +197,18 @@ def get_demand_list(name: str | None = None, item_code: str | None = None) -> li
 	if name:
 		with get_demand_db() as conn:
 			cursor = conn.cursor()
+			demand_table = Table("demand")
 
 			if item_code:
-				demand_query = cursor.execute(
-					f"SELECT * FROM demand WHERE parent = '{name}' AND item_code = '{item_code}'"
+				demand_query = (
+					Query.from_(demand_table)
+					.select("*")
+					.where((demand_table.parent == name) & (demand_table.item_code == item_code))
 				)
 			else:
-				demand_query = cursor.execute(f"SELECT * FROM demand WHERE parent = '{name}'")
+				demand_query = Query.from_(demand_table).select("*").where(demand_table.parent == name)
+
+			demand_query = cursor.execute(demand_query.get_sql())
 
 			sales_demand: list[Demand] = demand_query.fetchall()
 			if sales_demand:
@@ -218,7 +225,7 @@ def build_demand_map(
 	output: list[Demand] = []
 
 	for row in get_demand_list(name, item_code):
-		row.key = row.key or frappe.generate_hash()
+		row.key = row.get("key") or frappe.generate_hash()
 		row.delivery_date = str(row.delivery_date or get_epoch_from_datetime(row.delivery_date))
 		row.creation = str(row.creation or get_epoch_from_datetime(row.creation))
 		row.total_required_qty = str(row.total_required_qty)
@@ -235,14 +242,11 @@ def build_demand_map(
 
 
 def insert_demand(output: list[Demand], cursor: "Cursor") -> None:
+	demand_table = Table("demand")
 	for row in output:
-		demand_row = {}
-		for key, value in row.items():
-			if value:
-				demand_row[key] = value
-		keys = "', '".join(demand_row.keys())
-		values = "', '".join(demand_row.values())
-		cursor.execute(f"INSERT INTO demand ('{keys}') VALUES ('{values}')")
+		demand_row = {key: value for key, value in row.items() if value}
+		insert_query = Query.into(demand_table).columns(*demand_row.keys()).insert(*demand_row.values())
+		cursor.execute(insert_query.get_sql())
 
 
 def modify_demand(doc: Union["SalesOrder", "WorkOrder"], method: str | None = None) -> None:
@@ -254,9 +258,10 @@ def modify_demand(doc: Union["SalesOrder", "WorkOrder"], method: str | None = No
 
 def get_allocation_list(name: str) -> list[Allocation]:
 	with get_demand_db() as conn:
+		allocation_table = Table("allocation")
 		cursor = conn.cursor()
-		query = f"SELECT * FROM allocation WHERE parent = '{name}'"
-		return cursor.execute(query).fetchall()
+		query = Query.from_(allocation_table).select("*").where(allocation_table.parent == name)
+		return cursor.execute(query.get_sql()).fetchall()
 
 
 def add_demand_allocation(name: str) -> None:
@@ -266,16 +271,23 @@ def add_demand_allocation(name: str) -> None:
 
 def remove_demand_allocation(name: str) -> None:
 	with get_demand_db() as conn:
+		allocation_table = Table("allocation")
+		demand_table = Table("demand")
 		cursor = conn.cursor()
+
 		# remove all allocated row(s)
 		allocations = get_allocation_list(name)
 		for allocation in allocations:
-			cursor.execute(f"DELETE FROM allocation WHERE key = '{allocation.key}'")
+			delete_query = (
+				Query.from_(allocation_table).delete().where(allocation_table.key == allocation.key)
+			)
+			cursor.execute(delete_query.get_sql())
 
 		# remove all demand row(s)
 		demand = get_demand_list(name)
 		for row in demand:
-			cursor.execute(f"DELETE FROM demand WHERE key = '{row.key}'")
+			delete_query = Query.from_(demand_table).delete().where(demand_table.key == row.key)
+			cursor.execute(delete_query.get_sql())
 
 
 def build_allocation_map(
@@ -307,29 +319,35 @@ def get_demand_query(
 		None,
 	] = None,
 ):
-	item_filter = f"WHERE item_code = '{row.item_code}'" if row else ""
+	demand_table = Table("demand")
+	allocation_table = Table("allocation")
+
+	query = (
+		Query.from_(demand_table)
+		.select(
+			demand_table.star,
+			fn.Coalesce(fn.Sum(allocation_table.allocated_qty), 0).as_("allocated_qty"),
+			(demand_table.total_required_qty - fn.Coalesce(fn.Sum(allocation_table.allocated_qty), 0)).as_(
+				"net_required_qty"
+			),
+		)
+		.left_join(allocation_table)
+		.on(allocation_table.demand == demand_table.key)
+	)
+
+	if row:
+		query = query.where(demand_table.item_code == row.item_code)
+
+	query = query.groupby(
+		demand_table.key,
+		demand_table.item_code,
+		demand_table.total_required_qty,
+		demand_table.delivery_date,
+	).orderby(demand_table.delivery_date)
 
 	with get_demand_db() as conn:
 		cursor = conn.cursor()
-		return cursor.execute(
-			f"""
-			SELECT
-				d.*,
-				COALESCE(
-					(SELECT SUM(a.allocated_qty) FROM allocation a WHERE a.demand = d.key),
-					0
-				) AS allocated_qty,
-				d.total_required_qty - COALESCE(
-					(SELECT SUM(a.allocated_qty) FROM allocation a WHERE a.demand = d.key),
-					0
-				) AS net_required_qty
-			FROM
-				demand d
-			{item_filter}
-			ORDER BY
-				delivery_date ASC;
-			"""
-		)
+		return cursor.execute(query.get_sql())
 
 
 def get_item_demand_map(
@@ -367,22 +385,28 @@ def update_allocations(
 	],
 	action: dict,
 ):
+	demand_table = Table("demand")
+	allocation_table = Table("allocation")
+
 	with get_demand_db() as conn:
 		cursor = conn.cursor()
 
 		quantity_field = action.get("quantity_field")
-		row_qty = row.get(quantity_field) if quantity_field else None
+		row_qty = row.get(quantity_field) if quantity_field else 0
 
 		warehouse_field = action.get("warehouse_field")
 		warehouse = row.get(warehouse_field)
 
-		allocation_query = cursor.execute(
-			f"""
-			SELECT *
-			FROM allocation
-			WHERE item_code = '{row.item_code}' AND warehouse = '{warehouse}' AND allocated_qty > 0
-			"""
+		allocation_query = (
+			Query.from_(allocation_table)
+			.select("*")
+			.where(
+				(allocation_table.item_code == row.item_code)
+				& (allocation_table.warehouse == warehouse)
+				& (allocation_table.allocated_qty > 0)
+			)
 		)
+		allocation_query = cursor.execute(allocation_query.get_sql())
 
 		# TODO: remove demand row if demand is fully satisfied
 
@@ -392,52 +416,68 @@ def update_allocations(
 			demand_effect = action.get("demand_effect")
 
 			for allocation in existing_allocations:
-				demand_query = cursor.execute(f"SELECT * FROM demand WHERE key = '{allocation.demand}'")
+				demand_query = (
+					Query.from_(demand_table).select("*").where(demand_table.key == allocation.demand)
+				)
+				demand_query = cursor.execute(demand_query.get_sql())
 				demand_row: Demand = demand_query.fetchone()
 
 				if demand_row:
 					# demand is still pending, add/reverse allocation;
 					# process demand before allocation
 
-					new_total_required_qty = demand_row.total_required_qty
+					new_total_required_qty = float(demand_row.total_required_qty)
 					if demand_effect:
 						if demand_effect == "increase":
-							new_total_required_qty = demand_row.total_required_qty + row_qty
+							new_total_required_qty = float(demand_row.total_required_qty) + row_qty
 						elif demand_effect == "decrease":
-							new_total_required_qty = max(0, demand_row.total_required_qty - row_qty)
+							new_total_required_qty = max(0, float(demand_row.total_required_qty) - row_qty)
 
 						if new_total_required_qty <= 0:
 							# if demand is fully met, delete the demand row
-							cursor.execute(f"DELETE FROM demand WHERE key = '{demand_row.key}'")
+							delete_query = Query.from_(demand_table).delete().where(demand_table.key == demand_row.key)
+							cursor.execute(delete_query.get_sql())
 						else:
 							# if demand is partially met, update demand row
-							cursor.execute(
-								f"UPDATE demand SET total_required_qty = {new_total_required_qty} WHERE key = '{demand_row.key}'"
+							update_query = (
+								Query.update(demand_table)
+								.set(demand_table.total_required_qty, new_total_required_qty)
+								.where(demand_table.key == demand_row.key)
 							)
+							cursor.execute(update_query.get_sql())
 
 					if allocation_effect == "increase":
-						new_allocated_qty = min(new_total_required_qty, allocation.allocated_qty + row_qty)
+						new_allocated_qty = min(new_total_required_qty, float(allocation.allocated_qty) + row_qty)
 					elif allocation_effect == "decrease":
-						new_allocated_qty = max(0, allocation.allocated_qty - row_qty)
+						new_allocated_qty = max(0, float(allocation.allocated_qty) - row_qty)
 					elif allocation_effect == "adjustment":
 						new_allocated_qty = min(new_total_required_qty, row_qty)
 
 					if new_allocated_qty <= 0:
 						# if partial allocation is reverted, delete the allocation row
-						cursor.execute(f"DELETE FROM allocation WHERE key = '{allocation.key}'")
+						delete_query = (
+							Query.from_(allocation_table).delete().where(allocation_table.key == allocation.key)
+						)
+						cursor.execute(delete_query.get_sql())
 					else:
 						# if demand can be partially or fully met, update allocation row
-						cursor.execute(
-							f"UPDATE allocation SET allocated_qty = {new_allocated_qty} WHERE key = '{allocation.key}'"
+						update_query = (
+							Query.update(allocation_table)
+							.set(allocation_table.allocated_qty, new_allocated_qty)
+							.where(allocation_table.key == allocation.key)
 						)
+						cursor.execute(update_query.get_sql())
 				else:
 					# demand is already satisfied, reverse allocation
 
 					if allocation_effect == "increase":
-						new_allocated_qty = allocation.allocated_qty + row_qty
-						cursor.execute(
-							f"UPDATE allocation SET allocated_qty = {new_allocated_qty} WHERE key = '{allocation.key}'"
+						new_allocated_qty = float(allocation.allocated_qty) + row_qty
+						update_query = (
+							Query.update(allocation_table)
+							.set(allocation_table.allocated_qty, new_allocated_qty)
+							.where(allocation_table.key == allocation.key)
 						)
+						cursor.execute(update_query.get_sql())
 					elif allocation_effect in ["increase", "adjustment"]:
 						# TODO: are these cases possible?
 						pass
@@ -457,29 +497,26 @@ def update_allocations(
 			allocations: list[Allocation] = []
 			while demand_queue:
 				current_demand = demand_queue[0]
-				net_required_qty = current_demand["net_required_qty"]
+				net_required_qty = float(current_demand.net_required_qty)
 
 				allocated_qty = min(row_qty, net_required_qty)
-				allocations.append(
-					{
-						**new_allocation(current_demand),
-						"warehouse": warehouse,
-						"allocated_qty": str(allocated_qty),
-					}
-				)
+				new_alloc = new_allocation(current_demand)
+				new_alloc.update({"warehouse": warehouse, "allocated_qty": str(allocated_qty)})
+				allocations.append(new_alloc)
 
 				if row_qty >= net_required_qty:
 					# Full demand can be met
 					demand_queue.popleft()
 				else:
 					# Partial demand is met
-					current_demand["total_required_qty"] -= allocated_qty
+					current_demand.total_required_qty = float(current_demand.total_required_qty) - allocated_qty
 					break
 
 			for allocation in allocations:
-				cursor.execute(
-					f"""INSERT INTO allocation ('{"', '".join(allocation.keys())}') VALUES ('{"', '".join(allocation.values())}')"""
+				insert_query = (
+					Query.into(allocation_table).columns(*allocation.keys()).insert(*allocation.values())
 				)
+				cursor.execute(insert_query.get_sql())
 
 
 def create_allocations():
@@ -524,12 +561,14 @@ def create_allocations():
 				allocations.append(allocation)
 
 		for allocation in allocations:
-			cursor.execute(
-				f"""INSERT INTO allocation ('{"', '".join(allocation.keys())}') VALUES ('{"', '".join(allocation.values())}')"""
+			allocation_table = Table("allocation")
+			insert_query = (
+				Query.into(allocation_table).columns(*allocation.keys()).insert(*allocation.values())
 			)
+			cursor.execute(insert_query.get_sql())
 
 
-def new_allocation(demand_row: Demand):
+def new_allocation(demand_row) -> Allocation:
 	return frappe._dict(
 		{
 			"key": frappe.generate_hash(),
@@ -604,7 +643,10 @@ def get_demand_warehouses(company: str | None = None) -> list[str]:
 	return get_descendant_warehouses(company, root_warehouse)
 
 
-def get_descendant_warehouses(company: str, warehouse: str) -> list[str]:
+def get_descendant_warehouses(company: str | None, warehouse: str) -> list[str]:
+	if not company:
+		company = frappe.defaults.get_defaults().get("company")
+
 	beam_settings = frappe.get_doc("BEAM Settings", company)
 
 	warehouse_types = [wt.warehouse_type for wt in beam_settings.warehouse_types]
@@ -641,91 +683,124 @@ def get_demand(*args, **kwargs) -> list[Demand]:
 		page = 1
 	order_by = kwargs.get("order_by", "workstation, assigned")
 
-	a_filters = d_filters = ""
+	demand = Table("demand")
+	allocation = Table("allocation")
+
+	d_filters = []
+	a_filters = []
+
 	if kwargs.get("filters"):
-		filters = kwargs.get("filters")
-		if filters:
-			d_filters = "AND " + "\nAND ".join(
-				[f"d.{key} IN ('{value}')" for key, value in filters.items()]
+		filters = kwargs["filters"]
+		for key, value in filters.items():
+			if isinstance(value, str):
+				value = (value,)
+			d_filters.append(getattr(demand, key).isin(value))
+			a_filters.append(getattr(allocation, key).isin(value))
+
+	demand_query = (
+		Query.from_(demand)
+		.select(
+			demand.key,
+			ValueWrapper("").as_("demand"),
+			demand.doctype,
+			demand.company,
+			demand.parent,
+			demand.warehouse,
+			demand.name,
+			demand.idx,
+			demand.item_code,
+			demand.delivery_date.as_("allocated_date"),
+			demand.delivery_date,
+			demand.modified,
+			demand.stock_uom,
+			fn.Coalesce(
+				(
+					Query.from_(allocation)
+					.select(fn.Sum(allocation.allocated_qty))
+					.where(allocation.demand == demand.key)
+				),
+				0,
+			).as_("allocated_qty"),
+			(
+				demand.total_required_qty
+				- fn.Coalesce(
+					(
+						Query.from_(allocation)
+						.select(fn.Sum(allocation.allocated_qty))
+						.where(allocation.demand == demand.key)
+					),
+					0,
+				)
+			).as_("net_required_qty"),
+			demand.total_required_qty,
+			ValueWrapper("").as_("status"),
+			demand.assigned,
+			demand.creation,
+		)
+		.where(
+			fn.Coalesce(
+				(
+					Query.from_(allocation)
+					.select(fn.Sum(allocation.allocated_qty))
+					.where(allocation.demand == demand.key)
+				),
+				0,
 			)
-			a_filters = "AND " + "\nAND ".join(
-				[f"a.{key} IN ('{value}')" for key, value in filters.items()]
-			)
+			<= 0
+		)
+	)
 
-		# if assigned:
-		# 	_filters += f" AND assigned LIKE %{assigned}%"
+	if d_filters:
+		demand_query = demand_query.where(*d_filters)
 
-	demand_query = f"""
-		SELECT
-			d.key,
-			'' AS demand,
-			d.doctype,
-			d.company,
-			d.parent,
+	allocation_query = (
+		Query.from_(allocation)
+		.select(
+			allocation.key,
+			allocation.demand,
+			allocation.doctype,
+			allocation.company,
+			allocation.parent,
+			allocation.warehouse,
+			allocation.name,
+			allocation.idx,
+			allocation.item_code,
+			allocation.allocated_date,
+			allocation.allocated_date.as_("delivery_date"),
+			allocation.modified,
+			allocation.stock_uom,
+			allocation.allocated_qty,
+			(
+				fn.Coalesce(
+					Query.from_(demand).select(demand.total_required_qty).where(allocation.demand == demand.key),
+					0,
+				)
+				- fn.Coalesce(
+					Query.from_(Table("allocation").as_("c"))
+					.select(fn.Sum(Table("allocation").as_("c").allocated_qty))
+					.where(Table("allocation").as_("c").demand == allocation.demand),
+					0,
+				)
+			).as_("net_required_qty"),
+			(
+				Query.from_(demand).select(demand.total_required_qty).where(allocation.demand == demand.key)
+			).as_("total_required_qty"),
+			allocation.status,
+			allocation.assigned,
+			allocation.creation,
+		)
+		.where(allocation.allocated_qty > 0)
+		.orderby(
+			allocation.delivery_date,
+			allocation.idx,
+			allocation.creation,
+			allocation.parent,
+			order=Order.asc,
+		)
+	)
 
-			d.warehouse,
-			d.name,
-			d.idx,
-			d.item_code,
-			d.delivery_date AS allocated_date,
-			d.delivery_date,
-
-			d.modified,
-			d.stock_uom,
-			COALESCE(
-				(SELECT SUM(a.allocated_qty) FROM allocation a WHERE a.demand = d.key),
-				0
-			) AS allocated_qty,
-			d.total_required_qty - COALESCE(
-				(SELECT SUM(a.allocated_qty) FROM allocation a WHERE a.demand = d.key),
-				0
-			) AS net_required_qty,
-			d.total_required_qty,
-
-			'' AS status,
-			d.assigned,
-			d.creation
-		FROM demand d
-		WHERE allocated_qty <= 0
-		{d_filters}
-	"""
-
-	allocation_query = f"""
-		SELECT
-			a.key,
-			a.demand,
-			a.doctype,
-			a.company,
-			a.parent,
-
-			a.warehouse,
-			a.name,
-			a.idx,
-			a.item_code,
-			a.allocated_date AS delivery_date,
-			a.allocated_date,
-
-			a.modified,
-			a.stock_uom,
-			a.allocated_qty,
-			COALESCE(
-				(SELECT d.total_required_qty FROM demand d WHERE a.demand = d.key),
-				0
-			) -
-			COALESCE(
-				(SELECT SUM(c.allocated_qty) FROM allocation c WHERE a.demand = c.demand),
-				0
-			) AS net_required_qty,
-			(SELECT d.total_required_qty FROM demand d WHERE a.demand = d.key) AS total_required_qty,
-
-			a.status,
-			a.assigned,
-			a.creation
-		FROM allocation a
-		WHERE allocated_qty > 0
-		{a_filters}
-		ORDER BY delivery_date, idx, creation, parent ASC
-	"""
+	if a_filters:
+		allocation_query = allocation_query.where(*a_filters)
 
 	record_offset = records_per_page * (page - 1)
 	query = (
@@ -738,7 +813,7 @@ def get_demand(*args, **kwargs) -> list[Demand]:
 		for row in rows:
 			row.update(
 				{
-					"net_required_qty": max(0.0, row.net_required_qty),
+					"net_required_qty": max(0.0, float(row.net_required_qty)),
 					"delivery_date": get_datetime_from_epoch(row.delivery_date),
 					"allocated_date": get_datetime_from_epoch(row.allocated_date),
 					"modified": get_datetime_from_epoch(row.modified),

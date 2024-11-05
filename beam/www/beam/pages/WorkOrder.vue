@@ -1,48 +1,41 @@
 <template>
-	<Navbar @click="handlePrimaryAction">
+	<Navbar>
 		<template #title>
-			<h1 class="nav-title">{{ store.form.name }}</h1>
+			<h1 class="nav-title">Manufacture</h1>
 		</template>
-		<template #navbaraction>Home</template>
+		<template #navbaraction>
+			<RouterLink :to="{ name: 'home' }">Home</RouterLink>
+		</template>
 	</Navbar>
 
-	<!-- <div>
+	<div>
 		<p>Planned Start: {{ store.form.planned_start_date }}</p>
-	</div> -->
-	<BeamMetadata :order="workOrder" />
-
-	<br />
-
-	<div class="box">
-		<Transfer :id="workOrderId" />
 	</div>
-
+	<div class="box" v-show="items.length">
+		<ListView :items="items" />
+	</div>
 	<div class="box" v-show="operations.length">
 		<ListView :items="operations" />
 	</div>
+	<ControlButtons
+		:onCreate="create"
+		:onSubmit="() => store.submit<StockEntry>('Stock Entry', stockEntryId)"
+		:onCancel="() => store.cancel<StockEntry>('Stock Entry', stockEntryId)" />
 </template>
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
-import Transfer from '@/components/Transfer.vue'
+import ControlButtons from '@/components/ControlButtons.vue'
 import { useDataStore } from '@/store'
-import type { /* JobCard, */ ListViewItem, WorkOrder } from '@/types'
+import type { /* JobCard, */ ListViewItem, WorkOrder, StockEntry } from '@/types'
 
 const route = useRoute()
 const store = useDataStore()
 const workOrderId = route.params.orderId.toString()
-
-const workOrder = ref({
-	orderNumber: workOrderId,
-	product: '',
-	quantity: 0,
-	total: 0,
-	complete: false,
-})
-
-// const jobCards = ref<ListViewItem[]>([])
+const items = ref<ListViewItem[]>([])
+const stockEntry = ref<Partial<StockEntry>>({})
 const operations = ref<ListViewItem[]>([])
 
 onMounted(async () => {
@@ -62,7 +55,7 @@ onMounted(async () => {
 		product: order.item_name,
 		quantity: order.produced_qty,
 		total: order.qty,
-		complete: order.status === "Complete",
+		complete: order.status === 'Complete',
 	}
 	// get job cards
 	// for (const operation of order.operations) {
@@ -82,10 +75,6 @@ onMounted(async () => {
 	// 	}
 	// }
 })
-
-const handlePrimaryAction = () => {
-	console.log('handle primary action')
-}
 </script>
 
 <style scoped>
