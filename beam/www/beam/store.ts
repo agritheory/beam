@@ -15,6 +15,8 @@ import type {
 	StockEntry,
 	WorkOrder,
 	Workstation,
+	DeliveryNote,
+	PurchaseReceipt,
 } from '@/types/index.js'
 
 declare const frappe: any
@@ -25,7 +27,7 @@ export const useDataStore = defineStore('data', () => {
 
 	const config = ref<ScanConfig>({})
 	const context = ref<ScanContext>({})
-	const form = ref<Partial<JobCard | WorkOrder | Workstation>>({})
+	const form = ref<Partial<JobCard | WorkOrder | Workstation | StockEntry>>({})
 
 	const headers = computed(() => {
 		// setup as a computed property to allow Frappe to set the CSRF token
@@ -55,9 +57,17 @@ export const useDataStore = defineStore('data', () => {
 	const setForm = async (currentRoute: RouteLocationNormalized) => {
 		const meta = currentRoute.meta
 		form.value = {}
+		let docname = undefined
 		if (meta.view === 'form' && config.value.frm.includes(meta.doctype)) {
-			const docname = currentRoute.params.orderId.toString()
-			form.value = await getOne<JobCard | WorkOrder | Workstation>(meta.doctype, docname)
+			if (currentRoute.params.id) {
+				docname = currentRoute.params.id.toString()
+				form.value = await getOne<JobCard | WorkOrder | Workstation>(meta.doctype, docname)
+			} else if (meta.doctype) {
+				if (currentRoute.query.id) {
+					docname = currentRoute.query.id.toString()
+				}
+				form.value = await makeNewDoc<StockEntry | DeliveryNote | PurchaseReceipt>(meta.doctype, docname)
+			}
 		}
 	}
 
@@ -202,7 +212,16 @@ export const useDataStore = defineStore('data', () => {
 		return { data, exception, response }
 	}
 
+	const makeNewDoc = async <T>(doctype: string, docname?: string) => {
+		const url = '/api/method/beam.www.beam.make_new_doc'
+		const response = await post(url, { doctype: doctype, docname: docname })
+		const { message }: { message: T } = await response.json()
+		return message
+	}
+
 	const getMappedStockEntry = async (data: Record<string, any>) => {
+		// return a work order object with attached stock entry/ies and job card(s)
+		//
 		const url = '/api/method/erpnext.manufacturing.doctype.work_order.work_order.make_stock_entry'
 		const response = await post(url, data)
 		const { message }: { message: StockEntry } = await response.json()
@@ -251,6 +270,7 @@ export const useDataStore = defineStore('data', () => {
 		getDemand,
 		getHome,
 		getMappedStockEntry,
+		makeNewDoc,
 		getOne,
 		getReceiving,
 		logout,

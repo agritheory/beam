@@ -51,6 +51,9 @@ export type JobCard = ParentDoctype & {
 }
 
 export type StockEntry = ParentDoctype & {
+	purpose: string
+	source_warehouse: string
+	target_warehouse: string
 	items: WorkOrderItem[]
 }
 
@@ -92,6 +95,27 @@ export type DocActionResponse<T> = {
 	data: T
 	exception: string
 	response: Response
+}
+
+export type PurchaseReceipt = ParentDoctype & {
+	target_warehouse: string
+	items: PurchaseReceiptItem[]
+}
+
+export type PurchaseReceiptItem = ChildDoctype & {
+	qty: number
+	source_warehouse: string
+}
+
+export type DeliveryNote = ParentDoctype & {
+	source_warehouse: string
+	items: DeliveryNoteItem[]
+}
+
+export type DeliveryNoteItem = ChildDoctype & {
+	required_qty: number
+	qty: number
+	source_warehouse: string
 }
 
 export interface FrappeWindow extends Window {

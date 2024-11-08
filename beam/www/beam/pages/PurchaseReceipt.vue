@@ -1,7 +1,7 @@
 <template>
 	<Navbar>
 		<template #title>
-			<h1 class="nav-title">Delivery Note</h1>
+			<h1 class="nav-title">Purchase Receipt</h1>
 		</template>
 		<template #navbaraction>
 			<RouterLink :to="{ name: 'home' }">Home</RouterLink>
@@ -10,10 +10,7 @@
 	<div class="box" v-show="items.length">
 		<ListView :items="items" />
 	</div>
-	<ControlButtons
-		:onCreate="create"
-		:onSubmit="() => store.submit<ParentDoctype>('Stock Entry', deliveryNoteId)"
-		:onCancel="() => store.cancel<ParentDoctype>('Stock Entry', deliveryNoteId)" />
+	<ControlButtons :onCreate="create" :onSubmit="() => {}" :onCancel="() => {}" />
 </template>
 
 <script setup lang="ts">
@@ -21,22 +18,32 @@ import { ref, reactive, onMounted } from 'vue'
 
 import ControlButtons from '@/components/ControlButtons.vue'
 import { useDataStore } from '@/store'
-import type { ListViewItem, ParentDoctype } from '@/types'
+import type { ListViewItem, PurchaseReceipt } from '@/types'
 
 const store = useDataStore()
-const list = ref<ListViewItem[]>([])
+const items = ref<ListViewItem[]>([])
 
 onMounted(async () => {
-	store.form as Partial<DeliveryNote>
-	// console.log(JSON.stringify(store.form))
+	store.form as Partial<PurchaseReceipt>
 })
 
-const create = async () => {
-	// TODO: implement create
-	const deliveryNote = store.form as Partial<ParentDoctype>
-	const { data, exception, response } = await store.insert('Delivery Note', deliveryNote)
-	return { data, exception, response }
-}
+store.$subscribe((mutation, state) => {
+	const parentfield = state.form.doctype === 'Work Order' ? 'required_items' : 'items'
+	if (parentfield && state.form[parentfield]) {
+		items.value = []
+		state.form[parentfield].forEach(item => {
+			item.wip_warehouse = state.form.wip_warehouse
+			items.value.push({
+				label: item.item_name,
+				description: `${item.warehouse}`,
+				count: {
+					count: item.received_qty,
+					of: item.qty,
+				},
+			})
+		})
+	}
+})
 </script>
 
 <style scoped>

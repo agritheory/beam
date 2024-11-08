@@ -48,7 +48,7 @@ export class ScanHandler {
 	add_or_associate(barcode_context: FormContext[]) {
 		barcode_context.forEach(async action => {
 			const is_stock_entry =
-				this.store.form.doctype === 'Stock Entry' &&
+				this.store.form.value.doctype === ('Stock Entry' || 'Work Order') &&
 				[
 					'Send to Subcontractor',
 					'Material Transfer for Manufacture',

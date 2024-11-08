@@ -20,7 +20,7 @@ const store = useDataStore()
 const items = ref<Partial<ListViewItem>[]>([])
 
 onMounted(async () => {
-	const { data } = await store.getDemand({ workstation: 'Shipping' })
+	const { data } = await store.getDemand()
 
 	// TODO: move this to the server
 	data.forEach(row => {
@@ -28,18 +28,10 @@ onMounted(async () => {
 		row.label = `${row.doctype} - ${row.parent}`
 		row.linkComponent = 'ListAnchor'
 		row.description = `${row.item_code} - ${row.warehouse}`
-		row.route = `#/Delivery Note/new-delivery-note` // or draft delivery note if it exists
+		row.route = `#/Delivery Note/new-delivery-note`
 		items.value.push(row)
 	})
 })
-
-function newDeliveryNote(so) {
-	// match save and name API
-	// return document name
-	return so // not correct
-}
-
-const handlePrimaryAction = () => {}
 </script>
 
 <style>

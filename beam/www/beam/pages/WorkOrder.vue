@@ -12,11 +12,11 @@
 	<div>
 		<p>Planned Start: {{ (store.form as WorkOrder).planned_start_date }}</p>
 	</div>
-	<div class="box" v-show="operations.length">
-		<ListView :items="operations" />
-	</div>
 	<div class="box" v-show="items.length">
 		<ListView :items="items" />
+	</div>
+	<div class="box" v-show="operations.length">
+		<ListView :items="operations" />
 	</div>
 	<ControlButtons
 		:onCreate="create"
@@ -25,48 +25,38 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref, reactive, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 import ControlButtons from '@/components/ControlButtons.vue'
 import { useDataStore } from '@/store'
-import type { /* JobCard, */ ListViewItem, WorkOrder } from '@/types'
+import type { StockEntry, ListViewItem, WorkOrder } from '@/types'
 
 const route = useRoute()
 const store = useDataStore()
-const workOrderId = route.params.orderId.toString()
-const items = ref<ListViewItem[]>([])
+const workOrderId = route.params.id.toString()
+const stockEntry = ref<Partial<StockEntry>>({})
+let order = reactive({})
 const operations = ref<ListViewItem[]>([])
+const items = ref<ListViewItem[]>([])
 
 onMounted(async () => {
-	const order = store.form as Partial<WorkOrder>
+	order = store.form as Partial<WorkOrder>
 
-	// build operation list
 	operations.value = order.operations.map(operation => ({
 		...operation,
 		label: operation.operation,
 		count: { count: operation.completed_qty, of: order.qty },
 		linkComponent: 'ListAnchor',
-		route: `#/work_order/${workOrderId}/operation/${operation.name}`,
+		route: `#/work_order/${order.name}/operation/${operation.name}`,
 	}))
-
-	// get job cards
-	// for (const operation of order.operations) {
-	// 	const jobList = await store.getAll<JobCard[]>('Job Card', {
-	// 		filters: JSON.stringify([['operation_id', '=', operation.name]]),
-	// 	})
-
-	// 	for (const job of jobList) {
-	// 		const jobCard = await store.getOne<JobCard>('Job Card', job.name)
-	// 		jobCards.value.push({
-	// 			...jobCard,
-	// 			label: jobCard.name,
-	// 			count: { count: jobCard.total_time_in_mins, of: operation.time_in_mins },
-	// 			linkComponent: 'ListAnchor',
-	// 			route: `#/job_card/${workOrderId}`,
-	// 		})
-	// 	}
-	// }
+	items.value = order.required_items.map(item => ({
+		...item,
+		transfer_qty: 0, // use this field as the one to transfer against
+		label: item.item_code,
+		count: { count: item.transferred_qty, of: item.required_qty },
+		linkComponent: 'ListCount',
+	}))
 })
 </script>
 
