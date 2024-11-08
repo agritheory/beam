@@ -170,6 +170,7 @@ export const useDataStore = defineStore('data', () => {
 		const url = `/api/resource/${doctype}`
 		const response = await post(url, body)
 		const { data, exception }: { data: T; exception: string } = await response.json()
+		if (response.ok) setDirty(false)
 		alert(response.ok ? 'Document created' : exception)
 		return { data, exception, response }
 	}
@@ -178,6 +179,7 @@ export const useDataStore = defineStore('data', () => {
 		const url = `/api/resource/${doctype}/${name}`
 		const response = await post(url, body)
 		const { data, exception }: { data: T; exception: string } = await response.json()
+		if (response.ok) setDirty(false)
 		alert(response.ok ? 'Document updated' : exception)
 		return { data, exception, response }
 	}
@@ -186,6 +188,7 @@ export const useDataStore = defineStore('data', () => {
 		const url = `/api/resource/${doctype}/${name}`
 		const response = await put(url, { docstatus: 1 })
 		const { data, exception }: { data: T; exception: string } = await response.json()
+		if (response.ok) setDirty(false)
 		alert(response.ok ? 'Document status changed to Submitted' : exception)
 		return { data, exception, response }
 	}
@@ -194,6 +197,7 @@ export const useDataStore = defineStore('data', () => {
 		const url = `/api/resource/${doctype}/${name}`
 		const response = await put(url, { docstatus: 2 })
 		const { data, exception }: { data: T; exception: string } = await response.json()
+		if (response.ok) setDirty(false)
 		alert(response.ok ? 'Document status changed to Cancelled' : exception)
 		return { data, exception, response }
 	}
@@ -207,6 +211,10 @@ export const useDataStore = defineStore('data', () => {
 			return
 		}
 		return message
+	}
+
+	const setDirty = (value: boolean) => {
+		form.value.dirty = value
 	}
 
 	const logout = async () => {
@@ -247,5 +255,6 @@ export const useDataStore = defineStore('data', () => {
 		getReceiving,
 		logout,
 		scan,
+		setDirty,
 	}
 })

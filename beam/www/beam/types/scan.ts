@@ -25,7 +25,7 @@ export type ScanContext = {
 }
 
 export type ScanConfig = {
-	client?: Record<string, string[]>
+	client?: Record<string, string[]>[]
 	frm?: string[]
 	listview?: string[]
 	scannable_doctypes?: string[]

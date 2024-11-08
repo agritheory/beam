@@ -22,6 +22,14 @@ if (import.meta.hot) {
 	handleHotUpdate(router)
 }
 
+const addPatchSubscription = (store: ReturnType<typeof useDataStore>) => {
+	store.$subscribe(mutation => {
+		if (['patch function', 'patch object'].includes(mutation.type)) {
+			store.setDirty(true)
+		}
+	})
+}
+
 router.beforeEach(async (to, from, next) => {
 	if (to.meta.requiresAuth) {
 		if (window.frappe.user === 'Guest') {
@@ -32,12 +40,14 @@ router.beforeEach(async (to, from, next) => {
 		} else {
 			const store = useDataStore()
 			await store.init(to)
+			addPatchSubscription(store)
 			next()
 		}
 	} else {
 		// assuming user is logged in and authenticated for all Beam views
 		const store = useDataStore()
 		await store.init(to)
+		addPatchSubscription(store)
 		next()
 	}
 })

@@ -2,6 +2,7 @@
 	<Navbar>
 		<template #title>
 			<h1 class="nav-title">Manufacture</h1>
+			<span v-if="store.form.dirty" class="nav-subtitle">Unsaved changes</span>
 		</template>
 		<template #navbaraction>
 			<RouterLink :to="{ name: 'home' }">Home</RouterLink>
@@ -9,7 +10,7 @@
 	</Navbar>
 
 	<div>
-		<p>Planned Start: {{ store.form.planned_start_date }}</p>
+		<p>Planned Start: {{ (store.form as WorkOrder).planned_start_date }}</p>
 	</div>
 	<div class="box" v-show="operations.length">
 		<ListView :items="operations" />
@@ -19,8 +20,8 @@
 	</div>
 	<ControlButtons
 		:onCreate="create"
-		:onSubmit="() => store.submit<StockEntry>('Stock Entry', stockEntryId)"
-		:onCancel="() => store.cancel<StockEntry>('Stock Entry', stockEntryId)" />
+		:onSubmit="() => store.submit<WorkOrder>('Work Order', workOrderId)"
+		:onCancel="() => store.cancel<WorkOrder>('Work Order', workOrderId)" />
 </template>
 
 <script setup lang="ts">
@@ -29,13 +30,12 @@ import { useRoute } from 'vue-router'
 
 import ControlButtons from '@/components/ControlButtons.vue'
 import { useDataStore } from '@/store'
-import type { /* JobCard, */ ListViewItem, WorkOrder, StockEntry } from '@/types'
+import type { /* JobCard, */ ListViewItem, WorkOrder } from '@/types'
 
 const route = useRoute()
 const store = useDataStore()
 const workOrderId = route.params.orderId.toString()
 const items = ref<ListViewItem[]>([])
-const stockEntry = ref<Partial<StockEntry>>({})
 const operations = ref<ListViewItem[]>([])
 
 onMounted(async () => {
