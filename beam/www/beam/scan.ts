@@ -2,9 +2,9 @@
 // For license information, please see license.txt
 
 import { useDataStore } from './store.js'
-import type { FormContext, ListContext, FrappeWindow } from './types/index.js'
+import type { BeamWindow, FormContext, ListContext, StockEntry } from './types/index.js'
 
-declare const window: FrappeWindow
+declare const window: BeamWindow
 
 export function useScan() {
 	const scanHandler = new ScanHandler()
@@ -47,8 +47,9 @@ export class ScanHandler {
 
 	add_or_associate(barcode_context: FormContext[]) {
 		barcode_context.forEach(async action => {
+			const parentfield = action.parentfield || 'items'
 			const is_stock_entry =
-				this.store.form.value.doctype === ('Stock Entry' || 'Work Order') &&
+				(this.store.form.doctype === 'Stock Entry' || 'Work Order') &&
 				[
 					'Send to Subcontractor',
 					'Material Transfer for Manufacture',
@@ -57,7 +58,7 @@ export class ScanHandler {
 					'Manufacture',
 				].includes(this.store.form.stock_entry_type)
 
-			const existing_rows = this.store.form.items.filter(row => {
+			const existing_rows = this.store.form[parentfield].filter(row => {
 				if (is_stock_entry) {
 					return row.item_code === action.context.item_code || row.handling_unit
 				} else {
@@ -71,7 +72,7 @@ export class ScanHandler {
 			if (existing_rows.length > 0) {
 				this.store.$patch(state => {
 					for (const row of existing_rows) {
-						for (const item of state.form.items) {
+						for (const item of state.form[parentfield]) {
 							if (item.name === row.name) {
 								item[action.field] = action.target
 								break
@@ -81,7 +82,7 @@ export class ScanHandler {
 				})
 			} else {
 				this.store.$patch(state => {
-					state.form.items.push({
+					state.form[parentfield].push({
 						item_code: action.context.item_code,
 						qty: 1,
 						[action.field]: action.target,
@@ -106,22 +107,23 @@ export class ScanHandler {
 				'Repack',
 			]
 
-			const entry_type = this.store.form.stock_entry_type
+			const entry_type = (this.store.form as StockEntry).stock_entry_type
 			this.store.$patch(state => {
+				const form = state.form as StockEntry
 				if (source_warehouses.includes(entry_type)) {
-					state.form.from_warehouse = action.target
-					for (const row of state.form.items) {
+					form.from_warehouse = action.target
+					for (const row of form.items) {
 						row.s_warehouse = action.target
 					}
 				} else if (target_warehouses.includes(entry_type)) {
-					state.form.to_warehouse = action.target
-					for (const row of state.form.items) {
+					form.to_warehouse = action.target
+					for (const row of form.items) {
 						row.t_warehouse = action.target
 					}
 				} else if (both_warehouses.includes(entry_type)) {
-					state.form.from_warehouse = action.target
-					state.form.to_warehouse = action.target
-					for (const row of state.form.items) {
+					form.from_warehouse = action.target
+					form.to_warehouse = action.target
+					for (const row of form.items) {
 						row.s_warehouse = action.target
 						row.t_warehouse = action.target
 					}
@@ -167,7 +169,7 @@ export class ScanHandler {
 					}
 
 					if (action.doctype === 'Stock Entry') {
-						const entry_type = state.form.stock_entry_type
+						const entry_type = (state.form as StockEntry).stock_entry_type
 						if (source_warehouses.includes(entry_type)) {
 							item.s_warehouse = action.context.warehouse
 						} else if (target_warehouses.includes(entry_type)) {

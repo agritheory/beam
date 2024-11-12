@@ -12,7 +12,6 @@
 </template>
 
 <script setup lang="ts">
-import { Navbar } from '@stonecrop/beam'
 import { useInfiniteScroll } from '@vueuse/core'
 import { ref } from 'vue'
 
@@ -52,7 +51,3 @@ useInfiniteScroll(
 
 // const handlePrimaryAction = () => {}
 </script>
-
-<style scoped>
-@import url('@stonecrop/beam/styles');
-</style>

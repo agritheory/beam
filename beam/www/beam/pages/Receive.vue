@@ -49,7 +49,3 @@ useInfiniteScroll(
 
 // const handlePrimaryAction = () => {}
 </script>
-
-<style scoped>
-@import url('@stonecrop/beam/styles');
-</style>

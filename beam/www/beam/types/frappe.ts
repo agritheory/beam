@@ -3,7 +3,13 @@
 
 import type { StoreMetadata } from './store.js'
 
-export type ParentDoctypeMeta = StoreMetadata & {
+export type DocActionResponse<T> = {
+	data: T
+	exception: string
+	response: Response
+}
+
+export type ParentDoctype = StoreMetadata & {
 	creation?: string
 	docstatus?: number
 	doctype?: string
@@ -13,22 +19,11 @@ export type ParentDoctypeMeta = StoreMetadata & {
 	owner?: string
 }
 
-export type ChildDoctypeMeta = ParentDoctypeMeta & {
+export type ChildDoctypeMeta = ParentDoctype & {
 	idx?: number
 	parent?: string
 	parenttype?: string
 	parentfield?: string
-}
-
-export type ParentDoctype = ParentDoctypeMeta & {
-	// exists for most sales/purchase/stock documents
-	items?: ChildDoctype[]
-
-	// exists for stock entry only
-	from_warehouse?: string
-	stock_entry_type?: string
-	to_warehouse?: string
-	wip_warehouse?: string
 }
 
 export type ChildDoctype = ChildDoctypeMeta & {
@@ -40,10 +35,6 @@ export type ChildDoctype = ChildDoctypeMeta & {
 	qty?: number
 	stock_qty?: number
 	warehouse?: string
-
-	// exists for stock entry only
-	s_warehouse?: string
-	t_warehouse?: string
 }
 
 export type JobCard = ParentDoctype & {
@@ -51,73 +42,71 @@ export type JobCard = ParentDoctype & {
 }
 
 export type StockEntry = ParentDoctype & {
-	purpose: string
-	source_warehouse: string
-	target_warehouse: string
-	items: WorkOrderItem[]
+	stock_entry_type: string
+
+	from_warehouse?: string
+	items?: StockEntryItem[]
+	purpose?: string
+	to_warehouse?: string
+}
+
+export type StockEntryItem = ChildDoctype & {
+	s_warehouse?: string
+	t_warehouse?: string
+	transferred_qty?: number
 }
 
 export type WorkOrder = ParentDoctype & {
-	item_name: string
 	planned_start_date: string
-	produced_qty: number
 	qty: number
-	skip_transfer: boolean
-	wip_warehouse: string
 
-	operations: WorkOrderOperation[]
-	required_items: WorkOrderItem[]
+	item_name?: string
+	produced_qty?: number
+	skip_transfer?: boolean
+	wip_warehouse?: string
+	operations?: WorkOrderOperation[]
+	required_items?: WorkOrderItem[]
 }
 
 export type WorkOrderOperation = ChildDoctype & {
-	actual_operation_time: number
-	completed_qty: number
-	description?: string
 	operation: string
-	time_in_mins?: number
+	time_in_mins: number
+
+	actual_operation_time?: number
+	completed_qty?: number
+	description?: string
 }
 
 export type WorkOrderItem = ChildDoctype & {
-	required_qty: number
-	source_warehouse: string
-	target_warehouse?: string
-	transferred_qty: number
-	wip_warehouse?: string
+	required_qty?: number
+	source_warehouse?: string
+	transferred_qty?: number
 }
 
 export type Workstation = ParentDoctype & {
 	production_capacity: number
-	status?: string
 	workstation_name: string
-}
 
-export type DocActionResponse<T> = {
-	data: T
-	exception: string
-	response: Response
+	status?: string
 }
 
 export type PurchaseReceipt = ParentDoctype & {
-	target_warehouse: string
 	items: PurchaseReceiptItem[]
 }
 
 export type PurchaseReceiptItem = ChildDoctype & {
-	qty: number
-	source_warehouse: string
+	qty?: number
+	warehouse?: string
 }
 
 export type DeliveryNote = ParentDoctype & {
-	source_warehouse: string
 	items: DeliveryNoteItem[]
 }
 
 export type DeliveryNoteItem = ChildDoctype & {
-	required_qty: number
 	qty: number
-	source_warehouse: string
+	warehouse?: string
 }
 
-export interface FrappeWindow extends Window {
-	frappe: any
-}
+export type ParentDoctypesWithItems = DeliveryNote | JobCard | PurchaseReceipt | StockEntry | WorkOrder
+export type ParentDoctypes = ParentDoctypesWithItems & Workstation

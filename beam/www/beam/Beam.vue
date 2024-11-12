@@ -16,6 +16,9 @@
 import { onMounted, ref } from 'vue'
 
 import { useScan } from '@/scan'
+import type { BeamWindow } from '@/types'
+
+declare const window: BeamWindow
 
 const { scanHandler } = useScan()
 const showModal = ref(false)
@@ -51,7 +54,6 @@ const confirmModal = () => {
 </script>
 
 <style>
-@import url('@stonecrop/beam/styles');
 .navbar-action a {
 	color: inherit;
 	text-decoration: none;

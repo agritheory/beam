@@ -7,8 +7,8 @@
 			<RouterLink :to="{ name: 'home' }">Home</RouterLink>
 		</template>
 	</Navbar>
-	<div class="box" v-show="items.length">
-		<ListView :items="items" />
+	<div class="box" v-show="list.length">
+		<ListView :items="list" />
 	</div>
 	<ControlButtons
 		:onCreate="create"
@@ -21,7 +21,7 @@ import { ref, onMounted } from 'vue'
 
 import ControlButtons from '@/components/ControlButtons.vue'
 import { useDataStore } from '@/store'
-import type { ListViewItem, ParentDoctype } from '@/types'
+import type { DeliveryNote, ListViewItem, ParentDoctype } from '@/types'
 
 const store = useDataStore()
 const list = ref<ListViewItem[]>([])

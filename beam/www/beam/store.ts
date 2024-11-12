@@ -7,16 +7,17 @@ import { type RouteLocationNormalized, useRoute } from 'vue-router'
 
 import type {
 	BeamHome,
+	DeliveryNote,
 	FormContext,
 	JobCard,
 	ListContext,
+	ParentDoctypes,
+	PurchaseReceipt,
 	ScanConfig,
 	ScanContext,
 	StockEntry,
 	WorkOrder,
 	Workstation,
-	DeliveryNote,
-	PurchaseReceipt,
 } from '@/types/index.js'
 
 declare const frappe: any
@@ -27,7 +28,7 @@ export const useDataStore = defineStore('data', () => {
 
 	const config = ref<ScanConfig>({})
 	const context = ref<ScanContext>({})
-	const form = ref<Partial<JobCard | WorkOrder | Workstation | StockEntry>>({})
+	const form = ref<Partial<ParentDoctypes>>({})
 
 	const headers = computed(() => {
 		// setup as a computed property to allow Frappe to set the CSRF token
@@ -61,7 +62,7 @@ export const useDataStore = defineStore('data', () => {
 		if (meta.view === 'form' && config.value.frm.includes(meta.doctype)) {
 			if (currentRoute.params.id) {
 				docname = currentRoute.params.id.toString()
-				form.value = await getOne<JobCard | WorkOrder | Workstation>(meta.doctype, docname)
+				form.value = await getOne<ParentDoctypes>(meta.doctype, docname)
 			} else if (meta.doctype) {
 				if (currentRoute.query.id) {
 					docname = currentRoute.query.id.toString()

@@ -1,4 +1,5 @@
 <template>
+	<!-- navigation section -->
 	<Navbar>
 		<template #title>
 			<h1 class="nav-title">Move</h1>
@@ -7,10 +8,14 @@
 			<RouterLink :to="{ name: 'home' }">Home</RouterLink>
 		</template>
 	</Navbar>
+
+	<!-- body section -->
 	<ListView :items="listItems" :key="componentKey" />
 	<div class="begin" v-if="listItems.length == 0">
 		<span>Scan to Begin</span>
 	</div>
+
+	<!-- footer section -->
 	<ControlButtons
 		:onCreate="create"
 		:onSubmit="() => store.submit<StockEntry>('Stock Entry', stockEntryId)"
@@ -53,18 +58,20 @@ onMounted(async () => {
 // 	}
 // })
 
-// const create = async () => {
-// 	const stockEntry = await store.getMappedStockEntry({
-// 		work_order_id: sourceId,
-// 		purpose: 'Material Transfer for Manufacture',
-// 	})
+const create = async () => {
+	throw new Error('Not implemented')
 
-// 	const { data, exception, response } = await store.insert('Stock Entry', stockEntry)
-// 	if (data.name) {
-// 		stockEntryId.value = data.name
-// 	}
-// 	return { data, exception, response }
-// }
+	// const stockEntry = await store.getMappedStockEntry({
+	// 	work_order_id: sourceId,
+	// 	purpose: 'Material Transfer for Manufacture',
+	// })
+
+	// const { data, exception, response } = await store.insert('Stock Entry', stockEntry)
+	// if (data.name) {
+	// 	stockEntryId.value = data.name
+	// }
+	// return { data, exception, response }
+}
 </script>
 
 <style scoped>

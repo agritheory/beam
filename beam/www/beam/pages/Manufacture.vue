@@ -51,7 +51,3 @@ onMounted(async () => {
 	})
 })
 </script>
-
-<style>
-@import url('@stonecrop/beam/styles');
-</style>
