@@ -1,11 +1,8 @@
 // Copyright (c) 2024, AgriTheory and contributors
 // For license information, please see license.txt
 
-import { ScanHandler } from '@/scan.js'
-
 export interface BeamWindow extends Window {
 	frappe: any
-	scan: ScanHandler
 	scanner: any
 }
 

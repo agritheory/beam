@@ -15,12 +15,12 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 
-import { useScan } from '@/scan'
+import { useScanStore } from '@/stores/scan'
 import type { BeamWindow } from '@/types'
 
 declare const window: BeamWindow
 
-const { scanHandler } = useScan()
+const store = useScanStore()
 const showModal = ref(false)
 
 onMounted(async () => {
@@ -37,7 +37,7 @@ onMounted(async () => {
 // }
 
 const scan = async (barcode: string, qty: number) => {
-	await scanHandler.scan(barcode, qty)
+	await store.scan(barcode, qty)
 }
 
 const registerInstance = (instance: any) => {

@@ -1,7 +1,7 @@
 // Copyright (c) 2024, AgriTheory and contributors
 // For license information, please see license.txt
 
-import { ChildDoctype } from './index.js'
+import type { ChildDoctype } from '@/types/index.js'
 
 export type BaseContext = {
 	action: string

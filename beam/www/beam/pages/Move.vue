@@ -26,10 +26,10 @@
 import { ref, onMounted } from 'vue'
 
 import ControlButtons from '@/components/ControlButtons.vue'
-import { useDataStore } from '@/store'
+import { useBeamStore } from '@/stores/beam'
 import type { ListViewItem, StockEntry } from '@/types'
 
-const store = useDataStore()
+const store = useBeamStore()
 
 const listItems = ref<ListViewItem[]>([])
 const stockEntryId = ref('')

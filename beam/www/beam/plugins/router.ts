@@ -3,8 +3,8 @@
 
 import { resolve } from 'path'
 
-import type { HookConfig } from '@/types/config.js'
 import { getAppConfigs, mergeConfigs, transformRoutes } from './hooks.js'
+import type { HookConfig } from '@/types/config.js'
 
 export function getRoutes(): HookConfig['routes'] {
 	const appConfigs = getAppConfigs()

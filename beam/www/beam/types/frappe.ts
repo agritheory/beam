@@ -1,7 +1,7 @@
 // Copyright (c) 2024, AgriTheory and contributors
 // For license information, please see license.txt
 
-import type { StoreMetadata } from './store.js'
+import type { StoreMetadata } from '@/types/store.js'
 
 export type DocActionResponse<T> = {
 	data: T

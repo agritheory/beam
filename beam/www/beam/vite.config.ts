@@ -41,6 +41,8 @@ export default defineConfig({
 	resolve: {
 		alias: {
 			'@': resolve(__dirname),
+			'@/plugins': resolve(__dirname, 'plugins'),
+			'@/types': resolve(__dirname, 'types'),
 		},
 	},
 

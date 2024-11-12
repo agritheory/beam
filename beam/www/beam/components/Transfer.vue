@@ -13,12 +13,12 @@
 import { ref } from 'vue'
 
 import ControlButtons from '@/components/ControlButtons.vue'
-import { useDataStore } from '@/store'
+import { useBeamStore } from '@/stores/beam'
 import type { ListViewItem, StockEntry } from '@/types'
 
 const { id: sourceId } = defineProps<{ id: string }>()
 
-const store = useDataStore()
+const store = useBeamStore()
 
 const listItems = ref<ListViewItem[]>([])
 const stockEntryId = ref('')

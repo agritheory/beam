@@ -15,12 +15,12 @@
 import { useInfiniteScroll } from '@vueuse/core'
 import { ref } from 'vue'
 
-import { useDataStore } from '@/store'
+import { useBeamStore } from '@/stores/beam'
 import type { ListViewItem } from '@/types'
 
 declare const frappe: any
 
-const store = useDataStore()
+const store = useBeamStore()
 const transfer = ref<Partial<ListViewItem>[]>([])
 const canLoadMore = ref(true)
 const page = ref(1)

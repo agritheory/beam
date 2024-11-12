@@ -17,10 +17,10 @@
 import { ref, onMounted } from 'vue'
 
 import ControlButtons from '@/components/ControlButtons.vue'
-import { useDataStore } from '@/store'
+import { useBeamStore } from '@/stores/beam'
 import type { ListViewItem, PurchaseReceipt } from '@/types'
 
-const store = useDataStore()
+const store = useBeamStore()
 const items = ref<ListViewItem[]>([])
 
 onMounted(async () => {

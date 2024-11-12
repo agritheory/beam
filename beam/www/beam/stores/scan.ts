@@ -1,64 +1,55 @@
 // Copyright (c) 2024, AgriTheory and contributors
 // For license information, please see license.txt
 
-import { useDataStore } from './store.js'
-import type { BeamWindow, FormContext, ListContext, StockEntry } from './types/index.js'
+import { defineStore } from 'pinia'
 
-declare const window: BeamWindow
+import { useBeamStore } from '@/stores/beam.js'
+import type { FormContext, ListContext, StockEntry } from '@/types/index.js'
 
-export function useScan() {
-	const scanHandler = new ScanHandler()
-	window.scan = scanHandler
-	return { scanHandler }
-}
+export const useScanStore = defineStore('scan', () => {
+	const store = useBeamStore()
 
-export class ScanHandler {
-	store: ReturnType<typeof useDataStore>
-
-	constructor() {
-		this.store = useDataStore()
-	}
-
-	async scan(barcode: string, qty: number) {
-		const response = await this.store.scan(barcode, qty)
+	const scan = async (barcode: string, qty: number) => {
+		const response = await store.scan(barcode, qty)
 		if (response && response.length > 0) {
 			let fn: Function
 			const action = response[0].action
 
-			const scanHooks = this.store.config.client
+			const scanHooks = store.config.client
 			if (scanHooks.length > 0 && action in scanHooks) {
 				const path: string = scanHooks[action][0]
 				// call (first) custom built callback registered in hooks
 				fn = path.split('.').reduce((previous, current) => previous[current], window)
 				return await fn(response)
 			} else {
-				return await this[action](response) // TODO: this only calls the first function
+				return await actions[action](response) // TODO: this only calls the first function
 			}
 		}
 	}
 
-	route(barcode_context: ListContext[]) {
+	const route = (barcode_context: ListContext[]) => {
 		// TODO: re-route to formview; use store router
 	}
 
-	filter(barcode_context: ListContext[]) {
+	const filter = (barcode_context: ListContext[]) => {
 		// TODO: apply filters to listview; use store router
 	}
 
-	add_or_associate(barcode_context: FormContext[]) {
+	const add_or_associate = (barcode_context: FormContext[]) => {
+		console.log('adding from new store')
 		barcode_context.forEach(async action => {
 			const parentfield = action.parentfield || 'items'
 			const is_stock_entry =
-				(this.store.form.doctype === 'Stock Entry' || 'Work Order') &&
+				(store.form.doctype === 'Stock Entry' || 'Work Order') &&
 				[
 					'Send to Subcontractor',
 					'Material Transfer for Manufacture',
 					'Material Transfer',
 					'Material Receipt',
 					'Manufacture',
-				].includes(this.store.form.stock_entry_type)
+				].includes(store.form.stock_entry_type)
 
-			const existing_rows = this.store.form[parentfield].filter(row => {
+			const existing_rows = store.form[parentfield].filter(row => {
 				if (is_stock_entry) {
 					return row.item_code === action.context.item_code || row.handling_unit
 				} else {
@@ -70,7 +61,7 @@ export class ScanHandler {
 			})
 
 			if (existing_rows.length > 0) {
-				this.store.$patch(state => {
+				store.$patch(state => {
 					for (const row of existing_rows) {
 						for (const item of state.form[parentfield]) {
 							if (item.name === row.name) {
@@ -81,7 +72,7 @@ export class ScanHandler {
 					}
 				})
 			} else {
-				this.store.$patch(state => {
+				store.$patch(state => {
 					state.form[parentfield].push({
 						item_code: action.context.item_code,
 						qty: 1,
@@ -92,7 +83,7 @@ export class ScanHandler {
 		})
 	}
 
-	set_warehouse(barcode_context: FormContext[]) {
+	const set_warehouse = (barcode_context: FormContext[]) => {
 		barcode_context.forEach(async action => {
 			if (action.doctype !== 'Stock Entry') {
 				return
@@ -107,8 +98,8 @@ export class ScanHandler {
 				'Repack',
 			]
 
-			const entry_type = (this.store.form as StockEntry).stock_entry_type
-			this.store.$patch(state => {
+			const entry_type = (store.form as StockEntry).stock_entry_type
+			store.$patch(state => {
 				const form = state.form as StockEntry
 				if (source_warehouses.includes(entry_type)) {
 					form.from_warehouse = action.target
@@ -132,16 +123,16 @@ export class ScanHandler {
 		})
 	}
 
-	async add_or_increment(barcode_context: FormContext[]) {
+	const add_or_increment = async (barcode_context: FormContext[]) => {
 		barcode_context.forEach(async action => {
 			const parentfield = action.parentfield || 'items'
-			const existing_rows = this.store.form[parentfield].filter(
+			const existing_rows = store.form[parentfield].filter(
 				row =>
 					(row.item_code === action.context.item_code && !row.handling_unit) || row.barcode === action.context.barcode
 			)
 
 			if (existing_rows.length > 0) {
-				this.store.$patch(state => {
+				store.$patch(state => {
 					for (const row of existing_rows) {
 						for (const item of state.form[parentfield]) {
 							if (item.name === row.name) {
@@ -161,7 +152,7 @@ export class ScanHandler {
 					'Repack',
 				]
 
-				this.store.$patch(state => {
+				store.$patch(state => {
 					const item = {
 						item_code: action.context.item_code,
 						qty: 1,
@@ -186,11 +177,22 @@ export class ScanHandler {
 		})
 	}
 
-	set_item_code_and_handling_unit(barcode_context: FormContext[]) {
+	const set_item_code_and_handling_unit = (barcode_context: FormContext[]) => {
 		barcode_context.forEach(action => {
-			this.store.$patch(state => {
+			store.$patch(state => {
 				state.form[action.field] = action.target
 			})
 		})
 	}
-}
+
+	const actions = {
+		add_or_associate,
+		add_or_increment,
+		filter,
+		route,
+		set_item_code_and_handling_unit,
+		set_warehouse,
+	}
+
+	return { scan }
+})

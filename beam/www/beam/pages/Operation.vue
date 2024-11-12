@@ -15,11 +15,11 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { useDataStore } from '@/store'
+import { useBeamStore } from '@/stores/beam'
 import type { JobCard, WorkOrder, WorkOrderOperation } from '@/types'
 
 const route = useRoute()
-const store = useDataStore()
+const store = useBeamStore()
 
 const operation = ref<Partial<WorkOrderOperation>>({})
 const jobCard = ref<Partial<JobCard>>({})

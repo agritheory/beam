@@ -33,11 +33,11 @@ import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
 import ControlButtons from '@/components/ControlButtons.vue'
-import { useDataStore } from '@/store'
+import { useBeamStore } from '@/stores/beam'
 import type { ListViewItem, WorkOrder } from '@/types'
 
 const route = useRoute()
-const store = useDataStore()
+const store = useBeamStore()
 const workOrderId = route.params.id.toString()
 
 const order = ref(store.form as WorkOrder)

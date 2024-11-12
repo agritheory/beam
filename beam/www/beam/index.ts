@@ -7,9 +7,10 @@ import { createApp } from 'vue'
 import { createRouter, createWebHashHistory } from 'vue-router'
 import { routes, handleHotUpdate } from 'vue-router/auto-routes'
 
-import Beam from './Beam.vue'
-import { useDataStore } from './store'
-import { BeamWindow } from './types/index.js'
+import Beam from '@/Beam.vue'
+import { useInitStore } from '@/stores/init.js'
+import { useBeamStore } from '@/stores/beam.js'
+import { BeamWindow } from '@/types/index.js'
 
 declare const window: BeamWindow
 
@@ -22,7 +23,8 @@ if (import.meta.hot) {
 	handleHotUpdate(router)
 }
 
-const addPatchSubscription = (store: ReturnType<typeof useDataStore>) => {
+const addPatchSubscription = () => {
+	const store = useBeamStore()
 	store.$subscribe(mutation => {
 		if (['patch function', 'patch object'].includes(mutation.type)) {
 			store.setDirty(true)
@@ -38,16 +40,16 @@ router.beforeEach(async (to, from, next) => {
 			// ignores everything after the hash
 			window.location.href = '/login?redirect-to=/beam#'
 		} else {
-			const store = useDataStore()
+			const store = useInitStore()
 			await store.init(to)
-			addPatchSubscription(store)
+			addPatchSubscription()
 			next()
 		}
 	} else {
 		// assuming user is logged in and authenticated for all Beam views
-		const store = useDataStore()
+		const store = useInitStore()
 		await store.init(to)
-		addPatchSubscription(store)
+		addPatchSubscription()
 		next()
 	}
 })

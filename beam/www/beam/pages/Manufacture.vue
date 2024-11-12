@@ -13,13 +13,13 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 
-import { useDataStore } from '@/store'
+import { useBeamStore } from '@/stores/beam'
 import type { ListViewItem, WorkOrder } from '@/types'
 
 declare const frappe: any
 
 const items = ref<ListViewItem[]>([])
-const store = useDataStore()
+const store = useBeamStore()
 
 onMounted(async () => {
 	const orders = await store.getAll<WorkOrder[]>('Work Order', {

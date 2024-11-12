@@ -14,10 +14,10 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 
-import { useDataStore } from '@/store'
+import { useBeamStore } from '@/stores/beam'
 import type { ListViewItem, Workstation } from '@/types'
 
-const store = useDataStore()
+const store = useBeamStore()
 const workstations = ref<Partial<ListViewItem>[]>([])
 
 onMounted(async () => {

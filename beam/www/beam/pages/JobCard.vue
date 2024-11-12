@@ -10,10 +10,10 @@
 <script setup lang="ts">
 import { useRoute } from 'vue-router'
 
-import { useDataStore } from '@/store'
+import { useBeamStore } from '@/stores/beam'
 
 const route = useRoute()
-const store = useDataStore()
+const store = useBeamStore()
 </script>
 
 <style scoped>
