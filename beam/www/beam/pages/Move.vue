@@ -18,7 +18,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 
 import ControlButtons from '@/components/ControlButtons.vue'
 import { useDataStore } from '@/store'
@@ -66,6 +66,7 @@ onMounted(async () => {
 // 	return { data, exception, response }
 // }
 </script>
+
 <style scoped>
 .begin {
 	width: 100%;

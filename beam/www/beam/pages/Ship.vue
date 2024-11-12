@@ -1,5 +1,5 @@
 <template>
-	<Navbar @click="handlePrimaryAction">
+	<Navbar>
 		<template #title>
 			<h1 class="nav-title">Ship</h1>
 		</template>

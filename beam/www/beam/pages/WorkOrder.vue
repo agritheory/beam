@@ -25,20 +25,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, reactive, watch } from 'vue'
+import { onMounted, ref, reactive } from 'vue'
 import { useRoute } from 'vue-router'
 
 import ControlButtons from '@/components/ControlButtons.vue'
 import { useDataStore } from '@/store'
-import type { StockEntry, ListViewItem, WorkOrder } from '@/types'
+import type { ListViewItem, WorkOrder } from '@/types'
 
 const route = useRoute()
 const store = useDataStore()
 const workOrderId = route.params.id.toString()
-const stockEntry = ref<Partial<StockEntry>>({})
-let order = reactive({})
+let order = reactive<Partial<WorkOrder>>({})
 const operations = ref<ListViewItem[]>([])
-const items = ref < ListVie
+const items = ref<ListViewItem[]>([])
 
 // subscribe on changes to required items
 // listen on changes from emit in ListCount

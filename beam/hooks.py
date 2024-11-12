@@ -529,8 +529,8 @@ beam_mobile = {
 		"Receive": "./beam/beam/www/beam/pages/Receive.vue",
 		"Repack": "./beam/beam/www/beam/pages/Repack.vue",
 		"Ship": "./beam/beam/www/beam/pages/Ship.vue",
-		"Workstation": "./beam/beam/www/beam/pages/Workstation.vue",
 		"WorkOrder": "./beam/beam/www/beam/pages/WorkOrder.vue",
+		"Workstation": "./beam/beam/www/beam/pages/Workstation.vue",
 	},
 	"routes": [
 		{

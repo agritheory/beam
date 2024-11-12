@@ -66,7 +66,7 @@ export const useDataStore = defineStore('data', () => {
 				if (currentRoute.query.id) {
 					docname = currentRoute.query.id.toString()
 				}
-				form.value = await makeNewDoc<StockEntry | DeliveryNote | PurchaseReceipt>(meta.doctype, docname)
+				form.value = await makeNewDoc<DeliveryNote | PurchaseReceipt | StockEntry>(meta.doctype, docname)
 			}
 		}
 	}
@@ -221,7 +221,6 @@ export const useDataStore = defineStore('data', () => {
 
 	const getMappedStockEntry = async (data: Record<string, any>) => {
 		// return a work order object with attached stock entry/ies and job card(s)
-		//
 		const url = '/api/method/erpnext.manufacturing.doctype.work_order.work_order.make_stock_entry'
 		const response = await post(url, data)
 		const { message }: { message: StockEntry } = await response.json()
@@ -270,10 +269,10 @@ export const useDataStore = defineStore('data', () => {
 		getDemand,
 		getHome,
 		getMappedStockEntry,
-		makeNewDoc,
 		getOne,
 		getReceiving,
 		logout,
+		makeNewDoc,
 		scan,
 		setDirty,
 	}

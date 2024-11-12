@@ -12,14 +12,11 @@
 </template>
 
 <script setup lang="ts">
-import { Navbar } from '@stonecrop/beam'
 import { useInfiniteScroll } from '@vueuse/core'
 import { ref } from 'vue'
 
 import { useDataStore } from '@/store'
 import type { ListViewItem } from '@/types'
-
-declare const frappe: any
 
 const store = useDataStore()
 const transfer = ref<Partial<ListViewItem>[]>([])
@@ -37,7 +34,7 @@ useInfiniteScroll(
 
 		// TODO: move this to the server
 		data.forEach(row => {
-			row.count = { count: row.received_qty, of: `${row.stock_qty}` }
+			row.count = { count: row.received_qty, of: row.stock_qty }
 			row.label = `${row.item_code} from ${row.warehouse}`
 			row.linkComponent = 'ListAnchor'
 			row.description = row.parent

@@ -10,11 +10,11 @@
 	<div class="box" v-show="items.length">
 		<ListView :items="items" />
 	</div>
-	<ControlButtons :onCreate="create" :onSubmit="() => {}" :onCancel="() => {}" />
+	<!-- <ControlButtons :onCreate="create" :onSubmit="() => {}" :onCancel="() => {}" /> -->
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 
 import ControlButtons from '@/components/ControlButtons.vue'
 import { useDataStore } from '@/store'
