@@ -25,7 +25,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, reactive } from 'vue'
+import { computed, reactive } from 'vue'
 import { useRoute } from 'vue-router'
 
 import ControlButtons from '@/components/ControlButtons.vue'
@@ -35,25 +35,11 @@ import type { ListViewItem, WorkOrder } from '@/types'
 const route = useRoute()
 const store = useDataStore()
 const workOrderId = route.params.id.toString()
-let order = reactive<Partial<WorkOrder>>({})
-const operations = ref<ListViewItem[]>([])
-const items = ref<ListViewItem[]>([])
 
-// subscribe on changes to required items
-// listen on changes from emit in ListCount
+const order = reactive(store.form as WorkOrder)
 
-onMounted(async () => {
-	order = store.form as Partial<WorkOrder>
-
-	operations.value = order.operations.map(operation => ({
-		...operation,
-		label: operation.operation,
-		count: { count: operation.completed_qty, of: order.qty },
-		linkComponent: 'ListAnchor',
-		route: `#/work_order/${order.name}/operation/${operation.name}`,
-	}))
-
-	items.value = order.required_items.map(item => ({
+const items = computed((): ListViewItem[] => {
+	return order.required_items.map(item => ({
 		...item,
 		transfer_qty: 0, // use this field as the one to transfer against
 		label: item.item_code,
@@ -61,6 +47,22 @@ onMounted(async () => {
 		linkComponent: 'ListCount',
 	}))
 })
+
+const operations = computed((): ListViewItem[] => {
+	return order.operations.map(operation => ({
+		...operation,
+		label: operation.operation,
+		count: { count: operation.completed_qty, of: order.qty },
+		linkComponent: 'ListAnchor',
+		route: `#/work_order/${order.name}/operation/${operation.name}`,
+	}))
+})
+
+// TODO:
+// 1. subscribe on changes to required items
+// 2. listen on changes from emit in ListCount
+
+const create = async () => {}
 </script>
 
 <style scoped>

@@ -7,9 +7,10 @@
 			<RouterLink :to="{ name: 'home' }">Home</RouterLink>
 		</template>
 	</Navbar>
-	<scale>
+
+	<!-- <scale>
 		<readout :mqtt="" />
-	</scale>
+	</scale> -->
 </template>
 
 <script setup lang="ts">
