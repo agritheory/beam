@@ -1,4 +1,5 @@
 <template>
+	<!-- navigation section -->
 	<Navbar>
 		<template #title>
 			<h1 class="nav-title">Manufacture</h1>
@@ -9,15 +10,18 @@
 		</template>
 	</Navbar>
 
+	<!-- body section -->
 	<div>
-		<p>Planned Start: {{ (store.form as WorkOrder).planned_start_date }}</p>
+		<p>Planned Start: {{ order.planned_start_date }}</p>
 	</div>
 	<div class="box" v-show="items.length">
-		<ListView :items="items" />
+		<ListView :items="items" :key="refreshKey" />
 	</div>
 	<div class="box" v-show="operations.length">
-		<ListView :items="operations" />
+		<ListView :items="operations" :key="refreshKey" />
 	</div>
+
+	<!-- footer section -->
 	<ControlButtons
 		:onCreate="create"
 		:onSubmit="() => store.submit<WorkOrder>('Work Order', workOrderId)"
@@ -25,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
 import ControlButtons from '@/components/ControlButtons.vue'
@@ -36,10 +40,18 @@ const route = useRoute()
 const store = useDataStore()
 const workOrderId = route.params.id.toString()
 
-const order = reactive(store.form as WorkOrder)
+const order = ref(store.form as WorkOrder)
+const refreshKey = ref(0)
+
+store.$subscribe((mutation, state) => {
+	if (['patch function', 'patch object'].includes(mutation.type)) {
+		order.value = state.form as WorkOrder
+		refreshKey.value++
+	}
+})
 
 const items = computed((): ListViewItem[] => {
-	return order.required_items.map(item => ({
+	return order.value.required_items.map(item => ({
 		...item,
 		transfer_qty: 0, // use this field as the one to transfer against
 		label: item.item_code,
@@ -49,12 +61,12 @@ const items = computed((): ListViewItem[] => {
 })
 
 const operations = computed((): ListViewItem[] => {
-	return order.operations.map(operation => ({
+	return order.value.operations.map(operation => ({
 		...operation,
 		label: operation.operation,
-		count: { count: operation.completed_qty, of: order.qty },
+		count: { count: operation.completed_qty, of: order.value.qty },
 		linkComponent: 'ListAnchor',
-		route: `#/work_order/${order.name}/operation/${operation.name}`,
+		route: `#/work_order/${order.value.name}/operation/${operation.name}`,
 	}))
 })
 
@@ -62,7 +74,9 @@ const operations = computed((): ListViewItem[] => {
 // 1. subscribe on changes to required items
 // 2. listen on changes from emit in ListCount
 
-const create = async () => {}
+const create = async () => {
+	throw new Error('Not implemented')
+}
 </script>
 
 <style scoped>
