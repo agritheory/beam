@@ -36,10 +36,10 @@ const elapsedTime = computed(() => {
 
 onMounted(async () => {
 	const workOrder = store.form as Partial<WorkOrder>
-	operation.value = workOrder.operations.find(operation => operation.name === route.params.id) || {}
+	operation.value = workOrder.operations.find(operation => operation.name === route.params.operationId) || {}
 
 	const jobList = await store.getAll<JobCard[]>('Job Card', {
-		filters: JSON.stringify([['operation_id', '=', route.params.id]]),
+		filters: JSON.stringify([['operation_id', '=', route.params.operationId]]),
 	})
 
 	if (jobList.length > 0) {

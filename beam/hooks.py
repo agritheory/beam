@@ -558,7 +558,7 @@ beam_mobile = {
 			"meta": {"requiresAuth": True, "doctype": "Work Order", "view": "form"},
 		},
 		{
-			"path": "/work_order/:id/operation/:id",
+			"path": "/work_order/:id/operation/:operationId",
 			"name": "operation",
 			"component": "Operation",
 			"meta": {"requiresAuth": True, "doctype": "Work Order", "view": "form"},
