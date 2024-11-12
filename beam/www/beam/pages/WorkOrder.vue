@@ -38,7 +38,10 @@ const workOrderId = route.params.id.toString()
 const stockEntry = ref<Partial<StockEntry>>({})
 let order = reactive({})
 const operations = ref<ListViewItem[]>([])
-const items = ref<ListViewItem[]>([])
+const items = ref < ListVie
+
+// subscribe on changes to required items
+// listen on changes from emit in ListCount
 
 onMounted(async () => {
 	order = store.form as Partial<WorkOrder>
@@ -50,6 +53,7 @@ onMounted(async () => {
 		linkComponent: 'ListAnchor',
 		route: `#/work_order/${order.name}/operation/${operation.name}`,
 	}))
+
 	items.value = order.required_items.map(item => ({
 		...item,
 		transfer_qty: 0, // use this field as the one to transfer against

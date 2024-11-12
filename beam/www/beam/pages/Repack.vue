@@ -7,7 +7,9 @@
 			<RouterLink :to="{ name: 'home' }">Home</RouterLink>
 		</template>
 	</Navbar>
-	<Transfer :id="stockEntry.name" />
+	<scale>
+		<readout :mqtt="" />
+	</scale>
 </template>
 
 <script setup lang="ts">
