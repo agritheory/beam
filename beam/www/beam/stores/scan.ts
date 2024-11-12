@@ -36,18 +36,17 @@ export const useScanStore = defineStore('scan', () => {
 	}
 
 	const add_or_associate = (barcode_context: FormContext[]) => {
-		console.log('adding from new store')
 		barcode_context.forEach(async action => {
 			const parentfield = action.parentfield || 'items'
 			const is_stock_entry =
-				(store.form.doctype === 'Stock Entry' || 'Work Order') &&
+				store.form.doctype === 'Stock Entry' &&
 				[
 					'Send to Subcontractor',
 					'Material Transfer for Manufacture',
 					'Material Transfer',
 					'Material Receipt',
 					'Manufacture',
-				].includes(store.form.stock_entry_type)
+				].includes((store.form as StockEntry).stock_entry_type)
 
 			const existing_rows = store.form[parentfield].filter(row => {
 				if (is_stock_entry) {

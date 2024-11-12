@@ -25,6 +25,6 @@ const items = ref<ListViewItem[]>([])
 const stockEntry = ref<Partial<StockEntry>>({})
 
 const handlePrimaryAction = () => {
-	console.log('handle primary action')
+	throw new Error('Not implemented')
 }
 </script>
