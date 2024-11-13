@@ -34,11 +34,20 @@ export type ChildDoctype = ChildDoctypeMeta & {
 	item_name?: string
 	qty?: number
 	stock_qty?: number
+	transfer_qty?: number
 	warehouse?: string
 }
 
 export type JobCard = ParentDoctype & {
 	total_time_in_mins: number
+	items?: JobCardItem[]
+}
+
+export type JobCardItem = ChildDoctype & {
+	item_code?: string
+	required_qty?: number
+	source_warehouse?: string
+	transferred_qty?: number
 }
 
 export type StockEntry = ParentDoctype & {
@@ -108,5 +117,6 @@ export type DeliveryNoteItem = ChildDoctype & {
 	warehouse?: string
 }
 
-export type ParentDoctypesWithItems = DeliveryNote | JobCard | PurchaseReceipt | StockEntry | WorkOrder
+export type ParentDoctypesForStockTransfer = DeliveryNote | PurchaseReceipt | StockEntry
+export type ParentDoctypesWithItems = ParentDoctypesForStockTransfer | JobCard | WorkOrder
 export type ParentDoctypes = ParentDoctypesWithItems & Workstation

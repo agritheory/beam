@@ -3,7 +3,7 @@
 
 import { install as BeamPlugin } from '@stonecrop/beam'
 import { createPinia } from 'pinia'
-import { createApp } from 'vue'
+import { createApp, markRaw } from 'vue'
 import { createRouter, createWebHashHistory } from 'vue-router'
 import { routes, handleHotUpdate } from 'vue-router/auto-routes'
 
@@ -43,6 +43,10 @@ router.beforeEach(async (to, from, next) => {
 })
 
 const pinia = createPinia()
+pinia.use(({ store }) => {
+	store.router = markRaw(router)
+})
+
 const app = createApp(Beam)
 app.use(router)
 app.use(BeamPlugin)

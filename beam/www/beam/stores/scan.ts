@@ -4,7 +4,7 @@
 import { defineStore } from 'pinia'
 
 import { useBeamStore } from '@/stores/beam.js'
-import type { FormContext, ListContext, StockEntry } from '@/types/index.js'
+import type { FormContext, ListContext, StockEntry, StockEntryItem } from '@/types/index.js'
 
 export const useScanStore = defineStore('scan', () => {
 	const store = useBeamStore()
@@ -123,25 +123,22 @@ export const useScanStore = defineStore('scan', () => {
 	}
 
 	const add_or_increment = async (barcode_context: FormContext[]) => {
+		const id = store.router.currentRoute.value.params.id
+
 		barcode_context.forEach(async action => {
-			const parentfield = action.parentfield || 'items'
-			const existing_rows = store.form[parentfield].filter(
+			const incrementCount = 1
+			const mappedDoc = store.cache.mappers[id]
+			const existing_rows = mappedDoc.items.filter(
 				row =>
 					(row.item_code === action.context.item_code && !row.handling_unit) || row.barcode === action.context.barcode
 			)
 
 			if (existing_rows.length > 0) {
-				store.$patch(state => {
-					for (const row of existing_rows) {
-						for (const item of state.form[parentfield]) {
-							if (item.name === row.name) {
-								item.transferred_qty = (item.transferred_qty ?? 0) + 1
-								break
-							}
-						}
-					}
-				})
-			} else {
+				for (const row of existing_rows) {
+					row.qty = row.qty + incrementCount
+				}
+				store.$patch(state => (state.cache.mappers[id] = mappedDoc))
+			} else if (action.doctype === 'Stock Entry') {
 				const source_warehouses = ['Material Consumption for Manufacture', 'Material Issue']
 				const target_warehouses = ['Material Receipt', 'Manufacture']
 				const both_warehouses = [
@@ -151,26 +148,24 @@ export const useScanStore = defineStore('scan', () => {
 					'Repack',
 				]
 
-				store.$patch(state => {
-					const item = {
+				store.$patch(() => {
+					const item: StockEntryItem = {
 						item_code: action.context.item_code,
 						qty: 1,
 						[action.field]: action.target,
 					}
 
-					if (action.doctype === 'Stock Entry') {
-						const entry_type = (state.form as StockEntry).stock_entry_type
-						if (source_warehouses.includes(entry_type)) {
-							item.s_warehouse = action.context.warehouse
-						} else if (target_warehouses.includes(entry_type)) {
-							item.t_warehouse = action.context.warehouse
-						} else if (both_warehouses.includes(entry_type)) {
-							item.s_warehouse = action.context.warehouse
-							item.t_warehouse = action.context.warehouse
-						}
+					const entry_type = (mappedDoc as StockEntry).stock_entry_type
+					if (source_warehouses.includes(entry_type)) {
+						item.s_warehouse = action.context.warehouse
+					} else if (target_warehouses.includes(entry_type)) {
+						item.t_warehouse = action.context.warehouse
+					} else if (both_warehouses.includes(entry_type)) {
+						item.s_warehouse = action.context.warehouse
+						item.t_warehouse = action.context.warehouse
 					}
 
-					state.form[parentfield].push(item)
+					;(mappedDoc as StockEntry).items.push(item)
 				})
 			}
 		})

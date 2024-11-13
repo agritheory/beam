@@ -3,16 +3,16 @@
 
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { type RouteLocationNormalized } from 'vue-router'
+import type { RouteLocationNormalized } from 'vue-router'
 
 import { useHttpStore } from '@/stores/http.js'
 import type {
+	BeamCache,
 	BeamHome,
-	DeliveryNote,
 	FormContext,
 	ListContext,
 	ParentDoctypes,
-	PurchaseReceipt,
+	ParentDoctypesForStockTransfer,
 	ScanConfig,
 	ScanContext,
 	StockEntry,
@@ -33,7 +33,7 @@ export const useBeamStore = defineStore('beam', () => {
 	const httpStore = useHttpStore()
 
 	const recordsPerPage = 20
-	const cache = ref<Record<string, any>>({ mappers: {} })
+	const cache = ref<BeamCache>({ mappers: {} })
 	const config = ref<ScanConfig>({})
 	const context = ref<ScanContext>({})
 	const form = ref<Partial<ParentDoctypes>>({})
@@ -59,7 +59,7 @@ export const useBeamStore = defineStore('beam', () => {
 				if (currentRoute.query.id) {
 					docname = currentRoute.query.id.toString()
 				}
-				form.value = await makeNewDoc<DeliveryNote | PurchaseReceipt | StockEntry>(meta.doctype, docname)
+				form.value = await makeNewDoc<ParentDoctypesForStockTransfer>(meta.doctype, docname)
 			}
 		}
 	}
@@ -178,6 +178,10 @@ export const useBeamStore = defineStore('beam', () => {
 			alert('Error: Could not map Work Order to Stock Entry')
 			return
 		}
+		// initialize pending stock entry items with zero quantity
+		message.items.map(item => {
+			item.qty = 0
+		})
 		return message
 	}
 

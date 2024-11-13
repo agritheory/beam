@@ -586,8 +586,7 @@ frm = {
 		"Work Order": [
 			{
 				"action": "add_or_increment",
-				"doctype": "Work Order Item",
-				"parentfield": "required_items",
+				"doctype": "Stock Entry",
 				"field": "item_code",
 				"target": "target.item_code",
 				"context": "target",

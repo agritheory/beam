@@ -40,7 +40,7 @@ import type { ListViewItem, StockEntry, WorkOrder } from '@/types'
 const route = useRoute()
 const store = useBeamStore()
 const workOrderId = route.params.id.toString()
-const stockEntry = ref<StockEntry | undefined>(store.cache.mappers[workOrderId])
+const stockEntry = ref<StockEntry | undefined>(store.cache.mappers[workOrderId] as StockEntry)
 
 const order = ref(store.form as WorkOrder)
 const refreshKey = ref(0)
@@ -48,7 +48,7 @@ const refreshKey = ref(0)
 onMounted(async () => {
 	// create and save a Stock Entry mapped to the Work Order into cache
 	if (store.cache.mappers[workOrderId]) {
-		stockEntry.value = store.cache.mappers[workOrderId]
+		stockEntry.value = store.cache.mappers[workOrderId] as StockEntry
 	} else {
 		stockEntry.value = await store.getMappedStockEntry({
 			work_order_id: workOrderId,
@@ -64,18 +64,20 @@ onMounted(async () => {
 store.$subscribe((mutation, state) => {
 	if (['patch function', 'patch object'].includes(mutation.type)) {
 		order.value = state.form as WorkOrder
+		stockEntry.value = state.cache.mappers[workOrderId] as StockEntry
 		refreshKey.value++
 	}
 })
 
 const items = computed((): ListViewItem[] => {
-	return order.value.required_items.map(item => ({
-		...item,
-		transfer_qty: 0, // use this field as the one to transfer against
-		label: item.item_code,
-		count: { count: item.transferred_qty, of: item.required_qty },
-		linkComponent: 'ListCount',
-	}))
+	return (
+		stockEntry.value?.items.map(item => ({
+			...item,
+			label: item.item_code,
+			count: { count: item.qty, of: item.transfer_qty },
+			linkComponent: 'ListCount',
+		})) || []
+	)
 })
 
 const operations = computed((): ListViewItem[] => {
