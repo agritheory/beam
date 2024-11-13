@@ -3,14 +3,11 @@
 	<div class="begin" v-if="listItems.length == 0">
 		<span>Scan to Begin</span>
 	</div>
-	<ControlButtons
-		:onCreate="create"
-		:onSubmit="() => store.submit<StockEntry>('Stock Entry', stockEntryId)"
-		:onCancel="() => store.cancel<StockEntry>('Stock Entry', stockEntryId)" />
+	<ControlButtons :buttons="controlButtons" />
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
 import ControlButtons from '@/components/ControlButtons.vue'
 import { useDataStore } from '@/store'
@@ -56,6 +53,26 @@ const create = async () => {
 	}
 	return { data, exception, response }
 }
+
+const controlButtons = computed(() => {
+	return [
+		{
+			label: 'Save',
+			action: create,
+			disabled: listItems.value.length === 0,
+		},
+		{
+			label: 'Submit',
+			action: () => store.submit<StockEntry>('Stock Entry', stockEntryId.value),
+			disabled: stockEntryId.value === '',
+		},
+		{
+			label: 'Cancel',
+			action: () => store.cancel<StockEntry>('Stock Entry', stockEntryId.value),
+			disabled: stockEntryId.value === '',
+		},
+	]
+})
 </script>
 
 <style scoped>
