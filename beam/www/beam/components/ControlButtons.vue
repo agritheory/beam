@@ -25,10 +25,10 @@ const doctypeName = ref('')
 
 const onSave = async () => {
 	try {
-		const { data } = await props.onCreate()
-		if (data) {
-			doctypeName.value = data.name
-			docstatus.value = data.docstatus
+		const response = await props.onCreate()
+		if (response?.data) {
+			doctypeName.value = response.data.name
+			docstatus.value = response.data.docstatus
 		}
 	} catch (err) {
 		console.error(err)
@@ -37,8 +37,8 @@ const onSave = async () => {
 
 const onSubmit = async () => {
 	try {
-		const { data } = await props.onSubmit()
-		if (data) docstatus.value = data.docstatus
+		const response = await props.onSubmit()
+		if (response?.data) docstatus.value = response.data.docstatus
 	} catch (err) {
 		console.error(err)
 	}
@@ -46,8 +46,8 @@ const onSubmit = async () => {
 
 const onCancel = async () => {
 	try {
-		const { data } = await props.onCancel()
-		if (data) docstatus.value = 2
+		const response = await props.onCancel()
+		if (response?.data) docstatus.value = 2
 	} catch (err) {
 		console.error(err)
 	}

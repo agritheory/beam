@@ -2,6 +2,7 @@
 // For license information, please see license.txt
 
 import { defineStore } from 'pinia'
+import { ref } from 'vue'
 import { type RouteLocationNormalized } from 'vue-router'
 
 import { useHttpStore } from '@/stores/http.js'
@@ -16,7 +17,6 @@ import type {
 	ScanContext,
 	StockEntry,
 } from '@/types/index.js'
-import { ref } from 'vue'
 
 declare const frappe: any
 
@@ -27,12 +27,13 @@ const NEW_DOC_URL = '/api/method/beam.www.beam.make_new_doc'
 const PURCHASE_DEMAND_URL = '/api/method/beam.beam.demand.receiving.get_receiving_demand'
 const SALES_DEMAND_URL = '/api/method/beam.beam.demand.demand.get_demand'
 const SCAN_CONFIG_URL = '/api/method/beam.beam.scan.config.get_scan_doctypes'
-const SCAN_URL = '/api/method/beam.beam.scan.scan'
+const SCAN_URL = 'beam.beam.scan.scan' // frappe.xcall doesn't require prefix
 
 export const useBeamStore = defineStore('beam', () => {
 	const httpStore = useHttpStore()
 
 	const recordsPerPage = 20
+	const cache = ref<Record<string, any>>({ mappers: {} })
 	const config = ref<ScanConfig>({})
 	const context = ref<ScanContext>({})
 	const form = ref<Partial<ParentDoctypes>>({})
@@ -44,12 +45,13 @@ export const useBeamStore = defineStore('beam', () => {
 		return { data: message }
 	}
 
-	// TODO: somehow vue-router's composable is not working as intended here, so accepting route input
+	// TODO: vue-router's useRoute() composable is not working as intended here, so accepting route input
 	const setForm = async (currentRoute: RouteLocationNormalized) => {
-		const meta = currentRoute.meta
 		form.value = {}
-		let docname = undefined
+
+		const meta = currentRoute.meta
 		if (meta.view === 'form' && config.value.frm.includes(meta.doctype)) {
+			let docname: string
 			if (currentRoute.params.id) {
 				docname = currentRoute.params.id.toString()
 				form.value = await getOne<ParentDoctypes>(meta.doctype, docname)
@@ -130,7 +132,7 @@ export const useBeamStore = defineStore('beam', () => {
 		const url = `/api/resource/${doctype}`
 		const response = await httpStore.post(url, body)
 		const { data, exception }: { data: T; exception: string } = await response.json()
-		if (response.ok) setDirty(false)
+		if (response.ok) form.value.dirty = false
 		alert(response.ok ? 'Document created' : exception)
 		return { data, exception, response }
 	}
@@ -139,7 +141,7 @@ export const useBeamStore = defineStore('beam', () => {
 		const url = `/api/resource/${doctype}/${name}`
 		const response = await httpStore.post(url, body)
 		const { data, exception }: { data: T; exception: string } = await response.json()
-		if (response.ok) setDirty(false)
+		if (response.ok) form.value.dirty = false
 		alert(response.ok ? 'Document updated' : exception)
 		return { data, exception, response }
 	}
@@ -148,7 +150,7 @@ export const useBeamStore = defineStore('beam', () => {
 		const url = `/api/resource/${doctype}/${name}`
 		const response = await httpStore.put(url, { docstatus: 1 })
 		const { data, exception }: { data: T; exception: string } = await response.json()
-		if (response.ok) setDirty(false)
+		if (response.ok) form.value.dirty = false
 		alert(response.ok ? 'Document status changed to Submitted' : exception)
 		return { data, exception, response }
 	}
@@ -157,13 +159,13 @@ export const useBeamStore = defineStore('beam', () => {
 		const url = `/api/resource/${doctype}/${name}`
 		const response = await httpStore.put(url, { docstatus: 2 })
 		const { data, exception }: { data: T; exception: string } = await response.json()
-		if (response.ok) setDirty(false)
+		if (response.ok) form.value.dirty = false
 		alert(response.ok ? 'Document status changed to Cancelled' : exception)
 		return { data, exception, response }
 	}
 
 	const makeNewDoc = async <T>(doctype: string, docname?: string) => {
-		const response = await httpStore.post(NEW_DOC_URL, { doctype: doctype, docname: docname })
+		const response = await httpStore.post(NEW_DOC_URL, { doctype, docname })
 		const { message }: { message: T } = await response.json()
 		return message
 	}
@@ -179,10 +181,6 @@ export const useBeamStore = defineStore('beam', () => {
 		return message
 	}
 
-	const setDirty = (value: boolean) => {
-		form.value.dirty = value
-	}
-
 	const logout = async () => {
 		await httpStore.get(LOGOUT_URL)
 		window.location.href = '/login?redirect-to=/beam#'
@@ -190,6 +188,7 @@ export const useBeamStore = defineStore('beam', () => {
 
 	return {
 		// state
+		cache,
 		config,
 		context,
 		form,
@@ -215,6 +214,5 @@ export const useBeamStore = defineStore('beam', () => {
 		logout,
 		makeNewDoc,
 		scan,
-		setDirty,
 	}
 })

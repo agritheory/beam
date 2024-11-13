@@ -4,9 +4,9 @@
 import type { StoreMetadata } from '@/types/store.js'
 
 export type DocActionResponse<T> = {
-	data: T
-	exception: string
-	response: Response
+	data?: T
+	exception?: string
+	response?: Response
 }
 
 export type ParentDoctype = StoreMetadata & {

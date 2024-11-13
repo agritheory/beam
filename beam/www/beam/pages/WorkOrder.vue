@@ -22,26 +22,44 @@
 	</div>
 
 	<!-- footer section -->
-	<ControlButtons
-		:onCreate="create"
-		:onSubmit="() => store.submit<WorkOrder>('Work Order', workOrderId)"
-		:onCancel="() => store.cancel<WorkOrder>('Work Order', workOrderId)" />
+	<ControlButtons :onCreate="create" :onSubmit="submit" :onCancel="cancel" />
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
 import ControlButtons from '@/components/ControlButtons.vue'
 import { useBeamStore } from '@/stores/beam'
-import type { ListViewItem, WorkOrder } from '@/types'
+import type { ListViewItem, StockEntry, WorkOrder } from '@/types'
+
+// TODO:
+// 1. subscribe on changes to required items
+// 2. listen on changes from emit in ListCount
 
 const route = useRoute()
 const store = useBeamStore()
 const workOrderId = route.params.id.toString()
+const stockEntry = ref<StockEntry | undefined>(store.cache.mappers[workOrderId])
 
 const order = ref(store.form as WorkOrder)
 const refreshKey = ref(0)
+
+onMounted(async () => {
+	// create and save a Stock Entry mapped to the Work Order into cache
+	if (store.cache.mappers[workOrderId]) {
+		stockEntry.value = store.cache.mappers[workOrderId]
+	} else {
+		stockEntry.value = await store.getMappedStockEntry({
+			work_order_id: workOrderId,
+			purpose: 'Material Transfer for Manufacture',
+		})
+
+		store.$patch(state => {
+			state.cache.mappers[workOrderId] = stockEntry.value
+		})
+	}
+})
 
 store.$subscribe((mutation, state) => {
 	if (['patch function', 'patch object'].includes(mutation.type)) {
@@ -70,11 +88,22 @@ const operations = computed((): ListViewItem[] => {
 	}))
 })
 
-// TODO:
-// 1. subscribe on changes to required items
-// 2. listen on changes from emit in ListCount
-
 const create = async () => {
+	if (store.form.dirty) {
+		// TODO: add a toast message indicating action has been performed (with success or failure)
+		return await store.insert('Stock Entry', stockEntry.value)
+	} else {
+		// TODO: a few options here:
+		// 1. allow setting a condition in ControlButtons to control when to enable the button
+		// 2. add a toast message here telling the user why this is a no-op
+	}
+}
+
+const submit = async () => {
+	throw new Error('Not implemented')
+}
+
+const cancel = async () => {
 	throw new Error('Not implemented')
 }
 </script>

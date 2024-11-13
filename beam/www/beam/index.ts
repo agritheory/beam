@@ -9,7 +9,6 @@ import { routes, handleHotUpdate } from 'vue-router/auto-routes'
 
 import Beam from '@/Beam.vue'
 import { useInitStore } from '@/stores/init.js'
-import { useBeamStore } from '@/stores/beam.js'
 import { BeamWindow } from '@/types/index.js'
 
 declare const window: BeamWindow
@@ -23,15 +22,6 @@ if (import.meta.hot) {
 	handleHotUpdate(router)
 }
 
-const addPatchSubscription = () => {
-	const store = useBeamStore()
-	store.$subscribe(mutation => {
-		if (['patch function', 'patch object'].includes(mutation.type)) {
-			store.setDirty(true)
-		}
-	})
-}
-
 router.beforeEach(async (to, from, next) => {
 	if (to.meta.requiresAuth) {
 		if (window.frappe.user === 'Guest') {
@@ -42,14 +32,12 @@ router.beforeEach(async (to, from, next) => {
 		} else {
 			const store = useInitStore()
 			await store.init(to)
-			addPatchSubscription()
 			next()
 		}
 	} else {
 		// assuming user is logged in and authenticated for all Beam views
 		const store = useInitStore()
 		await store.init(to)
-		addPatchSubscription()
 		next()
 	}
 })
