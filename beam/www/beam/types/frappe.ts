@@ -1,7 +1,9 @@
 // Copyright (c) 2024, AgriTheory and contributors
 // For license information, please see license.txt
 
-export type ParentDoctypeMeta = {
+import type { StoreMetadata } from './store.js'
+
+export type ParentDoctypeMeta = StoreMetadata & {
 	creation?: string
 	docstatus?: number
 	doctype?: string
