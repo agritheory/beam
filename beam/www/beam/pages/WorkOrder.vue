@@ -12,7 +12,7 @@
 
 	<!-- body section -->
 	<div>
-		<p>Planned Start: {{ order.planned_start_date }}</p>
+		<p>Planned Start: {{ workOrder.planned_start_date }}</p>
 	</div>
 	<div class="box" v-show="items.length">
 		<ListView :items="items" :key="refreshKey" />
@@ -40,16 +40,21 @@ import type { ListViewItem, StockEntry, WorkOrder } from '@/types'
 const route = useRoute()
 const store = useBeamStore()
 const workOrderId = route.params.id.toString()
-const stockEntry = ref<StockEntry | undefined>(store.cache.mappers[workOrderId] as StockEntry)
 
-const order = ref(store.form as WorkOrder)
+const stockEntry = ref<StockEntry | undefined>(store.cache.mappers[workOrderId] as StockEntry)
+const workOrder = ref(store.form as WorkOrder)
 const refreshKey = ref(0)
 
+// hack: since array reactivity is not present in Vue 3, force-refresh the listviews on store update
+store.$subscribe(mutation => {
+	if (['patch function', 'patch object'].includes(mutation.type)) {
+		refreshKey.value++
+	}
+})
+
 onMounted(async () => {
-	// create and save a Stock Entry mapped to the Work Order into cache
-	if (store.cache.mappers[workOrderId]) {
-		stockEntry.value = store.cache.mappers[workOrderId] as StockEntry
-	} else {
+	if (!store.cache.mappers[workOrderId]) {
+		// create and save a Stock Entry mapped to the Work Order into cache
 		stockEntry.value = await store.getMappedStockEntry({
 			work_order_id: workOrderId,
 			purpose: 'Material Transfer for Manufacture',
@@ -58,14 +63,6 @@ onMounted(async () => {
 		store.$patch(state => {
 			state.cache.mappers[workOrderId] = stockEntry.value
 		})
-	}
-})
-
-store.$subscribe((mutation, state) => {
-	if (['patch function', 'patch object'].includes(mutation.type)) {
-		order.value = state.form as WorkOrder
-		stockEntry.value = state.cache.mappers[workOrderId] as StockEntry
-		refreshKey.value++
 	}
 })
 
@@ -81,19 +78,30 @@ const items = computed((): ListViewItem[] => {
 })
 
 const operations = computed((): ListViewItem[] => {
-	return order.value.operations.map(operation => ({
+	return workOrder.value.operations.map(operation => ({
 		...operation,
 		label: operation.operation,
-		count: { count: operation.completed_qty, of: order.value.qty },
+		count: { count: operation.completed_qty, of: workOrder.value.qty },
 		linkComponent: 'ListAnchor',
-		route: `#/work_order/${order.value.name}/operation/${operation.name}`,
+		route: `#/work_order/${workOrder.value.name}/operation/${operation.name}`,
 	}))
 })
 
 const create = async () => {
 	if (store.form.dirty) {
-		// TODO: add a toast message indicating action has been performed (with success or failure)
-		return await store.insert('Stock Entry', stockEntry.value)
+		const document: StockEntry = { ...stockEntry.value }
+		document.items = document.items.filter(item => item.qty > 0)
+		const response = await store.insert('Stock Entry', document)
+
+		if (!response.exception) {
+			store.$patch(state => {
+				state.form.dirty = false
+				state.cache.mappers[workOrderId] = response.data
+				stockEntry.value = response.data
+			})
+		}
+
+		return response
 	} else {
 		// TODO: a few options here:
 		// 1. allow setting a condition in ControlButtons to control when to enable the button
