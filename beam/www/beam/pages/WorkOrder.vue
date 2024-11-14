@@ -121,6 +121,14 @@ const create = async () => {
 	}
 }
 
+const submit = async () => {
+	throw new Error('Not implemented')
+}
+
+const cancel = async () => {
+	throw new Error('Not implemented')
+}
+
 const controlButtons = computed(() => {
 	if (!workOrder) {
 		return []
@@ -130,7 +138,7 @@ const controlButtons = computed(() => {
 			label: 'SAVE',
 			action: create,
 			disabled: items.value.length === 0,
-			// color: {'background': "#4791FF", text: 'var(--sc-btn-color)'}
+			color: { background: '#4791FF', text: 'var(--sc-btn-color)' },
 		},
 		{
 			label: workOrder.value.skip_transfer ? 'MANUFACTURE' : 'TRANSFER',
