@@ -1,78 +1,48 @@
 <template>
-	<div class="control-buttons">
-		<button class="btn" @click="onAmend" v-if="docstatus === 2">Amend</button>
-		<template v-else>
-			<button class="beam_btn" @click="onSave" :disabled="!(docstatus === 0 && doctypeName === '')">Save</button>
-			<button class="beam_btn" @click="onSubmit" :disabled="!(docstatus === 0 && doctypeName !== '')">Submit</button>
-			<button class="beam_btn" @click="onCancel" :disabled="docstatus !== 1">Cancel</button>
-		</template>
+	<div :class="`button-${buttons.length} control-buttons`">
+		<BeamBtn
+			v-for="(button, index) in buttons"
+			:key="index"
+			@click="button.action"
+			:disabled="button.disabled"
+			v-show="!button.hidden"
+			:style="{
+				'background-color': !button.disabled ? button.color?.background || 'inherit' : 'inherit',
+				color: !button.disabled ? button.color?.text || 'inherit' : 'inherit',
+				cursor: !button.disabled ? 'auto' : 'not-allowed',
+			}">
+			{{ button.label }}
+		</BeamBtn>
 	</div>
 </template>
 
-<script setup lang="ts" generic="T extends ParentDoctype">
-import { ref } from 'vue'
-
-import type { DocActionResponse, ParentDoctype } from '@/types'
-
+<script setup lang="ts">
 const props = defineProps<{
-	onCreate: () => Promise<DocActionResponse<T>>
-	onSubmit: () => Promise<DocActionResponse<T>>
-	onCancel: () => Promise<DocActionResponse<T>>
+	buttons: Array<{ label: string; action: () => void; disabled: boolean; hidden: boolean; color: object | undefined }>
 }>()
-
-const docstatus = ref(0)
-const doctypeName = ref('')
-
-const onSave = async () => {
-	try {
-		const response = await props.onCreate()
-		if (response?.data) {
-			doctypeName.value = response.data.name
-			docstatus.value = response.data.docstatus
-		}
-	} catch (err) {
-		console.error(err)
-	}
-}
-
-const onSubmit = async () => {
-	try {
-		const response = await props.onSubmit()
-		if (response?.data) docstatus.value = response.data.docstatus
-	} catch (err) {
-		console.error(err)
-	}
-}
-
-const onCancel = async () => {
-	try {
-		const response = await props.onCancel()
-		if (response?.data) docstatus.value = 2
-	} catch (err) {
-		console.error(err)
-	}
-}
-
-const onAmend = () => {
-	docstatus.value = 0
-	doctypeName.value = ''
-}
 </script>
 
 <style scoped>
 .control-buttons {
-	background: white; /* change to variable */
-	width: 100%;
-	display: inline-grid;
-	grid-template-columns: repeat(3, 1fr [col-start]);
-	column-gap: 1ch;
-	padding-left: 1ch;
-	padding-right: 1ch;
+	display: flex;
+	flex-wrap: wrap-reverse;
+	flex-direction: row-reverse;
+	gap: 0.5rem;
+	width: calc(100% - 1rem);
+	padding: 0.5rem;
 	position: fixed;
 	bottom: 0;
-	margin-bottom: 0.5rem;
+	justify-content: space-between;
 }
-/* .control-buttons button {
 
-} */
+.control-buttons > button {
+	flex: 1 1 calc(50% - 0.5rem);
+	min-width: fit-content;
+	letter-spacing: 0.05rem;
+	font-weight: bold;
+}
+
+.control-buttons > button:last-child {
+	flex: 1 1 100%;
+}
 </style>
