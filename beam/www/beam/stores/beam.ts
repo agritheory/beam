@@ -52,7 +52,7 @@ export const useBeamStore = defineStore('beam', () => {
 		form.value = {}
 
 		const meta = currentRoute.meta
-		if (meta.view === 'form' /* && scanner.config.frm.includes(meta.doctype) */) {
+		if (meta.view === 'form' && scanner.config.frm.includes(meta.doctype)) {
 			let docname: string
 			if (currentRoute.params.id) {
 				docname = currentRoute.params.id.toString()
@@ -138,7 +138,6 @@ export const useBeamStore = defineStore('beam', () => {
 		const url = `/api/resource/${doctype}`
 		const response = await httpStore.post(url, body)
 		const { data, exception }: { data: T; exception: string } = await response.json()
-		if (response.ok) form.value.dirty = false
 		alert(response.ok ? 'Document created' : exception)
 		return { data, exception, response }
 	}
@@ -147,7 +146,6 @@ export const useBeamStore = defineStore('beam', () => {
 		const url = `/api/resource/${doctype}/${name}`
 		const response = await httpStore.post(url, body)
 		const { data, exception }: { data: T; exception: string } = await response.json()
-		if (response.ok) form.value.dirty = false
 		alert(response.ok ? 'Document updated' : exception)
 		return { data, exception, response }
 	}
@@ -156,7 +154,6 @@ export const useBeamStore = defineStore('beam', () => {
 		const url = `/api/resource/${doctype}/${name}`
 		const response = await httpStore.put(url, { docstatus: 1 })
 		const { data, exception }: { data: T; exception: string } = await response.json()
-		if (response.ok) form.value.dirty = false
 		alert(response.ok ? 'Document status changed to Submitted' : exception)
 		return { data, exception, response }
 	}
@@ -165,7 +162,6 @@ export const useBeamStore = defineStore('beam', () => {
 		const url = `/api/resource/${doctype}/${name}`
 		const response = await httpStore.put(url, { docstatus: 2 })
 		const { data, exception }: { data: T; exception: string } = await response.json()
-		if (response.ok) form.value.dirty = false
 		alert(response.ok ? 'Document status changed to Cancelled' : exception)
 		return { data, exception, response }
 	}

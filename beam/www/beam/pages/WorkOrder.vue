@@ -3,7 +3,7 @@
 	<Navbar>
 		<template #title>
 			<h1 class="nav-title">Manufacture</h1>
-			<span v-if="store.form.dirty" class="dirty">Unsaved</span>
+			<span v-if="stockEntry?.dirty" class="dirty">Unsaved</span>
 		</template>
 		<template #navbaraction>
 			<RouterLink :to="{ name: 'home' }">Home</RouterLink>
@@ -104,16 +104,16 @@ const operations = computed((): (WorkOrderOperation & ListViewItem)[] => {
 })
 
 const create = async () => {
-	if (store.form.dirty) {
+	if (stockEntry.value.dirty) {
 		const document: StockEntry = { ...stockEntry.value }
 		document.items = document.items.filter(item => item.qty > 0)
 		const { data, exception } = await store.insert('Stock Entry', document)
 
 		if (!exception) {
 			store.$patch(state => {
-				state.form.dirty = false
 				state.cache.mappers[workOrderId] = data
 				stockEntry.value = data
+				stockEntry.value.dirty = false
 			})
 		}
 	} else {

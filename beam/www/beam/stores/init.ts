@@ -21,9 +21,13 @@ export const useInitStore = defineStore('init', () => {
 		store.$onAction(({ name, after }) => {
 			after(() => {
 				if (!ignoredActions.includes(name)) {
-					store.$patch(state => {
-						state.form.dirty = true
-					})
+					const id = route.params.id || route.query.id
+					const doc = store.cache.mappers[id]
+					if (doc) {
+						store.$patch(() => {
+							doc.dirty = true
+						})
+					}
 				}
 			})
 		})

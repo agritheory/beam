@@ -3,7 +3,7 @@
 	<Navbar>
 		<template #title>
 			<h1 class="nav-title">Purchase Receipt</h1>
-			<span v-if="store.form.dirty" class="dirty">Unsaved</span>
+			<span v-if="purchaseReceipt?.dirty" class="dirty">Unsaved</span>
 		</template>
 		<template #navbaraction>
 			<RouterLink :to="{ name: 'home' }">Home</RouterLink>
@@ -56,15 +56,15 @@ const items = computed((): (PurchaseReceiptItem & ListViewItem)[] => {
 })
 
 const create = async () => {
-	if (store.form.dirty) {
+	if (purchaseReceipt.value.dirty) {
 		const document: PurchaseReceipt = { ...purchaseReceipt.value }
 		document.items = document.items.filter(item => item.received_qty > 0)
 		const { data, exception } = await store.insert('Purchase Receipt', document)
 
 		if (!exception) {
-			store.$patch(state => {
-				state.form.dirty = false
+			store.$patch(() => {
 				purchaseReceipt.value = data
+				purchaseReceipt.value.dirty = false
 			})
 		}
 	} else {

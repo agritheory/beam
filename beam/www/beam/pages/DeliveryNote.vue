@@ -3,7 +3,7 @@
 	<Navbar>
 		<template #title>
 			<h1 class="nav-title">Delivery Note</h1>
-			<span v-if="store.form.dirty" class="dirty">Unsaved</span>
+			<span v-if="deliveryNote?.dirty" class="dirty">Unsaved</span>
 		</template>
 		<template #navbaraction>
 			<RouterLink :to="{ name: 'home' }">Home</RouterLink>
@@ -56,7 +56,7 @@ const items = computed((): (DeliveryNoteItem & ListViewItem)[] => {
 })
 
 const create = async () => {
-	if (store.form.dirty) {
+	if (deliveryNote.value.dirty) {
 		const document: DeliveryNote = { ...deliveryNote.value }
 		document.items = document.items.filter(item => item.delivered_qty > 0)
 		for (const item of document.items) {
@@ -65,9 +65,9 @@ const create = async () => {
 		const { data, exception } = await store.insert('Delivery Note', document)
 
 		if (!exception) {
-			store.$patch(state => {
-				state.form.dirty = false
+			store.$patch(() => {
 				deliveryNote.value = data
+				deliveryNote.value.dirty = false
 			})
 		}
 	} else {
