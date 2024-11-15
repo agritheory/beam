@@ -7,7 +7,6 @@
 			<RouterLink :to="{ name: 'home' }">Home</RouterLink>
 		</template>
 	</Navbar>
-
 	<ListView :items="transfer" />
 </template>
 

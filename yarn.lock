@@ -340,9 +340,9 @@
     "@types/node" "*"
 
 "@vitejs/plugin-vue@^5.1.4":
-  version "5.1.5"
-  resolved "https://registry.yarnpkg.com/@vitejs/plugin-vue/-/plugin-vue-5.1.5.tgz#ef1d7e19f8cecb0d1301c987dc0bdf8b778e3c82"
-  integrity sha512-dlnib73G05CDBAUR/YpuZcQQ47fpjihnnNouAAqN62z+oqSsWJ+kh52GRzIxpkgFG3q11eXK7Di7RMmoCwISZA==
+  version "5.2.0"
+  resolved "https://registry.yarnpkg.com/@vitejs/plugin-vue/-/plugin-vue-5.2.0.tgz#994f3b4f12d3590c5a6895df4cbd270d9a6d5e17"
+  integrity sha512-7n7KdUEtx/7Yl7I/WVAMZ1bEb0eVvXF3ummWTeLcs/9gvo9pJhuLdouSXGjdZ/MKD1acf1I272+X0RMua4/R3g==
 
 "@vue-macros/common@^1.12.2":
   version "1.15.0"
@@ -915,7 +915,7 @@ mlly@^1.4.2, mlly@^1.7.1, mlly@^1.7.2:
     pkg-types "^1.2.1"
     ufo "^1.5.4"
 
-mqtt-packet@^9.0.0:
+mqtt-packet@^9.0.1:
   version "9.0.1"
   resolved "https://registry.yarnpkg.com/mqtt-packet/-/mqtt-packet-9.0.1.tgz#2d4f1085f84493ce410ee263a7e4ed113d4351d7"
   integrity sha512-koZF1V/X2RZUI6uD9wN5OK1JxxcG1ofAR4H3LjCw1FkeKzruZQ26aAA6v2m1lZyWONZIR5wMMJFrZJDRNzbiQw==
@@ -925,9 +925,9 @@ mqtt-packet@^9.0.0:
     process-nextick-args "^2.0.1"
 
 mqtt@^5.10.1:
-  version "5.10.1"
-  resolved "https://registry.yarnpkg.com/mqtt/-/mqtt-5.10.1.tgz#d4f45ffdd825bad331c18f08796a744dabbe16de"
-  integrity sha512-hXCOki8sANoQ7w+2OzJzg6qMBxTtrH9RlnVNV8panLZgnl+Gh0J/t4k6r8Az8+C7y3KAcyXtn0mmLixyUom8Sw==
+  version "5.10.2"
+  resolved "https://registry.yarnpkg.com/mqtt/-/mqtt-5.10.2.tgz#10e3c1023fedb2bfca5ebbfd60aaadc9c5f9f03f"
+  integrity sha512-Q8NrMXB6FwQ2DulGONeDb6BtFHxyQHmXWzDrSC724iyofxLleq/wuZmztV3kg1Kda9I7l0oHP+FKesowoFxyUg==
   dependencies:
     "@types/readable-stream" "^4.0.5"
     "@types/ws" "^8.5.9"
@@ -937,7 +937,7 @@ mqtt@^5.10.1:
     help-me "^5.0.0"
     lru-cache "^10.0.1"
     minimist "^1.2.8"
-    mqtt-packet "^9.0.0"
+    mqtt-packet "^9.0.1"
     number-allocator "^1.0.14"
     readable-stream "^4.4.2"
     reinterval "^1.1.0"
@@ -1300,9 +1300,9 @@ unplugin-vue-router@^0.10.8:
     yaml "^2.5.0"
 
 unplugin@^1.12.1, unplugin@^1.12.2:
-  version "1.15.0"
-  resolved "https://registry.yarnpkg.com/unplugin/-/unplugin-1.15.0.tgz#cd1e92e537ab14a03354d6f83f29d536fac2e5a9"
-  integrity sha512-jTPIs63W+DUEDW207ztbaoO7cQ4p5aVaB823LSlxpsFEU3Mykwxf3ZGC/wzxFJeZlASZYgVrWeo7LgOrqJZ8RA==
+  version "1.16.0"
+  resolved "https://registry.yarnpkg.com/unplugin/-/unplugin-1.16.0.tgz#ca0f248bf8798cd752dd02e5b381223b737cef72"
+  integrity sha512-5liCNPuJW8dqh3+DM6uNM2EI3MLLpCKp/KY+9pB5M2S2SR2qvvDHhKgBOaTWEbZTAws3CXfB0rKTIolWKL05VQ==
   dependencies:
     acorn "^8.14.0"
     webpack-virtual-modules "^0.6.2"

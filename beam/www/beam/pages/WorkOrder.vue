@@ -11,9 +11,20 @@
 	</Navbar>
 
 	<!-- body section -->
-	<div>
-		<p>Planned Start: {{ workOrder.planned_start_date }}</p>
-	</div>
+	<BeamMetadata class="box">
+		<div style="padding: 1rem">
+			<SplitColumn>
+				<template #left>
+					<p class="beam_metadata_heading">{{ workOrder.production_item }}</p>
+					<p class="beam--norma">{{ totalTransferred }} / {{ totalToTransfer }} ({{ transferredPercent }}%)</p>
+				</template>
+				<template #right>
+					<p class="beam--normal">{{ workOrder.planned_start_date }}</p>
+					<p class="beam--norma">{{ operationsCompleted }} / {{}} ({{ completedOperationsPercentage }}%)</p>
+				</template>
+			</SplitColumn>
+		</div>
+	</BeamMetadata>
 	<div class="box" v-show="items.length">
 		<ListView :items="items" :key="refreshKey" />
 	</div>
@@ -22,7 +33,7 @@
 	</div>
 
 	<!-- footer section -->
-	<ControlButtons :onCreate="create" :onSubmit="submit" :onCancel="cancel" />
+	<ControlButtons :buttons="controlButtons" />
 </template>
 
 <script setup lang="ts">
@@ -83,6 +94,7 @@ const operations = computed((): ListViewItem[] => {
 		label: operation.operation,
 		count: { count: operation.completed_qty, of: workOrder.value.qty },
 		linkComponent: 'ListAnchor',
+		description: `${operation.workstation} - ${operation.time_in_mins}:00`,
 		route: `#/work_order/${workOrder.value.name}/operation/${operation.name}`,
 	}))
 })
@@ -116,6 +128,61 @@ const submit = async () => {
 const cancel = async () => {
 	throw new Error('Not implemented')
 }
+
+const controlButtons = computed(() => {
+	if (!workOrder) {
+		return []
+	}
+	return [
+		{
+			label: 'SAVE',
+			action: create,
+			disabled: items.value.length === 0,
+			color: { background: '#4791FF', text: 'var(--sc-btn-color)' },
+		},
+		{
+			label: workOrder.value.skip_transfer ? 'MANUFACTURE' : 'TRANSFER',
+			action: () => store.submit<StockEntry>('Stock Entry', stockEntry),
+			disabled: stockEntry.value.items.length === 0 || !stockEntry.value.name,
+			color: { background: 'var(--sc-success)', text: 'var(--sc-btn-color)' },
+		},
+		{
+			label: 'CANCEL',
+			action: () => store.cancel<StockEntry>('Stock Entry', stockEntry),
+			disabled: stockEntry.value.items.length === 0 || !stockEntry.value.name,
+			hidden: stockEntry.value.docstatus != 1,
+			color: { background: 'var(--sc-alert)', text: 'var(--sc-btn-color)' },
+		},
+	]
+})
+
+const totalTransferred = computed((): number => {
+	return items.value.reduce((sum, item) => sum + item.qty, 0)
+})
+
+const totalToTransfer = computed((): number => {
+	return items.value.reduce((sum, item) => sum + item.transfer_qty, 0)
+})
+
+const transferredPercent = computed((): string => {
+	const total = totalToTransfer.value
+	if (total === 0) return '0'
+	return `${((totalTransferred.value / total) * 100).toFixed(0)}`
+})
+
+const operationsCompleted = computed((): number => {
+	return operations.value.reduce((sum, operation) => sum + operation.completed_qty, 0) || 0
+})
+
+const totalOperations = computed((): number => {
+	return workOrder.value.qty * operations.value.length
+})
+
+const completedOperationsPercentage = computed((): string => {
+	const target = operationsCompleted.value
+	if (target === 0) return '0'
+	return `${((totalOperations.value / target) * 100).toFixed(0)}`
+})
 </script>
 
 <style scoped>
@@ -132,12 +199,17 @@ b {
 }
 
 .box {
-	padding: 2rem;
+	padding: 0rem;
 	margin: 0.5rem;
 	font-size: 100%;
 	border: 2px solid gray;
 	outline: 2px solid transparent;
 	flex: 1;
 	min-width: 100px;
+}
+
+.dirty {
+	color: tomato;
+	font-weight: 700;
 }
 </style>

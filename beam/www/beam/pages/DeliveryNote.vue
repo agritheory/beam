@@ -2,29 +2,27 @@
 	<Navbar>
 		<template #title>
 			<h1 class="nav-title">Delivery Note</h1>
+			<span v-if="store.form.dirty" class="nav-subtitle">Unsaved changes</span>
 		</template>
 		<template #navbaraction>
 			<RouterLink :to="{ name: 'home' }">Home</RouterLink>
 		</template>
 	</Navbar>
-	<div class="box" v-show="list.length">
-		<ListView :items="list" />
+	<div class="box" v-show="items.length">
+		<ListView :items="items" />
 	</div>
-	<ControlButtons
-		:onCreate="create"
-		:onSubmit="() => store.submit<ParentDoctype>('Stock Entry', deliveryNoteId)"
-		:onCancel="() => store.cancel<ParentDoctype>('Stock Entry', deliveryNoteId)" />
+	<ControlButtons :buttons="controlButtons" />
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 
 import ControlButtons from '@/components/ControlButtons.vue'
 import { useBeamStore } from '@/stores/beam'
 import type { DeliveryNote, ListViewItem, ParentDoctype } from '@/types'
 
 const store = useBeamStore()
-const list = ref<ListViewItem[]>([])
+const items = ref<ListViewItem[]>([])
 
 onMounted(async () => {
 	store.form as Partial<DeliveryNote>
@@ -33,10 +31,37 @@ onMounted(async () => {
 
 const create = async () => {
 	// TODO: implement create
-	const deliveryNote = store.form as Partial<ParentDoctype>
+	const deliveryNote = store.form as Partial<DeliveryNote>
 	const { data, exception, response } = await store.insert('Delivery Note', deliveryNote)
 	return { data, exception, response }
 }
+
+const controlButtons = computed(() => {
+	if (!store.form) {
+		return []
+	}
+	return [
+		{
+			label: 'SAVE',
+			action: create,
+			disabled: items.value.length === 0,
+			color: { background: '#4791FF', text: 'var(--sc-btn-color)' },
+		},
+		{
+			label: 'SHIP',
+			action: () => store.submit<DeliveryNote>('Delivery Note', store.form),
+			disabled: store.form.items.length === 0 || !store.form.name,
+			color: { background: 'var(--sc-success)', text: 'var(--sc-btn-color)' },
+		},
+		{
+			label: 'CANCEL',
+			action: () => store.cancel<DeliveryNote>('Delivery Note', store.form),
+			disabled: store.form.items.length === 0 || !store.form.name,
+			hidden: store.form.docstatus != 1,
+			color: { background: 'var(--sc-alert)', text: 'var(--sc-btn-color)' },
+		},
+	]
+})
 </script>
 
 <style scoped>
@@ -60,5 +85,9 @@ b {
 	outline: 2px solid transparent;
 	flex: 1;
 	min-width: 100px;
+}
+.dirty {
+	color: tomato;
+	font-weight: 700;
 }
 </style>

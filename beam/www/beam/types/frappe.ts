@@ -79,6 +79,7 @@ export type WorkOrder = ParentDoctype & {
 
 export type WorkOrderOperation = ChildDoctype & {
 	operation: string
+	production_item: string
 	time_in_mins: number
 
 	actual_operation_time?: number

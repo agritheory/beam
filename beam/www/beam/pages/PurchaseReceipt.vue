@@ -2,6 +2,7 @@
 	<Navbar>
 		<template #title>
 			<h1 class="nav-title">Purchase Receipt</h1>
+			<span v-if="store.form.dirty" class="nav-subtitle">Unsaved changes</span>
 		</template>
 		<template #navbaraction>
 			<RouterLink :to="{ name: 'home' }">Home</RouterLink>
@@ -10,11 +11,11 @@
 	<div class="box" v-show="items.length">
 		<ListView :items="items" />
 	</div>
-	<!-- <ControlButtons :onCreate="create" :onSubmit="() => {}" :onCancel="() => {}" /> -->
+	<ControlButtons :buttons="controlButtons" />
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 
 import ControlButtons from '@/components/ControlButtons.vue'
 import { useBeamStore } from '@/stores/beam'
@@ -44,6 +45,63 @@ store.$subscribe((mutation, state) => {
 		})
 	}
 })
+
+const create = async () => {
+	if (store.form.dirty) {
+		const document: PurchaseReceipt = { ...store.form }
+		document.items = document.items.filter(item => item.qty > 0)
+		const response = await store.insert('Purchase Receipt', document)
+
+		if (!response.exception) {
+			store.$patch(state => {
+				state.form.dirty = false
+				state.cache.mappers[workOrderId] = response.data
+				stockEntry.value = response.data
+			})
+		}
+
+		return response
+	} else {
+		// TODO: a few options here:
+		// 1. allow setting a condition in ControlButtons to control when to enable the button
+		// 2. add a toast message here telling the user why this is a no-op
+	}
+}
+
+const submit = async () => {
+	throw new Error('Not implemented')
+}
+
+const cancel = async () => {
+	throw new Error('Not implemented')
+}
+
+const controlButtons = computed(() => {
+	if (!store.form) {
+		return []
+	}
+	return [
+		{
+			label: 'SAVE',
+			action: create,
+			disabled: items.value.length === 0,
+			color: { background: '#4791FF', text: 'var(--sc-btn-color)' },
+		},
+		{
+			label: 'RECEIVE',
+			action: () => store.submit<PurchaseReceipt>('Stock Entry', store.form),
+			disabled: store.form.items.length === 0 || !store.form.name,
+			color: { background: 'var(--sc-success)', text: 'var(--sc-btn-color)' },
+		},
+		{
+			label: 'CANCEL',
+			action: () => store.cancel<PurchaseReceipt>('Stock Entry', stockEntry),
+			disabled: store.form.items.length === 0 || !store.form.name,
+			hidden: store.form.docstatus != 1,
+			color: { background: 'var(--sc-alert)', text: 'var(--sc-btn-color)' },
+		},
+	]
+})
 </script>
 
 <style scoped>
@@ -67,5 +125,9 @@ b {
 	outline: 2px solid transparent;
 	flex: 1;
 	min-width: 100px;
+}
+.dirty {
+	color: tomato;
+	font-weight: 700;
 }
 </style>
