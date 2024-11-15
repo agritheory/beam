@@ -2,7 +2,7 @@
 // For license information, please see license.txt
 
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { reactive, ref } from 'vue'
 import type { RouteLocationNormalized } from 'vue-router'
 
 import { useHttpStore } from '@/stores/http.js'
@@ -34,15 +34,16 @@ export const useBeamStore = defineStore('beam', () => {
 
 	const recordsPerPage = 20
 	const cache = ref<BeamCache>({ mappers: {} })
-	const config = ref<ScanConfig>({})
-	const context = ref<ScanContext>({})
 	const form = ref<Partial<ParentDoctypes>>({})
+	const scanner = reactive({
+		config: {} as ScanConfig,
+		context: {} as ScanContext,
+	})
 
 	const getScanDoctypes = async (params?: Record<string, any>) => {
 		const response = await httpStore.get(SCAN_CONFIG_URL, params)
 		const { message }: { message: ScanConfig } = await response.json()
-		config.value = message
-		return { data: message }
+		scanner.config = message
 	}
 
 	// TODO: vue-router's useRoute() composable is not working as intended here, so accepting route input
@@ -50,26 +51,24 @@ export const useBeamStore = defineStore('beam', () => {
 		form.value = {}
 
 		const meta = currentRoute.meta
-		if (meta.view === 'form' && config.value.frm.includes(meta.doctype)) {
+		if (meta.view === 'form' /* && scanner.config.frm.includes(meta.doctype) */) {
 			let docname: string
 			if (currentRoute.params.id) {
 				docname = currentRoute.params.id.toString()
 				form.value = await getOne<ParentDoctypes>(meta.doctype, docname)
-			} else if (meta.doctype) {
-				if (currentRoute.query.id) {
-					docname = currentRoute.query.id.toString()
-				}
-				form.value = await makeNewDoc<ParentDoctypesForStockTransfer>(meta.doctype, docname)
+			} else if (currentRoute.query.id) {
+				docname = currentRoute.query.id.toString()
+				cache.value.mappers[docname] = await makeNewDoc<ParentDoctypesForStockTransfer>(meta.doctype, docname)
 			}
 		}
 	}
 
 	const setScanContext = async (currentRoute: RouteLocationNormalized) => {
 		const meta = currentRoute.meta
-		if (meta.view === 'list' && config.value.listview.includes(meta.doctype)) {
-			context.value = { listview: meta.doctype }
-		} else if (meta.view === 'form' && config.value.frm.includes(meta.doctype)) {
-			context.value = { frm: meta.doctype }
+		if (meta.view === 'list' && scanner.config.listview.includes(meta.doctype)) {
+			scanner.context = { listview: meta.doctype }
+		} else if (meta.view === 'form' && scanner.config.frm.includes(meta.doctype)) {
+			scanner.context = { frm: meta.doctype }
 		}
 	}
 
@@ -118,7 +117,7 @@ export const useBeamStore = defineStore('beam', () => {
 			return await frappe.xcall(SCAN_URL, {
 				barcode,
 				current_qty: qty,
-				context: context.value,
+				context: scanner.context,
 			})
 		} catch (error) {
 			// TODO: handle API error
@@ -193,9 +192,8 @@ export const useBeamStore = defineStore('beam', () => {
 	return {
 		// state
 		cache,
-		config,
-		context,
 		form,
+		scanner,
 
 		// store context actions
 		getScanDoctypes,

@@ -12,7 +12,7 @@
 
 	<!-- body section -->
 	<div class="box" v-show="items.length">
-		<ListView :items="items" />
+		<ListView :items="items" :key="refreshKey" />
 	</div>
 
 	<!-- footer section -->
@@ -20,48 +20,51 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref } from 'vue'
+import { useRoute } from 'vue-router'
 
 import ControlButtons from '@/components/ControlButtons.vue'
 import { useBeamStore } from '@/stores/beam'
-import type { ControlButton, ListViewItem, PurchaseReceipt } from '@/types'
+import type { ControlButton, ListViewItem, PurchaseReceipt, PurchaseReceiptItem } from '@/types'
 
+const route = useRoute()
 const store = useBeamStore()
-const items = ref<ListViewItem[]>([])
+const purchaseOrderId = route.query.id.toString()
 
-onMounted(async () => {
-	store.form as Partial<PurchaseReceipt>
-})
+const purchaseReceipt = ref(store.cache.mappers[purchaseOrderId] as PurchaseReceipt)
+const refreshKey = ref(0)
 
-store.$subscribe((mutation, state) => {
-	const parentfield = state.form.doctype === 'Work Order' ? 'required_items' : 'items'
-	if (parentfield && state.form[parentfield]) {
-		items.value = []
-		state.form[parentfield].forEach(item => {
-			item.wip_warehouse = state.form.wip_warehouse
-			items.value.push({
-				label: item.item_name,
-				description: `${item.warehouse}`,
-				count: {
-					count: item.received_qty,
-					of: item.qty,
-				},
-			})
-		})
+// hack: since array reactivity is not present in Vue 3, force-refresh the listviews on store update
+store.$subscribe(mutation => {
+	if (['patch function', 'patch object'].includes(mutation.type)) {
+		refreshKey.value++
 	}
 })
 
+const items = computed((): (PurchaseReceiptItem & ListViewItem)[] => {
+	return purchaseReceipt.value.items.map(item => {
+		return {
+			...item,
+			label: item.item_name,
+			description: `${item.warehouse}`,
+			count: {
+				count: item.received_qty,
+				of: item.qty,
+			},
+		}
+	})
+})
+
 const create = async () => {
-	if (store.form.dirty) {
-		const document: PurchaseReceipt = { ...store.form }
+	if (purchaseReceipt.value.dirty) {
+		const document: PurchaseReceipt = { ...purchaseReceipt.value }
 		document.items = document.items.filter(item => item.qty > 0)
 		const response = await store.insert('Purchase Receipt', document)
 
 		if (!response.exception) {
 			store.$patch(state => {
 				state.form.dirty = false
-				state.cache.mappers[workOrderId] = response.data
-				stockEntry.value = response.data
+				purchaseReceipt.value = response.data
 			})
 		}
 
@@ -74,9 +77,9 @@ const create = async () => {
 }
 
 const controlButtons = computed((): ControlButton[] => {
-	if (!store.form) return []
+	if (!purchaseReceipt.value) return []
 
-	const form = store.form as PurchaseReceipt
+	const form = purchaseReceipt.value as PurchaseReceipt
 	if (!form.items) return []
 
 	return [
@@ -125,6 +128,7 @@ b {
 	flex: 1;
 	min-width: 100px;
 }
+
 .dirty {
 	color: tomato;
 	font-weight: 700;

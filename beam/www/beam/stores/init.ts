@@ -16,8 +16,8 @@ export const useInitStore = defineStore('init', () => {
 		await store.setScanContext(currentRoute || route)
 
 		// only check store actions to control toggling dirty state (vs. all state mutations);
-		// also globally ignore certain actions (background fetching, etc.)
-		const ignoredActions = ['getMappedStockEntry']
+		// also globally ignore certain actions (store init, background fetching, etc.)
+		const ignoredActions = ['getMappedStockEntry', 'getScanDoctypes', 'setForm', 'setScanContext']
 		store.$onAction(({ name, after }) => {
 			after(() => {
 				if (!ignoredActions.includes(name)) {

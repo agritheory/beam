@@ -87,6 +87,7 @@ b {
 	flex: 1;
 	min-width: 100px;
 }
+
 .dirty {
 	color: tomato;
 	font-weight: 700;

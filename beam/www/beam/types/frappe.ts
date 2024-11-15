@@ -106,6 +106,8 @@ export type PurchaseReceipt = ParentDoctype & {
 }
 
 export type PurchaseReceiptItem = ChildDoctype & {
+	received_qty: number
+
 	qty?: number
 	warehouse?: string
 }

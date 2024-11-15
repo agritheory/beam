@@ -15,7 +15,7 @@ export const useScanStore = defineStore('scan', () => {
 			let fn: Function
 			const action = response[0].action
 
-			const scanHooks = store.config.client
+			const scanHooks = store.scanner.config.client
 			if (scanHooks.length > 0 && action in scanHooks) {
 				const path: string = scanHooks[action][0]
 				// call (first) custom built callback registered in hooks
@@ -123,7 +123,8 @@ export const useScanStore = defineStore('scan', () => {
 	}
 
 	const add_or_increment = async (barcode_context: FormContext[]) => {
-		const id = store.router.currentRoute.value.params.id
+		const currentRoute = store.router.currentRoute.value
+		const id = currentRoute.params.id || currentRoute.query.id
 
 		barcode_context.forEach(async action => {
 			const incrementCount = 1
@@ -133,9 +134,15 @@ export const useScanStore = defineStore('scan', () => {
 					(row.item_code === action.context.item_code && !row.handling_unit) || row.barcode === action.context.barcode
 			)
 
+			const itemQtyFieldMap = {
+				'Purchase Receipt Item': 'received_qty',
+				'Stock Entry Detail': 'qty',
+			}
+
 			if (existing_rows.length > 0) {
+				const field = itemQtyFieldMap[action.doctype] || 'qty'
 				for (const row of existing_rows) {
-					row.qty = row.qty + incrementCount
+					row[field] = row[field] + incrementCount
 				}
 				store.$patch(state => (state.cache.mappers[id] = mappedDoc))
 			} else if (action.doctype === 'Stock Entry') {
