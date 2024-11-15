@@ -11,25 +11,27 @@ export const useInitStore = defineStore('init', () => {
 	const store = useBeamStore()
 
 	const init = async (currentRoute?: RouteLocationNormalized) => {
+		const resolvedRoute = currentRoute || route
+
 		await store.getScanDoctypes()
-		await store.setForm(currentRoute || route)
-		await store.setMappedDoc(currentRoute || route)
-		await store.setScanContext(currentRoute || route)
+		await store.setForm(resolvedRoute)
+		await store.setMappedDoc(resolvedRoute)
+		await store.setScanContext(resolvedRoute)
 
 		// only check store actions to control toggling dirty state (vs. all state mutations);
 		store.$onAction(({ name, after }) => {
-			after(() => {
-				const id = route.params.id || route.query.id
-				const doc = store.cache.mappers[id]
-				if (doc) {
-					// currently only scan actions affect the document's dirty state
-					if (name === 'scan') {
+			// 15 Nov '24: only scan actions affect the document's dirty state
+			if (name === 'scan') {
+				after(() => {
+					const id = resolvedRoute.params.id || resolvedRoute.query.id
+					const doc = store.cache.mappers[id]
+					if (doc) {
 						store.$patch(() => {
 							doc.dirty = true
 						})
 					}
-				}
-			})
+				})
+			}
 		})
 	}
 
