@@ -9,6 +9,7 @@ import { useHttpStore } from '@/stores/http.js'
 import type {
 	BeamCache,
 	BeamHome,
+	DeliveryNoteItem,
 	FormContext,
 	ListContext,
 	ParentDoctypes,
@@ -58,7 +59,13 @@ export const useBeamStore = defineStore('beam', () => {
 				form.value = await getOne<ParentDoctypes>(meta.doctype, docname)
 			} else if (currentRoute.query.id) {
 				docname = currentRoute.query.id.toString()
-				cache.value.mappers[docname] = await makeNewDoc<ParentDoctypesForStockTransfer>(meta.doctype, docname)
+				const newDoc = await makeNewDoc<ParentDoctypesForStockTransfer>(meta.doctype, docname)
+				if (newDoc.doctype === 'Delivery Note') {
+					for (const item of newDoc.items) {
+						;(item as DeliveryNoteItem).delivered_qty = 0
+					}
+				}
+				cache.value.mappers[docname] = newDoc
 			}
 		}
 	}

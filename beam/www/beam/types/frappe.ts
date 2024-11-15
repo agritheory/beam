@@ -10,6 +10,7 @@ export type DocActionResponse<T> = {
 }
 
 export type ParentDoctype = StoreMetadata & {
+	__islocal?: number
 	creation?: string
 	docstatus?: number
 	doctype?: string
@@ -119,6 +120,7 @@ export type DeliveryNote = ParentDoctype & {
 export type DeliveryNoteItem = ChildDoctype & {
 	qty: number
 
+	delivered_qty?: number // doesn't exist in the schema, but is used in the app
 	warehouse?: string
 }
 

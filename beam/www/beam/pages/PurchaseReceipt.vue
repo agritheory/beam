@@ -56,7 +56,7 @@ const items = computed((): (PurchaseReceiptItem & ListViewItem)[] => {
 })
 
 const create = async () => {
-	if (purchaseReceipt.value.dirty) {
+	if (store.form.dirty) {
 		const document: PurchaseReceipt = { ...purchaseReceipt.value }
 		document.items = document.items.filter(item => item.received_qty > 0)
 		const response = await store.insert('Purchase Receipt', document)
@@ -83,20 +83,21 @@ const controlButtons = computed((): ControlButton[] => {
 	return [
 		{
 			label: 'SAVE',
-			disabled: items.value.length === 0,
+			disabled: !store.form.dirty || items.value.length === 0,
 			color: { background: '#4791FF', text: 'var(--sc-btn-color)' },
 			action: create,
 		},
 		{
 			label: 'RECEIVE',
 			disabled: form.items.length === 0 || !form.name,
+			hidden: Boolean(form.__islocal) || form.docstatus !== 0,
 			color: { background: 'var(--sc-success)', text: 'var(--sc-btn-color)' },
 			action: async () => await store.submit<PurchaseReceipt>('Purchase Receipt', form.name),
 		},
 		{
 			label: 'CANCEL',
 			disabled: form.items.length === 0 || !form.name,
-			hidden: form.docstatus != 1,
+			hidden: Boolean(form.__islocal) || form.docstatus !== 1,
 			color: { background: 'var(--sc-alert)', text: 'var(--sc-btn-color)' },
 			action: async () => await store.cancel<PurchaseReceipt>('Purchase Receipt', form.name),
 		},

@@ -48,7 +48,7 @@ const items = computed((): (DeliveryNoteItem & ListViewItem)[] => {
 			label: item.item_name,
 			description: `${item.warehouse}`,
 			count: {
-				count: item.qty,
+				count: item.delivered_qty,
 				of: item.qty,
 			},
 		}
@@ -56,9 +56,12 @@ const items = computed((): (DeliveryNoteItem & ListViewItem)[] => {
 })
 
 const create = async () => {
-	if (deliveryNote.value.dirty) {
+	if (store.form.dirty) {
 		const document: DeliveryNote = { ...deliveryNote.value }
-		document.items = document.items.filter(item => item.qty > 0)
+		document.items = document.items.filter(item => item.delivered_qty > 0)
+		for (const item of document.items) {
+			item.qty = item.delivered_qty
+		}
 		const response = await store.insert('Delivery Note', document)
 
 		if (!response.exception) {
@@ -83,20 +86,21 @@ const controlButtons = computed((): ControlButton[] => {
 	return [
 		{
 			label: 'SAVE',
-			disabled: items.value.length === 0,
+			disabled: !store.form.dirty || items.value.length === 0,
 			color: { background: '#4791FF', text: 'var(--sc-btn-color)' },
 			action: create,
 		},
 		{
 			label: 'SHIP',
 			disabled: form.items.length === 0 || !form.name,
+			hidden: Boolean(form.__islocal) || form.docstatus !== 0,
 			color: { background: 'var(--sc-success)', text: 'var(--sc-btn-color)' },
 			action: async () => await store.submit<DeliveryNote>('Delivery Note', form.name),
 		},
 		{
 			label: 'CANCEL',
 			disabled: form.items.length === 0 || !form.name,
-			hidden: form.docstatus != 1,
+			hidden: Boolean(form.__islocal) || form.docstatus !== 1,
 			color: { background: 'var(--sc-alert)', text: 'var(--sc-btn-color)' },
 			action: async () => await store.cancel<DeliveryNote>('Delivery Note', form.name),
 		},

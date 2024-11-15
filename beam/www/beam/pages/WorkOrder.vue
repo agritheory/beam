@@ -125,27 +125,30 @@ const create = async () => {
 
 const controlButtons = computed((): ControlButton[] => {
 	if (!workOrder) return []
-	if (!stockEntry.value) return []
+
+	const form = stockEntry.value as StockEntry
+	if (!form || !form.items) return []
 
 	return [
 		{
 			label: 'SAVE',
-			disabled: items.value.length === 0,
+			disabled: !store.form.dirty || items.value.length === 0,
 			color: { background: '#4791FF', text: 'var(--sc-btn-color)' },
 			action: create,
 		},
 		{
 			label: workOrder.value.skip_transfer ? 'MANUFACTURE' : 'TRANSFER',
-			disabled: stockEntry.value.items.length === 0 || !stockEntry.value.name,
+			disabled: form.items.length === 0 || !form.name,
+			hidden: Boolean(form.__islocal) || form.docstatus !== 0,
 			color: { background: 'var(--sc-success)', text: 'var(--sc-btn-color)' },
-			action: async () => await store.submit<StockEntry>('Stock Entry', stockEntry.value.name),
+			action: async () => await store.submit<StockEntry>('Stock Entry', form.name),
 		},
 		{
 			label: 'CANCEL',
-			disabled: stockEntry.value.items.length === 0 || !stockEntry.value.name,
-			hidden: stockEntry.value.docstatus != 1,
+			disabled: form.items.length === 0 || !form.name,
+			hidden: Boolean(form.__islocal) || form.docstatus !== 1,
 			color: { background: 'var(--sc-alert)', text: 'var(--sc-btn-color)' },
-			action: async () => await store.cancel<StockEntry>('Stock Entry', stockEntry.value.name),
+			action: async () => await store.cancel<StockEntry>('Stock Entry', form.name),
 		},
 	]
 })
