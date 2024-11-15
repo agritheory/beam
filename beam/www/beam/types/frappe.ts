@@ -85,6 +85,7 @@ export type WorkOrderOperation = ChildDoctype & {
 	actual_operation_time?: number
 	completed_qty?: number
 	description?: string
+	workstation?: string
 }
 
 export type WorkOrderItem = ChildDoctype & {

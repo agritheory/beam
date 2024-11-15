@@ -3,7 +3,7 @@
 	<Navbar>
 		<template #title>
 			<h1 class="nav-title">Delivery Note</h1>
-			<span v-if="store.form.dirty" class="nav-subtitle">Unsaved changes</span>
+			<span v-if="store.form.dirty" class="dirty">Unsaved</span>
 		</template>
 		<template #navbaraction>
 			<RouterLink :to="{ name: 'home' }">Home</RouterLink>

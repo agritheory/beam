@@ -3,7 +3,7 @@
 	<Navbar>
 		<template #title>
 			<h1 class="nav-title">Manufacture</h1>
-			<span v-if="store.form.dirty" class="nav-subtitle">Unsaved changes</span>
+			<span v-if="store.form.dirty" class="dirty">Unsaved</span>
 		</template>
 		<template #navbaraction>
 			<RouterLink :to="{ name: 'home' }">Home</RouterLink>
@@ -16,11 +16,15 @@
 			<SplitColumn>
 				<template #left>
 					<p class="beam_metadata_heading">{{ workOrder.production_item }}</p>
-					<p class="beam--norma">{{ totalTransferred }} / {{ totalToTransfer }} ({{ transferredPercent }}%)</p>
+					<p class="beam--normal">
+						{{ transferProgress.transferred }} / {{ transferProgress.total }} ({{ transferProgress.percent }}%)
+					</p>
 				</template>
 				<template #right>
 					<p class="beam--normal">{{ workOrder.planned_start_date }}</p>
-					<p class="beam--norma">{{ operationsCompleted }} / {{}} ({{ completedOperationsPercentage }}%)</p>
+					<p class="beam--normal">
+						{{ operationProgress.completed }} / {{ operationProgress.total }} ({{ operationProgress.percent }}%)
+					</p>
 				</template>
 			</SplitColumn>
 		</div>
@@ -37,12 +41,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
 import ControlButtons from '@/components/ControlButtons.vue'
 import { useBeamStore } from '@/stores/beam'
-import type { ControlButton, ListViewItem, StockEntry, WorkOrder } from '@/types'
+import type { ControlButton, ListViewItem, StockEntry, StockEntryItem, WorkOrder, WorkOrderOperation } from '@/types'
 
 // TODO:
 // 1. subscribe on changes to required items
@@ -77,7 +81,7 @@ onMounted(async () => {
 	}
 })
 
-const items = computed((): ListViewItem[] => {
+const items = computed((): (StockEntryItem & ListViewItem)[] => {
 	return (
 		stockEntry.value?.items.map(item => ({
 			...item,
@@ -88,7 +92,7 @@ const items = computed((): ListViewItem[] => {
 	)
 })
 
-const operations = computed((): ListViewItem[] => {
+const operations = computed((): (WorkOrderOperation & ListViewItem)[] => {
 	return workOrder.value.operations.map(operation => ({
 		...operation,
 		label: operation.operation,
@@ -148,32 +152,22 @@ const controlButtons = computed((): ControlButton[] => {
 	]
 })
 
-const totalTransferred = computed((): number => {
-	return items.value.reduce((sum, item) => sum + item.qty, 0)
+const transferProgress = reactive({
+	transferred: computed(() => items.value.reduce<number>((sum, item) => sum + item.qty, 0)),
+	total: computed(() => items.value.reduce<number>((sum, item) => sum + item.transfer_qty, 0)),
+	percent: computed(() =>
+		transferProgress.total === 0 ? '0' : `${((transferProgress.transferred / transferProgress.total) * 100).toFixed(0)}`
+	),
 })
 
-const totalToTransfer = computed((): number => {
-	return items.value.reduce((sum, item) => sum + item.transfer_qty, 0)
-})
-
-const transferredPercent = computed((): string => {
-	const total = totalToTransfer.value
-	if (total === 0) return '0'
-	return `${((totalTransferred.value / total) * 100).toFixed(0)}`
-})
-
-const operationsCompleted = computed((): number => {
-	return operations.value.reduce((sum, operation) => sum + operation.completed_qty, 0) || 0
-})
-
-const totalOperations = computed((): number => {
-	return workOrder.value.qty * operations.value.length
-})
-
-const completedOperationsPercentage = computed((): string => {
-	const target = operationsCompleted.value
-	if (target === 0) return '0'
-	return `${((totalOperations.value / target) * 100).toFixed(0)}`
+const operationProgress = reactive({
+	completed: computed(() => operations.value.reduce((sum, operation) => sum + operation.completed_qty, 0) || 0),
+	total: computed(() => workOrder.value.qty * operations.value.length),
+	percent: computed(() =>
+		operationProgress.total === 0
+			? '0'
+			: `${((operationProgress.completed / operationProgress.total) * 100).toFixed(0)}`
+	),
 })
 </script>
 
