@@ -1,78 +1,40 @@
 <template>
-	<div class="control-buttons">
-		<button class="btn" @click="onAmend" v-if="docstatus === 2">Amend</button>
-		<template v-else>
-			<button class="beam_btn" @click="onSave" :disabled="!(docstatus === 0 && doctypeName === '')">Save</button>
-			<button class="beam_btn" @click="onSubmit" :disabled="!(docstatus === 0 && doctypeName !== '')">Submit</button>
-			<button class="beam_btn" @click="onCancel" :disabled="docstatus !== 1">Cancel</button>
-		</template>
+	<div :class="`button-${buttons.length} control-buttons`">
+		<BeamBtn
+			v-for="(button, index) in buttons"
+			:key="index"
+			@click="button.action"
+			:disabled="button.disabled"
+		>
+			{{ button.label }}
+		</BeamBtn>
 	</div>
 </template>
 
-<script setup lang="ts" generic="T extends ParentDoctype">
-import { ref } from 'vue'
-
-import type { DocActionResponse, ParentDoctype } from '@/types'
-
+<script setup lang="ts">
 const props = defineProps<{
-	onCreate: () => Promise<DocActionResponse<T>>
-	onSubmit: () => Promise<DocActionResponse<T>>
-	onCancel: () => Promise<DocActionResponse<T>>
+	buttons: Array<{ label: string; action: () => void; disabled: boolean }>
 }>()
-
-const docstatus = ref(0)
-const doctypeName = ref('')
-
-const onSave = async () => {
-	try {
-		const { data } = await props.onCreate()
-		if (data) {
-			doctypeName.value = data.name
-			docstatus.value = data.docstatus
-		}
-	} catch (err) {
-		console.error(err)
-	}
-}
-
-const onSubmit = async () => {
-	try {
-		const { data } = await props.onSubmit()
-		if (data) docstatus.value = data.docstatus
-	} catch (err) {
-		console.error(err)
-	}
-}
-
-const onCancel = async () => {
-	try {
-		const { data } = await props.onCancel()
-		if (data) docstatus.value = 2
-	} catch (err) {
-		console.error(err)
-	}
-}
-
-const onAmend = () => {
-	docstatus.value = 0
-	doctypeName.value = ''
-}
 </script>
 
 <style scoped>
 .control-buttons {
-	background: white; /* change to variable */
-	width: 100%;
-	display: inline-grid;
-	grid-template-columns: repeat(3, 1fr [col-start]);
-	column-gap: 1ch;
-	padding-left: 1ch;
-	padding-right: 1ch;
+	display: flex;
+	width: calc(100% - 1rem);
+	padding: 0.5rem;
 	position: fixed;
 	bottom: 0;
-	margin-bottom: 0.5rem;
 }
-/* .control-buttons button {
 
-} */
+.button-1 {
+	justify-content: flex-end;
+}
+
+.button-2 {
+	justify-content: space-between;
+}
+
+.button-3 {
+	justify-content: space-between;
+}
 </style>

@@ -12,8 +12,8 @@
 	</div>
 	<ControlButtons
 		:onCreate="create"
-		:onSubmit="() => store.submit<DeliveryNote>('Stock Entry', deliveryNoteId)"
-		:onCancel="() => store.cancel<DeliveryNote>('Stock Entry', deliveryNoteId)" />
+		:onSubmit="() => store.submit<ParentDoctype>('Stock Entry', deliveryNoteId)"
+		:onCancel="() => store.cancel<ParentDoctype>('Stock Entry', deliveryNoteId)" />
 </template>
 
 <script setup lang="ts">
@@ -22,7 +22,7 @@ import { useRoute } from 'vue-router'
 
 import ControlButtons from '@/components/ControlButtons.vue'
 import { useDataStore } from '@/store'
-import type { ListViewItem, DeliveryNote } from '@/types'
+import type { ListViewItem, ParentDoctype } from '@/types'
 
 const route = useRoute()
 const store = useDataStore()
@@ -31,7 +31,7 @@ const items = ref<ListViewItem[]>([])
 
 const create = async () => {
 	// TODO: implement create
-	const deliveryNote = store.form as Partial<DeliveryNote>
+	const deliveryNote = store.form as Partial<ParentDoctype>
 	const { data, exception, response } = await store.insert('Delivery Note', deliveryNote)
 	return { data, exception, response }
 }
