@@ -116,8 +116,6 @@ const create = async () => {
 				stockEntry.value = response.data
 			})
 		}
-
-		return response
 	} else {
 		// TODO: a few options here:
 		// 1. allow setting a condition in ControlButtons to control when to enable the button
@@ -140,14 +138,14 @@ const controlButtons = computed((): ControlButton[] => {
 			label: workOrder.value.skip_transfer ? 'MANUFACTURE' : 'TRANSFER',
 			disabled: stockEntry.value.items.length === 0 || !stockEntry.value.name,
 			color: { background: 'var(--sc-success)', text: 'var(--sc-btn-color)' },
-			action: () => store.submit<StockEntry>('Stock Entry', stockEntry.value.name),
+			action: async () => await store.submit<StockEntry>('Stock Entry', stockEntry.value.name),
 		},
 		{
 			label: 'CANCEL',
 			disabled: stockEntry.value.items.length === 0 || !stockEntry.value.name,
 			hidden: stockEntry.value.docstatus != 1,
 			color: { background: 'var(--sc-alert)', text: 'var(--sc-btn-color)' },
-			action: () => store.cancel<StockEntry>('Stock Entry', stockEntry.value.name),
+			action: async () => await store.cancel<StockEntry>('Stock Entry', stockEntry.value.name),
 		},
 	]
 })

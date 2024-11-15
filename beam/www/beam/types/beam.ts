@@ -1,6 +1,8 @@
 // Copyright (c) 2024, AgriTheory and contributors
 // For license information, please see license.txt
 
+import type { ButtonHTMLAttributes, CSSProperties, HTMLAttributes } from 'vue'
+
 import type { ParentDoctypesForStockTransfer } from '@/types/frappe.js'
 
 export interface BeamWindow extends Window {
@@ -18,14 +20,15 @@ export type BeamCache = {
 }
 
 export type ControlButton = {
+	action: HTMLAttributes['onClick']
 	label: string
-	disabled?: boolean
-	hidden?: boolean
+
 	color?: {
-		background: string
-		text: string
+		background: CSSProperties['backgroundColor']
+		text: CSSProperties['color']
 	}
-	action: () => void
+	disabled?: ButtonHTMLAttributes['disabled']
+	hidden?: boolean
 }
 
 export type ListViewItem = {

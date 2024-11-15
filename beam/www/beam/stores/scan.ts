@@ -135,6 +135,7 @@ export const useScanStore = defineStore('scan', () => {
 			)
 
 			const itemQtyFieldMap = {
+				'Delivery Note Item': 'qty',
 				'Purchase Receipt Item': 'received_qty',
 				'Stock Entry Detail': 'qty',
 			}

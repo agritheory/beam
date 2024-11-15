@@ -12,7 +12,7 @@
 
 	<!-- body section -->
 	<div class="box" v-show="items.length">
-		<ListView :items="items" />
+		<ListView :items="items" :key="refreshKey" />
 	</div>
 
 	<!-- footer section -->
@@ -20,46 +20,85 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref } from 'vue'
+import { useRoute } from 'vue-router'
 
 import ControlButtons from '@/components/ControlButtons.vue'
 import { useBeamStore } from '@/stores/beam'
-import type { ControlButton, DeliveryNote, ListViewItem } from '@/types'
+import type { ControlButton, DeliveryNote, DeliveryNoteItem, ListViewItem } from '@/types'
 
+const route = useRoute()
 const store = useBeamStore()
-const items = ref<ListViewItem[]>([])
+const salesOrderId = route.query.id.toString()
 
-onMounted(async () => {
-	store.form as Partial<DeliveryNote>
+const deliveryNote = ref(store.cache.mappers[salesOrderId] as DeliveryNote)
+const refreshKey = ref(0)
+
+// hack: since array reactivity is not present in Vue 3, force-refresh the listviews on store update
+store.$subscribe(mutation => {
+	if (['patch function', 'patch object'].includes(mutation.type)) {
+		refreshKey.value++
+	}
 })
 
-const controlButtons = computed((): ControlButton[] => {
-	if (!store.form) return []
+const items = computed((): (DeliveryNoteItem & ListViewItem)[] => {
+	return deliveryNote.value.items.map(item => {
+		return {
+			...item,
+			label: item.item_name,
+			description: `${item.warehouse}`,
+			count: {
+				count: item.qty,
+				of: item.qty,
+			},
+		}
+	})
+})
 
-	const form = store.form as DeliveryNote
+const create = async () => {
+	if (deliveryNote.value.dirty) {
+		const document: DeliveryNote = { ...deliveryNote.value }
+		document.items = document.items.filter(item => item.qty > 0)
+		const response = await store.insert('Delivery Note', document)
+
+		if (!response.exception) {
+			store.$patch(state => {
+				state.form.dirty = false
+				deliveryNote.value = response.data
+			})
+		}
+	} else {
+		// TODO: a few options here:
+		// 1. allow setting a condition in ControlButtons to control when to enable the button
+		// 2. add a toast message here telling the user why this is a no-op
+	}
+}
+
+const controlButtons = computed((): ControlButton[] => {
+	if (!deliveryNote.value) return []
+
+	const form = deliveryNote.value as DeliveryNote
+	if (!form.items) return []
+
 	return [
 		{
 			label: 'SAVE',
 			disabled: items.value.length === 0,
 			color: { background: '#4791FF', text: 'var(--sc-btn-color)' },
-			action: async () => {
-				// TODO: implement create
-				const deliveryNote = store.form as Partial<DeliveryNote>
-				return await store.insert('Delivery Note', deliveryNote)
-			},
+			action: create,
 		},
 		{
 			label: 'SHIP',
 			disabled: form.items.length === 0 || !form.name,
 			color: { background: 'var(--sc-success)', text: 'var(--sc-btn-color)' },
-			action: () => store.submit<DeliveryNote>('Delivery Note', form.name),
+			action: async () => await store.submit<DeliveryNote>('Delivery Note', form.name),
 		},
 		{
 			label: 'CANCEL',
 			disabled: form.items.length === 0 || !form.name,
 			hidden: form.docstatus != 1,
 			color: { background: 'var(--sc-alert)', text: 'var(--sc-btn-color)' },
-			action: () => store.cancel<DeliveryNote>('Delivery Note', form.name),
+			action: async () => await store.cancel<DeliveryNote>('Delivery Note', form.name),
 		},
 	]
 })

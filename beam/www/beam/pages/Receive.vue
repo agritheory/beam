@@ -10,7 +10,7 @@
 	</Navbar>
 
 	<!-- body section -->
-	<ListView :items="transfer" />
+	<ListView :items="receive" />
 </template>
 
 <script setup lang="ts">
@@ -21,7 +21,7 @@ import { useBeamStore } from '@/stores/beam'
 import type { ListViewItem } from '@/types'
 
 const store = useBeamStore()
-const transfer = ref<Partial<ListViewItem>[]>([])
+const receive = ref<Partial<ListViewItem>[]>([])
 const canLoadMore = ref(true)
 const page = ref(1)
 
@@ -41,7 +41,7 @@ useInfiniteScroll(
 			row.linkComponent = 'ListAnchor'
 			row.description = row.parent
 			row.route = `#/purchase-receipt?id=${row.parent}`
-			transfer.value.push(row)
+			receive.value.push(row)
 		})
 
 		page.value++

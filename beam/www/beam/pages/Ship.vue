@@ -1,4 +1,5 @@
 <template>
+	<!-- navigation section -->
 	<Navbar>
 		<template #title>
 			<h1 class="nav-title">Ship</h1>
@@ -7,29 +8,44 @@
 			<RouterLink :to="{ name: 'home' }">Home</RouterLink>
 		</template>
 	</Navbar>
-	<ListView :items="items" />
+
+	<!-- body section -->
+	<ListView :items="ship" />
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { useInfiniteScroll } from '@vueuse/core'
+import { ref } from 'vue'
 
 import { useBeamStore } from '@/stores/beam'
 import type { ListViewItem } from '@/types'
 
 const store = useBeamStore()
-const items = ref<Partial<ListViewItem>[]>([])
+const ship = ref<Partial<ListViewItem>[]>([])
+const canLoadMore = ref(true)
+const page = ref(1)
 
-onMounted(async () => {
-	const { data } = await store.getDemand()
+useInfiniteScroll(
+	window,
+	async () => {
+		const { data } = await store.getDemand({ filters: JSON.stringify({ doctype: 'Sales Order' }), page: page.value })
+		if (data.length === 0) {
+			canLoadMore.value = false
+			return
+		}
 
-	// TODO: move this to the server
-	data.forEach(row => {
-		row.count = { count: row.allocated_qty, of: row.total_required_qty }
-		row.label = `${row.doctype} - ${row.parent}`
-		row.linkComponent = 'ListAnchor'
-		row.description = `${row.item_code} - ${row.warehouse}`
-		row.route = `#/Delivery Note/new-delivery-note`
-		items.value.push(row)
-	})
-})
+		// TODO: move this to the server
+		data.forEach(row => {
+			row.count = { count: row.allocated_qty, of: row.total_required_qty }
+			row.label = `${row.doctype} - ${row.parent}`
+			row.linkComponent = 'ListAnchor'
+			row.description = `${row.item_code} - ${row.warehouse}`
+			row.route = `#/delivery-note?id=${row.parent}`
+			ship.value.push(row)
+		})
+
+		page.value++
+	},
+	{ canLoadMore: () => canLoadMore.value }
+)
 </script>

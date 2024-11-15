@@ -58,7 +58,7 @@ const items = computed((): (PurchaseReceiptItem & ListViewItem)[] => {
 const create = async () => {
 	if (purchaseReceipt.value.dirty) {
 		const document: PurchaseReceipt = { ...purchaseReceipt.value }
-		document.items = document.items.filter(item => item.qty > 0)
+		document.items = document.items.filter(item => item.received_qty > 0)
 		const response = await store.insert('Purchase Receipt', document)
 
 		if (!response.exception) {
@@ -67,8 +67,6 @@ const create = async () => {
 				purchaseReceipt.value = response.data
 			})
 		}
-
-		return response
 	} else {
 		// TODO: a few options here:
 		// 1. allow setting a condition in ControlButtons to control when to enable the button
@@ -93,14 +91,14 @@ const controlButtons = computed((): ControlButton[] => {
 			label: 'RECEIVE',
 			disabled: form.items.length === 0 || !form.name,
 			color: { background: 'var(--sc-success)', text: 'var(--sc-btn-color)' },
-			action: () => store.submit<PurchaseReceipt>('Purchase Receipt', form.name),
+			action: async () => await store.submit<PurchaseReceipt>('Purchase Receipt', form.name),
 		},
 		{
 			label: 'CANCEL',
 			disabled: form.items.length === 0 || !form.name,
 			hidden: form.docstatus != 1,
 			color: { background: 'var(--sc-alert)', text: 'var(--sc-btn-color)' },
-			action: () => store.cancel<PurchaseReceipt>('Purchase Receipt', form.name),
+			action: async () => await store.cancel<PurchaseReceipt>('Purchase Receipt', form.name),
 		},
 	]
 })

@@ -118,6 +118,7 @@ export type DeliveryNote = ParentDoctype & {
 
 export type DeliveryNoteItem = ChildDoctype & {
 	qty: number
+
 	warehouse?: string
 }
 

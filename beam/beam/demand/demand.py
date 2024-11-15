@@ -688,6 +688,8 @@ def get_demand(*args, **kwargs) -> list[Demand]:
 
 	if kwargs.get("filters"):
 		filters = kwargs["filters"]
+		if isinstance(filters, str):
+			filters = frappe.parse_json(filters)
 		for key, value in filters.items():
 			if isinstance(value, str):
 				value = (value,)
