@@ -1,4 +1,5 @@
 <template>
+	<!-- navigation section -->
 	<Navbar>
 		<template #title>
 			<h1 class="nav-title">Purchase Receipt</h1>
@@ -8,9 +9,13 @@
 			<RouterLink :to="{ name: 'home' }">Home</RouterLink>
 		</template>
 	</Navbar>
+
+	<!-- body section -->
 	<div class="box" v-show="items.length">
 		<ListView :items="items" />
 	</div>
+
+	<!-- footer section -->
 	<ControlButtons :buttons="controlButtons" />
 </template>
 
@@ -19,7 +24,7 @@ import { computed, ref, onMounted } from 'vue'
 
 import ControlButtons from '@/components/ControlButtons.vue'
 import { useBeamStore } from '@/stores/beam'
-import type { ListViewItem, PurchaseReceipt } from '@/types'
+import type { ControlButton, ListViewItem, PurchaseReceipt } from '@/types'
 
 const store = useBeamStore()
 const items = ref<ListViewItem[]>([])
@@ -68,37 +73,31 @@ const create = async () => {
 	}
 }
 
-const submit = async () => {
-	throw new Error('Not implemented')
-}
+const controlButtons = computed((): ControlButton[] => {
+	if (!store.form) return []
 
-const cancel = async () => {
-	throw new Error('Not implemented')
-}
+	const form = store.form as PurchaseReceipt
+	if (!form.items) return []
 
-const controlButtons = computed(() => {
-	if (!store.form) {
-		return []
-	}
 	return [
 		{
 			label: 'SAVE',
-			action: create,
 			disabled: items.value.length === 0,
 			color: { background: '#4791FF', text: 'var(--sc-btn-color)' },
+			action: create,
 		},
 		{
 			label: 'RECEIVE',
-			action: () => store.submit<PurchaseReceipt>('Stock Entry', store.form),
-			disabled: store.form.items.length === 0 || !store.form.name,
+			disabled: form.items.length === 0 || !form.name,
 			color: { background: 'var(--sc-success)', text: 'var(--sc-btn-color)' },
+			action: () => store.submit<PurchaseReceipt>('Purchase Receipt', form.name),
 		},
 		{
 			label: 'CANCEL',
-			action: () => store.cancel<PurchaseReceipt>('Stock Entry', stockEntry),
-			disabled: store.form.items.length === 0 || !store.form.name,
-			hidden: store.form.docstatus != 1,
+			disabled: form.items.length === 0 || !form.name,
+			hidden: form.docstatus != 1,
 			color: { background: 'var(--sc-alert)', text: 'var(--sc-btn-color)' },
+			action: () => store.cancel<PurchaseReceipt>('Purchase Receipt', form.name),
 		},
 	]
 })

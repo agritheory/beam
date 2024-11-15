@@ -1,4 +1,5 @@
 <template>
+	<!-- navigation section -->
 	<Navbar>
 		<template #title>
 			<h1 class="nav-title">Delivery Note</h1>
@@ -8,9 +9,13 @@
 			<RouterLink :to="{ name: 'home' }">Home</RouterLink>
 		</template>
 	</Navbar>
+
+	<!-- body section -->
 	<div class="box" v-show="items.length">
 		<ListView :items="items" />
 	</div>
+
+	<!-- footer section -->
 	<ControlButtons :buttons="controlButtons" />
 </template>
 
@@ -19,46 +24,42 @@ import { computed, ref, onMounted } from 'vue'
 
 import ControlButtons from '@/components/ControlButtons.vue'
 import { useBeamStore } from '@/stores/beam'
-import type { DeliveryNote, ListViewItem, ParentDoctype } from '@/types'
+import type { ControlButton, DeliveryNote, ListViewItem } from '@/types'
 
 const store = useBeamStore()
 const items = ref<ListViewItem[]>([])
 
 onMounted(async () => {
 	store.form as Partial<DeliveryNote>
-	// console.log(JSON.stringify(store.form))
 })
 
-const create = async () => {
-	// TODO: implement create
-	const deliveryNote = store.form as Partial<DeliveryNote>
-	const { data, exception, response } = await store.insert('Delivery Note', deliveryNote)
-	return { data, exception, response }
-}
+const controlButtons = computed((): ControlButton[] => {
+	if (!store.form) return []
 
-const controlButtons = computed(() => {
-	if (!store.form) {
-		return []
-	}
+	const form = store.form as DeliveryNote
 	return [
 		{
 			label: 'SAVE',
-			action: create,
 			disabled: items.value.length === 0,
 			color: { background: '#4791FF', text: 'var(--sc-btn-color)' },
+			action: async () => {
+				// TODO: implement create
+				const deliveryNote = store.form as Partial<DeliveryNote>
+				return await store.insert('Delivery Note', deliveryNote)
+			},
 		},
 		{
 			label: 'SHIP',
-			action: () => store.submit<DeliveryNote>('Delivery Note', store.form),
-			disabled: store.form.items.length === 0 || !store.form.name,
+			disabled: form.items.length === 0 || !form.name,
 			color: { background: 'var(--sc-success)', text: 'var(--sc-btn-color)' },
+			action: () => store.submit<DeliveryNote>('Delivery Note', form.name),
 		},
 		{
 			label: 'CANCEL',
-			action: () => store.cancel<DeliveryNote>('Delivery Note', store.form),
-			disabled: store.form.items.length === 0 || !store.form.name,
-			hidden: store.form.docstatus != 1,
+			disabled: form.items.length === 0 || !form.name,
+			hidden: form.docstatus != 1,
 			color: { background: 'var(--sc-alert)', text: 'var(--sc-btn-color)' },
+			action: () => store.cancel<DeliveryNote>('Delivery Note', form.name),
 		},
 	]
 })

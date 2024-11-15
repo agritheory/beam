@@ -1,11 +1,11 @@
 <template>
-	<div :class="`button-${buttons.length} control-buttons`">
+	<div class="control-buttons">
 		<BeamBtn
 			v-for="(button, index) in buttons"
+			v-show="!button.hidden"
 			:key="index"
 			@click="button.action"
 			:disabled="button.disabled"
-			v-show="!button.hidden"
 			:style="{
 				'background-color': !button.disabled ? button.color?.background || 'inherit' : 'inherit',
 				color: !button.disabled ? button.color?.text || 'inherit' : 'inherit',
@@ -17,9 +17,9 @@
 </template>
 
 <script setup lang="ts">
-const props = defineProps<{
-	buttons: Array<{ label: string; action: () => void; disabled: boolean; hidden: boolean; color: object | undefined }>
-}>()
+import type { ControlButton } from '@/types'
+
+defineProps<{ buttons: ControlButton[] }>()
 </script>
 
 <style scoped>

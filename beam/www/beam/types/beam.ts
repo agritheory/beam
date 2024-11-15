@@ -8,6 +8,26 @@ export interface BeamWindow extends Window {
 	scanner: any
 }
 
+export type BeamHome = {
+	routes: ListViewItem[]
+	company: string
+}
+
+export type BeamCache = {
+	mappers: Record<string, ParentDoctypesForStockTransfer>
+}
+
+export type ControlButton = {
+	label: string
+	disabled?: boolean
+	hidden?: boolean
+	color?: {
+		background: string
+		text: string
+	}
+	action: () => void
+}
+
 export type ListViewItem = {
 	label: string
 	description?: string
@@ -19,13 +39,4 @@ export type ListViewItem = {
 	checked?: boolean
 	linkComponent?: string
 	route?: string
-}
-
-export type BeamHome = {
-	routes: ListViewItem[]
-	company: string
-}
-
-export type BeamCache = {
-	mappers: Record<string, ParentDoctypesForStockTransfer>
 }

@@ -34,7 +34,6 @@ export type ChildDoctype = ChildDoctypeMeta & {
 	item_name?: string
 	qty?: number
 	stock_qty?: number
-	transfer_qty?: number
 	warehouse?: string
 }
 
@@ -62,11 +61,13 @@ export type StockEntry = ParentDoctype & {
 export type StockEntryItem = ChildDoctype & {
 	s_warehouse?: string
 	t_warehouse?: string
+	transfer_qty?: number
 	transferred_qty?: number
 }
 
 export type WorkOrder = ParentDoctype & {
 	planned_start_date: string
+	production_item: string
 	qty: number
 
 	item_name?: string
@@ -79,7 +80,6 @@ export type WorkOrder = ParentDoctype & {
 
 export type WorkOrderOperation = ChildDoctype & {
 	operation: string
-	production_item: string
 	time_in_mins: number
 
 	actual_operation_time?: number

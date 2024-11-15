@@ -1,4 +1,5 @@
 <template>
+	<!-- navigation section -->
 	<Navbar>
 		<template #title>
 			<h1 class="nav-title">Receive</h1>
@@ -7,6 +8,8 @@
 			<RouterLink :to="{ name: 'home' }">Home</RouterLink>
 		</template>
 	</Navbar>
+
+	<!-- body section -->
 	<ListView :items="transfer" />
 </template>
 
@@ -45,6 +48,4 @@ useInfiniteScroll(
 	},
 	{ canLoadMore: () => canLoadMore.value }
 )
-
-// const handlePrimaryAction = () => {}
 </script>

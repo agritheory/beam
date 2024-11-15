@@ -42,7 +42,7 @@ import { useRoute } from 'vue-router'
 
 import ControlButtons from '@/components/ControlButtons.vue'
 import { useBeamStore } from '@/stores/beam'
-import type { ListViewItem, StockEntry, WorkOrder } from '@/types'
+import type { ControlButton, ListViewItem, StockEntry, WorkOrder } from '@/types'
 
 // TODO:
 // 1. subscribe on changes to required items
@@ -121,37 +121,29 @@ const create = async () => {
 	}
 }
 
-const submit = async () => {
-	throw new Error('Not implemented')
-}
+const controlButtons = computed((): ControlButton[] => {
+	if (!workOrder) return []
+	if (!stockEntry.value) return []
 
-const cancel = async () => {
-	throw new Error('Not implemented')
-}
-
-const controlButtons = computed(() => {
-	if (!workOrder) {
-		return []
-	}
 	return [
 		{
 			label: 'SAVE',
-			action: create,
 			disabled: items.value.length === 0,
 			color: { background: '#4791FF', text: 'var(--sc-btn-color)' },
+			action: create,
 		},
 		{
 			label: workOrder.value.skip_transfer ? 'MANUFACTURE' : 'TRANSFER',
-			action: () => store.submit<StockEntry>('Stock Entry', stockEntry),
 			disabled: stockEntry.value.items.length === 0 || !stockEntry.value.name,
 			color: { background: 'var(--sc-success)', text: 'var(--sc-btn-color)' },
+			action: () => store.submit<StockEntry>('Stock Entry', stockEntry.value.name),
 		},
 		{
 			label: 'CANCEL',
-			action: () => store.cancel<StockEntry>('Stock Entry', stockEntry),
 			disabled: stockEntry.value.items.length === 0 || !stockEntry.value.name,
 			hidden: stockEntry.value.docstatus != 1,
 			color: { background: 'var(--sc-alert)', text: 'var(--sc-btn-color)' },
+			action: () => store.cancel<StockEntry>('Stock Entry', stockEntry.value.name),
 		},
 	]
 })
