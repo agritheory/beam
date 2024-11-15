@@ -50,23 +50,39 @@ export const useBeamStore = defineStore('beam', () => {
 	// TODO: vue-router's useRoute() composable is not working as intended here, so accepting route input
 	const setForm = async (currentRoute: RouteLocationNormalized) => {
 		form.value = {}
+		if (!currentRoute.params.id) return
 
 		const meta = currentRoute.meta
 		if (meta.view === 'form' && scanner.config.frm.includes(meta.doctype)) {
-			let docname: string
-			if (currentRoute.params.id) {
-				docname = currentRoute.params.id.toString()
-				form.value = await getOne<ParentDoctypes>(meta.doctype, docname)
-			} else if (currentRoute.query.id) {
-				docname = currentRoute.query.id.toString()
-				const newDoc = await makeNewDoc<ParentDoctypesForStockTransfer>(meta.doctype, docname)
+			const docname = currentRoute.params.id.toString()
+			form.value = await getOne<ParentDoctypes>(meta.doctype, docname)
+		}
+	}
+
+	const setMappedDoc = async (currentRoute: RouteLocationNormalized) => {
+		const id = currentRoute.query.id || currentRoute.params.id
+		if (!id) return
+
+		const meta = currentRoute.meta
+		if (meta.view === 'form' && scanner.config.frm.includes(meta.doctype)) {
+			const docname = id.toString()
+			if (cache.value.mappers[docname]) return
+
+			let newDoc: ParentDoctypesForStockTransfer
+			if (meta.doctype === 'Work Order') {
+				newDoc = await getMappedStockEntry({
+					work_order_id: id,
+					purpose: 'Material Transfer for Manufacture',
+				})
+			} else {
+				newDoc = await makeNewDoc<ParentDoctypesForStockTransfer>(meta.doctype, docname)
 				if (newDoc.doctype === 'Delivery Note') {
 					for (const item of newDoc.items) {
 						;(item as DeliveryNoteItem).delivered_qty = 0
 					}
 				}
-				cache.value.mappers[docname] = newDoc
 			}
+			cache.value.mappers[docname] = newDoc
 		}
 	}
 
@@ -201,6 +217,7 @@ export const useBeamStore = defineStore('beam', () => {
 		// store context actions
 		getScanDoctypes,
 		setForm,
+		setMappedDoc,
 		setScanContext,
 
 		// document workflow actions

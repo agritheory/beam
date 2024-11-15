@@ -41,7 +41,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
 import ControlButtons from '@/components/ControlButtons.vue'
@@ -67,29 +67,14 @@ store.$subscribe(mutation => {
 	}
 })
 
-onMounted(async () => {
-	if (!store.cache.mappers[workOrderId]) {
-		// create and save a Stock Entry mapped to the Work Order into cache
-		stockEntry.value = await store.getMappedStockEntry({
-			work_order_id: workOrderId,
-			purpose: 'Material Transfer for Manufacture',
-		})
-
-		store.$patch(state => {
-			state.cache.mappers[workOrderId] = stockEntry.value
-		})
-	}
-})
-
 const items = computed((): (StockEntryItem & ListViewItem)[] => {
-	return (
-		stockEntry.value?.items.map(item => ({
-			...item,
-			label: item.item_code,
-			count: { count: item.qty, of: item.transfer_qty },
-			linkComponent: 'ListCount',
-		})) || []
-	)
+	if (!stockEntry.value) return []
+	return stockEntry.value.items.map(item => ({
+		...item,
+		label: item.item_code,
+		count: { count: item.qty, of: item.transfer_qty },
+		linkComponent: 'ListCount',
+	}))
 })
 
 const operations = computed((): (WorkOrderOperation & ListViewItem)[] => {

@@ -570,10 +570,22 @@ beam_mobile = {
 			"meta": {"requiresAuth": True, "doctype": "Purchase Receipt", "view": "list"},
 		},
 		{
+			"path": "/purchase-receipt",
+			"name": "purchase-receipt",
+			"component": "PurchaseReceipt",
+			"meta": {"requiresAuth": True, "doctype": "Purchase Receipt", "view": "form"},
+		},
+		{
 			"path": "/ship",
 			"name": "ship",
 			"component": "Ship",
 			"meta": {"requiresAuth": True, "doctype": "Delivery Note", "view": "list"},
+		},
+		{
+			"path": "/delivery-note",
+			"name": "delivery-note",
+			"component": "DeliveryNote",
+			"meta": {"requiresAuth": True, "doctype": "Delivery Note", "view": "form"},
 		},
 		{
 			"path": "/demand",
@@ -598,18 +610,6 @@ beam_mobile = {
 			"name": "repack",
 			"component": "Repack",
 			"meta": {"requiresAuth": True, "doctype": "Stock Entry", "view": "list"},
-		},
-		{
-			"path": "/purchase-receipt",
-			"name": "purchase-receipt",
-			"component": "PurchaseReceipt",
-			"meta": {"requiresAuth": True, "doctype": "Purchase Receipt", "view": "form"},
-		},
-		{
-			"path": "/delivery-note",
-			"name": "delivery-note",
-			"component": "DeliveryNote",
-			"meta": {"requiresAuth": True, "doctype": "Delivery Note", "view": "form"},
 		},
 	],
 }

@@ -13,17 +13,17 @@ export const useInitStore = defineStore('init', () => {
 	const init = async (currentRoute?: RouteLocationNormalized) => {
 		await store.getScanDoctypes()
 		await store.setForm(currentRoute || route)
+		await store.setMappedDoc(currentRoute || route)
 		await store.setScanContext(currentRoute || route)
 
 		// only check store actions to control toggling dirty state (vs. all state mutations);
-		// also globally ignore certain actions (store init, background fetching, etc.)
-		const ignoredActions = ['getMappedStockEntry', 'getScanDoctypes', 'setForm', 'setScanContext']
 		store.$onAction(({ name, after }) => {
 			after(() => {
-				if (!ignoredActions.includes(name)) {
-					const id = route.params.id || route.query.id
-					const doc = store.cache.mappers[id]
-					if (doc) {
+				const id = route.params.id || route.query.id
+				const doc = store.cache.mappers[id]
+				if (doc) {
+					// currently only scan actions affect the document's dirty state
+					if (name === 'scan') {
 						store.$patch(() => {
 							doc.dirty = true
 						})
