@@ -37,11 +37,13 @@ useInfiniteScroll(
 
 		// TODO: move this to the server
 		data.forEach(row => {
-			row.count = { count: row.received_qty, of: `${row.rejected_qty}` }
+			row.count = { count: row.received_qty, of: row.rejected_qty }
 			row.label = `${row.item_code} from ${row.warehouse}`
 			row.linkComponent = 'ListAnchor'
-			row.description = `${row.warehouse} [${row.parent}]`
-			row.route = `#/purchase-receipt/${row.parent || 'new-purchase-receipt'}` //
+			row.description = `[${row.parent}]
+			Warehouse: ${row.warehouse}
+			Supplier: ${row.supplier}`
+			row.route = `#/purchase_order/${row.parent || 'new-purchase-order'}`
 			transfer.value.push(row)
 		})
 
@@ -49,10 +51,11 @@ useInfiniteScroll(
 	},
 	{ canLoadMore: () => canLoadMore.value }
 )
-
-// const handlePrimaryAction = () => {}
 </script>
 
-<style scoped>
+<style>
 @import url('@stonecrop/beam/styles');
+.beam_list-text label, .beam_list-text p {
+	white-space: pre-line !important;
+}
 </style>
