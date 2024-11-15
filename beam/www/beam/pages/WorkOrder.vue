@@ -107,13 +107,13 @@ const create = async () => {
 	if (store.form.dirty) {
 		const document: StockEntry = { ...stockEntry.value }
 		document.items = document.items.filter(item => item.qty > 0)
-		const response = await store.insert('Stock Entry', document)
+		const { data, exception } = await store.insert('Stock Entry', document)
 
-		if (!response.exception) {
+		if (!exception) {
 			store.$patch(state => {
 				state.form.dirty = false
-				state.cache.mappers[workOrderId] = response.data
-				stockEntry.value = response.data
+				state.cache.mappers[workOrderId] = data
+				stockEntry.value = data
 			})
 		}
 	} else {
@@ -132,7 +132,7 @@ const controlButtons = computed((): ControlButton[] => {
 	return [
 		{
 			label: 'SAVE',
-			disabled: !store.form.dirty || items.value.length === 0,
+			disabled: items.value.length === 0,
 			color: { background: '#4791FF', text: 'var(--sc-btn-color)' },
 			action: create,
 		},

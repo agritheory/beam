@@ -62,12 +62,12 @@ const create = async () => {
 		for (const item of document.items) {
 			item.qty = item.delivered_qty
 		}
-		const response = await store.insert('Delivery Note', document)
+		const { data, exception } = await store.insert('Delivery Note', document)
 
-		if (!response.exception) {
+		if (!exception) {
 			store.$patch(state => {
 				state.form.dirty = false
-				deliveryNote.value = response.data
+				deliveryNote.value = data
 			})
 		}
 	} else {
@@ -86,7 +86,7 @@ const controlButtons = computed((): ControlButton[] => {
 	return [
 		{
 			label: 'SAVE',
-			disabled: !store.form.dirty || items.value.length === 0,
+			disabled: items.value.length === 0,
 			color: { background: '#4791FF', text: 'var(--sc-btn-color)' },
 			action: create,
 		},

@@ -59,12 +59,12 @@ const create = async () => {
 	if (store.form.dirty) {
 		const document: PurchaseReceipt = { ...purchaseReceipt.value }
 		document.items = document.items.filter(item => item.received_qty > 0)
-		const response = await store.insert('Purchase Receipt', document)
+		const { data, exception } = await store.insert('Purchase Receipt', document)
 
-		if (!response.exception) {
+		if (!exception) {
 			store.$patch(state => {
 				state.form.dirty = false
-				purchaseReceipt.value = response.data
+				purchaseReceipt.value = data
 			})
 		}
 	} else {
@@ -83,7 +83,7 @@ const controlButtons = computed((): ControlButton[] => {
 	return [
 		{
 			label: 'SAVE',
-			disabled: !store.form.dirty || items.value.length === 0,
+			disabled: items.value.length === 0,
 			color: { background: '#4791FF', text: 'var(--sc-btn-color)' },
 			action: create,
 		},
