@@ -156,7 +156,7 @@ export const useScanStore = defineStore('scan', () => {
 					'Repack',
 				]
 
-				store.$patch(() => {
+				store.$patch(state => {
 					const item: StockEntryItem = {
 						item_code: action.context.item_code,
 						qty: 1,
@@ -174,6 +174,7 @@ export const useScanStore = defineStore('scan', () => {
 					}
 
 					;(mappedDoc as StockEntry).items.push(item)
+					state.cache.mappers[id] = mappedDoc
 				})
 			}
 		})

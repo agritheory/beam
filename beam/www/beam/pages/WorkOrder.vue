@@ -46,7 +46,15 @@ import { useRoute } from 'vue-router'
 
 import ControlButtons from '@/components/ControlButtons.vue'
 import { useBeamStore } from '@/stores/beam'
-import type { ControlButton, ListViewItem, StockEntry, StockEntryItem, WorkOrder, WorkOrderOperation } from '@/types'
+import type {
+	ControlButton,
+	ListViewItem,
+	StockEntry,
+	StockEntryItem,
+	WorkOrder,
+	WorkOrderItem,
+	WorkOrderOperation,
+} from '@/types'
 
 // TODO:
 // 1. subscribe on changes to required items
@@ -67,14 +75,18 @@ store.$subscribe(mutation => {
 	}
 })
 
-const items = computed((): (StockEntryItem & ListViewItem)[] => {
+const items = computed((): (WorkOrderItem & StockEntryItem & ListViewItem)[] => {
 	if (!stockEntry.value) return []
-	return stockEntry.value.items.map(item => ({
-		...item,
-		label: item.item_code,
-		count: { count: item.qty, of: item.transfer_qty },
-		linkComponent: 'ListCount',
-	}))
+	return workOrder.value.required_items.map(item => {
+		const stockEntryItem = stockEntry.value.items.find(i => i.item_code === item.item_code)
+		return {
+			...stockEntryItem,
+			...item,
+			label: item.item_code,
+			count: { count: stockEntryItem?.qty || item.transferred_qty, of: item.required_qty },
+			linkComponent: 'ListCount',
+		}
+	})
 })
 
 const operations = computed((): (WorkOrderOperation & ListViewItem)[] => {
@@ -139,8 +151,8 @@ const controlButtons = computed((): ControlButton[] => {
 })
 
 const transferProgress = reactive({
-	transferred: computed(() => items.value.reduce<number>((sum, item) => sum + item.qty, 0)),
-	total: computed(() => items.value.reduce<number>((sum, item) => sum + item.transfer_qty, 0)),
+	transferred: computed(() => items.value.reduce<number>((sum, item) => sum + (item.qty || item.transferred_qty), 0)),
+	total: computed(() => items.value.reduce<number>((sum, item) => sum + item.required_qty, 0)),
 	percent: computed(() =>
 		transferProgress.total === 0 ? '0' : `${((transferProgress.transferred / transferProgress.total) * 100).toFixed(0)}`
 	),
