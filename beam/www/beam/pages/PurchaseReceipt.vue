@@ -59,6 +59,9 @@ const create = async () => {
 	if (purchaseReceipt.value.dirty) {
 		const document: PurchaseReceipt = { ...purchaseReceipt.value }
 		document.items = document.items.filter(item => item.received_qty > 0)
+		for (const item of document.items) {
+			item.qty = item.received_qty
+		}
 		const { data, exception } = await store.insert('Purchase Receipt', document)
 
 		if (!exception) {
