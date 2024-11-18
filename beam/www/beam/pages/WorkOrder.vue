@@ -48,6 +48,7 @@ import ControlButtons from '@/components/ControlButtons.vue'
 import { useBeamStore } from '@/stores/beam'
 import type {
 	ControlButton,
+	DocActionResponse,
 	ListViewItem,
 	StockEntry,
 	StockEntryItem,
@@ -104,12 +105,18 @@ const create = async () => {
 	if (stockEntry.value.dirty) {
 		const document: StockEntry = { ...stockEntry.value }
 		document.items = document.items.filter(item => item.qty > 0)
-		const { data, exception } = await store.insert('Stock Entry', document)
 
-		if (!exception) {
+		let response: DocActionResponse<StockEntry>
+		if (stockEntry.value.name) {
+			response = await store.update('Stock Entry', document.name, document)
+		} else {
+			response = await store.insert('Stock Entry', document)
+		}
+
+		if (!response.exception) {
 			store.$patch(state => {
-				state.cache.mappers[workOrderId] = data
-				stockEntry.value = data
+				state.cache.mappers[workOrderId] = response.data
+				stockEntry.value = response.data
 				stockEntry.value.dirty = false
 			})
 		}
@@ -128,7 +135,7 @@ const controlButtons = computed((): ControlButton[] => {
 
 	return [
 		{
-			label: 'SAVE',
+			label: stockEntry.value.name ? 'UPDATE' : 'SAVE',
 			disabled: items.value.length === 0,
 			color: { background: '#4791FF', text: 'var(--sc-btn-color)' },
 			action: create,

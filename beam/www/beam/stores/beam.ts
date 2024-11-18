@@ -70,10 +70,23 @@ export const useBeamStore = defineStore('beam', () => {
 
 			let newDoc: ParentDoctypesForStockTransfer
 			if (meta.doctype === 'Work Order') {
-				newDoc = await getMappedStockEntry({
-					work_order_id: id,
-					purpose: 'Material Transfer for Manufacture',
+				// check if a draft Stock Entry already exists for this work order
+				const existingEntries = await getAll<ParentDoctypesForStockTransfer[]>('Stock Entry', {
+					filters: JSON.stringify({
+						docstatus: 0,
+						work_order: id,
+						purpose: 'Material Transfer for Manufacture',
+					}),
 				})
+
+				if (existingEntries.length) {
+					newDoc = await getOne<ParentDoctypesForStockTransfer>('Stock Entry', existingEntries[0].name)
+				} else {
+					newDoc = await getMappedStockEntry({
+						work_order_id: id,
+						purpose: 'Material Transfer for Manufacture',
+					})
+				}
 			} else {
 				newDoc = await makeNewDoc<ParentDoctypesForStockTransfer>(meta.doctype, docname)
 				if (newDoc.doctype === 'Delivery Note') {
@@ -158,9 +171,9 @@ export const useBeamStore = defineStore('beam', () => {
 		return { data, exception, response }
 	}
 
-	const save = async <T>(doctype: string, name: string, body: Partial<T>) => {
+	const update = async <T>(doctype: string, name: string, body: Partial<T>) => {
 		const url = `/api/resource/${doctype}/${name}`
-		const response = await httpStore.post(url, body)
+		const response = await httpStore.put(url, body)
 		const { data, exception }: { data: T; exception: string } = await response.json()
 		alert(response.ok ? 'Document updated' : exception)
 		return { data, exception, response }
@@ -223,7 +236,7 @@ export const useBeamStore = defineStore('beam', () => {
 		// document workflow actions
 		cancel,
 		insert,
-		save,
+		update,
 		submit,
 
 		// other api actions
