@@ -405,6 +405,22 @@ listview = {
 
 frm = {
 	"Handling Unit": {
+		"Work Order": [
+			{
+				"action": "add_or_associate",
+				"doctype": "Stock Entry",
+				"field": "handling_unit",
+				"target": "target.handling_unit",
+				"context": "target",
+			},
+			{
+				"action": "add_or_associate",
+				"doctype": "Stock Entry",
+				"field": "qty",
+				"target": "target.qty",
+				"context": "target",
+			},
+		],
 		"Delivery Note": [
 			{
 				"action": "add_or_associate",
