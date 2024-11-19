@@ -3,9 +3,17 @@
 
 import type { StoreMetadata } from '@/types/store.js'
 
-export type DocActionResponse<T> = {
+export type FrappeResponse<T = any> = {
+	_exc_source?: string
+	_server_messages?: string
 	data?: T
+	exc_type?: string
+	exc?: string
 	exception?: string
+	home_page?: string
+}
+
+export type DocActionResponse<T> = FrappeResponse<T> & {
 	response?: Response
 }
 

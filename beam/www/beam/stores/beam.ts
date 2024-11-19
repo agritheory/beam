@@ -11,6 +11,7 @@ import type {
 	BeamHome,
 	DeliveryNoteItem,
 	FormContext,
+	FrappeResponse,
 	ListContext,
 	ParentDoctypes,
 	ParentDoctypesForStockTransfer,
@@ -18,6 +19,8 @@ import type {
 	ScanContext,
 	StockEntry,
 } from '@/types/index.js'
+import { handleErrors } from '@/utils/error.js'
+import { useBeamToast } from '@/utils/toast.js'
 
 declare const frappe: any
 
@@ -31,6 +34,7 @@ const SCAN_CONFIG_URL = '/api/method/beam.beam.scan.config.get_scan_doctypes'
 const SCAN_URL = 'beam.beam.scan.scan' // frappe.xcall doesn't require prefix
 
 export const useBeamStore = defineStore('beam', () => {
+	const toast = useBeamToast()
 	const httpStore = useHttpStore()
 
 	const recordsPerPage = 20
@@ -166,33 +170,53 @@ export const useBeamStore = defineStore('beam', () => {
 	const insert = async <T>(doctype: string, body: T) => {
 		const url = `/api/resource/${doctype}`
 		const response = await httpStore.post(url, body)
-		const { data, exception }: { data: T; exception: string } = await response.json()
-		alert(response.ok ? 'Document created' : exception)
-		return { data, exception, response }
+		if (response.ok) {
+			toast.success('Document created')
+			const { data }: FrappeResponse<T> = await response.json()
+			return { data, response }
+		} else {
+			await handleErrors(response)
+			return { data: null, response }
+		}
 	}
 
 	const update = async <T>(doctype: string, name: string, body: Partial<T>) => {
 		const url = `/api/resource/${doctype}/${name}`
 		const response = await httpStore.put(url, body)
-		const { data, exception }: { data: T; exception: string } = await response.json()
-		alert(response.ok ? 'Document updated' : exception)
-		return { data, exception, response }
+		if (response.ok) {
+			toast.success('Document updated')
+			const { data }: FrappeResponse<T> = await response.json()
+			return { data, response }
+		} else {
+			await handleErrors(response)
+			return { data: null, response }
+		}
 	}
 
 	const submit = async <T>(doctype: string, name: string) => {
 		const url = `/api/resource/${doctype}/${name}`
 		const response = await httpStore.put(url, { docstatus: 1 })
-		const { data, exception }: { data: T; exception: string } = await response.json()
-		alert(response.ok ? 'Document status changed to Submitted' : exception)
-		return { data, exception, response }
+		if (response.ok) {
+			toast.success('Document status changed to Submitted')
+			const { data }: FrappeResponse<T> = await response.json()
+			return { data, response }
+		} else {
+			await handleErrors(response)
+			return { data: null, response }
+		}
 	}
 
 	const cancel = async <T>(doctype: string, name: string) => {
 		const url = `/api/resource/${doctype}/${name}`
 		const response = await httpStore.put(url, { docstatus: 2 })
-		const { data, exception }: { data: T; exception: string } = await response.json()
-		alert(response.ok ? 'Document status changed to Cancelled' : exception)
-		return { data, exception, response }
+		if (response.ok) {
+			toast.success('Document status changed to Cancelled')
+			const { data }: FrappeResponse<T> = await response.json()
+			return { data, response }
+		} else {
+			await handleErrors(response)
+			return { data: null, response }
+		}
 	}
 
 	const makeNewDoc = async <T>(doctype: string, docname?: string) => {
@@ -206,7 +230,7 @@ export const useBeamStore = defineStore('beam', () => {
 		const response = await httpStore.post(MAPPED_STOCK_ENTRY_URL, data)
 		const { message }: { message: StockEntry } = await response.json()
 		if (!message) {
-			alert('Error: Could not map Work Order to Stock Entry')
+			toast.error('Error: Could not map Work Order to Stock Entry')
 			return
 		}
 		// initialize pending stock entry items with zero quantity
