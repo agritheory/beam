@@ -13,21 +13,33 @@ import { BeamWindow } from '@/types/index.js'
 
 declare const window: BeamWindow
 
+// Create core instances
+const app = createApp(Beam)
+const pinia = createPinia()
 const router = createRouter({
 	history: createWebHashHistory(),
 	routes,
+})
+
+// Install plugins first
+app.use(router)
+app.use(BeamPlugin)
+app.use(pinia)
+
+// Setup Pinia plugins after installation
+pinia.use(({ store }) => {
+	store.router = markRaw(router)
 })
 
 if (import.meta.hot) {
 	handleHotUpdate(router)
 }
 
+// Now that pinia is installed, we can setup router guards
 router.beforeEach(async (to, from, next) => {
 	if (to.meta.requiresAuth) {
 		if (window.frappe.user === 'Guest') {
 			next(false)
-			// TODO: 6 Sep, 2024: tried redirecting to intended path, but Frappe
-			// ignores everything after the hash
 			window.location.href = '/login?redirect-to=/beam#'
 		} else {
 			const store = useInitStore()
@@ -35,20 +47,11 @@ router.beforeEach(async (to, from, next) => {
 			next()
 		}
 	} else {
-		// assuming user is logged in and authenticated for all Beam views
 		const store = useInitStore()
 		await store.init(to)
 		next()
 	}
 })
 
-const pinia = createPinia()
-pinia.use(({ store }) => {
-	store.router = markRaw(router)
-})
-
-const app = createApp(Beam)
-app.use(router)
-app.use(BeamPlugin)
-app.use(pinia)
+// Finally mount the app
 app.mount('#beam')

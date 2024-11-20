@@ -2,13 +2,64 @@
 // For license information, please see license.txt
 
 import vue from '@vitejs/plugin-vue'
-import { resolve } from 'path'
+import { resolve, dirname } from 'path'
 import Components from 'unplugin-vue-components/vite'
 import VueRouter from 'unplugin-vue-router/vite'
 import { defineConfig } from 'vite'
+import { readFileSync, existsSync } from 'fs'
 
 import { getComponentPluginOptions } from './plugins/component.js'
 import { getComponentPaths, getRoutes } from './plugins/router.js'
+
+const RUNTIME_EXTERNALS = [
+	'@stonecrop/beam',
+	'@vueuse/core',
+	'onscan.js',
+	'pinia',
+	'vue',
+	'vue-router',
+	'vue-toast-notification',
+	'typescript',
+]
+
+const BUILD_DEPENDENCIES = [
+	'acorn',
+	'glob',
+	'@types/node',
+	'@vitejs/plugin-vue',
+	'typescript',
+	'unplugin-vue-components',
+	'unplugin-vue-router',
+	'vite',
+]
+
+function findAppsRoot(startPath: string = __dirname): string {
+	let currentPath = startPath
+	let parentDir = dirname(currentPath)
+
+	while (currentPath !== '/' && currentPath !== parentDir) {
+		const dirName = currentPath.split('/').pop()
+		if (dirName === 'apps' && existsSync(currentPath)) {
+			return currentPath
+		}
+
+		currentPath = parentDir
+		parentDir = dirname(currentPath)
+	}
+
+	throw new Error('Could not find "apps" directory in parent path')
+}
+
+function getBeamWebRoot() {
+	const appsRoot = findAppsRoot()
+	const beamWebPath = resolve(appsRoot, 'beam/beam/www/beam')
+
+	if (!existsSync(beamWebPath)) {
+		throw new Error(`Beam web directory not found at expected path: ${beamWebPath}`)
+	}
+
+	return beamWebPath
+}
 
 export default defineConfig({
 	plugins: [
@@ -40,15 +91,15 @@ export default defineConfig({
 
 	resolve: {
 		alias: {
-			'@': resolve(__dirname),
-			'@/plugins': resolve(__dirname, 'plugins'),
-			'@/types': resolve(__dirname, 'types'),
+			'@beam': getBeamWebRoot(),
+			'@': getBeamWebRoot(),
 		},
 	},
 
 	build: {
+		minify: false,
 		emptyOutDir: false,
-		sourcemap: true,
+		sourcemap: 'inline',
 		outDir: './beam/www/beam/',
 		target: 'esnext',
 		lib: {
@@ -58,8 +109,24 @@ export default defineConfig({
 			fileName: () => 'index.js',
 		},
 		rollupOptions: {
+			external: getAllDependencies(),
 			output: {
+				globals: {
+					vue: 'Vue',
+					'vue-router': 'VueRouter',
+					pinia: 'Pinia',
+					'@vueuse/core': 'VueUse',
+					'@stonecrop/beam': 'Beam',
+					'onscan.js': 'onScan',
+					'vue-toast-notification': 'VueToast',
+					typescript: 'ts',
+				},
 				assetFileNames: 'index.[ext]',
+				extend: true,
+				amd: {
+					id: 'beam',
+				},
+				inlineDynamicImports: true,
 			},
 		},
 	},
@@ -69,3 +136,20 @@ export default defineConfig({
 		__VUE_PROD_DEVTOOLS__: true,
 	},
 })
+
+function getAllDependencies() {
+	const dependencies = new Set<string>(RUNTIME_EXTERNALS)
+
+	try {
+		const rootPkg = JSON.parse(readFileSync('package.json', 'utf-8'))
+		Object.keys(rootPkg.dependencies || {}).forEach(dep => {
+			if (!BUILD_DEPENDENCIES.includes(dep)) {
+				dependencies.add(dep)
+			}
+		})
+	} catch (error) {
+		console.warn('Failed to read package.json:', error)
+	}
+
+	return Array.from(dependencies)
+}

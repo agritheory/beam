@@ -45,6 +45,7 @@ def get_beam_home():
 
 def get_configuration_hooks():
 	bm = frappe.get_hooks().get("beam_mobile")
+	print(bm.get("components"))
 	components = sorted(list(set(bm.get("components").keys())))
 	# routes = sorted(list(set([p.get('path') for p in bm.get('routes')])))
 	return frappe._dict({"components": components})
