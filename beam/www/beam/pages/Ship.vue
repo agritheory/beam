@@ -32,7 +32,7 @@ useInfiniteScroll(
 
 		// TODO: move this to the server
 		data.forEach(row => {
-			row.count = { count: row.allocated_qty, of: row.total_required_qty }
+			row.count = { count: row.allocated_qty, of: `${row.total_required_qty}` }
 			row.label = `${row.doctype} - ${row.parent}`
 			row.linkComponent = 'ListAnchor'
 			row.description = `
