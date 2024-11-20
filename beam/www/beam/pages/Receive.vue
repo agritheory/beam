@@ -57,7 +57,8 @@ useInfiniteScroll(
 
 <style>
 @import url('@stonecrop/beam/styles');
-.beam_list-text label, .beam_list-text p {
+.beam_list-text label,
+.beam_list-text p {
 	white-space: pre-line !important;
 }
 </style>

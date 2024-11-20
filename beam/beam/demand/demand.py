@@ -737,7 +737,7 @@ def get_demand(*args, **kwargs) -> list[Demand]:
 			ValueWrapper("").as_("status"),
 			demand.assigned,
 			demand.creation,
-			fn.Coalesce(demand.customer, "").as_("customer")
+			fn.Coalesce(demand.customer, "").as_("customer"),
 		)
 		.where(
 			fn.Coalesce(
@@ -790,7 +790,7 @@ def get_demand(*args, **kwargs) -> list[Demand]:
 			allocation.status,
 			allocation.assigned,
 			allocation.creation,
-			ValueWrapper("").as_("customer")
+			ValueWrapper("").as_("customer"),
 		)
 		.where(allocation.allocated_qty > 0)
 		.orderby(

@@ -1,11 +1,6 @@
 <template>
 	<div :class="`button-${buttons.length} control-buttons`">
-		<BeamBtn
-			v-for="(button, index) in buttons"
-			:key="index"
-			@click="button.action"
-			:disabled="button.disabled"
-		>
+		<BeamBtn v-for="(button, index) in buttons" :key="index" @click="button.action" :disabled="button.disabled">
 			{{ button.label }}
 		</BeamBtn>
 	</div>
