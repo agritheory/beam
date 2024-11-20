@@ -153,6 +153,7 @@ def get_sales_demand(name: str | None = None, item_code: str | None = None) -> l
 			SalesOrder.delivery_date,
 			(total_required_qty).as_("total_required_qty"),
 			Item.stock_uom,
+			fn.Coalesce(SalesOrder.customer, "").as_("customer"),
 			SalesOrder.creation,
 		)
 		.where(
@@ -736,6 +737,7 @@ def get_demand(*args, **kwargs) -> list[Demand]:
 			ValueWrapper("").as_("status"),
 			demand.assigned,
 			demand.creation,
+			fn.Coalesce(demand.customer, "").as_("customer")
 		)
 		.where(
 			fn.Coalesce(
@@ -788,6 +790,7 @@ def get_demand(*args, **kwargs) -> list[Demand]:
 			allocation.status,
 			allocation.assigned,
 			allocation.creation,
+			ValueWrapper("").as_("customer")
 		)
 		.where(allocation.allocated_qty > 0)
 		.orderby(

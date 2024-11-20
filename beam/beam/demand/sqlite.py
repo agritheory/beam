@@ -15,24 +15,20 @@ def get_demand_db_path() -> pathlib.Path:
 
 
 def get_demand_db() -> sqlite3.Connection:
-	print("Creando")
 	path = get_demand_db_path()
 	with filelock(str(path)), sqlite3.connect(path) as conn:
 		cursor = conn.cursor()
 		cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='demand';")
 		data = cursor.fetchone()
 		if data:
-			print("Se conecta")
 			connection = sqlite3.connect(path)
 		else:
-			print("Lo crea")
 			connection = create_demand_db(cursor)
 		connection.row_factory = dict_factory
 		return connection
 
 
 def create_demand_db(cursor: sqlite3.Cursor) -> sqlite3.Connection:
-	print("create_demand_db")
 	path = get_demand_db_path()
 
 	inventory_dimensions = get_inventory_dimensions()
@@ -60,7 +56,8 @@ def create_demand_db(cursor: sqlite3.Cursor) -> sqlite3.Connection:
 				total_required_qty real,
 				stock_uom text,
 				assigned text,
-				creation int
+				creation int,
+				customer text
 				{inventory_dimensions}
 			)
 		"""

@@ -40,9 +40,11 @@ useInfiniteScroll(
 			row.count = { count: row.received_qty, of: row.rejected_qty }
 			row.label = `${row.item_code} from ${row.warehouse}`
 			row.linkComponent = 'ListAnchor'
-			row.description = `[${row.parent}]
-			Warehouse: ${row.warehouse}
-			Supplier: ${row.supplier}`
+			row.description = `
+				[${row.parent}]
+				Warehouse: ${row.warehouse}
+				Supplier: ${row.supplier}
+			`.trim()
 			row.route = `#/purchase_order/${row.parent || 'new-purchase-order'}`
 			transfer.value.push(row)
 		})
