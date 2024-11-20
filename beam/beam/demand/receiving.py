@@ -158,7 +158,6 @@ def remove_receiving(name: str) -> None:
 
 
 def get_receiving_list(name: str | None = None, item_code: str | None = None) -> list[Receiving]:
-	print("get_receiving_list")
 	if name:
 		with get_demand_db() as conn:
 			cursor = conn.cursor()
@@ -185,7 +184,6 @@ def get_receiving_list(name: str | None = None, item_code: str | None = None) ->
 
 
 def reset_build_receiving_map() -> None:
-	print("reset_build_receiving_map")
 	reset_receiving_db()
 	build_receiving_map()
 
@@ -194,7 +192,6 @@ def build_receiving_map(
 	name: str | None = None, item_code: str | None = None, cursor: Optional["Cursor"] = None
 ) -> None:
 	output: list[Receiving] = []
-	print("build_receiving_map")
 	for row in get_receiving_list(name, item_code):
 		row.key = row.get("key") or frappe.generate_hash()
 		row.schedule_date = str(row.schedule_date or get_epoch_from_datetime(row.schedule_date))
@@ -214,7 +211,6 @@ def build_receiving_map(
 
 
 def insert_receiving(output: list[Receiving], cursor: "Cursor") -> None:
-	print("insert_receiving")
 	receiving_table = Table("receiving")
 	for row in output:
 		receiving_row = {key: value for key, value in row.items() if value}
