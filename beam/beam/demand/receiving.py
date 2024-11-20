@@ -251,7 +251,6 @@ def get_receiving_demand(*args, **kwargs) -> list[Receiving]:
 		receiving.stock_uom,
 		receiving.stock_qty,
 		receiving.received_qty,
-		(receiving.stock_qty - receiving.received_qty).as_("rejected_qty"),
 		receiving.supplier,
 		ValueWrapper("").as_("status"),
 		receiving.assigned,

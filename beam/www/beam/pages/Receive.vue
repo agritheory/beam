@@ -37,7 +37,7 @@ useInfiniteScroll(
 
 		// TODO: move this to the server
 		data.forEach(row => {
-			row.count = { count: row.received_qty, of: row.rejected_qty }
+			row.count = { count: row.received_qty, of: row.stock_qty }
 			row.label = `${row.item_code} from ${row.warehouse}`
 			row.linkComponent = 'ListAnchor'
 			row.description = `
