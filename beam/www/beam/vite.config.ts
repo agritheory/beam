@@ -11,28 +11,6 @@ import { readFileSync, existsSync } from 'fs'
 import { getComponentPluginOptions } from './plugins/component.js'
 import { getComponentPaths, getRoutes } from './plugins/router.js'
 
-const RUNTIME_EXTERNALS = [
-	'@stonecrop/beam',
-	'@vueuse/core',
-	'onscan.js',
-	'pinia',
-	'vue',
-	'vue-router',
-	'vue-toast-notification',
-	'typescript',
-]
-
-const BUILD_DEPENDENCIES = [
-	'acorn',
-	'glob',
-	'@types/node',
-	'@vitejs/plugin-vue',
-	'typescript',
-	'unplugin-vue-components',
-	'unplugin-vue-router',
-	'vite',
-]
-
 function findAppsRoot(startPath: string = __dirname): string {
 	let currentPath = startPath
 	let parentDir = dirname(currentPath)
@@ -53,6 +31,17 @@ function findAppsRoot(startPath: string = __dirname): string {
 function getBeamWebRoot() {
 	const appsRoot = findAppsRoot()
 	const beamWebPath = resolve(appsRoot, 'beam/beam/www/beam')
+
+	if (!existsSync(beamWebPath)) {
+		throw new Error(`Beam web directory not found at expected path: ${beamWebPath}`)
+	}
+
+	return beamWebPath
+}
+
+function getBeamNode() {
+	const appsRoot = findAppsRoot()
+	const beamWebPath = resolve(appsRoot, 'beam/node_modules')
 
 	if (!existsSync(beamWebPath)) {
 		throw new Error(`Beam web directory not found at expected path: ${beamWebPath}`)
@@ -88,10 +77,10 @@ export default defineConfig({
 		}),
 		vue(),
 	],
-
 	resolve: {
 		alias: {
 			'@beam': getBeamWebRoot(),
+			'@beamNode': getBeamNode(),
 			'@': getBeamWebRoot(),
 		},
 	},
@@ -109,7 +98,7 @@ export default defineConfig({
 			fileName: () => 'index.js',
 		},
 		rollupOptions: {
-			external: getAllDependencies(),
+			// external: getAllDependencies(),
 			output: {
 				globals: {
 					vue: 'Vue',
@@ -136,20 +125,3 @@ export default defineConfig({
 		__VUE_PROD_DEVTOOLS__: true,
 	},
 })
-
-function getAllDependencies() {
-	const dependencies = new Set<string>(RUNTIME_EXTERNALS)
-
-	try {
-		const rootPkg = JSON.parse(readFileSync('package.json', 'utf-8'))
-		Object.keys(rootPkg.dependencies || {}).forEach(dep => {
-			if (!BUILD_DEPENDENCIES.includes(dep)) {
-				dependencies.add(dep)
-			}
-		})
-	} catch (error) {
-		console.warn('Failed to read package.json:', error)
-	}
-
-	return Array.from(dependencies)
-}
