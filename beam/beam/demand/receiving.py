@@ -54,6 +54,7 @@ def _get_receiving_demand(
 			PurchaseOrder.schedule_date,
 			PurchaseOrderItem.stock_qty.as_("stock_qty"),
 			PurchaseOrderItem.received_qty,
+			PurchaseOrder.supplier,
 			Item.stock_uom,
 			PurchaseOrder.creation,
 		)
@@ -103,6 +104,7 @@ def _get_receiving_demand(
 			PurchaseInvoice.due_date.as_("schedule_date"),
 			PurchaseInvoiceItem.stock_qty.as_("stock_qty"),
 			PurchaseInvoiceItem.received_qty,
+			PurchaseInvoice.supplier,
 			Item.stock_uom,
 			PurchaseInvoice.creation,
 		)
@@ -190,7 +192,6 @@ def build_receiving_map(
 	name: str | None = None, item_code: str | None = None, cursor: Optional["Cursor"] = None
 ) -> None:
 	output: list[Receiving] = []
-
 	for row in get_receiving_list(name, item_code):
 		row.key = row.get("key") or frappe.generate_hash()
 		row.schedule_date = str(row.schedule_date or get_epoch_from_datetime(row.schedule_date))
@@ -250,6 +251,7 @@ def get_receiving_demand(*args, **kwargs) -> list[Receiving]:
 		receiving.stock_uom,
 		receiving.stock_qty,
 		receiving.received_qty,
+		receiving.supplier,
 		ValueWrapper("").as_("status"),
 		receiving.assigned,
 		receiving.creation,
@@ -270,6 +272,7 @@ def get_receiving_demand(*args, **kwargs) -> list[Receiving]:
 				{
 					"stock_qty": max(0.0, row.stock_qty),
 					"received_qty": max(0.0, row.received_qty or 0.0),
+					"rejected_qty": max(0.0, row.rejected_qty or 0.0),
 					"schedule_date": get_datetime_from_epoch(row.schedule_date),
 					"modified": get_datetime_from_epoch(row.modified),
 					"creation": get_datetime_from_epoch(row.creation),

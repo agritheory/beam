@@ -34,14 +34,16 @@ useInfiniteScroll(
 			return
 		}
 
-		// TODO: move this to the server
 		data.forEach(row => {
-			row.count = { count: row.allocated_qty, of: row.total_required_qty }
+			row.count = { count: row.allocated_qty, of: `${row.total_required_qty}` }
 			row.label = `${row.doctype} - ${row.parent}`
 			row.linkComponent = 'ListAnchor'
-			row.description = `${row.item_code} - ${row.warehouse}`
+			row.description = `
+				Item: ${row.item_code}
+				Warehouse: ${row.warehouse}
+				${row.customer ?? `Customer: ${row.customer}`}
+			`.trim()
 			row.route = `#/delivery-note?id=${row.parent}`
-			ship.value.push(row)
 		})
 
 		page.value++
