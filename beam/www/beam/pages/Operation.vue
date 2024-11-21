@@ -15,11 +15,11 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { useDataStore } from '@/store'
+import { useBeamStore } from '@/stores/beam'
 import type { JobCard, WorkOrder, WorkOrderOperation } from '@/types'
 
 const route = useRoute()
-const store = useDataStore()
+const store = useBeamStore()
 
 const operation = ref<Partial<WorkOrderOperation>>({})
 const jobCard = ref<Partial<JobCard>>({})
@@ -36,10 +36,10 @@ const elapsedTime = computed(() => {
 
 onMounted(async () => {
 	const workOrder = store.form as Partial<WorkOrder>
-	operation.value = workOrder.operations.find(operation => operation.name === route.params.id) || {}
+	operation.value = workOrder.operations.find(operation => operation.name === route.params.operationId) || {}
 
 	const jobList = await store.getAll<JobCard[]>('Job Card', {
-		filters: JSON.stringify([['operation_id', '=', route.params.id]]),
+		filters: JSON.stringify([['operation_id', '=', route.params.operationId]]),
 	})
 
 	if (jobList.length > 0) {

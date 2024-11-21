@@ -2,8 +2,8 @@
 	<!-- navigation section -->
 	<Navbar>
 		<template #title>
-			<h1 class="nav-title">Delivery Note</h1>
-			<span v-if="deliveryNote?.dirty" class="dirty">Unsaved</span>
+			<h1 class="nav-title">Purchase Receipt</h1>
+			<span v-if="purchaseReceipt?.dirty" class="dirty">Unsaved</span>
 		</template>
 		<template #navbaraction>
 			<RouterLink :to="{ name: 'home' }">Home</RouterLink>
@@ -25,13 +25,13 @@ import { useRoute } from 'vue-router'
 
 import ControlButtons from '@/components/ControlButtons.vue'
 import { useBeamStore } from '@/stores/beam'
-import type { ControlButton, DeliveryNote, DeliveryNoteItem, ListViewItem } from '@/types'
+import type { ControlButton, ListViewItem, PurchaseReceipt, PurchaseReceiptItem } from '@/types'
 
 const route = useRoute()
 const store = useBeamStore()
-const salesOrderId = route.query.id.toString()
+const purchaseOrderId = route.query.id.toString()
 
-const deliveryNote = ref(store.cache.mappers[salesOrderId] as DeliveryNote)
+const purchaseReceipt = ref(store.cache.mappers[purchaseOrderId] as PurchaseReceipt)
 const refreshKey = ref(0)
 
 // hack: since array reactivity is not present in Vue 3, force-refresh the listviews on store update
@@ -41,14 +41,14 @@ store.$subscribe(mutation => {
 	}
 })
 
-const items = computed((): (DeliveryNoteItem & ListViewItem)[] => {
-	return deliveryNote.value.items.map(item => {
+const items = computed((): (PurchaseReceiptItem & ListViewItem)[] => {
+	return purchaseReceipt.value.items.map(item => {
 		return {
 			...item,
 			label: item.item_name,
 			description: `${item.warehouse}`,
 			count: {
-				count: item.delivered_qty,
+				count: item.received_qty,
 				of: item.qty,
 			},
 		}
@@ -56,18 +56,18 @@ const items = computed((): (DeliveryNoteItem & ListViewItem)[] => {
 })
 
 const create = async () => {
-	if (deliveryNote.value.dirty) {
-		const document: DeliveryNote = { ...deliveryNote.value }
-		document.items = document.items.filter(item => item.delivered_qty > 0)
+	if (purchaseReceipt.value.dirty) {
+		const document: PurchaseReceipt = { ...purchaseReceipt.value }
+		document.items = document.items.filter(item => item.received_qty > 0)
 		for (const item of document.items) {
-			item.qty = item.delivered_qty
+			item.qty = item.received_qty
 		}
-		const { data, exception } = await store.insert('Delivery Note', document)
+		const { data, exception } = await store.insert('Purchase Receipt', document)
 
 		if (!exception) {
 			store.$patch(() => {
-				deliveryNote.value = data
-				deliveryNote.value.dirty = false
+				purchaseReceipt.value = data
+				purchaseReceipt.value.dirty = false
 			})
 		}
 	} else {
@@ -78,9 +78,9 @@ const create = async () => {
 }
 
 const controlButtons = computed((): ControlButton[] => {
-	if (!deliveryNote.value) return []
+	if (!purchaseReceipt.value) return []
 
-	const form = deliveryNote.value as DeliveryNote
+	const form = purchaseReceipt.value as PurchaseReceipt
 	if (!form.items) return []
 
 	return [
@@ -91,18 +91,18 @@ const controlButtons = computed((): ControlButton[] => {
 			action: create,
 		},
 		{
-			label: 'SHIP',
+			label: 'RECEIVE',
 			disabled: form.items.length === 0 || !form.name,
 			hidden: Boolean(form.__islocal) || form.docstatus !== 0,
 			color: { background: 'var(--sc-success)', text: 'var(--sc-btn-color)' },
-			action: async () => await store.submit<DeliveryNote>('Delivery Note', form.name),
+			action: async () => await store.submit<PurchaseReceipt>('Purchase Receipt', form.name),
 		},
 		{
 			label: 'CANCEL',
 			disabled: form.items.length === 0 || !form.name,
 			hidden: Boolean(form.__islocal) || form.docstatus !== 1,
 			color: { background: 'var(--sc-alert)', text: 'var(--sc-btn-color)' },
-			action: async () => await store.cancel<DeliveryNote>('Delivery Note', form.name),
+			action: async () => await store.cancel<PurchaseReceipt>('Purchase Receipt', form.name),
 		},
 	]
 })

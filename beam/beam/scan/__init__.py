@@ -1,6 +1,7 @@
 # Copyright (c) 2024, AgriTheory and contributors
 # For license information, please see license.txt
 
+import copy
 import datetime
 import json
 from typing import Any
@@ -154,7 +155,9 @@ def get_list_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 					action["target"] = target
 				return override_action
 
-	actions = listview.get(barcode_doc.doc.doctype, {}).get(context.listview, [])
+	# avoid mutating the global `listview` dict
+	list_actions = copy.deepcopy(listview)
+	actions = list_actions.get(barcode_doc.doc.doctype, {}).get(context.listview, [])
 	for action in actions:
 		action["context"] = target
 		action["target"] = target
@@ -235,7 +238,9 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 						action["target"] = target.get(serialized_target[1])
 				return override_action
 
-	actions = frm.get(barcode_doc.doc.doctype, {}).get(context.frm, [])
+	# avoid mutating the global `frm` dict
+	form_actions = copy.deepcopy(frm)
+	actions = form_actions.get(barcode_doc.doc.doctype, {}).get(context.frm, [])
 	for action in actions:
 		action["context"] = target
 		if isinstance(action.get("target"), str) and "." in action.get("target"):
@@ -400,6 +405,22 @@ listview = {
 
 frm = {
 	"Handling Unit": {
+		"Work Order": [
+			{
+				"action": "add_or_associate",
+				"doctype": "Stock Entry",
+				"field": "handling_unit",
+				"target": "target.handling_unit",
+				"context": "target",
+			},
+			{
+				"action": "add_or_associate",
+				"doctype": "Stock Entry",
+				"field": "qty",
+				"target": "target.qty",
+				"context": "target",
+			},
+		],
 		"Delivery Note": [
 			{
 				"action": "add_or_associate",
@@ -586,8 +607,7 @@ frm = {
 		"Work Order": [
 			{
 				"action": "add_or_increment",
-				"doctype": "Work Order Item",
-				"parentfield": "required_items",
+				"doctype": "Stock Entry",
 				"field": "item_code",
 				"target": "target.item_code",
 				"context": "target",

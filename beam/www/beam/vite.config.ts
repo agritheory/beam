@@ -2,13 +2,53 @@
 // For license information, please see license.txt
 
 import vue from '@vitejs/plugin-vue'
-import { resolve } from 'path'
+import { resolve, dirname } from 'path'
 import Components from 'unplugin-vue-components/vite'
 import VueRouter from 'unplugin-vue-router/vite'
 import { defineConfig } from 'vite'
+import { readFileSync, existsSync } from 'fs'
 
 import { getComponentPluginOptions } from './plugins/component.js'
 import { getComponentPaths, getRoutes } from './plugins/router.js'
+
+function findAppsRoot(startPath: string = __dirname): string {
+	let currentPath = startPath
+	let parentDir = dirname(currentPath)
+
+	while (currentPath !== '/' && currentPath !== parentDir) {
+		const dirName = currentPath.split('/').pop()
+		if (dirName === 'apps' && existsSync(currentPath)) {
+			return currentPath
+		}
+
+		currentPath = parentDir
+		parentDir = dirname(currentPath)
+	}
+
+	throw new Error('Could not find "apps" directory in parent path')
+}
+
+function getBeamWebRoot() {
+	const appsRoot = findAppsRoot()
+	const beamWebPath = resolve(appsRoot, 'beam/beam/www/beam')
+
+	if (!existsSync(beamWebPath)) {
+		throw new Error(`Beam web directory not found at expected path: ${beamWebPath}`)
+	}
+
+	return beamWebPath
+}
+
+function getBeamNode() {
+	const appsRoot = findAppsRoot()
+	const beamWebPath = resolve(appsRoot, 'beam/node_modules')
+
+	if (!existsSync(beamWebPath)) {
+		throw new Error(`Beam web directory not found at expected path: ${beamWebPath}`)
+	}
+
+	return beamWebPath
+}
 
 export default defineConfig({
 	plugins: [
@@ -37,16 +77,20 @@ export default defineConfig({
 		}),
 		vue(),
 	],
-
 	resolve: {
 		alias: {
-			'@': resolve(__dirname),
+			'@beam': getBeamWebRoot(),
+			'@beamNode': getBeamNode(),
+			'@': getBeamWebRoot(),
+			'@/plugins': resolve(__dirname, 'plugins'),
+			'@/types': resolve(__dirname, 'types'),
 		},
 	},
 
 	build: {
+		minify: false,
 		emptyOutDir: false,
-		sourcemap: true,
+		sourcemap: 'inline',
 		outDir: './beam/www/beam/',
 		target: 'esnext',
 		lib: {
@@ -57,7 +101,22 @@ export default defineConfig({
 		},
 		rollupOptions: {
 			output: {
+				globals: {
+					vue: 'Vue',
+					'vue-router': 'VueRouter',
+					pinia: 'Pinia',
+					'@vueuse/core': 'VueUse',
+					'@stonecrop/beam': 'Beam',
+					'onscan.js': 'onScan',
+					'vue-toast-notification': 'VueToast',
+					typescript: 'ts',
+				},
 				assetFileNames: 'index.[ext]',
+				extend: true,
+				amd: {
+					id: 'beam',
+				},
+				inlineDynamicImports: true,
 			},
 		},
 	},

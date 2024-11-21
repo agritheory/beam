@@ -7,18 +7,18 @@
 			<RouterLink :to="{ name: 'demand' }">Done</RouterLink>
 		</template>
 	</Navbar>
+
 	<ListView :items="workstations" />
 </template>
 
 <script setup lang="ts">
-import { Navbar } from '@stonecrop/beam'
 import { onMounted, ref } from 'vue'
 
-import { useDataStore } from '@/store'
+import { useBeamStore } from '@/stores/beam'
 import type { ListViewItem, Workstation } from '@/types'
 
-const store = useDataStore()
-const workstations = ref<ListViewItem[]>([])
+const store = useBeamStore()
+const workstations = ref<Partial<ListViewItem>[]>([])
 
 onMounted(async () => {
 	const stations = await store.getAll<Workstation[]>('Workstation', {
@@ -26,20 +26,16 @@ onMounted(async () => {
 		order_by: 'creation asc',
 	})
 
-	stations.forEach(row => {
-		workstations.value.push({
+	workstations.value = stations.map(row => {
+		return {
 			...row,
 			// count: { count: row.produced_qty, of: row.qty },
 			label: row.name,
 			linkComponent: 'ListAnchor',
 			route: `#/workstation/${row.name}`,
-		})
+		}
 	})
 })
 
 const handlePrimaryAction = () => {}
 </script>
-
-<style scoped>
-@import url('@stonecrop/beam/styles');
-</style>

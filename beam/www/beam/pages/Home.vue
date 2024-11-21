@@ -14,10 +14,10 @@
 <script setup lang="ts">
 import { computed, ref, onMounted } from 'vue'
 
-import { useDataStore } from '@/store'
+import { useBeamStore } from '@/stores/beam'
 import type { ListViewItem } from '@/types'
 
-const store = useDataStore()
+const store = useBeamStore()
 
 const companyName = ref('')
 const home = ref<ListViewItem[]>([])

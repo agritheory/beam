@@ -3,15 +3,15 @@
 
 import { install as BeamPlugin } from '@stonecrop/beam'
 import { createPinia } from 'pinia'
-import { createApp } from 'vue'
+import { createApp, markRaw } from 'vue'
 import { createRouter, createWebHashHistory } from 'vue-router'
 import { routes, handleHotUpdate } from 'vue-router/auto-routes'
 
-import Beam from './Beam.vue'
-import { useDataStore } from './store'
-import { FrappeWindow } from './types/index.js'
+import Beam from '@/Beam.vue'
+import { useInitStore } from '@/stores/init.js'
+import { BeamWindow } from '@/types/index.js'
 
-declare const window: FrappeWindow
+declare const window: BeamWindow
 
 const router = createRouter({
 	history: createWebHashHistory(),
@@ -22,14 +22,6 @@ if (import.meta.hot) {
 	handleHotUpdate(router)
 }
 
-const addPatchSubscription = (store: ReturnType<typeof useDataStore>) => {
-	store.$subscribe(mutation => {
-		if (['patch function', 'patch object'].includes(mutation.type)) {
-			store.setDirty(true)
-		}
-	})
-}
-
 router.beforeEach(async (to, from, next) => {
 	if (to.meta.requiresAuth) {
 		if (window.frappe.user === 'Guest') {
@@ -38,21 +30,23 @@ router.beforeEach(async (to, from, next) => {
 			// ignores everything after the hash
 			window.location.href = '/login?redirect-to=/beam#'
 		} else {
-			const store = useDataStore()
+			const store = useInitStore()
 			await store.init(to)
-			addPatchSubscription(store)
 			next()
 		}
 	} else {
 		// assuming user is logged in and authenticated for all Beam views
-		const store = useDataStore()
+		const store = useInitStore()
 		await store.init(to)
-		addPatchSubscription(store)
 		next()
 	}
 })
 
 const pinia = createPinia()
+pinia.use(({ store }) => {
+	store.router = markRaw(router)
+})
+
 const app = createApp(Beam)
 app.use(router)
 app.use(BeamPlugin)

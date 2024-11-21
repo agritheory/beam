@@ -518,17 +518,19 @@ demand = {
 
 beam_mobile = {
 	"components": {
-		"Home": "./beam/beam/www/beam/pages/Home.vue",
-		"Workstation": "./beam/beam/www/beam/pages/Workstation.vue",
-		"WorkOrder": "./beam/beam/www/beam/pages/WorkOrder.vue",
-		"Receive": "./beam/beam/www/beam/pages/Receive.vue",
-		"Ship": "./beam/beam/www/beam/pages/Ship.vue",
+		"DeliveryNote": "./beam/beam/www/beam/pages/DeliveryNote.vue",
 		"Demand": "./beam/beam/www/beam/pages/Demand.vue",
+		"Home": "./beam/beam/www/beam/pages/Home.vue",
+		"JobCard": "./beam/beam/www/beam/pages/JobCard.vue",
 		"Manufacture": "./beam/beam/www/beam/pages/Manufacture.vue",
 		"Move": "./beam/beam/www/beam/pages/Move.vue",
-		"Repack": "./beam/beam/www/beam/pages/Repack.vue",
-		"JobCard": "./beam/beam/www/beam/pages/JobCard.vue",
 		"Operation": "./beam/beam/www/beam/pages/Operation.vue",
+		"PurchaseReceipt": "./beam/beam/www/beam/pages/PurchaseReceipt.vue",
+		"Receive": "./beam/beam/www/beam/pages/Receive.vue",
+		"Repack": "./beam/beam/www/beam/pages/Repack.vue",
+		"Ship": "./beam/beam/www/beam/pages/Ship.vue",
+		"WorkOrder": "./beam/beam/www/beam/pages/WorkOrder.vue",
+		"Workstation": "./beam/beam/www/beam/pages/Workstation.vue",
 	},
 	"routes": [
 		{
@@ -544,19 +546,19 @@ beam_mobile = {
 			"meta": {"requiresAuth": True, "doctype": "Workstation", "view": "list"},
 		},
 		{
-			"path": "/work_order/:orderId/",
+			"path": "/work_order/:id/",
 			"name": "work_order",
 			"component": "WorkOrder",
 			"meta": {"requiresAuth": True, "doctype": "Work Order", "view": "form"},
 		},
 		{
-			"path": "/job_card/:orderId/",
+			"path": "/job_card/:id/",
 			"name": "job_card",
 			"component": "JobCard",
 			"meta": {"requiresAuth": True, "doctype": "Work Order", "view": "form"},
 		},
 		{
-			"path": "/work_order/:orderId/operation/:id",
+			"path": "/work_order/:id/operation/:operationId",
 			"name": "operation",
 			"component": "Operation",
 			"meta": {"requiresAuth": True, "doctype": "Work Order", "view": "form"},
@@ -568,10 +570,22 @@ beam_mobile = {
 			"meta": {"requiresAuth": True, "doctype": "Purchase Receipt", "view": "list"},
 		},
 		{
+			"path": "/purchase-receipt",
+			"name": "purchase-receipt",
+			"component": "PurchaseReceipt",
+			"meta": {"requiresAuth": True, "doctype": "Purchase Receipt", "view": "form"},
+		},
+		{
 			"path": "/ship",
 			"name": "ship",
 			"component": "Ship",
 			"meta": {"requiresAuth": True, "doctype": "Delivery Note", "view": "list"},
+		},
+		{
+			"path": "/delivery-note",
+			"name": "delivery-note",
+			"component": "DeliveryNote",
+			"meta": {"requiresAuth": True, "doctype": "Delivery Note", "view": "form"},
 		},
 		{
 			"path": "/demand",
@@ -583,7 +597,7 @@ beam_mobile = {
 			"path": "/move",
 			"name": "move",
 			"component": "Move",
-			"meta": {"requiresAuth": True, "doctype": "Stock Entry", "view": "list"},
+			"meta": {"requiresAuth": True, "doctype": "Stock Entry", "view": "form"},
 		},
 		{
 			"path": "/manufacture",

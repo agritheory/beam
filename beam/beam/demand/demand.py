@@ -683,7 +683,7 @@ def get_descendant_warehouses(company: str | None, warehouse: str) -> list[str]:
 
 @frappe.whitelist()
 def get_demand(*args, **kwargs) -> list[Demand]:
-	records_per_page = 200
+	records_per_page = 20
 	try:
 		page = int(kwargs.get("page", 1))
 	except ValueError:
@@ -698,6 +698,8 @@ def get_demand(*args, **kwargs) -> list[Demand]:
 
 	if kwargs.get("filters"):
 		filters = kwargs["filters"]
+		if isinstance(filters, str):
+			filters = frappe.parse_json(filters)
 		for key, value in filters.items():
 			if isinstance(value, str):
 				value = (value,)
