@@ -38,9 +38,13 @@ useInfiniteScroll(
 		// TODO: move this to the server
 		data.forEach(row => {
 			row.count = { count: row.allocated_qty, of: `${row.total_required_qty}` }
-			row.label = `${row.item_code} from ${row.warehouse}`
+			row.label = `${row.item_code} from ${row.item_warehouse}`
 			row.linkComponent = 'ListAnchor'
-			row.description = row.parent
+			row.description = `
+				Production Item: ${row.production_item}
+				Work Order: ${row.parent}
+				BOM No: ${row.bom_no}
+			`.trim()
 			row.route = `#/${frappe.scrub(row.doctype)}/${row.parent}`
 			transfer.value.push(row)
 		})

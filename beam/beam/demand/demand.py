@@ -95,10 +95,13 @@ def get_manufacturing_demand(
 			WorkOrder.name.as_("parent"),
 			WorkOrder.company,
 			WorkOrder.wip_warehouse.as_("warehouse"),
+			WorkOrder.production_item,
+			WorkOrder.bom_no,
 			(workstation_subquery.as_("workstation")),
 			WorkOrderItem.name.as_("name"),
 			WorkOrderItem.idx,
 			WorkOrderItem.item_code,
+			WorkOrderItem.source_warehouse.as_("item_warehouse"),
 			WorkOrder.planned_start_date.as_("delivery_date"),
 			(total_required_qty).as_("total_required_qty"),
 			Item.stock_uom,
@@ -580,6 +583,9 @@ def new_allocation(demand_row) -> Allocation:
 			"name": demand_row.name,
 			"idx": str(demand_row.idx),
 			"item_code": demand_row.item_code,
+			"production_item": demand_row.production_item,
+			"bom_no": demand_row.bom_no,
+			"item_warehouse": demand_row.item_warehouse,
 			"allocated_date": str(get_epoch_from_datetime()),
 			"modified": str(get_epoch_from_datetime()),
 			"stock_uom": demand_row.stock_uom,
@@ -677,7 +683,7 @@ def get_descendant_warehouses(company: str | None, warehouse: str) -> list[str]:
 
 @frappe.whitelist()
 def get_demand(*args, **kwargs) -> list[Demand]:
-	records_per_page = 20
+	records_per_page = 200
 	try:
 		page = int(kwargs.get("page", 1))
 	except ValueError:
@@ -707,9 +713,12 @@ def get_demand(*args, **kwargs) -> list[Demand]:
 			demand.company,
 			demand.parent,
 			demand.warehouse,
+			demand.production_item,
+			demand.bom_no,
 			demand.name,
 			demand.idx,
 			demand.item_code,
+			demand.item_warehouse,
 			demand.delivery_date.as_("allocated_date"),
 			demand.delivery_date,
 			demand.modified,
@@ -764,9 +773,12 @@ def get_demand(*args, **kwargs) -> list[Demand]:
 			allocation.company,
 			allocation.parent,
 			allocation.warehouse,
+			allocation.production_item,
+			allocation.bom_no,
 			allocation.name,
 			allocation.idx,
 			allocation.item_code,
+			allocation.item_warehouse,
 			allocation.allocated_date,
 			allocation.allocated_date.as_("delivery_date"),
 			allocation.modified,
