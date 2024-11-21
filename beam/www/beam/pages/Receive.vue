@@ -39,7 +39,6 @@ useInfiniteScroll(
 			row.count = { count: row.received_qty, of: row.stock_qty }
 			row.label = `${row.item_code} from ${row.warehouse}`
 			row.linkComponent = 'ListAnchor'
-<<<<<<< HEAD
 			row.description = `
 				[${row.parent}]
 				Warehouse: ${row.warehouse}
@@ -47,11 +46,6 @@ useInfiniteScroll(
 			`.trim()
 			row.route = `#/purchase_order/${row.parent || 'new-purchase-order'}`
 			transfer.value.push(row)
-=======
-			row.description = row.parent
-			row.route = `#/purchase-receipt?id=${row.parent}`
-			receive.value.push(row)
->>>>>>> mobile_v15
 		})
 
 		page.value++
@@ -62,12 +56,8 @@ useInfiniteScroll(
 
 <style>
 @import url('@stonecrop/beam/styles');
-<<<<<<< HEAD
-.beam_list-text label, .beam_list-text p {
-=======
 .beam_list-text label,
 .beam_list-text p {
->>>>>>> mobile_v15
 	white-space: pre-line !important;
 }
 </style>
