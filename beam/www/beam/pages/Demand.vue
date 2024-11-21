@@ -40,8 +40,8 @@ useInfiniteScroll(
 			row.label = `${row.item_code} from ${row.item_warehouse}`
 			row.linkComponent = 'ListAnchor'
 			row.description = `
+				[${row.parent}]
 				Production Item: ${row.production_item}
-				Work Order: ${row.parent}
 				BOM No: ${row.bom_no}
 			`.trim()
 			row.route = `#/${frappe.scrub(row.doctype)}/${row.parent}`

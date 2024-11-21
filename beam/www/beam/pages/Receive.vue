@@ -45,7 +45,7 @@ useInfiniteScroll(
 				Supplier: ${row.supplier}
 			`.trim()
 			row.route = `#/purchase_order/${row.parent || 'new-purchase-order'}`
-			transfer.value.push(row)
+			receive.value.push(row)
 		})
 
 		page.value++
