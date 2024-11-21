@@ -82,6 +82,8 @@ export default defineConfig({
 			'@beam': getBeamWebRoot(),
 			'@beamNode': getBeamNode(),
 			'@': getBeamWebRoot(),
+			'@/plugins': resolve(__dirname, 'plugins'),
+			'@/types': resolve(__dirname, 'types'),
 		},
 	},
 

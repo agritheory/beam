@@ -3,8 +3,8 @@
 
 import type { ComponentResolver, Options } from 'unplugin-vue-components'
 
-import { HookConfig } from '@/types/config.js'
 import { getAppConfigs, mergeConfigs } from './hooks.js'
+import type { HookConfig } from '@/types/config.js'
 
 export function getComponentPluginOptions(): Options {
 	// let globs: Options['globs']
