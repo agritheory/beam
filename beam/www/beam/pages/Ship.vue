@@ -34,20 +34,20 @@ useInfiniteScroll(
 			return
 		}
 
-		data.forEach(row => {
-			row.count = { count: row.allocated_qty, of: `${row.total_required_qty}` }
-			row.label = `${row.doctype} - ${row.parent}`
-			row.linkComponent = 'ListAnchor'
-			row.description = `
+		const transformedData: ListViewItem[] = data.map(row => ({
+            count: { count: row.allocated_qty, of: row.total_required_qty },
+            label: `${row.doctype} - ${row.parent}`,
+            linkComponent: 'ListAnchor',
+            description: `
 				Item: ${row.item_code}
 				Warehouse: ${row.warehouse}
 				${row.customer ?? `Customer: ${row.customer}`}
-			`.trim()
-			row.route = `#/delivery-note?id=${row.parent}`
-			ship.value.push(row)
-		})
-
-		page.value++
+			`.trim(),
+            route: `#/delivery-note?id=${row.parent}`,
+        }));
+		
+		ship.value.push(...transformedData);
+        page.value++;
 	},
 	{ canLoadMore: () => canLoadMore.value }
 )

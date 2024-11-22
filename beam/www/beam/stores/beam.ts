@@ -10,11 +10,13 @@ import type {
 	BeamCache,
 	BeamHome,
 	DeliveryNoteItem,
+	Demand,
 	FormContext,
 	FrappeResponse,
 	ListContext,
 	ParentDoctypes,
 	ParentDoctypesForStockTransfer,
+	Receive,
 	ScanConfig,
 	ScanContext,
 	StockEntry,
@@ -138,14 +140,14 @@ export const useBeamStore = defineStore('beam', () => {
 		return { data: message }
 	}
 
-	const getDemand = async (params?: Record<string, any>) => {
+	const getDemand = async (params?: Record<string, any>): Promise <{ data: Demand[] }> => {
 		// automatically fetch all pages of demand data based on parameters
 		const response = await httpStore.get(SALES_DEMAND_URL, params)
 		const { message } = await response.json()
 		return { data: message }
 	}
 
-	const getReceiving = async (params?: Record<string, any>) => {
+	const getReceiving = async (params?: Record<string, any>): Promise <{data: Receive[]}> => {
 		// automatically fetch all pages of demand data based on parameters
 		const response = await httpStore.get(PURCHASE_DEMAND_URL, params)
 		const { message } = await response.json()
