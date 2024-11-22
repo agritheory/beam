@@ -70,8 +70,6 @@ export const useBeamStore = defineStore('beam', () => {
 		const meta = currentRoute.meta
 		if (meta.view === 'form' && scanner.config.frm.includes(meta.doctype)) {
 			const docname = id.toString()
-			if (cache.value.mappers[docname]) return
-
 			let newDoc: ParentDoctypesForStockTransfer
 			if (meta.doctype === 'Work Order') {
 				// check if a draft Stock Entry already exists for this work order
