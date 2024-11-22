@@ -26,6 +26,6 @@ def redirect_to_beam():
 	]
 
 	if "BEAM Mobile User" in user_roles or any(agent in user_agent for agent in mobile_keywords):
-		frappe.local.response["home_page"] = "/beam/"
+		frappe.local.response["home_page"] = "/beam#/"
 		# frappe.local.response["type"] = "redirect"
 		# frappe.local.response["location"] = f"{frappe.utils.get_url()}/beam/"
