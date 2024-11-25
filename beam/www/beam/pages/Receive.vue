@@ -36,16 +36,16 @@ useInfiniteScroll(
 
 		// TODO: move this to the server
 		const transformedData: ListViewItem[] = data.map(row => ({
-            count: { count: row.received_qty, of: row.stock_qty },
-            label: `${row.item_code} from ${row.warehouse}`,
-            linkComponent: 'ListAnchor',
-            description: `
+			count: { count: row.received_qty, of: row.stock_qty },
+			label: `${row.item_code} from ${row.warehouse}`,
+			linkComponent: 'ListAnchor',
+			description: `
 				[${row.parent}]
 				Warehouse: ${row.warehouse}
 				Supplier: ${row.supplier}
 			`.trim(),
-            route: `#/purchase_order/${row.parent || 'new-purchase-order'}`
-        }));
+			route: `#/purchase_order/${row.parent || 'new-purchase-order'}`,
+		}))
 
 		receive.value.push(...transformedData)
 		page.value++

@@ -140,17 +140,17 @@ export const useBeamStore = defineStore('beam', () => {
 		return { data: message }
 	}
 
-	const getDemand = async (params?: Record<string, any>): Promise <{ data: Demand[] }> => {
+	const getDemand = async (params?: Record<string, any>) => {
 		// automatically fetch all pages of demand data based on parameters
 		const response = await httpStore.get(SALES_DEMAND_URL, params)
-		const { message } = await response.json()
+		const { message }: { message: Demand[] } = await response.json()
 		return { data: message }
 	}
 
-	const getReceiving = async (params?: Record<string, any>): Promise <{data: Receive[]}> => {
+	const getReceiving = async (params?: Record<string, any>) => {
 		// automatically fetch all pages of demand data based on parameters
 		const response = await httpStore.get(PURCHASE_DEMAND_URL, params)
-		const { message } = await response.json()
+		const { message }: { message: Receive[] } = await response.json()
 		return { data: message }
 	}
 
