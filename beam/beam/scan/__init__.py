@@ -22,7 +22,6 @@ def scan(
 	context_dict = frappe._dict(json.loads(context) if isinstance(context, str) else context)
 	barcode_doc = get_barcode_context(barcode)
 	if not barcode_doc:
-		frappe.msgprint("Barcode not found", alert=True)
 		return None  # mypy asked for this
 	if "listview" in context_dict:
 		return get_list_action(barcode_doc, context_dict)

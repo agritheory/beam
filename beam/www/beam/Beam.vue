@@ -40,17 +40,9 @@ const scan = async (barcode: string, qty: number) => {
 	await store.scan(barcode, qty)
 }
 
-const registerInstance = (instance: any) => {
-	window.scanner = instance
-}
-
-const closeModal = () => {
-	showModal.value = false
-}
-
-const confirmModal = () => {
-	showModal.value = false
-}
+const closeModal = () => (showModal.value = false)
+const confirmModal = () => (showModal.value = false)
+const registerInstance = (instance: any) => (window.scanner = instance)
 </script>
 
 <style>

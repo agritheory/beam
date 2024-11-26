@@ -152,13 +152,20 @@ export const useBeamStore = defineStore('beam', () => {
 		return { data: message }
 	}
 
-	const scan = async (barcode: string, qty: number): Promise<(FormContext | ListContext)[]> => {
+	const scan = async (barcode: string, qty: number): Promise<(FormContext | ListContext)[] | undefined> => {
 		try {
-			return await frappe.xcall(SCAN_URL, {
+			const response = await frappe.xcall(SCAN_URL, {
 				barcode,
 				current_qty: qty,
 				context: scanner.context,
 			})
+
+			if (!response) {
+				toast.error(`Barcode '${barcode}' not found`)
+				return
+			}
+
+			return response
 		} catch (error) {
 			// TODO: handle API error
 			console.error(error)
