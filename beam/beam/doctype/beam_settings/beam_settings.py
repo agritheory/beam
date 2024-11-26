@@ -6,10 +6,54 @@ from frappe.model.document import Document
 
 
 class BEAMSettings(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from beam.beam.doctype.beam_mobile_route.beam_mobile_route import BEAMMobileRoute
+		from beam.beam.doctype.warehouse_types.warehouse_types import WarehouseTypes
+		from frappe.types import DF
+
+		barcode_font_size: DF.Int
+		company: DF.Link
+		enable_demand: DF.Check
+		enable_handling_units: DF.Check
+		ignore_drop_shipped_items: DF.Check
+		receiving_workstation: DF.Link | None
+		routes: DF.Table[BEAMMobileRoute]
+		shipping_workstation: DF.Link | None
+		warehouse_types: DF.TableMultiSelect[WarehouseTypes]
+	# end: auto-generated types
+
 	def onload(self):
 		hooks = get_configuration_hooks()
 		self.set_onload("components", hooks.components)
 		self.set_onload("routes", hooks.routes)
+
+	def validate(self):
+		# adding a label check since multiple paths can use the Demand component
+		existing_demand_route = [
+			route for route in self.routes if route.label == "Demand" and route.component == "Demand"
+		]
+
+		if self.enable_demand:
+			# add demand route into mobile list
+			if not existing_demand_route:
+				self.append(
+					"routes",
+					{
+						"component": "Demand",
+						"dt": "Stock Entry",
+						"label": "Demand",
+						"route": "#/demand",
+					},
+				)
+		else:
+			# remove demand route from mobile list
+			if existing_demand_route:
+				self.remove(existing_demand_route[0])
 
 	def get_beam_mobile_home_for_user(self, user):
 		allowed_routes = []

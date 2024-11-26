@@ -17,7 +17,6 @@ from erpnext.setup.utils import enable_all_roles_and_domains, set_defaults_for_t
 from erpnext.stock.get_item_details import get_item_details
 from frappe.desk.page.setup_wizard.setup_wizard import setup_complete
 
-from beam.patches.v15.setup_beam_mobile_settings import execute as setup_beam_mobile_settings
 from beam.tests.fixtures import (
 	boms,
 	customers,
@@ -107,7 +106,6 @@ def create_test_data():
 	create_production_plan(settings, prod_plan_from_doc)
 	create_purchase_receipt_for_received_qty_test(settings)
 	create_network_printer_settings(settings)
-	setup_beam_mobile_settings(settings.company)
 
 
 def create_suppliers(settings):
@@ -196,10 +194,27 @@ def setup_manufacturing_settings(settings):
 def setup_beam_settings(settings):
 	beams = frappe.new_doc("BEAM Settings")
 	beams.company = settings.company
+	beams.enable_demand = True
 	beams.enable_handling_units = True
-	beams.append("warehouse_types", {"warehouse_type": "Quarantine"})
 	beams.receiving_workstation = "Receiving"
 	beams.shipping_workstation = "Shipping"
+	beams.set("warehouse_types", [{"warehouse_type": "Quarantine"}])
+	beams.set(
+		"routes",
+		[
+			{
+				"label": "Manufacture",
+				"route": "#/manufacture",
+				"dt": "Stock Entry",
+				"component": "Manufacture",
+			},
+			{"label": "Demand", "route": "#/demand", "dt": "Stock Entry", "component": "Demand"},
+			{"label": "Move", "route": "#/move", "dt": "Stock Entry", "component": "Demand"},
+			{"label": "Receive", "route": "#/receive", "dt": "Purchase Receipt", "component": "Receive"},
+			{"label": "Ship", "route": "#/ship", "dt": "Delivery Note", "component": "Ship"},
+			{"label": "Repack", "route": "#/repack", "dt": "Stock Entry", "component": "Repack"},
+		],
+	)
 	beams.save()
 
 

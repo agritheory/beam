@@ -15,6 +15,7 @@
 		"receiving_workstation",
 		"shipping_workstation",
 		"demand_tab",
+		"enable_demand",
 		"warehouse_types",
 		"mobile_tab",
 		"routes"
@@ -50,6 +51,7 @@
 			"label": "Barcode Font Size"
 		},
 		{
+			"depends_on": "enable_demand",
 			"description": "These Warehouse Types will be excluded when checking for inventory availability",
 			"fieldname": "warehouse_types",
 			"fieldtype": "Table MultiSelect",
@@ -91,11 +93,17 @@
 			"fieldname": "routes",
 			"fieldtype": "Table",
 			"options": "BEAM Mobile Route"
+		},
+		{
+			"default": "0",
+			"fieldname": "enable_demand",
+			"fieldtype": "Check",
+			"label": "Enable Demand"
 		}
 	],
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2024-11-01 09:35:08.451907",
+	"modified": "2024-11-26 03:35:53.305694",
 	"modified_by": "Administrator",
 	"module": "BEAM",
 	"name": "BEAM Settings",

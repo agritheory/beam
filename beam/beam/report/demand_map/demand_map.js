@@ -2,6 +2,20 @@
 // For license information, please see license.txt
 
 frappe.query_reports['Demand Map'] = {
+	onload: report => {
+		// TODO: assuming a single BEAM Settings is used
+		if (frappe.boot.enabled_beam_settings.length === 0) {
+			report.get_no_result_message = () => {
+				return `<div class="msg-box no-border">
+				<div>
+					<img src="/assets/frappe/images/ui-states/list-empty-state.svg" alt="Generic Empty State" class="null-state">
+				</div>
+				<p>${__('Please enable demand in BEAM Settings')}</p>
+			</div>`
+			}
+		}
+	},
+
 	filters: [
 		{
 			fieldname: 'order_by',
@@ -17,7 +31,8 @@ frappe.query_reports['Demand Map'] = {
 			options: 'Item',
 		},
 	],
-	formatter: function (value, row, column, data, default_formatter) {
+
+	formatter: (value, row, column, data, default_formatter) => {
 		value = default_formatter(value, row, column, data)
 		if (data && ['net_required_qty', 'total_required_qty'].includes(column.fieldname)) {
 			if (data.net_required_qty <= data.allocated_qty) {

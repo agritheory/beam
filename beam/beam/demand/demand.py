@@ -19,6 +19,7 @@ from beam.beam.demand.utils import (
 	Demand,
 	get_datetime_from_epoch,
 	get_epoch_from_datetime,
+	validate_demand_enabled,
 )
 
 if TYPE_CHECKING:
@@ -191,6 +192,7 @@ def get_sales_demand(name: str | None = None, item_code: str | None = None) -> l
 	return sales_order_query.run(as_dict=True)
 
 
+@validate_demand_enabled
 def build_demand_allocation_map() -> None:
 	reset_demand_db()
 	build_demand_map()
@@ -253,6 +255,7 @@ def insert_demand(output: list[Demand], cursor: "Cursor") -> None:
 		cursor.execute(insert_query.get_sql())
 
 
+@validate_demand_enabled
 def modify_demand(doc: Union["SalesOrder", "WorkOrder"], method: str | None = None) -> None:
 	if method == "on_submit":
 		add_demand_allocation(doc.name)
@@ -268,11 +271,13 @@ def get_allocation_list(name: str) -> list[Allocation]:
 		return cursor.execute(query.get_sql()).fetchall()
 
 
+@validate_demand_enabled
 def add_demand_allocation(name: str) -> None:
 	build_demand_map(name)
 	build_allocation_map()
 
 
+@validate_demand_enabled
 def remove_demand_allocation(name: str) -> None:
 	with get_demand_db() as conn:
 		allocation_table = Table("allocation")
@@ -294,6 +299,7 @@ def remove_demand_allocation(name: str) -> None:
 			cursor.execute(delete_query.get_sql())
 
 
+@validate_demand_enabled
 def build_allocation_map(
 	row: Union[
 		"DeliveryNoteItem",
@@ -596,6 +602,7 @@ def new_allocation(demand_row) -> Allocation:
 	)
 
 
+@validate_demand_enabled
 def modify_allocations(
 	doc: Union[
 		"DeliveryNote",
@@ -655,7 +662,6 @@ def get_descendant_warehouses(company: str | None, warehouse: str) -> list[str]:
 		company = frappe.defaults.get_defaults().get("company")
 
 	beam_settings = frappe.get_doc("BEAM Settings", company)
-
 	warehouse_types = [wt.warehouse_type for wt in beam_settings.warehouse_types]
 	if not warehouse_types:
 		return get_descendants_of("Warehouse", warehouse, ignore_permissions=True, order_by="lft")

@@ -7,6 +7,11 @@ from beam.beam.scan.config import get_scan_doctypes
 
 def boot_session(bootinfo):
 	bootinfo.beam = get_scan_doctypes()
+	bootinfo.enabled_beam_settings = frappe.get_all(
+		"BEAM Settings",
+		filters={"enable_demand": True},
+		pluck="name",
+	)
 
 
 def redirect_to_beam():

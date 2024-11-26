@@ -5,6 +5,7 @@ import calendar
 import datetime
 from time import localtime
 
+import frappe
 from frappe import _dict
 from frappe.utils import get_datetime
 
@@ -72,3 +73,14 @@ def get_datetime_from_epoch(
 		local_epoch = localtime(seconds)
 		local_epoch_list = local_epoch[:6]
 		return datetime.datetime(*local_epoch_list)
+
+
+def validate_demand_enabled(func):
+	def wrapper(*args, **kwargs):
+		# TODO: make this specific to the company for the BEAM Settings?
+		demand_enabled = any(frappe.get_all("BEAM Settings", pluck="enable_demand"))
+		if not demand_enabled:
+			return
+		return func(*args, **kwargs)
+
+	return wrapper

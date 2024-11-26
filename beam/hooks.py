@@ -155,6 +155,11 @@ doc_events = {
 	},
 }
 
+# Types
+# ---------------
+
+export_python_type_annotations = True
+
 # Scheduled Tasks
 # ---------------
 

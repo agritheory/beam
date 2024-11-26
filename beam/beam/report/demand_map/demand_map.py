@@ -5,7 +5,7 @@ from frappe import _
 from frappe.utils.data import flt
 
 from beam.beam.demand.demand import get_demand_db
-from beam.beam.demand.utils import get_datetime_from_epoch
+from beam.beam.demand.utils import get_datetime_from_epoch, validate_demand_enabled
 
 
 def execute(filters=None):
@@ -100,6 +100,7 @@ def get_columns(filters):
 	]
 
 
+@validate_demand_enabled
 def get_data(filters):
 	rows = []
 	with get_demand_db() as conn:

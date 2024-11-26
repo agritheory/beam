@@ -11,13 +11,18 @@ from pypika import Query, Table
 from pypika.terms import ValueWrapper
 
 from beam.beam.demand.sqlite import get_demand_db, reset_receiving_db
-from beam.beam.demand.utils import Receiving, get_datetime_from_epoch, get_epoch_from_datetime
+from beam.beam.demand.utils import (
+	Receiving,
+	get_datetime_from_epoch,
+	get_epoch_from_datetime,
+	validate_demand_enabled,
+)
 
 if TYPE_CHECKING:
 	from sqlite3 import Cursor
 
 	from erpnext.accounts.doctype.purchase_invoice.purchase_invoice import PurchaseInvoice
-	from erpnext.buying.doctype.purchase_invoice.purchase_invoice import PurchaseOrder
+	from erpnext.buying.doctype.purchase_order.purchase_order import PurchaseOrder
 
 
 def _get_receiving_demand(
@@ -133,6 +138,7 @@ def _get_receiving_demand(
 	return purchase_orders + unreceived_purchase_invoices
 
 
+@validate_demand_enabled
 def modify_receiving(
 	doc: Union["PurchaseOrder", "PurchaseInvoice"], method: str | None = None
 ) -> None:
@@ -183,11 +189,13 @@ def get_receiving_list(name: str | None = None, item_code: str | None = None) ->
 	return _get_receiving_demand(name, item_code)
 
 
+@validate_demand_enabled
 def reset_build_receiving_map() -> None:
 	reset_receiving_db()
 	build_receiving_map()
 
 
+@validate_demand_enabled
 def build_receiving_map(
 	name: str | None = None, item_code: str | None = None, cursor: Optional["Cursor"] = None
 ) -> None:
