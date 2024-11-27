@@ -113,6 +113,16 @@ override_doctype_class = {
 # Hook on document methods and events
 
 doc_events = {
+	"Inventory Dimension": {
+		"after_insert": [
+			"beam.beam.overrides.inventory_dimension.reset_demand_map",
+			"beam.beam.overrides.inventory_dimension.reset_receiving_map",
+		],
+		"on_trash": [
+			"beam.beam.overrides.inventory_dimension.reset_demand_map",
+			"beam.beam.overrides.inventory_dimension.reset_receiving_map",
+		],
+	},
 	("Item", "Warehouse"): {
 		"validate": ["beam.beam.barcodes.create_beam_barcode"],
 	},
