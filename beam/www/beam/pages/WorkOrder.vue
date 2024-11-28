@@ -41,6 +41,7 @@
 </template>
 
 <script setup lang="ts">
+import type { ListViewItem } from '@stonecrop/beam'
 import { computed, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
@@ -49,7 +50,6 @@ import { useBeamStore } from '@/stores/beam'
 import type {
 	ControlButton,
 	DocActionResponse,
-	ListViewItem,
 	StockEntry,
 	StockEntryItem,
 	WorkOrder,

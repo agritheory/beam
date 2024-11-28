@@ -12,11 +12,11 @@
 </template>
 
 <script setup lang="ts">
+import type { ListViewItem } from '@stonecrop/beam'
 import { useInfiniteScroll } from '@vueuse/core'
 import { ref } from 'vue'
 
 import { useBeamStore } from '@/stores/beam'
-import type { ListViewItem } from '@/types'
 
 declare const frappe: any
 

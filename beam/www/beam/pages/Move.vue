@@ -10,29 +10,28 @@
 	</Navbar>
 
 	<!-- body section -->
-	<ListView :items="listItems" :key="componentKey" />
-	<div class="begin" v-if="listItems.length == 0">
+	<ListView :items="items" :key="componentKey" />
+	<div class="begin" v-if="items.length == 0">
 		<span>Scan to Begin</span>
 	</div>
 
 	<!-- footer section -->
-	<ControlButtons
-		:onCreate="create"
-		:onSubmit="() => store.submit<StockEntry>('Stock Entry', stockEntryId)"
-		:onCancel="() => store.cancel<StockEntry>('Stock Entry', stockEntryId)" />
+	<ControlButtons :buttons="controlButtons" />
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import type { ListViewItem } from '@stonecrop/beam'
+import { ref, onMounted, computed } from 'vue'
 
 import ControlButtons from '@/components/ControlButtons.vue'
 import { useBeamStore } from '@/stores/beam'
-import type { ListViewItem, StockEntry } from '@/types'
+import type { ControlButton, StockEntry } from '@/types'
 
 const store = useBeamStore()
 
-const listItems = ref<ListViewItem[]>([])
+const items = ref<ListViewItem[]>([])
 const stockEntryId = ref('')
+const stockEntry = ref(store.cache.mappers[stockEntryId.value] as StockEntry)
 const componentKey = ref(0)
 
 onMounted(async () => {
@@ -42,10 +41,10 @@ onMounted(async () => {
 // store.$subscribe((mutation, state) => {
 // 	const parentfield = state.form.doctype === 'Work Order' ? 'required_items' : 'items'
 // 	if (parentfield && state.form[parentfield]) {
-// 		listItems.value = []
+// 		items.value = []
 // 		state.form[parentfield].forEach(item => {
 // 			item.wip_warehouse = state.form.wip_warehouse
-// 			listItems.value.push({
+// 			items.value.push({
 // 				label: item.item_name,
 // 				description: `${item.source_warehouse} > ${item.wip_warehouse}`,
 // 				count: {
@@ -58,20 +57,48 @@ onMounted(async () => {
 // 	}
 // })
 
-const create = async () => {
-	throw new Error('Not implemented')
+// const create = async () => {
+// 	const stockEntry = await store.getMappedStockEntry({
+// 		work_order_id: sourceId,
+// 		purpose: 'Material Transfer for Manufacture',
+// 	})
 
-	// const stockEntry = await store.getMappedStockEntry({
-	// 	work_order_id: sourceId,
-	// 	purpose: 'Material Transfer for Manufacture',
-	// })
+// 	const { data, response } = await store.insert('Stock Entry', stockEntry)
+// 	if (data.name) {
+// 		stockEntryId.value = data.name
+// 	}
+// 	return { data, response }
+// }
 
-	// const { data, exception, response } = await store.insert('Stock Entry', stockEntry)
-	// if (data.name) {
-	// 	stockEntryId.value = data.name
-	// }
-	// return { data, exception, response }
-}
+const controlButtons = computed((): ControlButton[] => {
+	if (!stockEntry.value) return []
+
+	const form = stockEntry.value as StockEntry
+	if (!form.items) return []
+
+	return [
+		// {
+		// 	label: 'SAVE',
+		// 	disabled: items.value.length === 0,
+		// 	color: { background: '#4791FF', text: 'var(--sc-btn-color)' },
+		// 	action: create,
+		// },
+		// {
+		// 	label: 'SHIP',
+		// 	disabled: form.items.length === 0 || !form.name,
+		// 	hidden: Boolean(form.__islocal) || form.docstatus !== 0,
+		// 	color: { background: 'var(--sc-success)', text: 'var(--sc-btn-color)' },
+		// 	action: async () => await store.submit<StockEntry>('Stock Entry', form.name),
+		// },
+		// {
+		// 	label: 'CANCEL',
+		// 	disabled: form.items.length === 0 || !form.name,
+		// 	hidden: Boolean(form.__islocal) || form.docstatus !== 1,
+		// 	color: { background: 'var(--sc-alert)', text: 'var(--sc-btn-color)' },
+		// 	action: async () => await store.cancel<StockEntry>('Stock Entry', form.name),
+		// },
+	]
+})
 </script>
 
 <style scoped>

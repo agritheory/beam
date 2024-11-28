@@ -14,10 +14,11 @@
 </template>
 
 <script setup lang="ts">
+import type { ListViewItem } from '@stonecrop/beam'
 import { ref } from 'vue'
 import { useRoute } from 'vue-router'
 
-import type { ListViewItem, StockEntry } from '@/types'
+import type { StockEntry } from '@/types'
 
 const route = useRoute()
 const stockEntryId = route.params.id

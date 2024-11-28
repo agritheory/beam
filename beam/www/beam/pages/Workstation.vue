@@ -12,10 +12,11 @@
 </template>
 
 <script setup lang="ts">
+import type { ListViewItem } from '@stonecrop/beam'
 import { onMounted, ref } from 'vue'
 
 import { useBeamStore } from '@/stores/beam'
-import type { ListViewItem, Workstation } from '@/types'
+import type { Workstation } from '@/types'
 
 const store = useBeamStore()
 const workstations = ref<Partial<ListViewItem>[]>([])

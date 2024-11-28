@@ -1,6 +1,7 @@
 // Copyright (c) 2024, AgriTheory and contributors
 // For license information, please see license.txt
 
+import type { ListViewItem } from '@stonecrop/beam'
 import type { ButtonHTMLAttributes, CSSProperties, HTMLAttributes } from 'vue'
 
 import type { ParentDoctypesForStockTransfer } from '@/types/frappe.js'
@@ -29,19 +30,6 @@ export type ControlButton = {
 	}
 	disabled?: ButtonHTMLAttributes['disabled']
 	hidden?: boolean
-}
-
-export type ListViewItem = {
-	label: string
-	description?: string
-	count?: {
-		count: number
-		of: number
-		uom?: string
-	}
-	checked?: boolean
-	linkComponent?: string
-	route?: string
 }
 
 export type Demand = {
