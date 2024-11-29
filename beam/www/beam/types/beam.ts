@@ -38,7 +38,7 @@ export type Demand = {
 	assigned: string
 	bom_no: string
 	company: string
-	creation: Date
+	creation: string
 	customer: string
 	delivery_date: null
 	demand: string
@@ -61,17 +61,17 @@ export type Demand = {
 export type Receive = {
 	assigned: null
 	company: string
-	creation: Date
+	creation: string
 	doctype: string
 	idx: number
 	item_code: string
 	key: string
-	modified: Date
+	modified: string
 	name: string
 	parent: string
 	received_qty: number
 	rejected_qty: number
-	schedule_date: Date
+	schedule_date: string
 	status: string
 	stock_qty: number
 	stock_uom: string
