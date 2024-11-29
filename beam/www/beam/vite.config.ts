@@ -6,7 +6,8 @@ import { resolve, dirname } from 'path'
 import Components from 'unplugin-vue-components/vite'
 import VueRouter from 'unplugin-vue-router/vite'
 import { defineConfig } from 'vite'
-import { readFileSync, existsSync } from 'fs'
+import { existsSync } from 'fs'
+import { VitePWA, VitePWAOptions } from 'vite-plugin-pwa';
 
 import { getComponentPluginOptions } from './plugins/component.js'
 import { getComponentPaths, getRoutes } from './plugins/router.js'
@@ -50,6 +51,14 @@ function getBeamNode() {
 	return beamWebPath
 }
 
+const pwaOptions: Partial<VitePWAOptions> = {
+	registerType: 'autoUpdate',
+	workbox: {
+		globPatterns: ['**/*.{html,js,css,woff2,webmanifest}'],
+		maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+	},
+}
+
 export default defineConfig({
 	plugins: [
 		Components({ ...getComponentPluginOptions() }),
@@ -76,6 +85,7 @@ export default defineConfig({
 			},
 		}),
 		vue(),
+		VitePWA(pwaOptions),
 	],
 	resolve: {
 		alias: {

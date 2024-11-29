@@ -206,3 +206,9 @@ beam/www/beam/components.d.ts
 
 # unplugin-vue-router outputs
 beam/www/beam/typed-router.d.ts
+
+# vite-plugin-pwa
+sw.js
+registerSW.js
+manifest.webmanifest
+workbox-*
