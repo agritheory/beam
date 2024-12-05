@@ -12,18 +12,19 @@
 </template>
 
 <script setup lang="ts">
+import type { ListViewItem } from '@stonecrop/beam'
 import { useInfiniteScroll } from '@vueuse/core'
 import { ref } from 'vue'
 
 import { useBeamStore } from '@/stores/beam'
-import type { ListViewItem } from '@/types'
 
 declare const frappe: any
 
 const store = useBeamStore()
-const transfer = ref<Partial<ListViewItem>[]>([])
+const transfer = ref<ListViewItem[]>([])
 const canLoadMore = ref(true)
 const page = ref(1)
+const dates = ref<string[]>([])
 
 useInfiniteScroll(
 	window,
@@ -35,23 +36,36 @@ useInfiniteScroll(
 		}
 
 		// TODO: move this to the server
-		const transformedData: ListViewItem[] = data.map(row => ({
-			count: { count: row.allocated_qty, of: row.total_required_qty },
-			label: `${row.item_code} from ${row.item_warehouse}`,
-			linkComponent: 'ListAnchor',
-			description: `
-				[${row.parent}]
-				Production Item: ${row.production_item}
-				BOM No: ${row.bom_no}
-			`.trim(),
-			route: `#/${frappe.scrub(row.doctype)}/${row.parent}`,
-		}))
+		for (const row of data) {
+			const scheduledDate = new Date(row.allocated_date)
 
-		transfer.value.push(...transformedData)
+			// add day-divider config when date changes
+			if (!dates.value.includes(scheduledDate.toDateString())) {
+				dates.value.push(scheduledDate.toDateString())
+				transfer.value.push({
+					date: scheduledDate.toISOString(),
+					linkComponent: 'BeamDayDivider',
+				})
+			}
+
+			transfer.value.push({
+				label: `${row.item_code} from ${row.item_warehouse}`,
+				linkComponent: 'ListAnchor',
+				route: `#/${frappe.scrub(row.doctype)}/${row.parent}`,
+				description: `
+					[${row.parent}]
+					Production Item: ${row.production_item}
+					BOM No: ${row.bom_no}
+				`.trim(),
+				count: {
+					count: +row.allocated_qty.toFixed(2),
+					of: +row.total_required_qty.toFixed(2),
+				},
+			})
+		}
+
 		page.value++
 	},
 	{ canLoadMore: () => canLoadMore.value }
 )
-
-// const handlePrimaryAction = () => {}
 </script>

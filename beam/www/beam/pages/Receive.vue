@@ -14,16 +14,17 @@
 </template>
 
 <script setup lang="ts">
+import type { ListViewItem } from '@stonecrop/beam'
 import { useInfiniteScroll } from '@vueuse/core'
 import { ref } from 'vue'
 
 import { useBeamStore } from '@/stores/beam'
-import type { ListViewItem } from '@/types'
 
 const store = useBeamStore()
-const receive = ref<Partial<ListViewItem>[]>([])
+const receive = ref<ListViewItem[]>([])
 const canLoadMore = ref(true)
 const page = ref(1)
+const dates = ref<string[]>([])
 
 useInfiniteScroll(
 	window,
@@ -35,19 +36,31 @@ useInfiniteScroll(
 		}
 
 		// TODO: move this to the server
-		const transformedData: ListViewItem[] = data.map(row => ({
-			count: { count: row.received_qty, of: row.stock_qty },
-			label: `${row.item_code} from ${row.warehouse}`,
-			linkComponent: 'ListAnchor',
-			description: `
-				[${row.parent}]
-				Warehouse: ${row.warehouse}
-				Supplier: ${row.supplier}
-			`.trim(),
-			route: `#/purchase_order/${row.parent || 'new-purchase-order'}`,
-		}))
+		for (const row of data) {
+			const scheduledDate = new Date(row.schedule_date)
 
-		receive.value.push(...transformedData)
+			// add day-divider config when date changes
+			if (!dates.value.includes(scheduledDate.toDateString())) {
+				dates.value.push(scheduledDate.toDateString())
+				receive.value.push({
+					date: scheduledDate.toISOString(),
+					linkComponent: 'BeamDayDivider',
+				})
+			}
+
+			receive.value.push({
+				count: { count: row.received_qty, of: row.stock_qty },
+				label: `${row.item_code} from ${row.warehouse}`,
+				linkComponent: 'ListAnchor',
+				description: `
+					[${row.parent}]
+					Warehouse: ${row.warehouse}
+					Supplier: ${row.supplier}
+				`.trim(),
+				route: `#/purchase_order/${row.parent || 'new-purchase-order'}`,
+			})
+		}
+
 		page.value++
 	},
 	{ canLoadMore: () => canLoadMore.value }
@@ -56,6 +69,7 @@ useInfiniteScroll(
 
 <style>
 @import url('@stonecrop/beam/styles');
+
 .beam_list-text label,
 .beam_list-text p {
 	white-space: pre-line !important;

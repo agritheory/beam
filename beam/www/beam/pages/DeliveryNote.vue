@@ -20,12 +20,13 @@
 </template>
 
 <script setup lang="ts">
+import type { ListViewItem } from '@stonecrop/beam'
 import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
 import ControlButtons from '@/components/ControlButtons.vue'
 import { useBeamStore } from '@/stores/beam'
-import type { ControlButton, DeliveryNote, DeliveryNoteItem, ListViewItem } from '@/types'
+import type { ControlButton, DeliveryNote, DeliveryNoteItem } from '@/types'
 
 const route = useRoute()
 const store = useBeamStore()
