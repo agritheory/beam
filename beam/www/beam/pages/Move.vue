@@ -8,19 +8,20 @@
 			<RouterLink :to="{ name: 'home' }">Home</RouterLink>
 		</template>
 	</Navbar>
-
-	<ADropdown
-		label="Source Warehouse"
-		:items="warehouseList"
-		v-model="sourceWarehouse"
-		@filterChanged="filterChanged"
-	/>
-	<ADropdown
-		label="Target Warehouse"
-		:items="warehouseList"
-		v-model="targetWarehouse"
-		@filterChanged="filterChanged"
-	/>
+	<div>
+		<ADropdown
+			label="Source Warehouse"
+			:items="warehouseList"
+			v-model="sourceWarehouse"
+			@filterChanged="filterChanged"
+		/>
+		<ADropdown
+			label="Target Warehouse"
+			:items="warehouseList"
+			v-model="targetWarehouse"
+			@filterChanged="filterChanged"
+		/>
+	</div>
 
 	<ListView :items="listItems" :key="componentKey" />
 	<div class="begin" v-if="listItems.length === 0">
@@ -34,6 +35,7 @@
 import { computed, ref, onMounted } from 'vue'
 
 import ControlButtons from '@/components/ControlButtons.vue'
+import ADropdown from '@/components/ADropdown.vue'
 import { useBeamStore } from '@/stores/beam'
 import type { ControlButton, ListViewItem, StockEntry } from '@/types'
 type Warehouse = {
