@@ -9,18 +9,35 @@
 		</template>
 	</Navbar>
 	<div>
-		<ADropdown
-			label="Source Warehouse"
-			:items="warehouseList"
-			v-model="sourceWarehouse"
-			@filterChanged="filterChanged"
-		/>
-		<ADropdown
-			label="Target Warehouse"
-			:items="warehouseList"
-			v-model="targetWarehouse"
-			@filterChanged="filterChanged"
-		/>
+		<div class="dropdown-container">
+			<ADropdown
+				label="Source Warehouse"
+				:items="warehouseList"
+				v-model="sourceWarehouse"
+				@filterChanged="filterChanged"
+			/>
+			<BeamBtn
+				class="clear-button"
+				@click="clearField('sourceWarehouse')"
+			>
+				&times;
+			</BeamBtn>
+		</div>
+		<div class="dropdown-container">
+			<ADropdown
+				label="Target Warehouse"
+				:items="warehouseList"
+				v-model="targetWarehouse"
+				@filterChanged="filterChanged"
+			/>
+			<BeamBtn
+				class="clear-button"
+				@click="clearField('targetWarehouse')"
+			>
+				&times;
+			</BeamBtn>
+		</div>
+
 	</div>
 
 	<ListView :items="listItems" :key="componentKey" />
@@ -30,6 +47,7 @@
 
 	<ControlButtons :buttons="controlButtons" />
 </template>
+
 
 <script setup lang="ts">
 import { computed, ref, onMounted } from 'vue'
@@ -68,6 +86,14 @@ const loadWarehouses = async () => {
 	warehouseList.value = warehouses.map(warehouse => warehouse.name)
 }
 
+const clearField = (field: 'sourceWarehouse' | 'targetWarehouse') => {
+	if (field === 'sourceWarehouse') {
+		sourceWarehouse.value = ''
+	} else if (field === 'targetWarehouse') {
+		targetWarehouse.value = ''
+	}
+}
+
 const onScan = (scannedValue: string) => {
 	if (!sourceWarehouse.value) {
 		sourceWarehouse.value = scannedValue
@@ -83,5 +109,20 @@ const onScan = (scannedValue: string) => {
 	width: 100%;
 	text-align: center;
 	font-size: 150%;
+}
+
+.dropdown-container {
+	display: flex;
+	align-items: baseline;
+	position: relative;
+	margin-top: 1rem;
+}
+
+.dropdown-container {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	position: relative;
+	gap: 8px;
 }
 </style>
