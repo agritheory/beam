@@ -630,6 +630,5 @@ beam_mobile = {
 }
 
 beam_client= {
-    "set_warehouse": "beam.scan_warehouse",
-    "scan_item": "",
+    "set_warehouse": "beam.move_scan"
 }

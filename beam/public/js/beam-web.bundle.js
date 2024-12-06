@@ -3,8 +3,8 @@
 
 frappe.provide('beam')
 
-beam.scan_warehouse = async function (r) {
-	const event = new CustomEvent('scannedWarehouse', { 'detail': r })
+beam.move_scan = async function (r) {
+	const event = new CustomEvent('moveScan', { 'detail': r })
 	window.dispatchEvent(event)
 }
 

@@ -55,15 +55,24 @@ const targetWarehouse = ref('')
 onMounted(async () => {
 	store.form as Partial<StockEntry>
 	await loadWarehouses()
-	window.addEventListener('scannedWarehouse', handleScannedWarehouse)
+	window.addEventListener('moveScan', handleScanned)
 })
 
-const handleScannedWarehouse = (event: CustomEvent) => {
-	const scannedData = event.detail
+const handleScanned = (event: CustomEvent) => {
+	const scannedData = event.detail[0].context.doc.name
+	if (!sourceWarehouse.value) {
+		sourceWarehouse.value = scannedData
+	} else if (!targetWarehouse.value) {
+		targetWarehouse.value = scannedData
+	}
+	/* 
+	TODO: else > fill listItems
+	*/
 	console.log('Warehouse scanned:', scannedData)
 }
 
 const controlButtons = computed((): ControlButton[] => {
+	// TODO
 	return []
 })
 
@@ -77,14 +86,6 @@ const clearField = (field: 'sourceWarehouse' | 'targetWarehouse') => {
 		sourceWarehouse.value = ''
 	} else if (field === 'targetWarehouse') {
 		targetWarehouse.value = ''
-	}
-}
-
-const onScan = (scannedValue: string) => {
-	if (!sourceWarehouse.value) {
-		sourceWarehouse.value = scannedValue
-	} else if (!targetWarehouse.value) {
-		targetWarehouse.value = scannedValue
 	}
 }
 </script>
