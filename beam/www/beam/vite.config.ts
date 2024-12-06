@@ -2,11 +2,12 @@
 // For license information, please see license.txt
 
 import vue from '@vitejs/plugin-vue'
+import { existsSync } from 'fs'
 import { resolve, dirname } from 'path'
 import Components from 'unplugin-vue-components/vite'
 import VueRouter from 'unplugin-vue-router/vite'
 import { defineConfig } from 'vite'
-import { readFileSync, existsSync } from 'fs'
+import { VitePWA } from 'vite-plugin-pwa'
 
 import { getComponentPluginOptions } from './plugins/component.js'
 import { getComponentPaths, getRoutes } from './plugins/router.js'
@@ -76,6 +77,31 @@ export default defineConfig({
 			},
 		}),
 		vue(),
+		VitePWA({
+			registerType: 'autoUpdate',
+			manifest: {
+				name: 'Beam',
+				short_name: 'Beam',
+				description: 'AgriTheory Beam',
+				theme_color: '#7B4112',
+				icons: [
+					{
+						src: '/beam/icon/beam_icon-192x192.png',
+						sizes: '192x192',
+						type: 'image/png',
+					},
+					{
+						src: '/beam/icon/beam_icon-512x512.png',
+						sizes: '512x512',
+						type: 'image/png',
+					},
+				],
+			},
+			workbox: {
+				globPatterns: ['**/*.{html,js,css,woff2,webmanifest}'],
+				maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+			},
+		}),
 	],
 	resolve: {
 		alias: {

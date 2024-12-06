@@ -1,5 +1,15 @@
 {% extends "templates/web.html" %}
 
+{% block head %}
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Beam</title>
+<meta name="description" content="AgriTheory Beam">
+<link rel="shortcut icon" href="/beam/icon/beam_favicon.svg" type="image/x-icon">
+<meta name="theme-color" content="#7B4112">
+{% endblock %}
+
 {% block content %}
 <div>
 	<div id="beam"></div>

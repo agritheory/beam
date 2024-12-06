@@ -11,12 +11,11 @@
 </template>
 
 <script setup lang="ts">
+import type { ListViewItem } from '@stonecrop/beam'
 import { onMounted, ref } from 'vue'
 
 import { useBeamStore } from '@/stores/beam'
-import type { ListViewItem, WorkOrder } from '@/types'
-
-declare const frappe: any
+import type { WorkOrder } from '@/types'
 
 const items = ref<ListViewItem[]>([])
 const store = useBeamStore()
@@ -27,23 +26,24 @@ onMounted(async () => {
 		order_by: 'creation asc',
 	})
 
+	const dates: string[] = []
 	orders.forEach(row => {
 		const plannedDate = new Date(row.planned_start_date)
-		let formattedDate = ''
-		if (!isNaN(plannedDate.getTime())) {
-			formattedDate = plannedDate.toLocaleString(frappe.boot.time_zone, {
-				year: 'numeric',
-				month: 'numeric',
-				day: 'numeric',
-				hour: '2-digit',
-				minute: '2-digit',
+		const formattedDate = store.formatDate(plannedDate)
+
+		// add day-divider config when date changes
+		if (!dates.includes(plannedDate.toDateString())) {
+			dates.push(plannedDate.toDateString())
+			items.value.push({
+				date: plannedDate.toISOString(),
+				linkComponent: 'BeamDayDivider',
 			})
 		}
 
 		items.value.push({
 			...row,
 			label: `${row.name} - ${row.item_name}`,
-			description: `Start: ${formattedDate}`,
+			description: formattedDate ? `Start: ${formattedDate}` : '',
 			count: { count: row.produced_qty, of: row.qty },
 			linkComponent: 'ListAnchor',
 			route: `#/work_order/${row.name}`,

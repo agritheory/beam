@@ -252,6 +252,20 @@ export const useBeamStore = defineStore('beam', () => {
 		window.location.href = '/login?redirect-to=/beam#'
 	}
 
+	const formatDate = (date: Date) => {
+		if (isNaN(Date.parse(date.toString()))) {
+			return ''
+		}
+
+		return date.toLocaleString(frappe.boot.time_zone, {
+			year: 'numeric',
+			month: 'numeric',
+			day: 'numeric',
+			hour: '2-digit',
+			minute: '2-digit',
+		})
+	}
+
 	return {
 		// state
 		cache,
@@ -271,6 +285,7 @@ export const useBeamStore = defineStore('beam', () => {
 		submit,
 
 		// other api actions
+		formatDate,
 		getAll,
 		getDemand,
 		getHome,

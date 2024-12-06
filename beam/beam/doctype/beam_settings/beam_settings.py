@@ -32,29 +32,6 @@ class BEAMSettings(Document):
 		self.set_onload("components", hooks.components)
 		self.set_onload("routes", hooks.routes)
 
-	def validate(self):
-		# adding a label check since multiple paths can use the Demand component
-		existing_demand_route = [
-			route for route in self.routes if route.label == "Demand" and route.component == "Demand"
-		]
-
-		if self.enable_demand:
-			# add demand route into mobile list
-			if not existing_demand_route:
-				self.append(
-					"routes",
-					{
-						"component": "Demand",
-						"dt": "Stock Entry",
-						"label": "Demand",
-						"route": "#/demand",
-					},
-				)
-		else:
-			# remove demand route from mobile list
-			if existing_demand_route:
-				self.remove(existing_demand_route[0])
-
 	def get_beam_mobile_home_for_user(self, user):
 		allowed_routes = []
 		for row in self.routes:

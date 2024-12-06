@@ -1,6 +1,7 @@
 // Copyright (c) 2024, AgriTheory and contributors
 // For license information, please see license.txt
 
+import type { ListViewItem } from '@stonecrop/beam'
 import type { ButtonHTMLAttributes, CSSProperties, HTMLAttributes } from 'vue'
 
 import type { ParentDoctypesForStockTransfer } from '@/types/frappe.js'
@@ -31,26 +32,13 @@ export type ControlButton = {
 	hidden?: boolean
 }
 
-export type ListViewItem = {
-	label: string
-	description?: string
-	count?: {
-		count: number
-		of: number
-		uom?: string
-	}
-	checked?: boolean
-	linkComponent?: string
-	route?: string
-}
-
 export type Demand = {
 	allocated_date: null
 	allocated_qty: number
 	assigned: string
 	bom_no: string
 	company: string
-	creation: Date
+	creation: string
 	customer: string
 	delivery_date: null
 	demand: string
@@ -73,17 +61,17 @@ export type Demand = {
 export type Receive = {
 	assigned: null
 	company: string
-	creation: Date
+	creation: string
 	doctype: string
 	idx: number
 	item_code: string
 	key: string
-	modified: Date
+	modified: string
 	name: string
 	parent: string
 	received_qty: number
 	rejected_qty: number
-	schedule_date: Date
+	schedule_date: string
 	status: string
 	stock_qty: number
 	stock_uom: string

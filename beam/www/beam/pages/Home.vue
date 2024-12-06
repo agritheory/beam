@@ -1,5 +1,5 @@
 <template>
-	<Navbar @click="logout">
+	<Navbar @click="store.logout">
 		<template #title>
 			<h2 class="nav-title">{{ companyName }}</h2>
 		</template>
@@ -12,10 +12,10 @@
 </template>
 
 <script setup lang="ts">
+import type { ListViewItem } from '@stonecrop/beam'
 import { computed, ref, onMounted } from 'vue'
 
 import { useBeamStore } from '@/stores/beam'
-import type { ListViewItem } from '@/types'
 
 const store = useBeamStore()
 
@@ -36,10 +36,6 @@ const homeList = computed(() => {
 	})
 	return items
 })
-
-const logout = async () => {
-	await store.logout()
-}
 </script>
 
 <style scoped>
