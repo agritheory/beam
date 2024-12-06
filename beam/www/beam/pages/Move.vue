@@ -10,15 +10,13 @@
 	{{ console.log(store.scanner.config) }}
 	<div>
 		<div class="dropdown-container">
-			<ADropdown label="Source Warehouse" :items="warehouseList" v-model="sourceWarehouse"
-				@filterChanged="filterChanged" />
+			<ADropdown label="Source Warehouse" :items="warehouseList" v-model="sourceWarehouse" />
 			<BeamBtn class="clear-button" @click="clearField('sourceWarehouse')">
 				&times;
 			</BeamBtn>
 		</div>
 		<div class="dropdown-container">
-			<ADropdown label="Target Warehouse" :items="warehouseList" v-model="targetWarehouse"
-				@filterChanged="filterChanged" />
+			<ADropdown label="Target Warehouse" :items="warehouseList" v-model="targetWarehouse" />
 			<BeamBtn class="clear-button" @click="clearField('targetWarehouse')">
 				&times;
 			</BeamBtn>
