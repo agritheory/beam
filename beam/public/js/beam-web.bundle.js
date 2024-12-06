@@ -1,6 +1,13 @@
 // Copyright (c) 2024, AgriTheory and contributors
 // For license information, please see license.txt
 
+frappe.provide('beam')
+
+beam.scan_warehouse = async function (r) {
+	const event = new CustomEvent('scannedWarehouse', { 'detail': r })
+	window.dispatchEvent(event)
+}
+
 // specifically remove Frappe website theming for the Beam page
 if (window.location.pathname === '/beam') {
 	const stylesheets = document.querySelectorAll('link[rel=stylesheet]')

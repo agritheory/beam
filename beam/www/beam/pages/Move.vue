@@ -1,5 +1,4 @@
 <template>
-	<!-- navigation section -->
 	<Navbar>
 		<template #title>
 			<h1 class="nav-title">Move</h1>
@@ -8,32 +7,19 @@
 			<RouterLink :to="{ name: 'home' }">Home</RouterLink>
 		</template>
 	</Navbar>
+	{{ console.log(store.scanner.config) }}
 	<div>
 		<div class="dropdown-container">
-			<ADropdown
-				label="Source Warehouse"
-				:items="warehouseList"
-				v-model="sourceWarehouse"
-				@filterChanged="filterChanged"
-			/>
-			<BeamBtn
-				class="clear-button"
-				@click="clearField('sourceWarehouse')"
-			>
+			<ADropdown label="Source Warehouse" :items="warehouseList" v-model="sourceWarehouse"
+				@filterChanged="filterChanged" />
+			<BeamBtn class="clear-button" @click="clearField('sourceWarehouse')">
 				&times;
 			</BeamBtn>
 		</div>
 		<div class="dropdown-container">
-			<ADropdown
-				label="Target Warehouse"
-				:items="warehouseList"
-				v-model="targetWarehouse"
-				@filterChanged="filterChanged"
-			/>
-			<BeamBtn
-				class="clear-button"
-				@click="clearField('targetWarehouse')"
-			>
+			<ADropdown label="Target Warehouse" :items="warehouseList" v-model="targetWarehouse"
+				@filterChanged="filterChanged" />
+			<BeamBtn class="clear-button" @click="clearField('targetWarehouse')">
 				&times;
 			</BeamBtn>
 		</div>
@@ -71,15 +57,17 @@ const targetWarehouse = ref('')
 onMounted(async () => {
 	store.form as Partial<StockEntry>
 	await loadWarehouses()
+	window.addEventListener('scannedWarehouse', handleScannedWarehouse)
 })
+
+const handleScannedWarehouse = (event: CustomEvent) => {
+	const scannedData = event.detail
+	console.log('Warehouse scanned:', scannedData)
+}
 
 const controlButtons = computed((): ControlButton[] => {
 	return []
 })
-
-const filterChanged = async (query: string) => {
-	console.log(`onChange: ${query}`)
-}
 
 const loadWarehouses = async () => {
 	const warehouses = await store.getAll<Warehouse[]>('Warehouse')

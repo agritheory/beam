@@ -628,3 +628,8 @@ beam_mobile = {
 		},
 	],
 }
+
+beam_client= {
+    "set_warehouse": "beam.scan_warehouse",
+    "scan_item": "",
+}
