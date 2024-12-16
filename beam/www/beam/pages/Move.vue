@@ -48,9 +48,11 @@ type Warehouse = {
 
 const store = useBeamStore()
 
-const items = ref<ListViewItem[]>([])
 const stockEntryId = ref('')
-const stockEntry = ref(store.cache.mappers[stockEntryId.value] as StockEntry)
+const initialStockEntry = store.cache.mappers[stockEntryId.value] as StockEntry
+
+const items = ref<ListViewItem[]>([])
+const stockEntry = ref<StockEntry>({ ...initialStockEntry, stock_entry_type: 'Material Transfer' })
 const componentKey = ref(0)
 
 const warehouseList = ref<string[]>([])
@@ -63,17 +65,40 @@ onMounted(async () => {
 	window.addEventListener('moveScan', handleScanned)
 })
 
-const handleScanned = (event: CustomEvent) => {
-	const scannedData = event.detail[0].context.doc.name
-	if (!sourceWarehouse.value) {
-		sourceWarehouse.value = scannedData
-	} else if (!targetWarehouse.value) {
-		targetWarehouse.value = scannedData
+const handleScanned = async (event: CustomEvent) => {
+	try {
+		const scannedData = event.detail[0].context.doc.name
+		console.log('scannedData', event.detail[0])
+		
+		if (!sourceWarehouse.value) {
+			sourceWarehouse.value = scannedData
+		} else if (!targetWarehouse.value) {
+			targetWarehouse.value = scannedData
+		} else {
+			const barCode = event.detail[0].context.barcode
+			console.log('barCode', barCode)
+
+			const item_code = 'Pie Tin'
+
+			const existingItem = items.value.find(item => item.item_code === item_code)
+
+			if (existingItem) {
+				existingItem.qty += 1
+				existingItem.count.count += 1
+			} else {
+				items.value.push({
+					item_code: item_code,
+					label: item_code,
+					count: { count: 1 },
+					qty: 1,
+					s_warehouse: sourceWarehouse.value,
+					t_warehouse: targetWarehouse.value,
+				})
+			}
+		}
+	} catch (err) {
+		console.log('Hubo un error al escanear', err)
 	}
-	/* 
-	TODO: else > fill listItems
-	*/
-	console.log('Warehouse scanned:', scannedData)
 }
 
 const loadWarehouses = async () => {
@@ -108,32 +133,27 @@ const clearField = (field: 'sourceWarehouse' | 'targetWarehouse') => {
 // 	}
 // })
 
-// const create = async () => {
-// 	const stockEntry = await store.getMappedStockEntry({
-// 		work_order_id: sourceId,
-// 		purpose: 'Material Transfer for Manufacture',
-// 	})
-
-// 	const { data, response } = await store.insert('Stock Entry', stockEntry)
-// 	if (data.name) {
-// 		stockEntryId.value = data.name
-// 	}
-// 	return { data, response }
-// }
+const create = async () => {
+	const { data, response } = await store.insert<StockEntry>('Stock Entry', stockEntry.value)
+	if (data.name) {
+		stockEntryId.value = data.name
+	}
+	return { data, response }
+}
 
 const controlButtons = computed((): ControlButton[] => {
-	if (!stockEntry.value) return []
+	// if (!stockEntry.value) return []
 
-	const form = stockEntry.value as StockEntry
-	if (!form.items) return []
+	// const form = stockEntry.value as StockEntry
+	// if (!form.items) return []
 
 	return [
-		// {
-		// 	label: 'SAVE',
-		// 	disabled: items.value.length === 0,
-		// 	color: { background: '#4791FF', text: 'var(--sc-btn-color)' },
-		// 	action: create,
-		// },
+		{
+			label: 'SAVE',
+			disabled: items.value.length === 0,
+			color: { background: '#4791FF', text: 'var(--sc-btn-color)' },
+			action: create,
+		},
 		// {
 		// 	label: 'SHIP',
 		// 	disabled: form.items.length === 0 || !form.name,
@@ -153,7 +173,6 @@ const controlButtons = computed((): ControlButton[] => {
 </script>
 
 <style>
-/* @import url('@stonecrop/aform/styles'); */
 .begin {
 	width: 100%;
 	text-align: center;
