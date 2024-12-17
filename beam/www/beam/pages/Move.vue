@@ -10,17 +10,12 @@
 	<div>
 		<div class="dropdown-container">
 			<ADropdown label="Source Warehouse" :items="warehouseList" v-model="sourceWarehouse" />
-			<BeamBtn class="clear-button" @click="clearField('sourceWarehouse')">
-				&times;
-			</BeamBtn>
+			<BeamBtn class="clear-button" @click="clearField('sourceWarehouse')"> &times; </BeamBtn>
 		</div>
 		<div class="dropdown-container">
 			<ADropdown label="Target Warehouse" :items="warehouseList" v-model="targetWarehouse" />
-			<BeamBtn class="clear-button" @click="clearField('targetWarehouse')">
-				&times;
-			</BeamBtn>
+			<BeamBtn class="clear-button" @click="clearField('targetWarehouse')"> &times; </BeamBtn>
 		</div>
-
 	</div>
 
 	<!-- body section -->
@@ -32,7 +27,6 @@
 	<ControlButtons :buttons="controlButtons" />
 </template>
 
-
 <script setup lang="ts">
 import type { ListViewItem } from '@stonecrop/beam'
 import { ref, onMounted, computed } from 'vue'
@@ -43,7 +37,7 @@ import { useBeamStore } from '@/stores/beam'
 import type { ControlButton, StockEntry } from '@/types'
 import { watch } from 'vue'
 type Warehouse = {
-	name: string,
+	name: string
 }
 
 const store = useBeamStore()
@@ -151,16 +145,16 @@ const controlButtons = computed((): ControlButton[] => {
 })
 
 watch(
-  () => store.cache.mappers[stockEntryId.value]?.items,
-  newItems => {
-    items.value = (newItems || []).map(s => ({
-      ...s,
-      label: s.item_code,
-      count: { count: s.qty }
-    }))
-	componentKey.value++
-  },
-  { immediate: true, deep: true }
+	() => store.cache.mappers[stockEntryId.value]?.items,
+	newItems => {
+		items.value = (newItems || []).map(s => ({
+			...s,
+			label: s.item_code,
+			count: { count: s.qty },
+		}))
+		componentKey.value++
+	},
+	{ immediate: true, deep: true }
 )
 </script>
 

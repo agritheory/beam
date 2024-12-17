@@ -1,116 +1,114 @@
 <template>
-    <div ref="autocomplete" class="autocomplete" :class="{ isOpen: isOpen }">
-        <div class="input-wrapper">
-            <input
-                ref="adropdown"
-                type="text"
-                @input="onChange"
-                @focus="onChange"
-                v-model="search"
-                @keydown.down="onArrowDown"
-                @keydown.up="onArrowUp"
-                @keydown.enter="onEnter" />
+	<div ref="autocomplete" class="autocomplete" :class="{ isOpen: isOpen }">
+		<div class="input-wrapper">
+			<input
+				ref="adropdown"
+				type="text"
+				@input="onChange"
+				@focus="onChange"
+				v-model="search"
+				@keydown.down="onArrowDown"
+				@keydown.up="onArrowUp"
+				@keydown.enter="onEnter" />
 
-            <ul id="autocomplete-results" v-show="isOpen" class="autocomplete-results">
-                <li class="loading autocomplete-result" v-if="isLoading">Loading results...</li>
-                <li
-                    v-else
-                    v-for="(result, i) in results"
-                    :key="i"
-                    @click.stop="setResult(result)"
-                    class="autocomplete-result"
-                    :class="{ 'is-active': i === arrowCounter }">
-                    {{ result }}
-                </li>
-            </ul>
-            <label>{{ label }}</label>
-        </div>
-    </div>
+			<ul id="autocomplete-results" v-show="isOpen" class="autocomplete-results">
+				<li class="loading autocomplete-result" v-if="isLoading">Loading results...</li>
+				<li
+					v-else
+					v-for="(result, i) in results"
+					:key="i"
+					@click.stop="setResult(result)"
+					class="autocomplete-result"
+					:class="{ 'is-active': i === arrowCounter }">
+					{{ result }}
+				</li>
+			</ul>
+			<label>{{ label }}</label>
+		</div>
+	</div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue';
+import { onMounted, onUnmounted, ref } from 'vue'
 
 const { label, items, isAsync } = defineProps<{
-    label: string;
-    items?: string[];
-    isAsync?: boolean;
-}>();
+	label: string
+	items?: string[]
+	isAsync?: boolean
+}>()
 
-const emit = defineEmits(['filterChanged']);
+const emit = defineEmits(['filterChanged'])
 
-const autocomplete = ref<HTMLElement | null>(null); // Ref para el contenedor
-const results = ref(items);
-const search = defineModel<string>();
-const isLoading = ref(false);
-const arrowCounter = ref(0);
-const isOpen = ref(false);
+const autocomplete = ref<HTMLElement | null>(null) // Ref para el contenedor
+const results = ref(items)
+const search = defineModel<string>()
+const isLoading = ref(false)
+const arrowCounter = ref(0)
+const isOpen = ref(false)
 
 onMounted(() => {
-    document.addEventListener('click', handleClickOutside);
-    filterResults();
-});
+	document.addEventListener('click', handleClickOutside)
+	filterResults()
+})
 
 onUnmounted(() => {
-    document.removeEventListener('click', handleClickOutside);
-});
+	document.removeEventListener('click', handleClickOutside)
+})
 
 const handleClickOutside = (event: MouseEvent) => {
-    if (autocomplete.value && !autocomplete.value.contains(event.target as Node)) {
-        closeResults();
-        arrowCounter.value = 0;
-    }
-};
+	if (autocomplete.value && !autocomplete.value.contains(event.target as Node)) {
+		closeResults()
+		arrowCounter.value = 0
+	}
+}
 
 const onChange = () => {
-    isOpen.value = true;
-    if (isAsync) {
-        isLoading.value = true;
-        emit('filterChanged', search.value);
-    } else {
-        filterResults();
-    }
-};
+	isOpen.value = true
+	if (isAsync) {
+		isLoading.value = true
+		emit('filterChanged', search.value)
+	} else {
+		filterResults()
+	}
+}
 
 const setResult = (result: string) => {
-    search.value = result;
-    closeResults(result);
-};
+	search.value = result
+	closeResults(result)
+}
 
 const closeResults = (result?: string) => {
-    isOpen.value = false;
-    if (!items.includes(result || search.value)) {
-        search.value = '';
-    }
-};
+	isOpen.value = false
+	if (!items.includes(result || search.value)) {
+		search.value = ''
+	}
+}
 
 const filterResults = () => {
-    if (!search.value) {
-        results.value = items;
-    } else {
-        results.value = items.filter(item =>
-            item.toLowerCase().includes(search.value.toLowerCase())
-        );
-    }
-};
+	if (!search.value) {
+		results.value = items
+	} else {
+		results.value = items.filter(item => item.toLowerCase().includes(search.value.toLowerCase()))
+	}
+}
 
 const onArrowDown = () => {
-    if (arrowCounter.value < results.value.length) {
-        arrowCounter.value += 1;
-    }
-};
+	if (arrowCounter.value < results.value.length) {
+		arrowCounter.value += 1
+	}
+}
 
 const onArrowUp = () => {
-    if (arrowCounter.value > 0) {
-        arrowCounter.value -= 1;
-    }
-};
+	if (arrowCounter.value > 0) {
+		arrowCounter.value -= 1
+	}
+}
 
 const onEnter = () => {
-    search.value = results.value[arrowCounter.value];
-    closeResults(results.value[arrowCounter.value]);
-    arrowCounter.value = 0;
-};
+	search.value = results.value[arrowCounter.value]
+	closeResults(results.value[arrowCounter.value])
+	arrowCounter.value = 0
+}
 
 // const openWithSearch = () => {
 // 	search.value = ''
@@ -174,7 +172,7 @@ label {
 	border: 1px solid #000000;
 	border-radius: 0 0 0.25rem 0.25rem;
 	border-top: none;
-    background-color: #fff;
+	background-color: #fff;
 }
 
 .autocomplete-result {

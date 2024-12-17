@@ -100,8 +100,8 @@ export const useScanStore = defineStore('scan', () => {
 			const existing_rows = mappedDoc.value.items.filter(
 				row =>
 					(row.item_code === action.context.item_code && !row.handling_unit) ||
-					(row.barcode === action.context.barcode) ||
-					(row.item_code === action.context.doc.item_code)
+					row.barcode === action.context.barcode ||
+					row.item_code === action.context.doc.item_code
 			)
 
 			const itemQtyFieldMap = {
@@ -141,14 +141,14 @@ export const useScanStore = defineStore('scan', () => {
 					item.t_warehouse = action.context.warehouse
 				}
 
-				(mappedDoc.value as StockEntry).items.push(item)
+				;(mappedDoc.value as StockEntry).items.push(item)
 			} else {
 				const item: StockEntryItem = {
 					item_code: action.context.doc.item_code,
 					qty: 1,
-				};
+				}
 
-				(mappedDoc.value as StockEntry).items.push(item)
+				;(mappedDoc.value as StockEntry).items.push(item)
 			}
 			store.$patch(state => (state.cache.mappers[documentId.value] = mappedDoc.value))
 		})
@@ -209,11 +209,11 @@ export const useScanStore = defineStore('scan', () => {
 					}
 				})
 			} else {
-				const warehouse = barcode_context[0].context.doc.name;
+				const warehouse = barcode_context[0].context.doc.name
 				if (!(mappedDoc.value as StockEntryItem).s_warehouse) {
-					(mappedDoc.value as StockEntryItem).s_warehouse = warehouse
+					;(mappedDoc.value as StockEntryItem).s_warehouse = warehouse
 				} else if (!(mappedDoc.value as StockEntryItem).t_warehouse) {
-					(mappedDoc.value as StockEntryItem).t_warehouse = warehouse
+					;(mappedDoc.value as StockEntryItem).t_warehouse = warehouse
 				}
 
 				store.$patch(state => (state.cache.mappers[documentId.value] = mappedDoc.value))
