@@ -28,7 +28,6 @@
 	<div class="begin" v-if="items.length == 0">
 		<span>Scan to Begin</span>
 	</div>
-
 	<!-- footer section -->
 	<ControlButtons :buttons="controlButtons" />
 </template>
@@ -42,6 +41,7 @@ import ControlButtons from '@/components/ControlButtons.vue'
 import ADropdown from '@/components/ADropdown.vue'
 import { useBeamStore } from '@/stores/beam'
 import type { ControlButton, StockEntry } from '@/types'
+import { watch } from 'vue'
 type Warehouse = {
 	name: string,
 }
@@ -49,57 +49,28 @@ type Warehouse = {
 const store = useBeamStore()
 
 const stockEntryId = ref('')
-const initialStockEntry = store.cache.mappers[stockEntryId.value] as StockEntry
 
 const items = ref<ListViewItem[]>([])
-const stockEntry = ref<StockEntry>({ ...initialStockEntry, stock_entry_type: 'Material Transfer' })
+
+const sourceWarehouse = computed(() => {
+	return store.cache.mappers[stockEntryId.value]?.s_warehouse
+})
+const targetWarehouse = computed(() => {
+	return store.cache.mappers[stockEntryId.value]?.t_warehouse
+})
+
+const stockEntry = ref<StockEntry>({ stock_entry_type: 'Material Transfer', items: [] })
 const componentKey = ref(0)
 
 const warehouseList = ref<string[]>([])
-const sourceWarehouse = ref('')
-const targetWarehouse = ref('')
 
 onMounted(async () => {
 	store.form as Partial<StockEntry>
 	await loadWarehouses()
-	window.addEventListener('moveScan', handleScanned)
+	store.$patch(state => {
+		state.cache.mappers[stockEntryId.value] = stockEntry.value
+	})
 })
-
-const handleScanned = async (event: CustomEvent) => {
-	try {
-		const scannedData = event.detail[0].context.doc.name
-		console.log('scannedData', event.detail[0])
-		
-		if (!sourceWarehouse.value) {
-			sourceWarehouse.value = scannedData
-		} else if (!targetWarehouse.value) {
-			targetWarehouse.value = scannedData
-		} else {
-			const barCode = event.detail[0].context.barcode
-			console.log('barCode', barCode)
-
-			const item_code = 'Pie Tin'
-
-			const existingItem = items.value.find(item => item.item_code === item_code)
-
-			if (existingItem) {
-				existingItem.qty += 1
-				existingItem.count.count += 1
-			} else {
-				items.value.push({
-					item_code: item_code,
-					label: item_code,
-					count: { count: 1 },
-					qty: 1,
-					s_warehouse: sourceWarehouse.value,
-					t_warehouse: targetWarehouse.value,
-				})
-			}
-		}
-	} catch (err) {
-		console.log('Hubo un error al escanear', err)
-	}
-}
 
 const loadWarehouses = async () => {
 	const warehouses = await store.getAll<Warehouse[]>('Warehouse')
@@ -107,11 +78,16 @@ const loadWarehouses = async () => {
 }
 
 const clearField = (field: 'sourceWarehouse' | 'targetWarehouse') => {
-	if (field === 'sourceWarehouse') {
-		sourceWarehouse.value = ''
-	} else if (field === 'targetWarehouse') {
-		targetWarehouse.value = ''
-	}
+	store.$patch(state => {
+		const mapper = state.cache.mappers[stockEntryId.value]
+		if (mapper) {
+			if (field === 'sourceWarehouse') {
+				mapper.s_warehouse = ''
+			} else if (field === 'targetWarehouse') {
+				mapper.t_warehouse = ''
+			}
+		}
+	})
 }
 
 // store.$subscribe((mutation, state) => {
@@ -134,6 +110,9 @@ const clearField = (field: 'sourceWarehouse' | 'targetWarehouse') => {
 // })
 
 const create = async () => {
+	console.log(stockEntry.value)
+	console.log(items.value)
+	return
 	const { data, response } = await store.insert<StockEntry>('Stock Entry', stockEntry.value)
 	if (data.name) {
 		stockEntryId.value = data.name
@@ -170,6 +149,19 @@ const controlButtons = computed((): ControlButton[] => {
 		// },
 	]
 })
+
+watch(
+  () => store.cache.mappers[stockEntryId.value]?.items,
+  newItems => {
+    items.value = (newItems || []).map(s => ({
+      ...s,
+      label: s.item_code,
+      count: { count: s.qty }
+    }))
+	componentKey.value++
+  },
+  { immediate: true, deep: true }
+)
 </script>
 
 <style>
