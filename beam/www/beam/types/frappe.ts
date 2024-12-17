@@ -44,6 +44,7 @@ export type ChildDoctype = ChildDoctypeMeta & {
 	qty?: number
 	stock_qty?: number
 	warehouse?: string
+	doc?: Omit<ChildDoctype, 'doc'>
 }
 
 export type JobCard = ParentDoctype & {
