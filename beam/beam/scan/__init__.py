@@ -199,7 +199,7 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 				"dn_detail": hu_details.dn_detail,
 			}
 		)
-	elif barcode_doc.doc.doctype == "Item":
+	elif barcode_doc.doc.doctype == "Item" and context.doc:
 		if context.frm == "Stock Entry":
 			target = get_stock_entry_item_details(context.doc, barcode_doc.doc.name)
 		elif context.frm in ("Putaway Rule", "Warranty Claim", "Item Price", "Quality Inspection"):
@@ -227,7 +227,6 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 		return []
 
 	beam_override = frappe.get_hooks("beam_frm")
-	print(beam_override)
 	if beam_override:
 		override_doctype = beam_override.get(barcode_doc.doc.doctype)
 		if override_doctype:
