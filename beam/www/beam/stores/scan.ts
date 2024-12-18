@@ -210,10 +210,10 @@ export const useScanStore = defineStore('scan', () => {
 				})
 			} else {
 				const warehouse = barcode_context[0].context.doc.name
-				if (!(mappedDoc.value as StockEntryItem).s_warehouse) {
-					;(mappedDoc.value as StockEntryItem).s_warehouse = warehouse
-				} else if (!(mappedDoc.value as StockEntryItem).t_warehouse) {
-					;(mappedDoc.value as StockEntryItem).t_warehouse = warehouse
+				if (!(mappedDoc.value as StockEntry).from_warehouse) {
+					;(mappedDoc.value as StockEntry).from_warehouse = warehouse
+				} else if (!(mappedDoc.value as StockEntry).to_warehouse) {
+					;(mappedDoc.value as StockEntry).to_warehouse = warehouse
 				}
 
 				store.$patch(state => (state.cache.mappers[documentId.value] = mappedDoc.value))

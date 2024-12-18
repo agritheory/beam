@@ -9,12 +9,12 @@
 	</Navbar>
 	<div>
 		<div class="dropdown-container">
-			<ADropdown label="Source Warehouse" :items="warehouseList" v-model="warehouse.s_warehouse" />
-			<BeamBtn class="clear-button" @click="clearField('s_warehouse')"> &times; </BeamBtn>
+			<ADropdown label="Source Warehouse" :items="warehouseList" v-model="stockEntry.from_warehouse" />
+			<BeamBtn class="clear-button" @click="clearField('from_warehouse')"> &times; </BeamBtn>
 		</div>
 		<div class="dropdown-container">
-			<ADropdown label="Target Warehouse" :items="warehouseList" v-model="warehouse.t_warehouse" />
-			<BeamBtn class="clear-button" @click="clearField('t_warehouse')"> &times; </BeamBtn>
+			<ADropdown label="Target Warehouse" :items="warehouseList" v-model="stockEntry.to_warehouse" />
+			<BeamBtn class="clear-button" @click="clearField('to_warehouse')"> &times; </BeamBtn>
 		</div>
 	</div>
 
@@ -34,21 +34,15 @@ import { ref, onMounted, computed } from 'vue'
 import ControlButtons from '@/components/ControlButtons.vue'
 import ADropdown from '@/components/ADropdown.vue'
 import { useBeamStore } from '@/stores/beam'
-import type { ControlButton, StockEntry, StockEntryItem } from '@/types'
+import type { ControlButton, DocActionResponse, StockEntry } from '@/types'
 import { watch } from 'vue'
 type Warehouse = {
 	name: string
 }
 
 const store = useBeamStore()
-
-const stockEntryId = ref('')
-
 const items = ref<ListViewItem[]>([])
-
-const warehouse = computed((): StockEntryItem => store.cache.mappers[stockEntryId.value] || { s_warehouse: '', t_warehouse: '' })
-
-const stockEntry = ref({ stock_entry_type: 'Material Transfer', items: [], s_warehouse: '', t_warehouse: '' })
+const stockEntry = computed((): StockEntry => (store.cache.mappers[''] as StockEntry || { name: '', stock_entry_type: 'Material Transfer', items: [], from_warehouse: '', to_warehouse: '' }))
 const componentKey = ref(0)
 
 const warehouseList = ref<string[]>([])
@@ -56,7 +50,7 @@ const warehouseList = ref<string[]>([])
 onMounted(async () => {
 	store.form as Partial<StockEntry>
 	store.$patch(state => {
-		state.cache.mappers[stockEntryId.value] = stockEntry.value
+		state.cache.mappers[''] = stockEntry.value
 	})
 	await loadWarehouses()
 })
@@ -66,14 +60,14 @@ const loadWarehouses = async () => {
 	warehouseList.value = warehouses.map(warehouse => warehouse.name)
 }
 
-const clearField = (field: 's_warehouse' | 't_warehouse') => {
+const clearField = (field: 'from_warehouse' | 'to_warehouse') => {
 	store.$patch(state => {
-		const mapper = state.cache.mappers[stockEntryId.value]
+		const mapper = state.cache.mappers['']
 		if (mapper) mapper[field] = ''
 	})
 }
 
-const update = (updatedItem: ListViewItem) => {
+const update = () => {
 	// TODO
 }
 
@@ -97,31 +91,40 @@ const update = (updatedItem: ListViewItem) => {
 // })
 
 const create = async () => {
-	console.log(stockEntry.value)
 	const body: StockEntry = {
 		stock_entry_type: 'Material Transfer',
 		items: stockEntry.value.items.map(i => (
 			{
 				...i,
-				s_warehouse: stockEntry.value.s_warehouse,
-				t_warehouse: stockEntry.value.t_warehouse,
+				s_warehouse: stockEntry.value.from_warehouse,
+				t_warehouse: stockEntry.value.to_warehouse,
 			}
 		)),
-		name: stockEntryId.value
+		name: stockEntry.value.name
 	}
-	console.log(body)
-	const { data, response } = await store.insert<StockEntry>('Stock Entry', body)
-	console.log(data)
-	if (data.name) stockEntryId.value = data.name
+	let res: DocActionResponse<StockEntry>
+
+	if (body.name) {
+		res = await store.update<StockEntry>('Stock Entry', body.name, body)
+	} else {
+		res = await store.insert<StockEntry>('Stock Entry', body)
+	}
+	const { data, response } = res
+	if (data.name) {
+		stockEntry.value.name = data.name
+	}
 	return { data, response }
 }
 
+const move = async () => {
+	await store.submit<StockEntry>('Stock Entry', stockEntry.value.name)
+	store.$patch(state => {
+		state.cache.mappers[''] = { name: '', stock_entry_type: 'Material Transfer', items: [], from_warehouse: '', to_warehouse: '' }
+	})
+}
+
 const controlButtons = computed((): ControlButton[] => {
-	// if (!stockEntry.value) return []
-
-	// const form = stockEntry.value as StockEntry
-	// if (!form.items) return []
-
+	if (!stockEntry.value.items.length || !stockEntry.value.from_warehouse || !stockEntry.value.to_warehouse) return []
 	return [
 		{
 			label: 'SAVE',
@@ -129,25 +132,18 @@ const controlButtons = computed((): ControlButton[] => {
 			color: { background: '#4791FF', text: 'var(--sc-btn-color)' },
 			action: create,
 		},
-		// {
-		// 	label: 'SHIP',
-		// 	disabled: form.items.length === 0 || !form.name,
-		// 	hidden: Boolean(form.__islocal) || form.docstatus !== 0,
-		// 	color: { background: 'var(--sc-success)', text: 'var(--sc-btn-color)' },
-		// 	action: async () => await store.submit<StockEntry>('Stock Entry', form.name),
-		// },
-		// {
-		// 	label: 'CANCEL',
-		// 	disabled: form.items.length === 0 || !form.name,
-		// 	hidden: Boolean(form.__islocal) || form.docstatus !== 1,
-		// 	color: { background: 'var(--sc-alert)', text: 'var(--sc-btn-color)' },
-		// 	action: async () => await store.cancel<StockEntry>('Stock Entry', form.name),
-		// },
+		{
+			label: 'MOVE',
+			disabled: !stockEntry.value.name,
+			hidden: !stockEntry.value.name,
+			color: { background: 'var(--sc-success)', text: 'var(--sc-btn-color)' },
+			action: move,
+		},
 	]
 })
 
 watch(
-	() => store.cache.mappers[stockEntryId.value]?.items,
+	() => store.cache.mappers['']?.items,
 	newItems => {
 		items.value = (newItems || []).map(s => ({
 			...s,
