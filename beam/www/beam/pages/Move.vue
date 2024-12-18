@@ -9,17 +9,17 @@
 	</Navbar>
 	<div>
 		<div class="dropdown-container">
-			<ADropdown label="Source Warehouse" :items="warehouseList" v-model="sourceWarehouse" />
-			<BeamBtn class="clear-button" @click="clearField('sourceWarehouse')"> &times; </BeamBtn>
+			<ADropdown label="Source Warehouse" :items="warehouseList" v-model="warehouse.s_warehouse" />
+			<BeamBtn class="clear-button" @click="clearField('s_warehouse')"> &times; </BeamBtn>
 		</div>
 		<div class="dropdown-container">
-			<ADropdown label="Target Warehouse" :items="warehouseList" v-model="targetWarehouse" />
-			<BeamBtn class="clear-button" @click="clearField('targetWarehouse')"> &times; </BeamBtn>
+			<ADropdown label="Target Warehouse" :items="warehouseList" v-model="warehouse.t_warehouse" />
+			<BeamBtn class="clear-button" @click="clearField('t_warehouse')"> &times; </BeamBtn>
 		</div>
 	</div>
 
 	<!-- body section -->
-	<ListView :items="items" :key="componentKey" />
+	<ListView :items="items" :key="componentKey" @update="update" />
 	<div class="begin" v-if="items.length == 0">
 		<span>Scan to Begin</span>
 	</div>
@@ -34,7 +34,7 @@ import { ref, onMounted, computed } from 'vue'
 import ControlButtons from '@/components/ControlButtons.vue'
 import ADropdown from '@/components/ADropdown.vue'
 import { useBeamStore } from '@/stores/beam'
-import type { ControlButton, StockEntry } from '@/types'
+import type { ControlButton, StockEntry, StockEntryItem } from '@/types'
 import { watch } from 'vue'
 type Warehouse = {
 	name: string
@@ -46,24 +46,19 @@ const stockEntryId = ref('')
 
 const items = ref<ListViewItem[]>([])
 
-const sourceWarehouse = computed(() => {
-	return store.cache.mappers[stockEntryId.value]?.s_warehouse
-})
-const targetWarehouse = computed(() => {
-	return store.cache.mappers[stockEntryId.value]?.t_warehouse
-})
+const warehouse = computed((): StockEntryItem => store.cache.mappers[stockEntryId.value] || { s_warehouse: '', t_warehouse: '' })
 
-const stockEntry = ref<StockEntry>({ stock_entry_type: 'Material Transfer', items: [] })
+const stockEntry = ref({ stock_entry_type: 'Material Transfer', items: [], s_warehouse: '', t_warehouse: '' })
 const componentKey = ref(0)
 
 const warehouseList = ref<string[]>([])
 
 onMounted(async () => {
 	store.form as Partial<StockEntry>
-	await loadWarehouses()
 	store.$patch(state => {
 		state.cache.mappers[stockEntryId.value] = stockEntry.value
 	})
+	await loadWarehouses()
 })
 
 const loadWarehouses = async () => {
@@ -71,17 +66,15 @@ const loadWarehouses = async () => {
 	warehouseList.value = warehouses.map(warehouse => warehouse.name)
 }
 
-const clearField = (field: 'sourceWarehouse' | 'targetWarehouse') => {
+const clearField = (field: 's_warehouse' | 't_warehouse') => {
 	store.$patch(state => {
 		const mapper = state.cache.mappers[stockEntryId.value]
-		if (mapper) {
-			if (field === 'sourceWarehouse') {
-				mapper.s_warehouse = ''
-			} else if (field === 'targetWarehouse') {
-				mapper.t_warehouse = ''
-			}
-		}
+		if (mapper) mapper[field] = ''
 	})
+}
+
+const update = (updatedItem: ListViewItem) => {
+	// TODO
 }
 
 // store.$subscribe((mutation, state) => {
@@ -105,12 +98,21 @@ const clearField = (field: 'sourceWarehouse' | 'targetWarehouse') => {
 
 const create = async () => {
 	console.log(stockEntry.value)
-	console.log(items.value)
-	return
-	const { data, response } = await store.insert<StockEntry>('Stock Entry', stockEntry.value)
-	if (data.name) {
-		stockEntryId.value = data.name
+	const body: StockEntry = {
+		stock_entry_type: 'Material Transfer',
+		items: stockEntry.value.items.map(i => (
+			{
+				...i,
+				s_warehouse: stockEntry.value.s_warehouse,
+				t_warehouse: stockEntry.value.t_warehouse,
+			}
+		)),
+		name: stockEntryId.value
 	}
+	console.log(body)
+	const { data, response } = await store.insert<StockEntry>('Stock Entry', body)
+	console.log(data)
+	if (data.name) stockEntryId.value = data.name
 	return { data, response }
 }
 
