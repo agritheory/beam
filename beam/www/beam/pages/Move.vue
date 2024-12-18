@@ -42,7 +42,16 @@ type Warehouse = {
 
 const store = useBeamStore()
 const items = ref<ListViewItem[]>([])
-const stockEntry = computed((): StockEntry => (store.cache.mappers[''] as StockEntry || { name: '', stock_entry_type: 'Material Transfer', items: [], from_warehouse: '', to_warehouse: '' }))
+const stockEntry = computed(
+	(): StockEntry =>
+		(store.cache.mappers[''] as StockEntry) || {
+			name: '',
+			stock_entry_type: 'Material Transfer',
+			items: [],
+			from_warehouse: '',
+			to_warehouse: '',
+		}
+)
 const componentKey = ref(0)
 
 const warehouseList = ref<string[]>([])
@@ -93,14 +102,12 @@ const update = () => {
 const create = async () => {
 	const body: StockEntry = {
 		stock_entry_type: 'Material Transfer',
-		items: stockEntry.value.items.map(i => (
-			{
-				...i,
-				s_warehouse: stockEntry.value.from_warehouse,
-				t_warehouse: stockEntry.value.to_warehouse,
-			}
-		)),
-		name: stockEntry.value.name
+		items: stockEntry.value.items.map(i => ({
+			...i,
+			s_warehouse: stockEntry.value.from_warehouse,
+			t_warehouse: stockEntry.value.to_warehouse,
+		})),
+		name: stockEntry.value.name,
 	}
 	let res: DocActionResponse<StockEntry>
 
@@ -119,7 +126,13 @@ const create = async () => {
 const move = async () => {
 	await store.submit<StockEntry>('Stock Entry', stockEntry.value.name)
 	store.$patch(state => {
-		state.cache.mappers[''] = { name: '', stock_entry_type: 'Material Transfer', items: [], from_warehouse: '', to_warehouse: '' }
+		state.cache.mappers[''] = {
+			name: '',
+			stock_entry_type: 'Material Transfer',
+			items: [],
+			from_warehouse: '',
+			to_warehouse: '',
+		}
 	})
 }
 
