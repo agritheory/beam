@@ -7,24 +7,24 @@
 			<RouterLink :to="{ name: 'home' }">Home</RouterLink>
 		</template>
 	</Navbar>
-	<div>
+	<div class="move">
 		<div class="dropdown-container">
 			<ADropdown label="Source Warehouse" :items="warehouseList" v-model="stockEntry.from_warehouse" />
-			<BeamBtn class="clear-button" @click="clearField('from_warehouse')"> &times; </BeamBtn>
+			<BeamBtn class="clear-button" @click="clearField('from_warehouse')"> X </BeamBtn>
 		</div>
 		<div class="dropdown-container">
 			<ADropdown label="Target Warehouse" :items="warehouseList" v-model="stockEntry.to_warehouse" />
-			<BeamBtn class="clear-button" @click="clearField('to_warehouse')"> &times; </BeamBtn>
+			<BeamBtn class="clear-button" @click="clearField('to_warehouse')"> X </BeamBtn>
 		</div>
 	</div>
 
 	<!-- body section -->
 	<ListView :items="items" :key="componentKey" @update="update" />
 	<div class="begin" v-if="items.length == 0">
-		<span>Scan to Begin</span>
+		<span>Scan Items and Scan or Select Warehouses to Begin</span>
 	</div>
 	<!-- footer section -->
-	<ControlButtons :buttons="controlButtons" />
+	<ControlButtons :buttons="controlButtons"  />
 </template>
 
 <script setup lang="ts">
@@ -65,7 +65,9 @@ onMounted(async () => {
 })
 
 const loadWarehouses = async () => {
-	const warehouses = await store.getAll<Warehouse[]>('Warehouse')
+	const warehouses = await store.getAll<Warehouse[]>('Warehouse', {
+		filters: JSON.stringify([['is_group', '!=', '1']]),
+	})
 	warehouseList.value = warehouses.map(warehouse => warehouse.name)
 }
 
@@ -170,15 +172,33 @@ watch(
 </script>
 
 <style>
+.move {
+	margin-bottom: 1.5em
+}
+
+.move .autocomplete input, .autocomplete-results {
+	font-size: 150%;
+}
+
+.move .input-wrapper label {
+	margin: calc(-2.5rem - calc(2.15rem / 2)) 0 0 1ch !important;
+}
+
+.clear-button {
+	margin-bottom: 2px;
+	padding: .9rem 1rem !important;
+}
+
 .begin {
 	width: 100%;
 	text-align: center;
 	font-size: 150%;
+	text-wrap: balance;
 }
 
 .dropdown-container {
 	display: flex;
-	align-items: baseline;
+	align-items: flex-end !important;
 	position: relative;
 	margin-top: 1rem;
 }
