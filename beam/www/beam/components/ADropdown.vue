@@ -180,6 +180,7 @@ label {
 	text-align: left;
 	padding: 4px 6px;
 	cursor: pointer;
+	border-bottom: 0.5px solid lightgray;
 }
 
 .autocomplete-result.is-active,
