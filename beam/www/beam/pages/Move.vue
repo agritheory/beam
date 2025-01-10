@@ -126,16 +126,17 @@ const create = async () => {
 }
 
 const move = async () => {
-	await store.submit<StockEntry>('Stock Entry', stockEntry.value.name)
-	store.$patch(state => {
-		state.cache.mappers[''] = {
-			name: '',
-			stock_entry_type: 'Material Transfer',
-			items: [],
-			from_warehouse: '',
-			to_warehouse: '',
-		}
-	})
+	const res = await store.submit<StockEntry>('Stock Entry', stockEntry.value.name)
+	if (res?.data)
+		store.$patch(state => {
+			state.cache.mappers[''] = {
+				name: '',
+				stock_entry_type: 'Material Transfer',
+				items: [],
+				from_warehouse: '',
+				to_warehouse: '',
+			}
+		})
 }
 
 const controlButtons = computed((): ControlButton[] => {
