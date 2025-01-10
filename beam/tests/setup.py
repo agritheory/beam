@@ -706,6 +706,7 @@ def create_production_plan(settings, prod_plan_from_doc):
 					"from_time": start_time,
 					"to_time": start_time + datetime.timedelta(minutes=time_in_mins),
 					"time_in_mins": time_in_mins,
+					"remaining_time_in_mins": time_in_mins,
 				},
 			)
 			job_card.save()
