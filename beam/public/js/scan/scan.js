@@ -1,4 +1,14 @@
-import onScan from 'onscan.js'
+if (!window.OnScan) {
+    import('onscan.js')
+        .then((OnScan) => {
+            OnScan.attachTo(document, {
+                onScan: (barcode) => {
+                    console.log('Scanned barcode:', barcode);
+                }
+            });
+        })
+        .catch((error) => console.error('Failed to load onscan.js:', error));
+}
 
 function waitForElement(selector) {
 	return new Promise(resolve => {
