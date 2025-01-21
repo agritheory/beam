@@ -1,4 +1,12 @@
-import onScan from 'onscan.js'
+if (typeof onScan === 'undefined' || typeof onScan !== 'function') {
+	import('onscan.js')
+    .then(module => {
+      const onScan = module.default || module;
+      window.onScan = onScan; 
+    })
+    .catch(error => {      
+    });	
+}
 
 function waitForElement(selector) {
 	return new Promise(resolve => {
