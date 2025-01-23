@@ -13,6 +13,7 @@
 		"register": "node ./beam/www/beam/resolvers.ts"
 	},
 	"dependencies": {
+		"@stonecrop/aform": "^0.4.1",
 		"@stonecrop/beam": "^0.2.62",
 		"@vueuse/core": "^11.1.0",
 		"acorn": "^8.12.1",

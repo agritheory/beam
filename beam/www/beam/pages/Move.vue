@@ -32,7 +32,7 @@ import type { ListViewItem } from '@stonecrop/beam'
 import { ref, onMounted, computed } from 'vue'
 
 import ControlButtons from '@/components/ControlButtons.vue'
-import ADropdown from '@/components/ADropdown.vue'
+// import ADropdown from '@/components/ADropdown.vue'
 import { useBeamStore } from '@/stores/beam'
 import type { ControlButton, DocActionResponse, StockEntry } from '@/types'
 import { watch } from 'vue'
@@ -174,11 +174,15 @@ watch(
 
 <style>
 .move {
-	margin-bottom: 1.5em
+	margin-bottom: 1.5em;
 }
 
 .move .autocomplete input, .autocomplete-results {
 	font-size: 150%;
+}
+
+.autocomplete-results {
+	padding-inline: 3px !important;
 }
 
 .move .input-wrapper label {
@@ -200,15 +204,9 @@ watch(
 .dropdown-container {
 	display: flex;
 	align-items: flex-end !important;
-	position: relative;
-	margin-top: 1rem;
-}
-
-.dropdown-container {
-	display: flex;
-	align-items: center;
 	justify-content: center;
 	position: relative;
+	margin-top: 1rem;
 	gap: 8px;
 }
 </style>

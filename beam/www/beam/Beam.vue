@@ -46,20 +46,33 @@ const registerInstance = (instance: any) => (window.scanner = instance)
 </script>
 
 <style>
+* {
+	font-family: var(--sc-font-family) !important;
+}
+
 .navbar-action a {
 	color: inherit;
 	text-decoration: none;
 }
+
 .navbar-action a:visited {
 	color: inherit;
 	text-decoration: none;
 }
+
 .navbar-action a:hover {
 	color: inherit;
 	text-decoration: none;
 }
+
 .navbar-action a:active {
 	color: inherit;
 	text-decoration: none;
+}
+
+:root {
+	--sc-input-active-border-color: #000000;
+	--sc-input-border-color: #cccccc;
+	--sc-row-color-zebra-light: #eeeeee;
 }
 </style>

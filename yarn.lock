@@ -1129,6 +1129,17 @@
   resolved "https://registry.yarnpkg.com/@rollup/rollup-win32-x64-msvc/-/rollup-win32-x64-msvc-4.28.0.tgz#cb313feef9ac6e3737067fdf34f42804ac65a6f2"
   integrity sha512-Bvno2/aZT6usSa7lRDL2+hMjVAGjuqaymF1ApZm31JXzniR/hvr14jpU+/z4X6Gt5BPlzosscyJZGUvguXIqeQ==
 
+"@stonecrop/aform@^0.4.1":
+  version "0.4.1"
+  resolved "https://registry.yarnpkg.com/@stonecrop/aform/-/aform-0.4.1.tgz#76b206243eb26e3f65f969457698f35b6309328b"
+  integrity sha512-JuD9TUri0jQfBQ224ufGoDCaQJzM6dqbnqe7GWVTlnKH6epLPt7JUIn3GWJ4sGiHE+KLJ6zr5WhpehQNqRasQg==
+  dependencies:
+    "@stonecrop/themes" "0.4.1"
+    "@stonecrop/utilities" "0.4.1"
+    "@vueuse/components" "^12.0.0"
+    "@vueuse/core" "^12.0.0"
+    vue "^3.5.11"
+
 "@stonecrop/beam@^0.2.62":
   version "0.2.62"
   resolved "https://registry.yarnpkg.com/@stonecrop/beam/-/beam-0.2.62.tgz#e55cf6e0cdc280c47097b69b8d5235b2f468d8d4"
@@ -1138,6 +1149,19 @@
     mqtt "^5.10.1"
     onscan.js "^1.5.2"
     vue "^3.5.6"
+
+"@stonecrop/themes@0.4.1":
+  version "0.4.1"
+  resolved "https://registry.yarnpkg.com/@stonecrop/themes/-/themes-0.4.1.tgz#d599c936bd95086fdf38bd35295ddb03e3d9c12e"
+  integrity sha512-vN8QmTOG1LIIwLBZHRTqLGhoY4DS+qg3F88uQ3jbkXrsWB/z7+wB9O6N8dDBEoU/wqsE4oxfNp36jjvUnZ0xOw==
+
+"@stonecrop/utilities@0.4.1":
+  version "0.4.1"
+  resolved "https://registry.yarnpkg.com/@stonecrop/utilities/-/utilities-0.4.1.tgz#b92e0330a447c03a79ea25a5ab2dd0b9cf6426cd"
+  integrity sha512-3PCGeotzm0/g0sEPNuVtZGAoXQ9dcPxuBtn+zqsMgKTePIC+XhNeABzJ0PIOMnf/EOLIYS+ZMJ/+L5c33vrUhg==
+  dependencies:
+    "@vueuse/core" "^12.0.0"
+    vue "^3.5.11"
 
 "@surma/rollup-plugin-off-main-thread@^2.2.3":
   version "2.2.3"
@@ -1305,6 +1329,25 @@
   resolved "https://registry.yarnpkg.com/@vue/shared/-/shared-3.5.13.tgz#87b309a6379c22b926e696893237826f64339b6f"
   integrity sha512-/hnE/qP5ZoGpol0a5mDi45bOd7t3tjYJBjsgCsivow7D48cJeV5l05RD82lPqi7gRiphZM37rnhW1l6ZoCNNnQ==
 
+"@vueuse/components@^12.0.0":
+  version "12.5.0"
+  resolved "https://registry.yarnpkg.com/@vueuse/components/-/components-12.5.0.tgz#9f7b2ef1b3bc585425847c9c426538c2966c4364"
+  integrity sha512-aLgEW8bidRZ4qkVOIl958NAev+XKYTtbfsIj5ObjiDwvBDqxmGVCwMQvWHUQN37tb8JSkRF22gTUbXNt0iSwLQ==
+  dependencies:
+    "@vueuse/core" "12.5.0"
+    "@vueuse/shared" "12.5.0"
+    vue "^3.5.13"
+
+"@vueuse/core@12.5.0", "@vueuse/core@^12.0.0":
+  version "12.5.0"
+  resolved "https://registry.yarnpkg.com/@vueuse/core/-/core-12.5.0.tgz#1321c75132c4f20f223e6313587ebeeec79957f2"
+  integrity sha512-GVyH1iYqNANwcahAx8JBm6awaNgvR/SwZ1fjr10b8l1HIgDp82ngNbfzJUgOgWEoxjL+URAggnlilAEXwCOZtg==
+  dependencies:
+    "@types/web-bluetooth" "^0.0.20"
+    "@vueuse/metadata" "12.5.0"
+    "@vueuse/shared" "12.5.0"
+    vue "^3.5.13"
+
 "@vueuse/core@^11.1.0":
   version "11.3.0"
   resolved "https://registry.yarnpkg.com/@vueuse/core/-/core-11.3.0.tgz#bb0bd1f0edd5435d20694dbe51091cf548653a4d"
@@ -1320,12 +1363,24 @@
   resolved "https://registry.yarnpkg.com/@vueuse/metadata/-/metadata-11.3.0.tgz#be7ac12e3016c0353a3667b372a73aeeee59194e"
   integrity sha512-pwDnDspTqtTo2HwfLw4Rp6yywuuBdYnPYDq+mO38ZYKGebCUQC/nVj/PXSiK9HX5otxLz8Fn7ECPbjiRz2CC3g==
 
+"@vueuse/metadata@12.5.0":
+  version "12.5.0"
+  resolved "https://registry.yarnpkg.com/@vueuse/metadata/-/metadata-12.5.0.tgz#8f1778a2894bdda2bf458054377a379d40276306"
+  integrity sha512-Ui7Lo2a7AxrMAXRF+fAp9QsXuwTeeZ8fIB9wsLHqzq9MQk+2gMYE2IGJW48VMJ8ecvCB3z3GsGLKLbSasQ5Qlg==
+
 "@vueuse/shared@11.3.0":
   version "11.3.0"
   resolved "https://registry.yarnpkg.com/@vueuse/shared/-/shared-11.3.0.tgz#086a4f35bf5bcec5655a03b80eae582605a4b21d"
   integrity sha512-P8gSSWQeucH5821ek2mn/ciCk+MS/zoRKqdQIM3bHq6p7GXDAJLmnRRKmF5F65sAVJIfzQlwR3aDzwCn10s8hA==
   dependencies:
     vue-demi ">=0.14.10"
+
+"@vueuse/shared@12.5.0":
+  version "12.5.0"
+  resolved "https://registry.yarnpkg.com/@vueuse/shared/-/shared-12.5.0.tgz#b93af7ab0fd6a8d879808c9bf37d540dac01da13"
+  integrity sha512-vMpcL1lStUU6O+kdj6YdHDixh0odjPAUM15uJ9f7MY781jcYkIwFA4iv2EfoIPO6vBmvutI1HxxAwmf0cx5ISQ==
+  dependencies:
+    vue "^3.5.13"
 
 abort-controller@^3.0.0:
   version "3.0.0"
@@ -3480,7 +3535,7 @@ vue-toast-notification@^3.1.3:
   resolved "https://registry.yarnpkg.com/vue-toast-notification/-/vue-toast-notification-3.1.3.tgz#cdaef11cbe4045f3ea9d3ea5c814fa0333610dd1"
   integrity sha512-XNyWqwLIGBFfX5G9sK+clq3N3IPlhDjzNdbZaXkEElcotPlWs0wWZailk1vqhdtLYT/93Y4FHAVuzyatLmPZRA==
 
-vue@^3.5.6:
+vue@^3.5.11, vue@^3.5.13, vue@^3.5.6:
   version "3.5.13"
   resolved "https://registry.yarnpkg.com/vue/-/vue-3.5.13.tgz#9f760a1a982b09c0c04a867903fc339c9f29ec0a"
   integrity sha512-wmeiSMxkZCSc+PM2w2VRsOYAZC8GdipNFRTsLSfodVqI9mbejKeXEGr8SckuLnrQPGe3oJN5c3K0vpoU9q/wCQ==
