@@ -105,6 +105,7 @@ override_doctype_class = {
 	"Stock Entry": "beam.beam.overrides.stock_entry.BEAMStockEntry",
 	"Subcontracting Receipt": "beam.beam.overrides.subcontracting_receipt.BEAMSubcontractingReceipt",
 	"Work Order": "beam.beam.overrides.work_order.BEAMWorkOrder",
+	"User": "beam.beam.overrides.user.BEAMUser",
 }
 
 
