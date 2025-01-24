@@ -168,7 +168,7 @@ def setup_manufacturing_settings(settings):
 		return
 	wip = frappe.new_doc("Account")
 	wip.account_name = "Work in Progress"
-	wip.parent_account = "Stock Assets - APC"
+	wip.parent_account = "1400 - Stock Assets - APC"
 	wip.account_number = "1420"
 	wip.company = settings.company
 	wip.currency = "USD"
@@ -180,7 +180,7 @@ def setup_manufacturing_settings(settings):
 		return
 	wip = frappe.new_doc("Account")
 	wip.account_name = "Inventory Write Off"
-	wip.parent_account = "Stock Assets - APC"
+	wip.parent_account = "1400 - Stock Assets - APC"
 	wip.account_number = "1430"
 	wip.company = settings.company
 	wip.currency = "USD"
@@ -336,7 +336,7 @@ def create_items(settings):
 			"t_warehouse": "Refrigerator - APC",
 			"uom": "Cup",
 			"basic_rate": 0.15,
-			"expense_account": "Cost of Goods Sold - APC",
+			"expense_account": "5111 - Cost of Goods Sold - APC",
 		},
 	)
 	water.append(
@@ -347,7 +347,7 @@ def create_items(settings):
 			"uom": "Cup",
 			"t_warehouse": "Refrigerator - APC",
 			"basic_rate": 0.30,
-			"expense_account": "Cost of Goods Sold - APC",
+			"expense_account": "5111 - Cost of Goods Sold - APC",
 		},
 	)
 	water.save()
