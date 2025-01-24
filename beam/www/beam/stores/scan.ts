@@ -53,7 +53,7 @@ export const useScanStore = defineStore('scan', () => {
 				'Manufacture',
 			].includes((mappedDoc.value as StockEntry).stock_entry_type)
 
-		barcode_context.forEach(async action => {
+		for (const action of barcode_context) {
 			const existing_rows = mappedDoc.value.items.filter(row => {
 				if (is_stock_entry) {
 					return row.item_code === action.context.item_code || row.handling_unit
@@ -92,11 +92,11 @@ export const useScanStore = defineStore('scan', () => {
 			}
 
 			store.$patch(state => (state.cache.mappers[documentId.value] = mappedDoc.value))
-		})
+		}
 	}
 
 	const add_or_increment = (barcode_context: FormContext[]) => {
-		barcode_context.forEach(async action => {
+		for (const action of barcode_context) {
 			const existing_rows = mappedDoc.value.items.filter(
 				row =>
 					(row.item_code === action.context.item_code && !row.handling_unit) ||
@@ -151,7 +151,7 @@ export const useScanStore = defineStore('scan', () => {
 				;(mappedDoc.value as StockEntry).items.push(item)
 			}
 			store.$patch(state => (state.cache.mappers[documentId.value] = mappedDoc.value))
-		})
+		}
 	}
 
 	const filter = (barcode_context: ListContext[]) => {
@@ -159,19 +159,22 @@ export const useScanStore = defineStore('scan', () => {
 	}
 
 	const route = (barcode_context: ListContext[]) => {
-		// TODO: re-route to formview; use store router
+		for (const action of barcode_context) {
+			store.router.push(action.route)
+			return // only route based on the first action
+		}
 	}
 
 	const set_item_code_and_handling_unit = (barcode_context: FormContext[]) => {
-		barcode_context.forEach(action => {
+		for (const action of barcode_context) {
 			store.$patch(state => {
 				state.form[action.field] = action.target
 			})
-		})
+		}
 	}
 
 	const set_warehouse = (barcode_context: FormContext[]) => {
-		barcode_context.forEach(async action => {
+		for (const action of barcode_context) {
 			if (action.doctype !== 'Stock Entry') {
 				return
 			}
@@ -218,7 +221,7 @@ export const useScanStore = defineStore('scan', () => {
 
 				store.$patch(state => (state.cache.mappers[documentId.value] = mappedDoc.value))
 			}
-		})
+		}
 	}
 
 	const actions = {

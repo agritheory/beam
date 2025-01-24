@@ -13,15 +13,15 @@
 		"register": "node ./beam/www/beam/resolvers.ts"
 	},
 	"dependencies": {
-		"@stonecrop/aform": "^0.4.1",
-		"@stonecrop/beam": "^0.2.62",
-		"@vueuse/core": "^11.1.0",
+		"@stonecrop/aform": "^0.4.3",
+		"@stonecrop/beam": "^0.4.3",
+		"@vueuse/core": "^12.5.0",
 		"acorn": "^8.12.1",
 		"glob": "^11.0.0",
 		"onscan.js": "^1.5.2",
-		"pinia": "^2.2.2",
-		"vue": "^3.5.6",
-		"vue-router": "^4.4.5",
+		"pinia": "^2.3.1",
+		"vue": "^3.5.13",
+		"vue-router": "^4.5.0",
 		"vue-toast-notification": "^3.1.3"
 	},
 	"devDependencies": {

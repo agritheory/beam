@@ -24,7 +24,7 @@
 		<span>Scan Items and Scan or Select Warehouses to Begin</span>
 	</div>
 	<!-- footer section -->
-	<ControlButtons :buttons="controlButtons"  />
+	<ControlButtons :buttons="controlButtons" />
 </template>
 
 <script setup lang="ts">
@@ -32,7 +32,6 @@ import type { ListViewItem } from '@stonecrop/beam'
 import { ref, onMounted, computed } from 'vue'
 
 import ControlButtons from '@/components/ControlButtons.vue'
-// import ADropdown from '@/components/ADropdown.vue'
 import { useBeamStore } from '@/stores/beam'
 import type { ControlButton, DocActionResponse, StockEntry } from '@/types'
 import { watch } from 'vue'
@@ -177,7 +176,8 @@ watch(
 	margin-bottom: 1.5em;
 }
 
-.move .autocomplete input, .autocomplete-results {
+.move .autocomplete input,
+.autocomplete-results {
 	font-size: 150%;
 }
 
@@ -191,7 +191,7 @@ watch(
 
 .clear-button {
 	margin-bottom: 2px;
-	padding: .9rem 1rem !important;
+	padding: 0.9rem 1rem !important;
 }
 
 .begin {
