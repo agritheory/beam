@@ -4,7 +4,8 @@
 from frappe.core.doctype.user.user import User
 from beam.beam.barcodes import create_beam_barcode
 
+
 class BEAMUser(User):
-    def validate(self):
-        super().validate()
-        create_beam_barcode(self)
+	def validate(self):
+		super().validate()
+		create_beam_barcode(self)

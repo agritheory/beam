@@ -200,9 +200,7 @@ export_python_type_annotations = True
 # Overriding Methods
 # ------------------------------
 
-override_whitelisted_methods = {
-    "scan_login": "beam.beam.scan.user_login.scan_login"
-}
+override_whitelisted_methods = {"scan_login": "beam.beam.scan.user_login.scan_login"}
 
 
 # each overriding function accepts a `data` argument;

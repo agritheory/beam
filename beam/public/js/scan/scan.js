@@ -3,20 +3,20 @@
 
 import onScan from 'onscan.js'
 
-const isLoginPath = window.location.pathname === "/login"
+const isLoginPath = window.location.pathname === '/login'
 
 function waitForElement(selector) {
 	return new Promise(resolve => {
-		const element = document.querySelector(selector);
-		if (element) return resolve(element);
+		const element = document.querySelector(selector)
+		if (element) return resolve(element)
 
 		const observer = new MutationObserver(() => {
-			const element = document.querySelector(selector);
+			const element = document.querySelector(selector)
 			if (element) {
-				resolve(element);
-				observer.disconnect();
+				resolve(element)
+				observer.disconnect()
 			}
-		});
+		})
 
 		observer.observe(document.body, {
 			childList: true,
@@ -25,14 +25,14 @@ function waitForElement(selector) {
 
 		if (isLoginPath) {
 			observer.disconnect()
-			resolve(document.body);
+			resolve(document.body)
 		}
 	})
 }
 
 function initScanHandler() {
-	if (typeof ScanHandler === 'undefined') return;
-	new ScanHandler();
+	if (typeof ScanHandler === 'undefined') return
+	new ScanHandler()
 }
 
 waitForElement('[data-route]').then(element => {
@@ -85,7 +85,7 @@ class ScanHandler {
 		return new Promise(resolve => {
 			if (isLoginPath) {
 				frappe.xcall('scan_login', { barcode: sCode }).then(r => {
-					if (r.success) window.location.href = '/beam';
+					if (r.success) window.location.href = '/beam'
 				})
 			} else {
 				const context = this.reduceContext()
