@@ -4,27 +4,42 @@
 import onScan from 'onscan.js'
 
 function waitForElement(selector) {
-	return new Promise(resolve => {
-		if (document.querySelector(selector)) {
-			return resolve(document.querySelector(selector))
-		}
-		const observer = new MutationObserver(mutations => {
-			if (document.querySelector(selector)) {
-				resolve(document.querySelector(selector))
-				observer.disconnect()
+	return new Promise(resolve => {		
+		const element = document.querySelector(selector);
+		if (element) return resolve(element);
+
+		const observer = new MutationObserver(() => {
+			const element = document.querySelector(selector);
+			if (element) {
+				resolve(element);
+				observer.disconnect();
 			}
-		})
+		});
+
 		observer.observe(document.body, {
 			childList: true,
 			subtree: true,
 		})
+
+		if (window.location.pathname) {
+			observer.disconnect()
+			resolve(document.body);
+		}
 	})
 }
 
+function initScanHandler() {
+    if (typeof ScanHandler === 'undefined') return;
+    new ScanHandler();
+}
+
 waitForElement('[data-route]').then(element => {
-	let observer = new MutationObserver(() => {
-		new ScanHandler()
+	initScanHandler()
+
+	const observer = new MutationObserver(() => {
+		initScanHandler()
 	})
+
 	const config = { attributes: true, childList: false, characterData: true }
 	observer.observe(element, config)
 })

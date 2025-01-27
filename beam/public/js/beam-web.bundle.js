@@ -1,6 +1,8 @@
 // Copyright (c) 2024, AgriTheory and contributors
 // For license information, please see license.txt
 
+import './scan/scan.js'
+
 // specifically remove Frappe website theming for the Beam page
 if (window.location.pathname === '/beam') {
 	const stylesheets = document.querySelectorAll('link[rel=stylesheet]')
