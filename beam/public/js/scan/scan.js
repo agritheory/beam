@@ -3,8 +3,10 @@
 
 import onScan from 'onscan.js'
 
+const isLoginPath = window.location.pathname === "/login"
+
 function waitForElement(selector) {
-	return new Promise(resolve => {		
+	return new Promise(resolve => {
 		const element = document.querySelector(selector);
 		if (element) return resolve(element);
 
@@ -21,7 +23,7 @@ function waitForElement(selector) {
 			subtree: true,
 		})
 
-		if (window.location.pathname) {
+		if (isLoginPath) {
 			observer.disconnect()
 			resolve(document.body);
 		}
@@ -29,8 +31,8 @@ function waitForElement(selector) {
 }
 
 function initScanHandler() {
-    if (typeof ScanHandler === 'undefined') return;
-    new ScanHandler();
+	if (typeof ScanHandler === 'undefined') return;
+	new ScanHandler();
 }
 
 waitForElement('[data-route]').then(element => {
@@ -81,18 +83,24 @@ class ScanHandler {
 	}
 	async get_scanned_context(sCode, iQty) {
 		return new Promise(resolve => {
-			const context = this.reduceContext()
-			frappe.xcall('beam.beam.scan.scan', { barcode: sCode, context: context, current_qty: iQty }).then(r => {
-				if (r && r.length) {
-					if (Object.keys(frappe.boot.beam.client).includes(r[0].action)) {
-						let path = frappe.boot.beam.client[r[0].action][0]
-						resolve(path.split('.').reduce((o, i) => o[i], window)(r)) // calls (first) custom built callback registered in hooks
-					} else {
-						resolve(this[String(r[0].action)](r)) // TODO: this only calls the first function
+			if (isLoginPath) {
+				frappe.xcall('scan_login', { barcode: sCode }).then(r => {
+					if (r.success) window.location.href = '/beam';
+				})
+			} else {
+				const context = this.reduceContext()
+				frappe.xcall('beam.beam.scan.scan', { barcode: sCode, context: context, current_qty: iQty }).then(r => {
+					if (r && r.length) {
+						if (Object.keys(frappe.boot.beam.client).includes(r[0].action)) {
+							let path = frappe.boot.beam.client[r[0].action][0]
+							resolve(path.split('.').reduce((o, i) => o[i], window)(r)) // calls (first) custom built callback registered in hooks
+						} else {
+							resolve(this[String(r[0].action)](r)) // TODO: this only calls the first function
+						}
 					}
-				}
-				// TODO: else error
-			})
+					// TODO: else error
+				})
+			}
 		})
 	}
 	route(barcode_context) {
