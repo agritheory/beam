@@ -159,10 +159,9 @@ export const useScanStore = defineStore('scan', () => {
 	}
 
 	const route = (barcode_context: ListContext[]) => {
-		for (const action of barcode_context) {
-			store.router.push(action.route)
-			return // only route based on the first action
-		}
+		// only route based on the last action in hooks
+		const action = barcode_context && barcode_context.at(-1)
+		store.router.push(action.route)
 	}
 
 	const set_item_code_and_handling_unit = (barcode_context: FormContext[]) => {
