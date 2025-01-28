@@ -17,9 +17,6 @@ def scan_login(barcode):
 		frappe.throw("Wrong barcode", title="Login Error")
 
 	user_doc = frappe.get_doc("User", user["doc"].name)
-	if not user_doc:
-		frappe.throw("User doesn't exist", title="Login Error")
-
 	roles = [role.role for role in user_doc.get("roles")]
 	if not "BEAM Mobile User" in roles:
 		frappe.throw("Not Beam mobile user", title="Login Error")
