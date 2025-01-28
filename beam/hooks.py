@@ -105,7 +105,6 @@ override_doctype_class = {
 	"Stock Entry": "beam.beam.overrides.stock_entry.BEAMStockEntry",
 	"Subcontracting Receipt": "beam.beam.overrides.subcontracting_receipt.BEAMSubcontractingReceipt",
 	"Work Order": "beam.beam.overrides.work_order.BEAMWorkOrder",
-	"User": "beam.beam.overrides.user.BEAMUser",
 }
 
 
@@ -124,7 +123,7 @@ doc_events = {
 			"beam.beam.overrides.inventory_dimension.reset_receiving_map",
 		],
 	},
-	("Item", "Warehouse"): {
+	("Item", "Warehouse", "User"): {
 		"validate": ["beam.beam.barcodes.create_beam_barcode"],
 	},
 	# (
