@@ -84,7 +84,7 @@ class ScanHandler {
 	async get_scanned_context(sCode, iQty) {
 		return new Promise(resolve => {
 			if (isLoginPath) {
-				frappe.xcall('scan_login', { barcode: sCode }).then(r => {
+				frappe.xcall('beam.beam.scan.user_login.scan_login', { barcode: sCode }).then(r => {
 					if (r.success) window.location.href = '/beam'
 				})
 			} else {
