@@ -7,6 +7,8 @@ const isLoginPath = window.location.pathname === '/login'
 
 function waitForElement(selector) {
 	return new Promise(resolve => {
+		if (isLoginPath) return resolve(document.body)
+
 		const element = document.querySelector(selector)
 		if (element) return resolve(element)
 
@@ -22,11 +24,6 @@ function waitForElement(selector) {
 			childList: true,
 			subtree: true,
 		})
-
-		if (isLoginPath) {
-			observer.disconnect()
-			resolve(document.body)
-		}
 	})
 }
 
