@@ -21,6 +21,8 @@ def scan_login(barcode):
 	company = employee.company or get_default_company()
 
 	BEAMSettings = frappe.get_doc("BEAM Settings", {"company": company})
+	if not BEAMSettings.enable_scan_to_login:
+		frappe.throw(f"You are not available to login by scanning", title="Scanner Login Disabled")
 
 	ip_list = get_restricted_ip_list(BEAMSettings)
 	if ip_list and not any(client_ip.startswith(ip) for ip in ip_list):
