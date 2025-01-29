@@ -17,7 +17,7 @@ def scan_login(barcode):
 	if user["doc"].doctype != "User":
 		frappe.throw("Wrong barcode", title="Login Error")
 
-	company = user.company or get_default_company()
+	company = get_default_company()
 	BEAMSettings = frappe.get_doc("BEAM Settings", {"company": company})
 	ip_list = get_restricted_ip_list(BEAMSettings)
 
