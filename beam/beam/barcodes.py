@@ -27,6 +27,8 @@ def create_beam_barcode(doc, method=None):
 		return
 	if any([b for b in doc.barcodes if b.barcode_type == "Code128"]):
 		return
+	if doc.doctype == "User" and (doc.name == "Guest" or doc.name == "Administrator"):
+		return
 	# move all other rows back
 	for row_index, b in enumerate(doc.barcodes, start=1):
 		b.idx = row_index + 1
