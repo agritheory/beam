@@ -150,8 +150,13 @@ def get_list_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 			override_action = override_doctype.get(context.listview)
 			if override_action:
 				for action in override_action:
+					if callable(action.get("target")):
+						target_fn = action.get("target")
+						target = target_fn(barcode_doc, context)
 					action["context"] = target
 					action["target"] = target
+					if action.get("action") == "route":
+						action["route"] = action.get("route").format(target=target)
 				return override_action
 
 	# avoid mutating the global `listview` dict
@@ -199,7 +204,7 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 				"dn_detail": hu_details.dn_detail,
 			}
 		)
-	elif barcode_doc.doc.doctype == "Item":
+	elif barcode_doc.doc.doctype == "Item" and context.doc:
 		if context.frm == "Stock Entry":
 			target = get_stock_entry_item_details(context.doc, barcode_doc.doc.name)
 		elif context.frm in ("Putaway Rule", "Warranty Claim", "Item Price", "Quality Inspection"):
@@ -227,7 +232,6 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 		return []
 
 	beam_override = frappe.get_hooks("beam_frm")
-
 	if beam_override:
 		override_doctype = beam_override.get(barcode_doc.doc.doctype)
 		if override_doctype:

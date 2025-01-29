@@ -2,6 +2,7 @@
 // For license information, please see license.txt
 
 import { install as BeamPlugin } from '@stonecrop/beam'
+import { install as AformPlugin } from '@stonecrop/aform'
 import { createPinia } from 'pinia'
 import { createApp, markRaw } from 'vue'
 import { createRouter, createWebHashHistory } from 'vue-router'
@@ -50,5 +51,6 @@ pinia.use(({ store }) => {
 const app = createApp(Beam)
 app.use(router)
 app.use(BeamPlugin)
+app.use(AformPlugin)
 app.use(pinia)
 app.mount('#beam')

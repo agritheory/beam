@@ -32,6 +32,11 @@ export type BaseContext = {
 	 * The value to be set on the field.
 	 */
 	target: any
+
+	/**
+	 * The route to navigate to.
+	 */
+	route?: string
 }
 
 export type FormContext = BaseContext & {

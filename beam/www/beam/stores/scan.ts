@@ -19,7 +19,7 @@ export const useScanStore = defineStore('scan', () => {
 
 	const documentId = computed(() => {
 		const currentRoute = store.router.currentRoute.value
-		return currentRoute.params.id || currentRoute.query.id
+		return currentRoute.params.id || currentRoute.query.id || ''
 	})
 
 	const mappedDoc = computed(() => store.cache.mappers[documentId.value])
@@ -53,7 +53,7 @@ export const useScanStore = defineStore('scan', () => {
 				'Manufacture',
 			].includes((mappedDoc.value as StockEntry).stock_entry_type)
 
-		barcode_context.forEach(async action => {
+		for (const action of barcode_context) {
 			const existing_rows = mappedDoc.value.items.filter(row => {
 				if (is_stock_entry) {
 					return row.item_code === action.context.item_code || row.handling_unit
@@ -92,14 +92,16 @@ export const useScanStore = defineStore('scan', () => {
 			}
 
 			store.$patch(state => (state.cache.mappers[documentId.value] = mappedDoc.value))
-		})
+		}
 	}
 
 	const add_or_increment = (barcode_context: FormContext[]) => {
-		barcode_context.forEach(async action => {
+		for (const action of barcode_context) {
 			const existing_rows = mappedDoc.value.items.filter(
 				row =>
-					(row.item_code === action.context.item_code && !row.handling_unit) || row.barcode === action.context.barcode
+					(row.item_code === action.context.item_code && !row.handling_unit) ||
+					row.barcode === action.context.barcode ||
+					row.item_code === action.context.doc.item_code
 			)
 
 			const itemQtyFieldMap = {
@@ -140,10 +142,16 @@ export const useScanStore = defineStore('scan', () => {
 				}
 
 				;(mappedDoc.value as StockEntry).items.push(item)
-			}
+			} else {
+				const item: StockEntryItem = {
+					item_code: action.context.doc.item_code,
+					qty: 1,
+				}
 
+				;(mappedDoc.value as StockEntry).items.push(item)
+			}
 			store.$patch(state => (state.cache.mappers[documentId.value] = mappedDoc.value))
-		})
+		}
 	}
 
 	const filter = (barcode_context: ListContext[]) => {
@@ -151,19 +159,21 @@ export const useScanStore = defineStore('scan', () => {
 	}
 
 	const route = (barcode_context: ListContext[]) => {
-		// TODO: re-route to formview; use store router
+		// only route based on the last action in hooks
+		const action = barcode_context && barcode_context.at(-1)
+		store.router.push(action.route)
 	}
 
 	const set_item_code_and_handling_unit = (barcode_context: FormContext[]) => {
-		barcode_context.forEach(action => {
+		for (const action of barcode_context) {
 			store.$patch(state => {
 				state.form[action.field] = action.target
 			})
-		})
+		}
 	}
 
 	const set_warehouse = (barcode_context: FormContext[]) => {
-		barcode_context.forEach(async action => {
+		for (const action of barcode_context) {
 			if (action.doctype !== 'Stock Entry') {
 				return
 			}
@@ -178,28 +188,39 @@ export const useScanStore = defineStore('scan', () => {
 			]
 
 			const entry_type = (store.form as StockEntry).stock_entry_type
-			store.$patch(state => {
-				const form = state.form as StockEntry
-				if (source_warehouses.includes(entry_type)) {
-					form.from_warehouse = action.target
-					for (const row of form.items) {
-						row.s_warehouse = action.target
+			if (entry_type) {
+				store.$patch(state => {
+					const form = state.form as StockEntry
+					if (source_warehouses.includes(entry_type)) {
+						form.from_warehouse = action.target
+						for (const row of form.items) {
+							row.s_warehouse = action.target
+						}
+					} else if (target_warehouses.includes(entry_type)) {
+						form.to_warehouse = action.target
+						for (const row of form.items) {
+							row.t_warehouse = action.target
+						}
+					} else if (both_warehouses.includes(entry_type)) {
+						form.from_warehouse = action.target
+						form.to_warehouse = action.target
+						for (const row of form.items) {
+							row.s_warehouse = action.target
+							row.t_warehouse = action.target
+						}
 					}
-				} else if (target_warehouses.includes(entry_type)) {
-					form.to_warehouse = action.target
-					for (const row of form.items) {
-						row.t_warehouse = action.target
-					}
-				} else if (both_warehouses.includes(entry_type)) {
-					form.from_warehouse = action.target
-					form.to_warehouse = action.target
-					for (const row of form.items) {
-						row.s_warehouse = action.target
-						row.t_warehouse = action.target
-					}
+				})
+			} else {
+				const warehouse = barcode_context[0].context.doc.name
+				if (!(mappedDoc.value as StockEntry).from_warehouse) {
+					;(mappedDoc.value as StockEntry).from_warehouse = warehouse
+				} else if (!(mappedDoc.value as StockEntry).to_warehouse) {
+					;(mappedDoc.value as StockEntry).to_warehouse = warehouse
 				}
-			})
-		})
+
+				store.$patch(state => (state.cache.mappers[documentId.value] = mappedDoc.value))
+			}
+		}
 	}
 
 	const actions = {
