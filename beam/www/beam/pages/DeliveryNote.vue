@@ -2,7 +2,7 @@
 	<!-- navigation section -->
 	<Navbar>
 		<template #title>
-			<h1 class="nav-title">Delivery Note</h1>
+			<h1>Delivery Note</h1>
 			<span v-if="deliveryNote?.dirty" class="dirty">Unsaved</span>
 		</template>
 		<template #navbaraction>

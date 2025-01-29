@@ -1,7 +1,7 @@
 <template>
 	<Navbar>
 		<template #title>
-			<h1 class="nav-title">Demand</h1>
+			<h1>Demand</h1>
 		</template>
 		<template #navbaraction>
 			<RouterLink :to="{ name: 'home' }">Home</RouterLink>

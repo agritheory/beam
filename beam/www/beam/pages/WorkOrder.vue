@@ -2,7 +2,7 @@
 	<!-- navigation section -->
 	<Navbar>
 		<template #title>
-			<h1 class="nav-title">Manufacture</h1>
+			<h1>Manufacture</h1>
 			<span v-if="stockEntry?.dirty" class="dirty">Unsaved</span>
 		</template>
 		<template #navbaraction>

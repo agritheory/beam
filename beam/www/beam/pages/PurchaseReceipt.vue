@@ -2,7 +2,7 @@
 	<!-- navigation section -->
 	<Navbar>
 		<template #title>
-			<h1 class="nav-title">Purchase Receipt</h1>
+			<h1>Purchase Receipt</h1>
 			<span v-if="purchaseReceipt?.dirty" class="dirty">Unsaved</span>
 		</template>
 		<template #navbaraction>

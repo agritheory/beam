@@ -1,7 +1,7 @@
 <template>
 	<Navbar @click="handlePrimaryAction">
 		<template #title>
-			<h1 class="nav-title">Workstations</h1>
+			<h1>Workstations</h1>
 		</template>
 		<template #navbaraction>
 			<RouterLink :to="{ name: 'demand' }">Done</RouterLink>

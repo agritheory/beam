@@ -1,7 +1,7 @@
 <template>
 	<Navbar @click="store.logout">
 		<template #title>
-			<h2 class="nav-title">{{ companyName }}</h2>
+			<h2>{{ companyName }}</h2>
 		</template>
 		<template #navbaraction>Log out</template>
 	</Navbar>

@@ -1,7 +1,7 @@
 <template>
 	<Navbar @click="handlePrimaryAction">
 		<template #title>
-			<h1 class="nav-title">Repack</h1>
+			<h1>Repack</h1>
 		</template>
 		<template #navbaraction>
 			<RouterLink :to="{ name: 'home' }">Home</RouterLink>
