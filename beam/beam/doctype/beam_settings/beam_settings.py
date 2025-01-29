@@ -22,6 +22,7 @@ class BEAMSettings(Document):
 		enable_handling_units: DF.Check
 		ignore_drop_shipped_items: DF.Check
 		receiving_workstation: DF.Link | None
+		restrict_ip: DF.SmallText | None
 		routes: DF.Table[BEAMMobileRoute]
 		shipping_workstation: DF.Link | None
 		warehouse_types: DF.TableMultiSelect[WarehouseTypes]

@@ -18,7 +18,10 @@
 		"enable_demand",
 		"warehouse_types",
 		"mobile_tab",
-		"routes"
+		"routes",
+		"section_break_yadp",
+		"restrict_ip",
+		"column_break_lwuv"
 	],
 	"fields": [
 		{
@@ -99,11 +102,26 @@
 			"fieldname": "enable_demand",
 			"fieldtype": "Check",
 			"label": "Enable Demand"
+		},
+		{
+			"columns": 4,
+			"description": "Restrict user from this IP address only. Multiple IP addresses can be added by separating with commas. Also accepts partial IP addresses like (111.111.111)",
+			"fieldname": "restrict_ip",
+			"fieldtype": "Small Text",
+			"label": "Restrict IP"
+		},
+		{
+			"fieldname": "section_break_yadp",
+			"fieldtype": "Section Break"
+		},
+		{
+			"fieldname": "column_break_lwuv",
+			"fieldtype": "Column Break"
 		}
 	],
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2024-11-26 03:35:53.305694",
+	"modified": "2025-01-29 09:04:51.047625",
 	"modified_by": "Administrator",
 	"module": "BEAM",
 	"name": "BEAM Settings",
