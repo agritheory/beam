@@ -17,10 +17,12 @@ def scan_login(barcode):
 	if user["doc"].doctype != "User":
 		frappe.throw("Wrong barcode", title="Login Error")
 
-	company = get_default_company()
-	BEAMSettings = frappe.get_doc("BEAM Settings", {"company": company})
-	ip_list = get_restricted_ip_list(BEAMSettings)
+	employee = frappe.get_doc("Employee", {"user_id": user["doc"].name})
+	company = employee.company or get_default_company()
 
+	BEAMSettings = frappe.get_doc("BEAM Settings", {"company": company})
+
+	ip_list = get_restricted_ip_list(BEAMSettings)
 	if ip_list and not any(client_ip.startswith(ip) for ip in ip_list):
 		frappe.throw("Network not available", title="Login Error")
 
