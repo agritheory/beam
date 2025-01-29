@@ -21,7 +21,7 @@ def scan_login(barcode):
 	BEAMSettings = frappe.get_doc("BEAM Settings", {"company": company})
 	ip_list = get_restricted_ip_list(BEAMSettings)
 
-	if ip_list and not client_ip in ip_list:
+	if ip_list and not any(client_ip.startswith(ip) for ip in ip_list):
 		frappe.throw("Network not available", title="Login Error")
 
 	user_doc = frappe.get_doc("User", user["doc"].name)
