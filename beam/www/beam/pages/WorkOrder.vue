@@ -2,7 +2,7 @@
 	<!-- navigation section -->
 	<Navbar>
 		<template #title>
-			<h1>Manufacture</h1>
+			<h1>{{ workOrderId || 'Work Order' }}</h1>
 			<span v-if="stockEntry?.dirty" class="dirty">Unsaved</span>
 		</template>
 		<template #navbaraction>

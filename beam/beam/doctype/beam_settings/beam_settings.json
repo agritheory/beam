@@ -1,167 +1,167 @@
 {
- "actions": [],
- "allow_rename": 1,
- "autoname": "field:company",
- "creation": "2024-03-18 17:06:58.552900",
- "doctype": "DocType",
- "engine": "InnoDB",
- "field_order": [
-  "general_tab",
-  "company",
-  "barcode_font_size",
-  "enable_handling_units",
-  "ignore_drop_shipped_items",
-  "column_break_twrc",
-  "receiving_workstation",
-  "shipping_workstation",
-  "demand_tab",
-  "enable_demand",
-  "warehouse_types",
-  "mobile_tab",
-  "routes",
-  "section_break_yadp",
-  "enable_scan_to_login",
-  "restrict_ip",
-  "column_break_lwuv"
- ],
- "fields": [
-  {
-   "fieldname": "company",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Company",
-   "options": "Company",
-   "reqd": 1,
-   "set_only_once": 1,
-   "unique": 1
-  },
-  {
-   "default": "1",
-   "fieldname": "enable_handling_units",
-   "fieldtype": "Check",
-   "in_list_view": 1,
-   "label": "Enable Handling Units"
-  },
-  {
-   "default": "0",
-   "fieldname": "ignore_drop_shipped_items",
-   "fieldtype": "Check",
-   "label": "Ignore Drop Shipped Items in Demand"
-  },
-  {
-   "default": "12",
-   "fieldname": "barcode_font_size",
-   "fieldtype": "Int",
-   "label": "Barcode Font Size"
-  },
-  {
-   "depends_on": "enable_demand",
-   "description": "These Warehouse Types will be excluded when checking for inventory availability",
-   "fieldname": "warehouse_types",
-   "fieldtype": "Table MultiSelect",
-   "label": "Warehouse Types",
-   "options": "Warehouse Types"
-  },
-  {
-   "fieldname": "general_tab",
-   "fieldtype": "Tab Break",
-   "label": "General"
-  },
-  {
-   "fieldname": "column_break_twrc",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "receiving_workstation",
-   "fieldtype": "Link",
-   "label": "Receiving Workstation",
-   "options": "Workstation"
-  },
-  {
-   "fieldname": "shipping_workstation",
-   "fieldtype": "Link",
-   "label": "Shipping Workstation",
-   "options": "Workstation"
-  },
-  {
-   "fieldname": "demand_tab",
-   "fieldtype": "Tab Break",
-   "label": "Demand"
-  },
-  {
-   "fieldname": "mobile_tab",
-   "fieldtype": "Tab Break",
-   "label": "Mobile"
-  },
-  {
-   "fieldname": "routes",
-   "fieldtype": "Table",
-   "options": "BEAM Mobile Route"
-  },
-  {
-   "default": "0",
-   "fieldname": "enable_demand",
-   "fieldtype": "Check",
-   "label": "Enable Demand"
-  },
-  {
-   "columns": 4,
-   "description": "Restrict user from this IP address only. Multiple IP addresses can be added by separating with commas. Also accepts partial IP addresses like (111.111.111)",
-   "fieldname": "restrict_ip",
-   "fieldtype": "Small Text",
-   "label": "Restrict IP"
-  },
-  {
-   "fieldname": "section_break_yadp",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "column_break_lwuv",
-   "fieldtype": "Column Break"
-  },
-  {
-   "default": "0",
-   "fieldname": "enable_scan_to_login",
-   "fieldtype": "Check",
-   "label": "Enable Scan to Login"
-  }
- ],
- "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2025-01-29 12:53:53.074841",
- "modified_by": "Administrator",
- "module": "BEAM",
- "name": "BEAM Settings",
- "naming_rule": "Expression (old style)",
- "owner": "Administrator",
- "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "System Manager",
-   "share": 1,
-   "write": 1
-  },
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Stock Manager",
-   "share": 1,
-   "write": 1
-  }
- ],
- "sort_field": "modified",
- "sort_order": "DESC",
- "states": [],
- "track_changes": 1
+	"actions": [],
+	"allow_rename": 1,
+	"autoname": "field:company",
+	"creation": "2024-03-18 17:06:58.552900",
+	"doctype": "DocType",
+	"engine": "InnoDB",
+	"field_order": [
+		"general_tab",
+		"company",
+		"barcode_font_size",
+		"enable_handling_units",
+		"ignore_drop_shipped_items",
+		"column_break_twrc",
+		"receiving_workstation",
+		"shipping_workstation",
+		"demand_tab",
+		"enable_demand",
+		"warehouse_types",
+		"mobile_tab",
+		"routes",
+		"section_break_yadp",
+		"enable_scan_to_login",
+		"restrict_ip",
+		"column_break_lwuv"
+	],
+	"fields": [
+		{
+			"fieldname": "company",
+			"fieldtype": "Link",
+			"in_list_view": 1,
+			"label": "Company",
+			"options": "Company",
+			"reqd": 1,
+			"set_only_once": 1,
+			"unique": 1
+		},
+		{
+			"default": "1",
+			"fieldname": "enable_handling_units",
+			"fieldtype": "Check",
+			"in_list_view": 1,
+			"label": "Enable Handling Units"
+		},
+		{
+			"default": "0",
+			"fieldname": "ignore_drop_shipped_items",
+			"fieldtype": "Check",
+			"label": "Ignore Drop Shipped Items in Demand"
+		},
+		{
+			"default": "12",
+			"fieldname": "barcode_font_size",
+			"fieldtype": "Int",
+			"label": "Barcode Font Size"
+		},
+		{
+			"depends_on": "enable_demand",
+			"description": "These Warehouse Types will be excluded when checking for inventory availability",
+			"fieldname": "warehouse_types",
+			"fieldtype": "Table MultiSelect",
+			"label": "Warehouse Types",
+			"options": "Warehouse Types"
+		},
+		{
+			"fieldname": "general_tab",
+			"fieldtype": "Tab Break",
+			"label": "General"
+		},
+		{
+			"fieldname": "column_break_twrc",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "receiving_workstation",
+			"fieldtype": "Link",
+			"label": "Receiving Workstation",
+			"options": "Workstation"
+		},
+		{
+			"fieldname": "shipping_workstation",
+			"fieldtype": "Link",
+			"label": "Shipping Workstation",
+			"options": "Workstation"
+		},
+		{
+			"fieldname": "demand_tab",
+			"fieldtype": "Tab Break",
+			"label": "Demand"
+		},
+		{
+			"fieldname": "mobile_tab",
+			"fieldtype": "Tab Break",
+			"label": "Mobile"
+		},
+		{
+			"fieldname": "routes",
+			"fieldtype": "Table",
+			"options": "BEAM Mobile Route"
+		},
+		{
+			"default": "0",
+			"fieldname": "enable_demand",
+			"fieldtype": "Check",
+			"label": "Enable Demand"
+		},
+		{
+			"columns": 4,
+			"description": "Restrict user from this IP address only. Multiple IP addresses can be added by separating with commas. Also accepts partial IP addresses like (111.111.111)",
+			"fieldname": "restrict_ip",
+			"fieldtype": "Small Text",
+			"label": "Restrict IP"
+		},
+		{
+			"fieldname": "section_break_yadp",
+			"fieldtype": "Section Break"
+		},
+		{
+			"fieldname": "column_break_lwuv",
+			"fieldtype": "Column Break"
+		},
+		{
+			"default": "0",
+			"fieldname": "enable_scan_to_login",
+			"fieldtype": "Check",
+			"label": "Enable Scan to Login"
+		}
+	],
+	"index_web_pages_for_search": 1,
+	"links": [],
+	"modified": "2025-01-29 12:53:53.074841",
+	"modified_by": "Administrator",
+	"module": "BEAM",
+	"name": "BEAM Settings",
+	"naming_rule": "Expression (old style)",
+	"owner": "Administrator",
+	"permissions": [
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "System Manager",
+			"share": 1,
+			"write": 1
+		},
+		{
+			"create": 1,
+			"delete": 1,
+			"email": 1,
+			"export": 1,
+			"print": 1,
+			"read": 1,
+			"report": 1,
+			"role": "Stock Manager",
+			"share": 1,
+			"write": 1
+		}
+	],
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"states": [],
+	"track_changes": 1
 }

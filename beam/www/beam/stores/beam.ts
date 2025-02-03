@@ -242,7 +242,9 @@ export const useBeamStore = defineStore('beam', () => {
 		}
 		// initialize pending stock entry items with zero quantity
 		message.items.map(item => {
-			item.qty = 0
+			if (!item.is_finished_item) {
+				item.qty = 0
+			}
 		})
 		return message
 	}
