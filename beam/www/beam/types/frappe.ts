@@ -73,6 +73,8 @@ export type StockEntryItem = ChildDoctype & {
 	t_warehouse?: string
 	transfer_qty?: number
 	transferred_qty?: number
+	is_finished_item?: boolean
+	is_scrap_item?: boolean
 }
 
 export type WorkOrder = ParentDoctype & {
