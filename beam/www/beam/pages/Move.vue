@@ -43,7 +43,7 @@ const store = useBeamStore()
 const items = ref<ListViewItem[]>([])
 const stockEntry = computed(
 	(): StockEntry =>
-		(store.cache.mappers[''] as StockEntry) || {
+		(store.cache.mappers['move'] as StockEntry) || {
 			name: '',
 			stock_entry_type: 'Material Transfer',
 			items: [],
@@ -57,9 +57,7 @@ const warehouseList = ref<string[]>([])
 
 onMounted(async () => {
 	store.form as Partial<StockEntry>
-	store.$patch(state => {
-		state.cache.mappers[''] = stockEntry.value
-	})
+	store.$patch(state => state.cache.mappers['move'] = stockEntry.value)
 	await loadWarehouses()
 })
 
@@ -72,7 +70,7 @@ const loadWarehouses = async () => {
 
 const clearField = (field: 'from_warehouse' | 'to_warehouse') => {
 	store.$patch(state => {
-		const mapper = state.cache.mappers['']
+		const mapper = state.cache.mappers['move']
 		if (mapper) mapper[field] = ''
 	})
 }
@@ -128,7 +126,7 @@ const move = async () => {
 	const res = await store.submit<StockEntry>('Stock Entry', stockEntry.value.name)
 	if (res?.data)
 		store.$patch(state => {
-			state.cache.mappers[''] = {
+			state.cache.mappers['move'] = {
 				name: '',
 				stock_entry_type: 'Material Transfer',
 				items: [],
@@ -158,7 +156,7 @@ const controlButtons = computed((): ControlButton[] => {
 })
 
 watch(
-	() => store.cache.mappers['']?.items,
+	() => store.cache.mappers['move']?.items,
 	newItems => {
 		items.value = (newItems || []).map(s => ({
 			...s,
