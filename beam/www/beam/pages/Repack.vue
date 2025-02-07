@@ -11,7 +11,6 @@
 	<div class="move">
 		<div class="container">
 			<template v-if="itemList">
-				{{ console.log(0, currentItem) }}
 				<div class="dd-container">
 					<ADropdown
 						label="Item to Repack"
@@ -159,14 +158,12 @@ const controlButtons = computed((): ControlButton[] => {
 watch(
 	() => store.cache.mappers['repack']?.items,
 	(newItems: ListViewItem[]) => {
-		console.log(1, newItems)
 		if (!newItems) return
 
 		const item = newItems[0]
 		if (!item) return
 
 		const qty = item.item_code === currentItem.value.item_code ? currentItem.value.qty + 1 : 1
-		console.log(2, item)
 		if (!currentItem.value.item_code) currentItem.value = { ...item, qty }
 		else currentItem.value = { ...item, qty }
 
