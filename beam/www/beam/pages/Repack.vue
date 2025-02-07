@@ -199,22 +199,14 @@ watch(
 	justify-content: space-between;
 }
 
-.wrapper .aform_form-element input {
+/* .wrapper .aform_form-element input {
 	font-size: 150% !important;
 	outline: 1px solid transparent !important;
 	border: 1px solid var(--sc-input-border-color) !important;
-	/* padding: 1ch .5ch .5ch 1ch; */
 	border-radius: .25rem !important;
-}
-
-/* .wrapper {
-	flex: 1;
-	display: flex;
-	justify-content: center;
 } */
 
 .clear-button {
 	margin-top: 10px;
-	flex-shrink: 0;
 }
 </style>
