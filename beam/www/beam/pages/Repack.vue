@@ -162,7 +162,7 @@ watch(
 
 		const item = newItems[0]
 		if (!item) return
-
+		itemList.value = [item.item_code]
 		const qty = item.item_code === currentItem.value.item_code ? currentItem.value.qty + 1 : 1
 		if (!currentItem.value.item_code) currentItem.value = { ...item, qty }
 		else currentItem.value = { ...item, qty }
