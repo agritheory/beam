@@ -9,17 +9,39 @@
 	</Navbar>
 
 	<div class="move">
-		<!-- <ADropdown label="Item to Repack" :items="itemList" v-model="stockEntry.item" />
-		<AInput label="Qty" type="number" v-model="stockEntry.qty" />
-		<ADropdown label="BOM (Optional)" :items="bomList" v-model="stockEntry.bom" /> -->
-
-		<div class="dropdown-container">
-			<ADropdown label="Source Warehouse" :items="warehouseList" v-model="stockEntry.from_warehouse" />
-			<BeamBtn class="clear-button" @click="clearField('from_warehouse')"> X </BeamBtn>
-		</div>
-		<div class="dropdown-container">
-			<ADropdown label="Target Warehouse" :items="warehouseList" v-model="stockEntry.to_warehouse" />
-			<BeamBtn class="clear-button" @click="clearField('to_warehouse')"> X </BeamBtn>
+		<div class="container">
+			<template v-if="itemList">
+				{{ console.log(0, currentItem) }}
+				<div class="dd-container">
+					<ADropdown
+						label="Item to Repack"
+						:items="itemList"
+						v-model="currentItem.item_code"
+						:isAsync="true"
+						:filterFunction="loadItems"
+					/>
+					<BeamBtn class="clear-button" @click="clearCurrentItem"> X </BeamBtn>
+				</div>
+				<div class="dd-container wrapper">
+					<BeamBtn class="clear-button" @click="substractCurrentItem"> - </BeamBtn>
+					<!-- <div class="wrapper">
+						<input label="Qty" type="number" v-model="currentItem.qty" />
+					</div> -->
+					<ANumericInput label="Quantity" v-model="currentItem.qty" />
+					<BeamBtn class="clear-button" @click="addCurrentItem"> + </BeamBtn>
+				</div>
+				<div class="dd-container">
+					<ADropdown label="BOM (Optional)" :items="bomList" v-model="currentItem.bom" />
+				</div>
+			</template>
+			<div class="dd-container">
+				<ADropdown label="Source Warehouse" :items="warehouseList" v-model="stockEntry.from_warehouse" />
+				<BeamBtn class="clear-button" @click="clearField('from_warehouse')"> X </BeamBtn>
+			</div>
+			<div class="dd-container">
+				<ADropdown label="Target Warehouse" :items="warehouseList" v-model="stockEntry.to_warehouse" />
+				<BeamBtn class="clear-button" @click="clearField('to_warehouse')"> X </BeamBtn>
+			</div>
 		</div>
 	</div>
 
@@ -35,10 +57,11 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useBeamStore } from '@/stores/beam'
 import ControlButtons from '@/components/ControlButtons.vue'
-import type { ListViewItem } from '@stonecrop/beam'
+import { ListViewItem } from '@stonecrop/beam'
 import type { ControlButton, StockEntry } from '@/types'
 
 const store = useBeamStore()
+const currentItem = ref<ListViewItem>({ item_code: '', qty: 0, bom: '' })
 const items = ref<ListViewItem[]>([])
 const componentKey = ref(0)
 const stockEntry = computed(
@@ -58,14 +81,18 @@ const warehouseList = ref<string[]>([])
 
 onMounted(async () => {
 	store.$patch(state => state.cache.mappers['repack'] = stockEntry.value)
-	await loadItems()
 	await loadBOMs()
 	await loadWarehouses()
 })
 
-const loadItems = async () => {
-	const itemsData = await store.getAll<{ name: string }[]>('Item')
-	itemList.value = itemsData.map(item => item.name)
+const loadItems = async (search: string) => {
+	if (!search) return []
+	const itemsData = await store.getAll<{ name: string }[]>('Item', {
+		filters: JSON.stringify([['item_code', 'like', `${search}%`]]),
+	})
+	const itemsMapped = itemsData.map(item => item.name)
+	itemList.value = itemsMapped
+	return itemsMapped.filter(item => item.toLocaleLowerCase().startsWith(search.toLocaleLowerCase()))
 }
 
 const loadBOMs = async () => {
@@ -80,9 +107,13 @@ const loadWarehouses = async () => {
 	warehouseList.value = warehouses.map(warehouse => warehouse.name)
 }
 
-const clearField = (field: 'from_warehouse' | 'to_warehouse') => {
-	stockEntry.value[field] = ''
-}
+const clearField = (field: 'from_warehouse' | 'to_warehouse') => stockEntry.value[field] = ''
+
+const clearCurrentItem = () => currentItem.value = { item_code: '', qty: 0, bom: '' }
+
+const addCurrentItem = () => currentItem.value.qty++
+
+const substractCurrentItem = () => currentItem.value.qty--
 
 const update = () => {
 	// TODO
@@ -117,18 +148,6 @@ const repack = async () => {
 	}
 }
 
-watch(
-	() => store.cache.mappers['repack']?.items,
-	newItems => {
-		items.value = (newItems || []).map(s => ({
-			...s,
-			label: s.item_code,
-			count: { count: s.qty },
-		}))
-		componentKey.value++
-	},
-	{ immediate: true, deep: true }
-)
 const controlButtons = computed((): ControlButton[] => {
 	if (!stockEntry.value.items.length || !stockEntry.value.from_warehouse || !stockEntry.value.to_warehouse) return []
 	return [
@@ -136,4 +155,66 @@ const controlButtons = computed((): ControlButton[] => {
 		{ label: 'REPACK', disabled: !stockEntry.value.name, color: { background: 'var(--sc-success)', text: 'var(--sc-btn-color)' }, action: repack },
 	]
 })
+
+watch(
+	() => store.cache.mappers['repack']?.items,
+	(newItems: ListViewItem[]) => {
+		console.log(1, newItems)
+		if (!newItems) return
+
+		const item = newItems[0]
+		if (!item) return
+
+		const qty = item.item_code === currentItem.value.item_code ? currentItem.value.qty + 1 : 1
+		console.log(2, item)
+		if (!currentItem.value.item_code) currentItem.value = { ...item, qty }
+		else currentItem.value = { ...item, qty }
+
+		store.$patch(state => state.cache.mappers.repack.items = [])
+		//componentKey.value++
+	},
+	{ immediate: true, deep: true }
+)
 </script>
+<style scoped>
+.move {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	min-height: 200px;
+	padding: 20px;
+}
+
+.container {
+	display: flex;
+	flex-direction: column;
+	width: 80vh;
+}
+
+.dd-container {
+	display: flex;
+	width: 100%;
+	margin-top: 1rem;
+	gap: 10px;
+	justify-content: space-between;
+}
+
+.wrapper .aform_form-element input {
+	font-size: 150% !important;
+	outline: 1px solid transparent !important;
+	border: 1px solid var(--sc-input-border-color) !important;
+	/* padding: 1ch .5ch .5ch 1ch; */
+	border-radius: .25rem !important;
+}
+
+/* .wrapper {
+	flex: 1;
+	display: flex;
+	justify-content: center;
+} */
+
+.clear-button {
+	margin-top: 10px;
+	flex-shrink: 0;
+}
+</style>
