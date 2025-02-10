@@ -135,6 +135,28 @@ export type DeliveryNoteItem = ChildDoctype & {
 	warehouse?: string
 }
 
+export interface interface BomItem {
+    allow_alternative_item:        number;
+    amount:                        number;
+    cost_center:                   string;
+    default_warehouse:             string;
+    description:                   string;
+    expense_account:               string;
+    idx:                           number;
+    image:                         null;
+    include_item_in_manufacturing: number;
+    item_code:                     string;
+    item_group:                    string;
+    item_name:                     string;
+    operation:                     null;
+    project:                       null;
+    qty:                           number;
+    rate:                          number;
+    source_warehouse:              null;
+    sourced_by_supplier:           number;
+    stock_uom:                     string;
+}
+
 export type ParentDoctypesForStockTransfer = DeliveryNote | PurchaseReceipt | StockEntry
 export type ParentDoctypesWithItems = ParentDoctypesForStockTransfer | JobCard | WorkOrder
 export type ParentDoctypes = ParentDoctypesWithItems & Workstation
