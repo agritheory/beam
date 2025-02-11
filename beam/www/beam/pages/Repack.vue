@@ -50,7 +50,7 @@ import { useBeamStore } from '@/stores/beam'
 import { useBeamToast } from '@/utils/toast.js'
 import { ListViewItem } from '@stonecrop/beam'
 import ControlButtons from '@/components/ControlButtons.vue'
-import type { ControlButton, DocActionResponse, StockEntry, BomItem } from '@/types'
+import type { ControlButton, DocActionResponse, StockEntry } from '@/types'
 
 const toast = useBeamToast()
 const store = useBeamStore()
@@ -111,11 +111,7 @@ const addCurrentItem = () => currentItem.value.qty++
 const create = async () => {
 	const body: StockEntry = {
 		stock_entry_type: 'Repack',
-		items: stockEntry.value.items.map(i => ({
-			...i,
-			s_warehouse: stockEntry.value.from_warehouse,
-			t_warehouse: stockEntry.value.to_warehouse,
-		})),
+		items: items.value,
 		name: stockEntry.value.name,
 	}
 	let res: DocActionResponse<StockEntry>
@@ -143,6 +139,7 @@ const repack = async () => {
 				to_warehouse: '',
 			}
 		})
+		items.value = []
 	}
 }
 
@@ -164,13 +161,12 @@ const addItem = () => {
 			label: currentItem.value.item_code,
 			count: { count: currentItem.value.qty },
 			description: stockEntry.value.from_warehouse ? `From ${stockEntry.value.from_warehouse}` : `To ${stockEntry.value.to_warehouse}`,
+			item_code: currentItem.value.item_code,
+			qty: currentItem.value.qty,
+			s_warehouse: stockEntry.value.from_warehouse,
+			t_warehouse: stockEntry.value.to_warehouse,
 		}
 	)
-	const existingItem = stockEntry.value.items.find(item => item.item_code === currentItem.value.item_code)
-	if (existingItem) {
-		existingItem.s_warehouse = stockEntry.value.from_warehouse
-		existingItem.t_warehouse = stockEntry.value.to_warehouse
-	}
 
 	currentItem.value = { item_code: '', qty: 0, bom: '' }
 	clearField('from_warehouse')
@@ -188,7 +184,7 @@ const controlButtons = computed((): ControlButton[] => {
 		{ label: 'CLEAN', color: { background: '#4791FF', text: 'var(--sc-btn-color)' }, action: clearItem },
 		{ label: 'ADD', color: { background: '#4791FF', text: 'var(--sc-btn-color)' }, action: addItem },
 	]
-	if (stockEntry.value.items.length === 0) return buttons
+	if (items.value.length === 0) return buttons
 	return [
 		{
 			label: 'REPACK',
@@ -219,15 +215,13 @@ watch(
 		if (!newItems) return
 		if (currentItem.value.bom) return
 
-		const item = newItems.pop()
-		if (!item) return
-		if (items.value.some(i => i.label === item.item_code)) return
+		const newItem = newItems[newItems.length - 1]
+		if (!newItem) return
+		if (items.value.some(i => i.label === newItem.item_code)) return
+		itemList.value = [newItem.item_code]
+		const qty = newItem.item_code === currentItem.value.item_code ? currentItem.value.qty + 1 : 1
 
-		itemList.value = [item.item_code]
-		const qty = item.item_code === currentItem.value.item_code ? currentItem.value.qty + 1 : 1
-
-		if (!currentItem.value.item_code) currentItem.value = { ...item, qty }
-		else currentItem.value = { ...item, qty }
+		currentItem.value = { ...newItem, qty }
 	},
 	{ immediate: true, deep: true }
 )
