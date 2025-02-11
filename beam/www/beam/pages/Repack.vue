@@ -47,13 +47,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useBeamStore } from '@/stores/beam'
-import { useHttpStore } from '@/stores/http.js'
 import { useBeamToast } from '@/utils/toast.js'
 import { ListViewItem } from '@stonecrop/beam'
 import ControlButtons from '@/components/ControlButtons.vue'
 import type { ControlButton, DocActionResponse, StockEntry, BomItem } from '@/types'
 
-const httpStore = useHttpStore()
 const toast = useBeamToast()
 const store = useBeamStore()
 const currentItem = ref({ item_code: '', qty: 0, bom: '' })
@@ -217,6 +215,7 @@ const controlButtons = computed((): ControlButton[] => {
 watch(
 	() => store.cache.mappers['repack']?.items,
 	(newItems: ListViewItem[]) => {
+		// Update items list on Scan
 		if (!newItems) return
 		if (currentItem.value.bom) return
 
@@ -236,12 +235,13 @@ watch(
 watch(
 	() => currentItem.value.bom,
 	async (bom) => {
+		// Update items list on BOM selection
 		if (!currentItem.value.bom) return
 		const listBom = await store.getStockEntryItems(bom);
 		items.value = listBom.map(bomItem => ({
 			label: bomItem.description,
 			count: { count: bomItem.qty },
-			description: `${bomItem.default_warehouse}`,
+			description: `From ${bomItem.default_warehouse}`,
 		}))
 		store.$patch(state =>
 			state.cache.mappers.repack.items = listBom.map(bomItem => ({
