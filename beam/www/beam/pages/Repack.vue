@@ -8,7 +8,7 @@
 		</template>
 	</Navbar>
 
-	<div class="move">
+	<div class="repack">
 		<div class="container">
 			<template v-if="itemList">
 				<div class="dd-container">
@@ -16,7 +16,7 @@
 						:filterFunction="loadItems" />
 					<BeamBtn class="clear-button" @click="clearCurrentItem('item_code')"> X </BeamBtn>
 				</div>
-				<div class="dd-container wrapper">
+				<div class="dd-container">
 					<BeamBtn class="clear-button" @click="substractCurrentItem"> - </BeamBtn>
 					<ANumericInput label="Quantity" v-model="currentItem.qty" />
 					<BeamBtn class="clear-button" @click="addCurrentItem"> + </BeamBtn>
@@ -236,24 +236,29 @@ watch(
 			label: bomItem.description,
 			count: { count: bomItem.qty },
 			description: `From ${bomItem.default_warehouse}`,
+			item_code: bomItem.description,
+			qty: bomItem.qty,
+			s_warehouse: bomItem.default_warehouse,
 		}))
-		store.$patch(state =>
-			state.cache.mappers.repack.items = listBom.map(bomItem => ({
-				item_code: bomItem.description,
-				qty: bomItem.qty,
-				s_warehouse: bomItem.default_warehouse,
-			}))
-		)
 	}
 )
 </script>
-<style scoped>
-.move {
+<style>
+.repack {
 	display: flex;
 	justify-content: center;
 	align-items: center;
 	min-height: 200px;
 	padding: 20px;
+}
+
+.repack .autocomplete input,
+.autocomplete-results {
+	font-size: 150%;
+}
+
+.repack .input-wrapper label {
+	margin: calc(-2.5rem - calc(2.15rem / 2)) 0 0 1ch !important;
 }
 
 .container {
@@ -270,12 +275,19 @@ watch(
 	justify-content: space-between;
 }
 
-/* .wrapper .aform_form-element input {
+.dd-container .aform_form-element input {
+	border-color: red;
 	font-size: 150% !important;
 	outline: 1px solid transparent !important;
 	border: 1px solid var(--sc-input-border-color) !important;
 	border-radius: .25rem !important;
-} */
+	width: 90% !important;
+}
+
+.dd-container .aform_form-element {
+	margin-bottom: 0 !important;
+	margin-top: 10px !important;
+}
 
 .clear-button {
 	margin-top: 10px;
