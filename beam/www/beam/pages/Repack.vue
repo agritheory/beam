@@ -12,7 +12,11 @@
 		<div class="container">
 			<template v-if="itemList">
 				<div class="dd-container">
-					<ADropdown label="Item to Repack" :items="itemList" v-model="currentItem.item_code" :isAsync="true"
+					<ADropdown
+						label="Item to Repack"
+						:items="itemList"
+						v-model="currentItem.item_code"
+						:isAsync="true"
 						:filterFunction="loadItems" />
 					<BeamBtn class="clear-button" @click="clearCurrentItem('item_code')"> X </BeamBtn>
 				</div>
@@ -45,12 +49,13 @@
 </template>
 
 <script setup lang="ts">
+import type { ListViewItem } from '@stonecrop/beam'
 import { ref, computed, onMounted, watch } from 'vue'
-import { useBeamStore } from '@/stores/beam'
-import { useBeamToast } from '@/utils/toast.js'
-import { ListViewItem } from '@stonecrop/beam'
+
 import ControlButtons from '@/components/ControlButtons.vue'
+import { useBeamStore } from '@/stores/beam'
 import type { ControlButton, DocActionResponse, StockEntry } from '@/types'
+import { useBeamToast } from '@/utils/toast.js'
 
 const toast = useBeamToast()
 const store = useBeamStore()
@@ -58,8 +63,8 @@ const currentItem = ref({ item_code: '', qty: 0, bom: '' })
 const items = ref([])
 const componentKey = ref(0)
 const stockEntry = computed(
-	(): StockEntry =>
-		(store.cache.mappers['repack'] as StockEntry) || {
+	() =>
+		store.cache.mappers.repack || {
 			name: '',
 			stock_entry_type: 'Repack',
 			items: [],
@@ -73,19 +78,18 @@ const bomList = ref<string[]>([])
 const warehouseList = ref<string[]>([])
 
 onMounted(async () => {
-	store.$patch(state => state.cache.mappers['repack'] = stockEntry.value)
+	store.$patch(state => (state.cache.mappers.repack = stockEntry.value))
 	await loadBOMs()
 	await loadWarehouses()
 })
 
 const loadItems = async (search: string) => {
 	if (!search) return []
-	const itemsData = await store.getAll<{ name: string }[]>('Item', {
+	const items = await store.getAll<{ name: string }[]>('Item', {
 		filters: JSON.stringify([['item_code', 'like', `${search}%`]]),
 	})
-	const itemsMapped = itemsData.map(item => item.name)
-	itemList.value = itemsMapped
-	return itemsMapped.filter(item => item.toLocaleLowerCase().startsWith(search.toLocaleLowerCase()))
+	itemList.value = items.map(item => item.name)
+	return itemList.value.filter(item => item.toLocaleLowerCase().startsWith(search.toLocaleLowerCase()))
 }
 
 const loadBOMs = async () => {
@@ -100,13 +104,12 @@ const loadWarehouses = async () => {
 	warehouseList.value = warehouses.map(warehouse => warehouse.name)
 }
 
-const clearField = (field: 'from_warehouse' | 'to_warehouse') => store.$patch(state => state.cache.mappers.repack[field] = '')
-
-const clearCurrentItem = (field: 'item_code' | 'bom') => currentItem.value[field] = ''
-
-const substractCurrentItem = () => currentItem.value.qty > 0 ? currentItem.value.qty-- : 0
+const clearField = (field: 'from_warehouse' | 'to_warehouse') =>
+	store.$patch(state => (state.cache.mappers.repack[field] = ''))
 
 const addCurrentItem = () => currentItem.value.qty++
+const substractCurrentItem = () => (currentItem.value.qty > 0 ? currentItem.value.qty-- : 0)
+const clearCurrentItem = (field: 'item_code' | 'bom') => (currentItem.value[field] = '')
 
 const create = async () => {
 	const body: StockEntry = {
@@ -122,7 +125,7 @@ const create = async () => {
 		res = await store.insert<StockEntry>('Stock Entry', body)
 	}
 	const { data, response } = res
-	if (data?.name) store.$patch(state => state.cache.mappers.repack.name = data.name)
+	if (data?.name) store.$patch(state => (state.cache.mappers.repack.name = data.name))
 
 	return { data, response }
 }
@@ -131,7 +134,7 @@ const repack = async () => {
 	const res = await store.submit<StockEntry>('Stock Entry', stockEntry.value.name || '')
 	if (res?.data) {
 		store.$patch(state => {
-			state.cache.mappers['repack'] = {
+			state.cache.mappers.repack = {
 				name: '',
 				stock_entry_type: 'Repack',
 				items: [],
@@ -156,17 +159,17 @@ const addItem = () => {
 		toast.error('Please select only source or target warehouse')
 		return
 	}
-	items.value.push(
-		{
-			label: currentItem.value.item_code,
-			count: { count: currentItem.value.qty },
-			description: stockEntry.value.from_warehouse ? `From ${stockEntry.value.from_warehouse}` : `To ${stockEntry.value.to_warehouse}`,
-			item_code: currentItem.value.item_code,
-			qty: currentItem.value.qty,
-			s_warehouse: stockEntry.value.from_warehouse,
-			t_warehouse: stockEntry.value.to_warehouse,
-		}
-	)
+	items.value.push({
+		label: currentItem.value.item_code,
+		count: { count: currentItem.value.qty },
+		description: stockEntry.value.from_warehouse
+			? `From ${stockEntry.value.from_warehouse}`
+			: `To ${stockEntry.value.to_warehouse}`,
+		item_code: currentItem.value.item_code,
+		qty: currentItem.value.qty,
+		s_warehouse: stockEntry.value.from_warehouse,
+		t_warehouse: stockEntry.value.to_warehouse,
+	})
 
 	currentItem.value = { item_code: '', qty: 0, bom: '' }
 	clearField('from_warehouse')
@@ -176,7 +179,7 @@ const addItem = () => {
 const clearItem = () => {
 	currentItem.value.bom = ''
 	items.value = []
-	store.$patch(state => state.cache.mappers.repack.items = [])
+	store.$patch(state => (state.cache.mappers.repack.items = []))
 }
 
 const controlButtons = computed((): ControlButton[] => {
@@ -184,6 +187,7 @@ const controlButtons = computed((): ControlButton[] => {
 		{ label: 'CLEAN', color: { background: '#4791FF', text: 'var(--sc-btn-color)' }, action: clearItem },
 		{ label: 'ADD', color: { background: '#4791FF', text: 'var(--sc-btn-color)' }, action: addItem },
 	]
+
 	if (items.value.length === 0) return buttons
 	return [
 		{
@@ -192,24 +196,24 @@ const controlButtons = computed((): ControlButton[] => {
 			hidden: !stockEntry.value.name,
 			color: {
 				background: '#4791FF',
-				text: 'var(--sc-btn-color)'
+				text: 'var(--sc-btn-color)',
 			},
-			action: repack
+			action: repack,
 		},
 		{
 			label: 'SAVE',
 			color: {
 				background: '#4791FF',
-				text: 'var(--sc-btn-color)'
+				text: 'var(--sc-btn-color)',
 			},
-			action: create
+			action: create,
 		},
 		...buttons,
 	]
 })
 
 watch(
-	() => store.cache.mappers['repack']?.items,
+	() => store.cache.mappers.repack?.items,
 	(newItems: ListViewItem[]) => {
 		// Update items list on Scan
 		if (!newItems) return
@@ -228,10 +232,10 @@ watch(
 
 watch(
 	() => currentItem.value.bom,
-	async (bom) => {
+	async bom => {
 		// Update items list on BOM selection
 		if (!currentItem.value.bom) return
-		const listBom = await store.getStockEntryItems(bom);
+		const listBom = await store.getStockEntryItems(bom)
 		items.value = listBom.map(bomItem => ({
 			label: bomItem.description,
 			count: { count: bomItem.qty },
@@ -280,7 +284,7 @@ watch(
 	font-size: 150% !important;
 	outline: 1px solid transparent !important;
 	border: 1px solid var(--sc-input-border-color) !important;
-	border-radius: .25rem !important;
+	border-radius: 0.25rem !important;
 	width: 90% !important;
 }
 

@@ -48,8 +48,8 @@ export const useBeamStore = defineStore('beam', () => {
 		context: {} as ScanContext,
 	})
 
-	const getScanDoctypes = async (params?: Record<string, any>) => {
-		const response = await httpStore.get(SCAN_CONFIG_URL, params)
+	const getScanDoctypes = async () => {
+		const response = await httpStore.get(SCAN_CONFIG_URL)
 		const { message }: { message: ScanConfig } = await response.json()
 		scanner.config = message
 	}
@@ -250,11 +250,11 @@ export const useBeamStore = defineStore('beam', () => {
 		return message
 	}
 
-	const getStockEntryItems = async (bomName: string, qty = 1, purpose = "Manufacture") => {
+	const getStockEntryItems = async (bomName: string, qty = 1, purpose = 'Manufacture') => {
 		try {
 			const homeData = await getHome()
 			const company = homeData.data.company
-			const response = await httpStore.get("/api/method/erpnext.manufacturing.doctype.bom.bom.get_bom_items", {
+			const response = await httpStore.get('/api/method/erpnext.manufacturing.doctype.bom.bom.get_bom_items', {
 				bom: bomName,
 				company,
 				fetch_exploded: 1,
@@ -263,7 +263,7 @@ export const useBeamStore = defineStore('beam', () => {
 			})
 			const { message }: { message: BomItem[] } = await response.json()
 			if (!message) return []
-	
+
 			return message
 		} catch (error) {
 			console.error(error)

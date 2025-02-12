@@ -625,7 +625,7 @@ beam_mobile = {
 			"path": "/repack",
 			"name": "repack",
 			"component": "Repack",
-			"meta": {"requiresAuth": True, "doctype": "Stock Entry", "view": "list"},
+			"meta": {"requiresAuth": True, "doctype": "Stock Entry", "view": "form"},
 		},
 		{
 			"path": "/:catchAll(.*)*",

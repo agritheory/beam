@@ -136,21 +136,21 @@ export type DeliveryNoteItem = ChildDoctype & {
 }
 
 export type BomItem = {
-	allow_alternative_item: number;
-	amount: number;
-	cost_center: string;
-	default_warehouse: string;
-	description: string;
-	expense_account: string;
-	idx: number;
-	include_item_in_manufacturing: number;
-	item_code: string;
-	item_group: string;
-	item_name: string;
-	qty: number;
-	rate: number;
-	sourced_by_supplier: number;
-	stock_uom: string;
+	allow_alternative_item: number
+	amount: number
+	cost_center: string
+	default_warehouse: string
+	description: string
+	expense_account: string
+	idx: number
+	include_item_in_manufacturing: number
+	item_code: string
+	item_group: string
+	item_name: string
+	qty: number
+	rate: number
+	sourced_by_supplier: number
+	stock_uom: string
 }
 
 export type ParentDoctypesForStockTransfer = DeliveryNote | PurchaseReceipt | StockEntry

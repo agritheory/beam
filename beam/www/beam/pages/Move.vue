@@ -57,7 +57,7 @@ const warehouseList = ref<string[]>([])
 
 onMounted(async () => {
 	store.form as Partial<StockEntry>
-	store.$patch(state => state.cache.mappers['move'] = stockEntry.value)
+	store.$patch(state => (state.cache.mappers['move'] = stockEntry.value))
 	await loadWarehouses()
 })
 
