@@ -1,4 +1,6 @@
-import frappe
+# Copyright (c) 2025, AgriTheory and contributors
+# For license information, please see license.txt
+
 
 from beam.beam.scan.config import get_scan_doctypes
 

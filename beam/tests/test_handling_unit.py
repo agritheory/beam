@@ -1,7 +1,9 @@
+# Copyright (c) 2025, AgriTheory and contributors
+# For license information, please see license.txt
+
 import frappe
 import pytest
 from erpnext.manufacturing.doctype.work_order.work_order import make_stock_entry
-from erpnext.stock.get_item_details import get_valuation_rate
 from erpnext.stock.stock_ledger import NegativeStockError
 from erpnext.subcontracting.doctype.subcontracting_order.subcontracting_order import (
 	make_subcontracting_receipt,

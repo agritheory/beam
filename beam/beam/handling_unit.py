@@ -1,4 +1,6 @@
-import json
+# Copyright (c) 2025, AgriTheory and contributors
+# For license information, please see license.txt
+
 
 import frappe
 from erpnext.stock.stock_ledger import NegativeStockError

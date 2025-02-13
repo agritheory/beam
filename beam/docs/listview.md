@@ -1,3 +1,6 @@
+<!-- Copyright (c) 2025, AgriTheory and contributors
+For license information, please see license.txt-->
+
 # Listview
 
 The result of scanning a barcode in the listview depends on several factors:

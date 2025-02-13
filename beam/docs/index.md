@@ -1,3 +1,6 @@
+<!-- Copyright (c) 2025, AgriTheory and contributors
+For license information, please see license.txt-->
+
 # Beam
 
 Beam is a general purpose 2D barcode scanning application for ERPNext.

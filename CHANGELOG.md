@@ -1,3 +1,6 @@
+<!-- Copyright (c) 2025, AgriTheory and contributors
+For license information, please see license.txt-->
+
 # CHANGELOG
 
 
@@ -444,7 +447,7 @@ fix: ignore permissions on barcode creation ([`57ce99d`](https://github.com/agri
 
 * wip/test: scan tests
 
-* tests: more compelte tests
+* tests: more complete tests
 
 * docs: handling unit
 
@@ -502,7 +505,7 @@ Co-authored-by: Tyler Matteson <tyler@agritheory.com> ([`0e98e9d`](https://githu
 
 * wip/test: scan tests
 
-* tests: more compelte tests
+* tests: more complete tests
 
 * docs: handling unit
 
@@ -570,7 +573,7 @@ monkeypatch in test is not working correctly, needs docs
 
 * wip/test: scan tests
 
-* tests: more compelte tests
+* tests: more complete tests
 
 * docs: handling unit
 
