@@ -19,7 +19,7 @@ export const useScanStore = defineStore('scan', () => {
 
 	const documentId = computed(() => {
 		const currentRoute = store.router.currentRoute.value
-		return currentRoute.params.id || currentRoute.query.id || store.router.currentRoute.value?.name || ''
+		return currentRoute.params.id || currentRoute.query.id || currentRoute.name || ''
 	})
 
 	const mappedDoc = computed(() => store.cache.mappers[documentId.value])
