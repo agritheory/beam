@@ -12,11 +12,7 @@
 		<div class="container">
 			<template v-if="itemList">
 				<div class="dd-container">
-					<ADropdown
-						label="Item to Repack"
-						:items="itemList"
-						v-model="currentItem.item_code"
-						:isAsync="true"
+					<ADropdown label="Item to Repack" :items="itemList" v-model="currentItem.item_code" :isAsync="true"
 						:filterFunction="loadItems" />
 					<BeamBtn class="clear-button" @click="clearCurrentItem('item_code')"> X </BeamBtn>
 				</div>
@@ -184,8 +180,23 @@ const clearItem = () => {
 
 const controlButtons = computed((): ControlButton[] => {
 	const buttons = [
-		{ label: 'CLEAN', color: { background: '#4791FF', text: 'var(--sc-btn-color)' }, action: clearItem },
-		{ label: 'ADD', color: { background: '#4791FF', text: 'var(--sc-btn-color)' }, action: addItem },
+		{
+			label: 'CLEAN',
+			color: {
+				background: '#4791FF',
+				text: 'var(--sc-btn-color)',
+			},
+			action: clearItem,
+			hidden: items.value.length === 0,
+		},
+		{
+			label: 'ADD',
+			color: {
+				background: '#4791FF',
+				text: 'var(--sc-btn-color)',
+			},
+			action: addItem,
+		},
 	]
 
 	if (items.value.length === 0) return buttons
