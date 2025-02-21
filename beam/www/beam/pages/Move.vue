@@ -58,15 +58,8 @@ const warehouseList = ref<string[]>([])
 onMounted(async () => {
 	store.form as Partial<StockEntry>
 	store.$patch(state => (state.cache.mappers['move'] = stockEntry.value))
-	await loadWarehouses()
+	warehouseList.value = store.warehouseList.filter(w => !w.is_group).map(w => w.name)
 })
-
-const loadWarehouses = async () => {
-	const warehouses = await store.getAll<Warehouse[]>('Warehouse', {
-		filters: JSON.stringify([['is_group', '!=', '1']]),
-	})
-	warehouseList.value = warehouses.map(warehouse => warehouse.name)
-}
 
 const clearField = (field: 'from_warehouse' | 'to_warehouse') => {
 	store.$patch(state => {

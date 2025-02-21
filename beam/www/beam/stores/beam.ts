@@ -43,6 +43,7 @@ export const useBeamStore = defineStore('beam', () => {
 	const recordsPerPage = 20
 	const cache = ref<BeamCache>({ mappers: {} })
 	const form = ref<Partial<ParentDoctypes>>({})
+	const warehouseList = ref()
 	const scanner = reactive({
 		config: {} as ScanConfig,
 		context: {} as ScanContext,
@@ -111,6 +112,12 @@ export const useBeamStore = defineStore('beam', () => {
 		} else if (meta.view === 'form' && scanner.config.frm.includes(meta.doctype)) {
 			scanner.context = { frm: meta.doctype }
 		}
+	}
+
+	const setWarehouses = async () => {
+		warehouseList.value = await getAll<{ name: string }[]>('Warehouse', {
+			fields: JSON.stringify(['company', 'disabled', 'is_group', 'name', 'warehouse_name']),
+		})
 	}
 
 	const getOne = async <T>(doctype: string, name: string) => {
@@ -295,12 +302,14 @@ export const useBeamStore = defineStore('beam', () => {
 		cache,
 		form,
 		scanner,
+		warehouseList,
 
 		// store context actions
 		getScanDoctypes,
 		setForm,
 		setMappedDoc,
 		setScanContext,
+		setWarehouses,
 
 		// document workflow actions
 		cancel,

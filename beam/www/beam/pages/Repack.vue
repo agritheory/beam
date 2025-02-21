@@ -76,7 +76,7 @@ const warehouseList = ref<string[]>([])
 onMounted(async () => {
 	store.$patch(state => (state.cache.mappers.repack = stockEntry.value))
 	await loadBOMs()
-	await loadWarehouses()
+	warehouseList.value = store.warehouseList.filter(w => !w.is_group).map(w => w.name)
 })
 
 const loadItems = async (search: string) => {
@@ -91,13 +91,6 @@ const loadItems = async (search: string) => {
 const loadBOMs = async () => {
 	const boms = await store.getAll<{ name: string }[]>('BOM')
 	bomList.value = boms.map(bom => bom.name)
-}
-
-const loadWarehouses = async () => {
-	const warehouses = await store.getAll<{ name: string }[]>('Warehouse', {
-		filters: JSON.stringify([['is_group', '!=', '1']]),
-	})
-	warehouseList.value = warehouses.map(warehouse => warehouse.name)
 }
 
 const clearField = (field: 'from_warehouse' | 'to_warehouse') =>
