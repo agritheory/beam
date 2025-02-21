@@ -37,7 +37,7 @@
 		</div>
 	</div>
 
-	<ListView v-if="items.length > 0" :items="items" :key="componentKey" />
+	<ListView v-if="items.length > 0" :items="items" :key="componentKey" class="max-h-300" />
 	<div class="begin" v-else>
 		<span>Scan Items, Select Warehouses, and Set Qty to Begin</span>
 	</div>
@@ -223,20 +223,48 @@ const controlButtons = computed((): ControlButton[] => {
 	]
 })
 
+function flattenItems(items: ListViewItem[]): ListViewItem[] {
+	const mergedMap = new Map<string, ListViewItem>();
+
+	items.forEach(item => {
+		const existing = mergedMap.get(item.item_code);
+		if (existing) {
+			mergedMap.set(
+				item.item_code,
+				{
+					item_code: item.item_code,
+					qty: item.transfer_qty || item.qty || 0,
+					from_warehouse: item.s_warehouse || ''
+				}
+			);
+		} else {
+			mergedMap.set(item.item_code, { ...item });
+		}
+	});
+
+	return Array.from(mergedMap.values());
+}
+
 watch(
 	() => store.cache.mappers.repack?.items,
 	(newItems: ListViewItem[]) => {
 		// Update items list on Scan
 		if (!newItems) return
 		if (currentItem.value.bom) return
-
-		const newItem = newItems[newItems.length - 1]
+		const flattened = flattenItems(newItems);
+		const newItem = flattened[flattened.length - 1]
 		if (!newItem) return
-		if (items.value.some(i => i.label === newItem.item_code)) return
-		itemList.value = [newItem.item_code]
-		const qty = newItem.item_code === currentItem.value.item_code ? currentItem.value.qty + 1 : 1
+		const itemExists = items.value.some(i => i.label === newItem.item_code)
+		// if (itemExists) {
+		// 	toast.error(`${newItem.item_code} already added`)
+		// 	return
+		// }
+		itemList.value = [newItem.item_code] // ADropdown needs the list to keep the selected item
+		const qty = newItem.item_code === currentItem.value.item_code ? currentItem.value.qty + newItem.qty : newItem.qty
 
 		currentItem.value = { ...newItem, qty }
+		if (newItem.from_warehouse) stockEntry.value.from_warehouse = newItem.from_warehouse
+		store.$patch(state => (state.cache.mappers.repack.items = []))
 	},
 	{ immediate: true, deep: true }
 )
@@ -274,6 +302,12 @@ watch(
 
 .repack .input-wrapper label {
 	margin: calc(-2.5rem - calc(2.15rem / 2)) 0 0 1ch !important;
+}
+
+.max-h-300 {
+	max-height: 300px;
+	overflow: scroll;
+	padding-bottom: 0px !important;
 }
 
 .container {
