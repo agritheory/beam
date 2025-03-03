@@ -47,6 +47,8 @@ export const useBeamStore = defineStore('beam', () => {
 	const scanner = reactive({
 		config: {} as ScanConfig,
 		context: {} as ScanContext,
+		lastScan: '' as String,
+		lastDocType: '' as String,
 	})
 
 	const getScanDoctypes = async () => {
@@ -297,13 +299,17 @@ export const useBeamStore = defineStore('beam', () => {
 		})
 	}
 
+	const lastScan = {
+		scan: '',
+		doctype: '',
+	}
+
 	return {
 		// state
 		cache,
 		form,
 		scanner,
 		warehouseList,
-
 		// store context actions
 		getScanDoctypes,
 		setForm,

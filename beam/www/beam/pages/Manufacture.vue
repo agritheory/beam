@@ -8,7 +8,7 @@
 			<RouterLink :to="{ name: 'home' }">Home</RouterLink>
 		</template>
 	</Navbar>
-
+	<ScanOutput />
 	<!-- filters section -->
 	<BeamFilter>
 		<BeamFilterOption
@@ -41,6 +41,8 @@ import type { BeamFilterChoice, ListViewItem } from '@stonecrop/beam'
 import { onMounted, ref } from 'vue'
 
 import UserFilter from '@/components/UserFilter.vue'
+import ScanOutput from '@/components/ScanOutput.vue'
+
 import { useBeamStore } from '@/stores/beam'
 import type { WorkOrder } from '@/types'
 

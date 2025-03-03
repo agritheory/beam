@@ -25,10 +25,13 @@ export const useScanStore = defineStore('scan', () => {
 	const mappedDoc = computed(() => store.cache.mappers[documentId.value])
 
 	const scan = async (barcode: string, qty: number) => {
+		store.scanner.lastScan = barcode
+		store.scanner.lastDocType = ''
 		const response = await store.scan(barcode, qty)
 		if (response && response.length > 0) {
 			let fn: Function
 			const action = response[0].action
+			store.scanner.lastDocType = `${response[0].parenttype}: ${response[0].parent}`
 			const scanHooks = store.scanner.config.client
 
 			// an empty array indicates no additional client actions are registered
@@ -237,7 +240,6 @@ export const useScanStore = defineStore('scan', () => {
 		// getters
 		documentId,
 		mappedDoc,
-
 		// actions
 		scan,
 	}

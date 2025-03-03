@@ -8,7 +8,7 @@
 			<RouterLink :to="{ name: 'home' }">Home</RouterLink>
 		</template>
 	</Navbar>
-
+	<ScanOutput />
 	<!-- filters section -->
 	<DemandFilters @filter="filterShipments" />
 
@@ -22,6 +22,7 @@ import { useInfiniteScroll } from '@vueuse/core'
 import { ref } from 'vue'
 
 import DemandFilters from '@/components/DemandFilters.vue'
+import ScanOutput from '@/components/ScanOutput.vue'
 import { useBeamStore } from '@/stores/beam'
 import type { Demand, DemandFilter } from '@/types'
 

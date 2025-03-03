@@ -23,15 +23,6 @@ declare const window: BeamWindow
 const store = useScanStore()
 const showModal = ref(false)
 
-onMounted(async () => {
-	// TODO: (Frappe) implement actual server endpoint
-	// TODO: (Mirage) mock new server endpoint in mirage
-	// const response = await fetch('/mirage/workstations')
-	// const data: Workstation[] = await response.json()
-	// activeWorkstations.value = data.filter(workstation => workstation.status === 'Production')
-	// inactiveWorkstations.value = data.filter(workstation => workstation.status === 'Off')
-})
-
 // const handlePrimaryAction = () => {
 // 	showModal.value = true
 // }
@@ -39,6 +30,7 @@ onMounted(async () => {
 const scan = async (barcode: string, qty: number) => {
 	await store.scan(barcode, qty)
 }
+const lastScan = ref('')
 
 const closeModal = () => (showModal.value = false)
 const confirmModal = () => (showModal.value = false)

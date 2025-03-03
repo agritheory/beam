@@ -9,7 +9,7 @@
 			<RouterLink :to="{ name: 'home' }">Home</RouterLink>
 		</template>
 	</Navbar>
-
+	<ScanOutput />
 	<!-- body section -->
 	<BeamMetadata class="box">
 		<div style="padding: 1rem">
@@ -46,6 +46,7 @@ import { computed, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
 import ControlButtons from '@/components/ControlButtons.vue'
+import ScanOutput from '@/components/ScanOutput.vue'
 import { useBeamStore } from '@/stores/beam'
 import type {
 	ControlButton,

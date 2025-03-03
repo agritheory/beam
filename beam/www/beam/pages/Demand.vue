@@ -8,7 +8,7 @@
 			<RouterLink :to="{ name: 'home' }">Home</RouterLink>
 		</template>
 	</Navbar>
-
+	<ScanOutput />
 	<!-- filters section -->
 	<DemandFilters @filter="filterDemand" />
 
@@ -21,6 +21,7 @@ import type { ListViewItem } from '@stonecrop/beam'
 import { useInfiniteScroll } from '@vueuse/core'
 import { ref } from 'vue'
 
+import ScanOutput from '@/components/ScanOutput.vue'
 import DemandFilters from '@/components/DemandFilters.vue'
 import { useBeamStore } from '@/stores/beam'
 import type { Demand, DemandFilter } from '@/types'

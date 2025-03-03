@@ -165,6 +165,8 @@ def get_list_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 	for action in actions:
 		action["context"] = target
 		action["target"] = target
+		action["parent"] = barcode_doc.doc.name
+		action["parenttype"] = barcode_doc.doc.doctype
 
 	return actions
 
