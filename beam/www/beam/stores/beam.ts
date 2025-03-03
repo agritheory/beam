@@ -55,6 +55,7 @@ export const useBeamStore = defineStore('beam', () => {
 		const response = await httpStore.get(SCAN_CONFIG_URL)
 		const { message }: { message: ScanConfig } = await response.json()
 		scanner.config = message
+		console.log(scanner.config)
 	}
 
 	// TODO: vue-router's useRoute() composable is not working as intended here, so accepting route input

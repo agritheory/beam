@@ -26,6 +26,7 @@ class BEAMSettings(Document):
 		restrict_ip: DF.SmallText | None
 		routes: DF.Table[BEAMMobileRoute]
 		shipping_workstation: DF.Link | None
+		show_scan_output: DF.Check
 		warehouse_types: DF.TableMultiSelect[WarehouseTypes]
 	# end: auto-generated types
 

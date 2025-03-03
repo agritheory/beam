@@ -5,7 +5,7 @@
 		</template>
 		<template #navbaraction>Log out</template>
 	</Navbar>
-	<ScanOutput />
+	<ScanOutput v-show="store.scanner.config.show_scan_output === 1" />
 	<nav>
 		<ListView :items="homeList" />
 	</nav>

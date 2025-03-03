@@ -34,9 +34,16 @@ def get_scan_doctypes():
 			scannable_doctypes.add(key)
 			[frm_doctypes.add(value) for value in values.keys()]
 
+	_scan_last = frappe.get_all(
+		"BEAM Settings",
+		["show_scan_output"],
+	)
+	scan_last = _scan_last[0] if _scan_last else {"show_scan_output": False}
+
 	return {
 		"scannable_doctypes": list(scannable_doctypes),
 		"listview": list(listview_doctypes),
 		"frm": list(frm_doctypes),
 		"client": beam_client,
+		**scan_last,
 	}
