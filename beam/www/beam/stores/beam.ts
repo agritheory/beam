@@ -9,6 +9,7 @@ import { useHttpStore } from '@/stores/http.js'
 import type {
 	BeamCache,
 	BeamHome,
+	BomItem,
 	DeliveryNoteItem,
 	Demand,
 	FormContext,
@@ -42,13 +43,14 @@ export const useBeamStore = defineStore('beam', () => {
 	const recordsPerPage = 20
 	const cache = ref<BeamCache>({ mappers: {} })
 	const form = ref<Partial<ParentDoctypes>>({})
+	const warehouseList = ref()
 	const scanner = reactive({
 		config: {} as ScanConfig,
 		context: {} as ScanContext,
 	})
 
-	const getScanDoctypes = async (params?: Record<string, any>) => {
-		const response = await httpStore.get(SCAN_CONFIG_URL, params)
+	const getScanDoctypes = async () => {
+		const response = await httpStore.get(SCAN_CONFIG_URL)
 		const { message }: { message: ScanConfig } = await response.json()
 		scanner.config = message
 	}
@@ -110,6 +112,12 @@ export const useBeamStore = defineStore('beam', () => {
 		} else if (meta.view === 'form' && scanner.config.frm.includes(meta.doctype)) {
 			scanner.context = { frm: meta.doctype }
 		}
+	}
+
+	const setWarehouses = async () => {
+		warehouseList.value = await getAll<{ name: string }[]>('Warehouse', {
+			fields: JSON.stringify(['company', 'disabled', 'is_group', 'name', 'warehouse_name']),
+		})
 	}
 
 	const getOne = async <T>(doctype: string, name: string) => {
@@ -249,6 +257,27 @@ export const useBeamStore = defineStore('beam', () => {
 		return message
 	}
 
+	const getStockEntryItems = async (bomName: string, qty = 1, purpose = 'Manufacture') => {
+		try {
+			const homeData = await getHome()
+			const company = homeData.data.company
+			const response = await httpStore.get('/api/method/erpnext.manufacturing.doctype.bom.bom.get_bom_items', {
+				bom: bomName,
+				company,
+				fetch_exploded: 1,
+				qty,
+				purpose,
+			})
+			const { message }: { message: BomItem[] } = await response.json()
+			if (!message) return []
+
+			return message
+		} catch (error) {
+			console.error(error)
+			return []
+		}
+	}
+
 	const logout = async () => {
 		await httpStore.get(LOGOUT_URL)
 		window.location.href = '/login?redirect-to=/beam#'
@@ -273,12 +302,14 @@ export const useBeamStore = defineStore('beam', () => {
 		cache,
 		form,
 		scanner,
+		warehouseList,
 
 		// store context actions
 		getScanDoctypes,
 		setForm,
 		setMappedDoc,
 		setScanContext,
+		setWarehouses,
 
 		// document workflow actions
 		cancel,
@@ -294,6 +325,7 @@ export const useBeamStore = defineStore('beam', () => {
 		getMappedStockEntry,
 		getOne,
 		getReceiving,
+		getStockEntryItems,
 		logout,
 		makeNewDoc,
 		scan,

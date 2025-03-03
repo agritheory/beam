@@ -4,7 +4,7 @@
 import type { ListViewItem } from '@stonecrop/beam'
 import type { ButtonHTMLAttributes, CSSProperties, HTMLAttributes } from 'vue'
 
-import type { ParentDoctypesForStockTransfer } from '@/types/frappe.js'
+import type { ParentDoctypesForStockTransfer, StockEntry } from '@/types/frappe.js'
 
 export interface BeamWindow extends Window {
 	frappe: any
@@ -17,7 +17,11 @@ export type BeamHome = {
 }
 
 export type BeamCache = {
-	mappers: Record<string, ParentDoctypesForStockTransfer>
+	mappers: {
+		move?: StockEntry
+		repack?: StockEntry
+		[key: string]: ParentDoctypesForStockTransfer
+	}
 }
 
 export type ControlButton = {

@@ -17,6 +17,7 @@ export const useInitStore = defineStore('init', () => {
 		await store.setForm(resolvedRoute)
 		await store.setMappedDoc(resolvedRoute)
 		await store.setScanContext(resolvedRoute)
+		await store.setWarehouses()
 
 		// only check store actions to control toggling dirty state (vs. all state mutations);
 		store.$onAction(({ name, after }) => {

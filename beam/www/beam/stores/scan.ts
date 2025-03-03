@@ -19,7 +19,7 @@ export const useScanStore = defineStore('scan', () => {
 
 	const documentId = computed(() => {
 		const currentRoute = store.router.currentRoute.value
-		return currentRoute.params.id || currentRoute.query.id || ''
+		return currentRoute.params.id || currentRoute.query.id || currentRoute.name || ''
 	})
 
 	const mappedDoc = computed(() => store.cache.mappers[documentId.value])
@@ -29,10 +29,11 @@ export const useScanStore = defineStore('scan', () => {
 		if (response && response.length > 0) {
 			let fn: Function
 			const action = response[0].action
-
 			const scanHooks = store.scanner.config.client
-			if (action in scanHooks) {
-				const path: string = scanHooks[action][0]
+
+			// an empty array indicates no additional client actions are registered
+			if (!Array.isArray(scanHooks) && action in scanHooks) {
+				const path = scanHooks[action][0]
 				// call (first) custom built callback registered in hooks
 				fn = path.split('.').reduce((previous, current) => previous[current], window)
 				return await fn(response)
