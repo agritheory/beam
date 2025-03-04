@@ -8,7 +8,10 @@
 			<RouterLink :to="{ name: 'home' }">Home</RouterLink>
 		</template>
 	</Navbar>
-	<ScanOutput v-show="store.scanner.config.show_scan_output === 1" />
+
+	<!-- scan section -->
+	<ScanOutput v-show="store.scanner.config.show_scan_output" />
+
 	<!-- filters section -->
 	<DemandFilters @filter="filterShipments" />
 

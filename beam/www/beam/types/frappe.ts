@@ -18,14 +18,13 @@ export type DocActionResponse<T> = FrappeResponse<T> & {
 }
 
 export type ParentDoctype = StoreMetadata & {
-	creation: string
-	docstatus: number
-	doctype: string
-	modified_by: string
-	modified: string
-	name: string
-	owner: string
-
+	creation?: string
+	docstatus?: number
+	doctype?: string
+	modified_by?: string
+	modified?: string
+	name?: string
+	owner?: string
 	__islocal?: number
 }
 

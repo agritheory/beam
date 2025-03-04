@@ -1,5 +1,5 @@
 <template>
-	<SplitColumn class="scan-output">
+	<SplitColumn v-if="store.scanner.lastScan" class="scan-output">
 		<template #right>
 			<BeamHeading>
 				<span class="beam--normal">{{ store.scanner.lastDocType }}</span>
@@ -10,12 +10,14 @@
 		</template>
 	</SplitColumn>
 </template>
+
 <script setup lang="ts">
 import { SplitColumn } from '@stonecrop/beam'
 import { useBeamStore } from '@/stores/beam'
 
 const store = useBeamStore()
 </script>
+
 <style>
 .scan-output {
 	background-color: var(--sc-primary-color);
@@ -25,6 +27,7 @@ const store = useBeamStore()
 	color: var(--sc-primary-text-color);
 	width: 100%;
 }
+
 .scan-output output {
 	width: calc(50% - 2px);
 	padding-left: 2em;

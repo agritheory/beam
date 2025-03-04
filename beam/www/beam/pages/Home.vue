@@ -5,7 +5,9 @@
 		</template>
 		<template #navbaraction>Log out</template>
 	</Navbar>
-	<ScanOutput v-show="store.scanner.config.show_scan_output === 1" />
+
+	<ScanOutput v-show="store.scanner.config.show_scan_output" />
+
 	<nav>
 		<ListView :items="homeList" />
 	</nav>
@@ -15,8 +17,8 @@
 import type { ListViewItem } from '@stonecrop/beam'
 import { computed, ref, onMounted } from 'vue'
 
-import { useBeamStore } from '@/stores/beam'
 import ScanOutput from '@/components/ScanOutput.vue'
+import { useBeamStore } from '@/stores/beam'
 
 const store = useBeamStore()
 

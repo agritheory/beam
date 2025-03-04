@@ -23,14 +23,9 @@ declare const window: BeamWindow
 const store = useScanStore()
 const showModal = ref(false)
 
-// const handlePrimaryAction = () => {
-// 	showModal.value = true
-// }
-
 const scan = async (barcode: string, qty: number) => {
 	await store.scan(barcode, qty)
 }
-const lastScan = ref('')
 
 const closeModal = () => (showModal.value = false)
 const confirmModal = () => (showModal.value = false)

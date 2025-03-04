@@ -9,7 +9,10 @@
 			<RouterLink :to="{ name: 'home' }">Home</RouterLink>
 		</template>
 	</Navbar>
+
+	<!-- scan section -->
 	<ScanOutput />
+
 	<!-- body section -->
 	<BeamMetadata class="box">
 		<div style="padding: 1rem">

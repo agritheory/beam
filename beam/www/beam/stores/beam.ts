@@ -47,15 +47,14 @@ export const useBeamStore = defineStore('beam', () => {
 	const scanner = reactive({
 		config: {} as ScanConfig,
 		context: {} as ScanContext,
-		lastScan: '' as String,
-		lastDocType: '' as String,
+		lastScan: '' as string,
+		lastDocType: '' as string,
 	})
 
 	const getScanDoctypes = async () => {
 		const response = await httpStore.get(SCAN_CONFIG_URL)
 		const { message }: { message: ScanConfig } = await response.json()
 		scanner.config = message
-		console.log(scanner.config)
 	}
 
 	// TODO: vue-router's useRoute() composable is not working as intended here, so accepting route input
@@ -89,7 +88,7 @@ export const useBeamStore = defineStore('beam', () => {
 				})
 
 				if (existingEntries.length) {
-					newDoc = await getOne<ParentDoctypesForStockTransfer>('Stock Entry', existingEntries[0].name)
+					newDoc = await getOne<ParentDoctypesForStockTransfer>('Stock Entry', existingEntries[0].name!)
 				} else {
 					newDoc = await getMappedStockEntry({
 						work_order_id: id,
@@ -298,11 +297,6 @@ export const useBeamStore = defineStore('beam', () => {
 			hour: '2-digit',
 			minute: '2-digit',
 		})
-	}
-
-	const lastScan = {
-		scan: '',
-		doctype: '',
 	}
 
 	return {
