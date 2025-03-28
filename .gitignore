@@ -16,6 +16,8 @@ node_modules
 .kdev4/
 *.kdev4
 *debug.log
+beam/www/beam/index.*.js
+beam/www/beam/index.*.css
 
 # Not Recommended, but will remove once webpack ready
 package-lock.json

@@ -137,8 +137,7 @@ export default defineConfig({
 					'vue-toast-notification': 'VueToast',
 					typescript: 'ts',
 				},
-				assetFileNames: 'assets/[name].[hash].[ext]',
-				chunkFileNames: 'chunks/[name].[hash].js',
+				assetFileNames: 'index.[hash].[ext]',
 				extend: true,
 				amd: {
 					id: 'beam',
