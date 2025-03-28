@@ -123,7 +123,7 @@ export default defineConfig({
 			entry: resolve(__dirname, 'index.ts'),
 			name: 'beam',
 			formats: ['umd'], // only create module output for Frappe
-			fileName: () => 'index.js',
+			fileName: () => 'index.[hash].js',
 		},
 		rollupOptions: {
 			output: {
@@ -137,7 +137,8 @@ export default defineConfig({
 					'vue-toast-notification': 'VueToast',
 					typescript: 'ts',
 				},
-				assetFileNames: 'index.[ext]',
+				assetFileNames: 'assets/[name].[hash].[ext]',
+				chunkFileNames: 'chunks/[name].[hash].js',
 				extend: true,
 				amd: {
 					id: 'beam',
