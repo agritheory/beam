@@ -21,7 +21,7 @@ def scan_login(barcode):
 	company = employee.company or get_default_company()
 
 	BEAMSettings = frappe.get_doc("BEAM Settings", {"company": company})
-	if BEAMSettings.enable_scan_to_login == 'Not Allowed':
+	if BEAMSettings.enable_scan_to_login == "Not Allowed":
 		frappe.throw(f"Login scanning is not allowed", title="Scanner Login Disabled")
 
 	ip_list = get_restricted_ip_list(BEAMSettings)
@@ -30,7 +30,7 @@ def scan_login(barcode):
 
 	user_doc = frappe.get_doc("User", user["doc"].name)
 	roles = [role.role for role in user_doc.get("roles")]
-	if BEAMSettings.enable_scan_to_login == 'Mobile Users Only' and not "BEAM Mobile User" in roles:
+	if BEAMSettings.enable_scan_to_login == "Mobile Users Only" and not "BEAM Mobile User" in roles:
 		frappe.throw("Not Beam mobile user", title="Login Error")
 
 	try:
