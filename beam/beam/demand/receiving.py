@@ -240,10 +240,24 @@ def get_receiving_demand(*args, **kwargs) -> list[Receiving]:
 
 	if kwargs.get("filters"):
 		filters = kwargs["filters"]
+		if isinstance(filters, str):
+			filters = frappe.parse_json(filters)
 		for key, value in filters.items():
 			if isinstance(value, str):
 				value = (value,)
-			r_filters.append(getattr(receiving, key).isin(value))
+				r_filters.append([getattr(receiving, key).isin(value)])
+			elif isinstance(value, list):
+				operator, value = value
+				if operator == "in":
+					r_filters.append([getattr(receiving, key).isin(value)])
+				elif operator == ">":
+					r_filters.append([getattr(receiving, key).gt(value)])
+				elif operator == "<":
+					r_filters.append([getattr(receiving, key).lt(value)])
+				elif operator == ">=":
+					r_filters.append([getattr(receiving, key).gte(value)])
+				elif operator == "<=":
+					r_filters.append([getattr(receiving, key).lte(value)])
 
 	receiving_query = Query.from_(receiving).select(
 		receiving.key,
@@ -265,8 +279,8 @@ def get_receiving_demand(*args, **kwargs) -> list[Receiving]:
 		receiving.creation,
 	)
 
-	if r_filters:
-		receiving_query = receiving_query.where(*r_filters)
+	for r_filter in r_filters:
+		receiving_query = receiving_query.where(*r_filter)
 
 	record_offset = records_per_page * (page - 1)
 

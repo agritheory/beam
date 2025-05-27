@@ -22,7 +22,8 @@
 		"section_break_yadp",
 		"enable_scan_to_login",
 		"restrict_ip",
-		"column_break_lwuv"
+		"column_break_lwuv",
+		"show_scan_output"
 	],
 	"fields": [
 		{
@@ -120,15 +121,22 @@
 			"fieldtype": "Column Break"
 		},
 		{
-			"default": "0",
+			"default": "Not Allowed",
 			"fieldname": "enable_scan_to_login",
+			"fieldtype": "Select",
+			"label": "Enable Scan to Login",
+			"options": "Not Allowed\nMobile Users Only\nAll Users"
+		},
+		{
+			"default": "0",
+			"fieldname": "show_scan_output",
 			"fieldtype": "Check",
-			"label": "Enable Scan to Login"
+			"label": "Show Scan Output in Mobile View"
 		}
 	],
 	"index_web_pages_for_search": 1,
 	"links": [],
-	"modified": "2025-01-29 12:53:53.074841",
+	"modified": "2025-05-23 10:43:46.152483",
 	"modified_by": "Administrator",
 	"module": "BEAM",
 	"name": "BEAM Settings",

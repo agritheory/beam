@@ -12,7 +12,11 @@
 		<div class="container">
 			<template v-if="itemList">
 				<div class="dd-container">
-					<ADropdown label="Item to Repack" :items="itemList" v-model="currentItem.item_code" :isAsync="true"
+					<ADropdown
+						label="Item to Repack"
+						:items="itemList"
+						v-model="currentItem.item_code"
+						:isAsync="true"
 						:filterFunction="loadItems" />
 					<BeamBtn class="clear-button" @click="clearCurrentItem('item_code')"> X </BeamBtn>
 				</div>
@@ -217,25 +221,22 @@ const controlButtons = computed((): ControlButton[] => {
 })
 
 function flattenItems(items: ListViewItem[]): ListViewItem[] {
-	const mergedMap = new Map<string, ListViewItem>();
+	const mergedMap = new Map<string, ListViewItem>()
 
 	items.forEach(item => {
-		const existing = mergedMap.get(item.item_code);
+		const existing = mergedMap.get(item.item_code)
 		if (existing) {
-			mergedMap.set(
-				item.item_code,
-				{
-					item_code: item.item_code,
-					qty: item.transfer_qty || item.qty || 0,
-					from_warehouse: item.s_warehouse || ''
-				}
-			);
+			mergedMap.set(item.item_code, {
+				item_code: item.item_code,
+				qty: item.transfer_qty || item.qty || 0,
+				from_warehouse: item.s_warehouse || '',
+			})
 		} else {
-			mergedMap.set(item.item_code, { ...item });
+			mergedMap.set(item.item_code, { ...item })
 		}
-	});
+	})
 
-	return Array.from(mergedMap.values());
+	return Array.from(mergedMap.values())
 }
 
 watch(
@@ -244,7 +245,7 @@ watch(
 		// Update items list on Scan
 		if (!newItems) return
 		if (currentItem.value.bom) return
-		const flattened = flattenItems(newItems);
+		const flattened = flattenItems(newItems)
 		const newItem = flattened[flattened.length - 1]
 		if (!newItem) return
 		const itemExists = items.value.some(i => i.label === newItem.item_code)

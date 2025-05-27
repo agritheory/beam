@@ -23,6 +23,7 @@ def scan(
 	barcode_doc = get_barcode_context(barcode)
 	if not barcode_doc:
 		return None  # mypy asked for this
+	# print(barcode_doc.as_json())
 	if "listview" in context_dict:
 		return get_list_action(barcode_doc, context_dict)
 	elif "frm" in context_dict:
@@ -165,6 +166,8 @@ def get_list_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 	for action in actions:
 		action["context"] = target
 		action["target"] = target
+		action["parent"] = barcode_doc.doc.name
+		action["parenttype"] = barcode_doc.doc.doctype
 
 	return actions
 

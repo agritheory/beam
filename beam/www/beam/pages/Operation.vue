@@ -25,20 +25,24 @@ const operation = ref<Partial<WorkOrderOperation>>({})
 const jobCard = ref<Partial<JobCard>>({})
 
 const operationStarted = computed(() =>
-	isNaN(jobCard.value.total_time_in_mins) ? false : jobCard.value.total_time_in_mins > 0
+	jobCard.value.total_time_in_mins
+		? isNaN(jobCard.value.total_time_in_mins)
+			? false
+			: jobCard.value.total_time_in_mins > 0
+		: false
 )
 
 const elapsedTime = computed(() => {
 	const date = new Date(0)
-	date.setSeconds(jobCard.value.total_time_in_mins * 60)
+	date.setSeconds((jobCard.value.total_time_in_mins || 0) * 60)
 	return isNaN(date.getTime()) ? '00:00:00' : date.toISOString().substring(11, 19)
 })
 
 onMounted(async () => {
 	const workOrder = store.form as Partial<WorkOrder>
-	operation.value = workOrder.operations.find(operation => operation.name === route.params.operationId) || {}
+	operation.value = workOrder.operations?.find(operation => operation.name === route.params.operationId) || {}
 
-	const jobList = await store.getAll<JobCard[]>('Job Card', {
+	const jobList = await store.getAll<JobCard>('Job Card', {
 		filters: JSON.stringify([['operation_id', '=', route.params.operationId]]),
 	})
 
