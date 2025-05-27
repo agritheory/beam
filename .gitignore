@@ -8,8 +8,8 @@ locale
 *.egg-info
 dist/
 # build/
-cloud_storage/docs/current
-cloud_storage/public/dist
+beam/docs/current
+beam/public/dist
 .vscode
 .vs
 node_modules
@@ -200,6 +200,11 @@ cypress/videos
 beam/www/beam/index.js
 beam/www/beam/index.js.map
 beam/www/beam/index.css
+beam/www/beam/index.*.js
+beam/www/beam/index.*.js.map
+beam/www/beam/index.*.css
+beam/www/beam/assets
+beam/www/beam/assets/*
 
 # unplugin-vue-components outputs
 beam/www/beam/components.d.ts

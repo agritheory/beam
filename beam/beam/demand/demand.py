@@ -694,7 +694,6 @@ def get_demand(*args, **kwargs) -> list[Demand]:
 		page = int(kwargs.get("page", 1))
 	except ValueError:
 		page = 1
-	order_by = kwargs.get("order_by", "workstation, assigned")
 
 	demand = Table("demand")
 	allocation = Table("allocation")
@@ -709,8 +708,25 @@ def get_demand(*args, **kwargs) -> list[Demand]:
 		for key, value in filters.items():
 			if isinstance(value, str):
 				value = (value,)
-			d_filters.append(getattr(demand, key).isin(value))
-			a_filters.append(getattr(allocation, key).isin(value))
+				d_filters.append([getattr(demand, key).isin(value)])
+				a_filters.append([getattr(allocation, key).isin(value)])
+			elif isinstance(value, list):
+				operator, value = value
+				if operator == "in":
+					d_filters.append([getattr(demand, key).isin(value)])
+					a_filters.append([getattr(allocation, key).isin(value)])
+				elif operator == ">":
+					d_filters.append([getattr(demand, key).gt(value)])
+					a_filters.append([getattr(allocation, key).gt(value)])
+				elif operator == "<":
+					d_filters.append([getattr(demand, key).lt(value)])
+					a_filters.append([getattr(allocation, key).lt(value)])
+				elif operator == ">=":
+					d_filters.append([getattr(demand, key).gte(value)])
+					a_filters.append([getattr(allocation, key).gte(value)])
+				elif operator == "<=":
+					d_filters.append([getattr(demand, key).lte(value)])
+					a_filters.append([getattr(allocation, key).lte(value)])
 
 	demand_query = (
 		Query.from_(demand)
@@ -769,8 +785,8 @@ def get_demand(*args, **kwargs) -> list[Demand]:
 		)
 	)
 
-	if d_filters:
-		demand_query = demand_query.where(*d_filters)
+	for d_filter in d_filters:
+		demand_query = demand_query.where(*d_filter)
 
 	allocation_query = (
 		Query.from_(allocation)
@@ -822,8 +838,8 @@ def get_demand(*args, **kwargs) -> list[Demand]:
 		)
 	)
 
-	if a_filters:
-		allocation_query = allocation_query.where(*a_filters)
+	for a_filter in a_filters:
+		allocation_query = allocation_query.where(*a_filter)
 
 	record_offset = records_per_page * (page - 1)
 	query = (

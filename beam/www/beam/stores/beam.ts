@@ -9,6 +9,7 @@ import { useHttpStore } from '@/stores/http.js'
 import type {
 	BeamCache,
 	BeamHome,
+	BomItem,
 	DeliveryNoteItem,
 	Demand,
 	FormContext,
@@ -42,13 +43,16 @@ export const useBeamStore = defineStore('beam', () => {
 	const recordsPerPage = 20
 	const cache = ref<BeamCache>({ mappers: {} })
 	const form = ref<Partial<ParentDoctypes>>({})
+	const warehouseList = ref()
 	const scanner = reactive({
 		config: {} as ScanConfig,
 		context: {} as ScanContext,
+		lastScan: '' as string,
+		lastDocType: '' as string,
 	})
 
-	const getScanDoctypes = async (params?: Record<string, any>) => {
-		const response = await httpStore.get(SCAN_CONFIG_URL, params)
+	const getScanDoctypes = async () => {
+		const response = await httpStore.get(SCAN_CONFIG_URL)
 		const { message }: { message: ScanConfig } = await response.json()
 		scanner.config = message
 	}
@@ -75,7 +79,7 @@ export const useBeamStore = defineStore('beam', () => {
 			let newDoc: ParentDoctypesForStockTransfer
 			if (meta.doctype === 'Work Order') {
 				// check if a draft Stock Entry already exists for this work order
-				const existingEntries = await getAll<ParentDoctypesForStockTransfer[]>('Stock Entry', {
+				const existingEntries = await getAll<ParentDoctypesForStockTransfer>('Stock Entry', {
 					filters: JSON.stringify({
 						docstatus: 0,
 						work_order: id,
@@ -84,7 +88,7 @@ export const useBeamStore = defineStore('beam', () => {
 				})
 
 				if (existingEntries.length) {
-					newDoc = await getOne<ParentDoctypesForStockTransfer>('Stock Entry', existingEntries[0].name)
+					newDoc = await getOne<ParentDoctypesForStockTransfer>('Stock Entry', existingEntries[0].name!)
 				} else {
 					newDoc = await getMappedStockEntry({
 						work_order_id: id,
@@ -112,6 +116,12 @@ export const useBeamStore = defineStore('beam', () => {
 		}
 	}
 
+	const setWarehouses = async () => {
+		warehouseList.value = await getAll<{ name: string }[]>('Warehouse', {
+			fields: JSON.stringify(['company', 'disabled', 'is_group', 'name', 'warehouse_name']),
+		})
+	}
+
 	const getOne = async <T>(doctype: string, name: string) => {
 		const url = `/api/resource/${doctype}/${name}`
 		const response = await httpStore.get(url)
@@ -128,7 +138,7 @@ export const useBeamStore = defineStore('beam', () => {
 
 		const url = `/api/resource/${doctype}`
 		const response = await httpStore.get(url, params)
-		const { data }: { data: T } = await response.json()
+		const { data }: { data: T[] } = await response.json()
 		return data
 	}
 
@@ -174,7 +184,7 @@ export const useBeamStore = defineStore('beam', () => {
 		return []
 	}
 
-	const insert = async <T>(doctype: string, body: T) => {
+	const insert = async <T extends Record<string, any>>(doctype: string, body: T) => {
 		const url = `/api/resource/${doctype}`
 		const response = await httpStore.post(url, body)
 		if (response.ok) {
@@ -236,7 +246,7 @@ export const useBeamStore = defineStore('beam', () => {
 		// return a work order object with attached stock entry/ies and job card(s)
 		const response = await httpStore.post(MAPPED_STOCK_ENTRY_URL, data)
 		const { message }: { message: StockEntry } = await response.json()
-		if (!message) {
+		if (!message || !message.items || !message.items.length) {
 			toast.error('Error: Could not map Work Order to Stock Entry')
 			return
 		}
@@ -247,6 +257,27 @@ export const useBeamStore = defineStore('beam', () => {
 			}
 		})
 		return message
+	}
+
+	const getStockEntryItems = async (bomName: string, qty = 1, purpose = 'Manufacture') => {
+		try {
+			const homeData = await getHome()
+			const company = homeData.data.company
+			const response = await httpStore.get('/api/method/erpnext.manufacturing.doctype.bom.bom.get_bom_items', {
+				bom: bomName,
+				company,
+				fetch_exploded: 1,
+				qty,
+				purpose,
+			})
+			const { message }: { message: BomItem[] } = await response.json()
+			if (!message) return []
+
+			return message
+		} catch (error) {
+			console.error(error)
+			return []
+		}
 	}
 
 	const logout = async () => {
@@ -273,12 +304,13 @@ export const useBeamStore = defineStore('beam', () => {
 		cache,
 		form,
 		scanner,
-
+		warehouseList,
 		// store context actions
 		getScanDoctypes,
 		setForm,
 		setMappedDoc,
 		setScanContext,
+		setWarehouses,
 
 		// document workflow actions
 		cancel,
@@ -294,6 +326,7 @@ export const useBeamStore = defineStore('beam', () => {
 		getMappedStockEntry,
 		getOne,
 		getReceiving,
+		getStockEntryItems,
 		logout,
 		makeNewDoc,
 		scan,

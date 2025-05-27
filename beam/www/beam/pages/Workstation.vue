@@ -22,7 +22,7 @@ const store = useBeamStore()
 const workstations = ref<Partial<ListViewItem>[]>([])
 
 onMounted(async () => {
-	const stations = await store.getAll<Workstation[]>('Workstation', {
+	const stations = await store.getAll<Workstation>('Workstation', {
 		fields: JSON.stringify(['name', 'workstation_type', 'plant_floor']),
 		order_by: 'creation asc',
 	})

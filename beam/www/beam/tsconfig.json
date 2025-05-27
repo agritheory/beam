@@ -9,6 +9,7 @@
 		"noEmit": true,
 		"resolveJsonModule": true,
 		"skipLibCheck": true,
+		"strictNullChecks": true,
 		"paths": {
 			"@/*": ["./*"]
 		}

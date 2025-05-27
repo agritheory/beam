@@ -4,7 +4,9 @@
 import { defineStore } from 'pinia'
 import { computed } from 'vue'
 
-declare const frappe: any
+declare const frappe: {
+	csrf_token: string
+}
 
 export const useHttpStore = defineStore('http', () => {
 	const headers = computed(() => {

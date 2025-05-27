@@ -37,6 +37,16 @@ export type BaseContext = {
 	 * The route to navigate to.
 	 */
 	route?: string
+
+	/**
+	 * The parent document to be set on the target document.
+	 */
+	parent?: string
+
+	/**
+	 * The parent doctype to be set on the target document.
+	 */
+	parenttype?: string
 }
 
 export type FormContext = BaseContext & {
@@ -53,8 +63,9 @@ export type ScanContext = {
 }
 
 export type ScanConfig = {
-	client?: Record<string, string[]>[]
-	frm?: string[]
-	listview?: string[]
-	scannable_doctypes?: string[]
+	client: Record<string, string[]> | never[]
+	frm: string[]
+	listview: string[]
+	scannable_doctypes: string[]
+	show_scan_output: boolean
 }

@@ -4,7 +4,7 @@
 import type { ListViewItem } from '@stonecrop/beam'
 import type { ButtonHTMLAttributes, CSSProperties, HTMLAttributes } from 'vue'
 
-import type { ParentDoctypesForStockTransfer } from '@/types/frappe.js'
+import type { ParentDoctypesForStockTransfer, StockEntry } from '@/types/frappe.js'
 
 export interface BeamWindow extends Window {
 	frappe: any
@@ -17,7 +17,11 @@ export type BeamHome = {
 }
 
 export type BeamCache = {
-	mappers: Record<string, ParentDoctypesForStockTransfer>
+	mappers: {
+		move?: StockEntry
+		repack?: StockEntry
+		[key: string]: ParentDoctypesForStockTransfer
+	}
 }
 
 export type ControlButton = {
@@ -32,34 +36,40 @@ export type ControlButton = {
 	hidden?: boolean
 }
 
+export type DemandFilter = {
+	status?: Demand['status'] | Receive['status'] | ['in', (Demand['status'] | Receive['status'])[]]
+	date?: string | ['<' | '>' | '>=' | '<=', string]
+	user?: string
+}
+
 export type Demand = {
-	allocated_date: null
+	allocated_date: string | null
 	allocated_qty: number
 	assigned: string
 	bom_no: string
 	company: string
 	creation: string
 	customer: string
-	delivery_date: null
+	delivery_date: string
 	demand: string
 	doctype: string
 	idx: number
 	item_code: string
 	item_warehouse: string
 	key: string
-	modified: null
+	modified: string
 	name: string
 	net_required_qty: number
 	parent: string
 	production_item: string
-	status: string
+	status: '' | 'Unallocated' | 'Partially Allocated' | 'Soft Allocated'
 	stock_uom: string
 	total_required_qty: number
 	warehouse: string
 }
 
 export type Receive = {
-	assigned: null
+	assigned: string
 	company: string
 	creation: string
 	doctype: string
@@ -72,7 +82,7 @@ export type Receive = {
 	received_qty: number
 	rejected_qty: number
 	schedule_date: string
-	status: string
+	status: '' | 'Unallocated' | 'Partially Allocated' | 'Soft Allocated'
 	stock_qty: number
 	stock_uom: string
 	supplier: string

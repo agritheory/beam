@@ -9,6 +9,7 @@
 			<RouterLink :to="{ name: 'home' }">Home</RouterLink>
 		</template>
 	</Navbar>
+	<ScanOutput />
 
 	<!-- body section -->
 	<div class="box" v-show="items.length">
@@ -25,6 +26,7 @@ import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
 import ControlButtons from '@/components/ControlButtons.vue'
+import ScanOutput from '@/components/ScanOutput.vue'
 import { useBeamStore } from '@/stores/beam'
 import type { ControlButton, DeliveryNote, DeliveryNoteItem } from '@/types'
 
