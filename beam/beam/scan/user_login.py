@@ -1,7 +1,8 @@
 import frappe
-from beam.beam.scan import get_barcode_context
-from frappe.core.doctype.user.user import get_restricted_ip_list
 from erpnext import get_default_company
+from frappe.core.doctype.user.user import get_restricted_ip_list
+
+from beam.beam.scan import get_barcode_context
 
 
 @frappe.whitelist(allow_guest=True)
@@ -22,7 +23,7 @@ def scan_login(barcode):
 
 	BEAMSettings = frappe.get_doc("BEAM Settings", {"company": company})
 	if BEAMSettings.enable_scan_to_login == "Not Allowed":
-		frappe.throw(f"Login scanning is not allowed", title="Scanner Login Disabled")
+		frappe.throw("Login scanning is not allowed", title="Scanner Login Disabled")
 
 	ip_list = get_restricted_ip_list(BEAMSettings)
 	if ip_list and not any(client_ip.startswith(ip) for ip in ip_list):
