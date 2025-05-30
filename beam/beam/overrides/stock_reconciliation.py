@@ -27,7 +27,6 @@ def get_items(
 	for item in items:
 		item_defaults = get_item_defaults(item["item_code"], company)
 		item["stock_uom"] = item_defaults.get("stock_uom")
-		print(f"Item: {item['item_code']} - Stock UOM: {item['stock_uom']}")
 
 		for dim in dimensions:
 			fieldname = dim.get("fieldname")
