@@ -7,8 +7,7 @@ from typing import Any
 
 import frappe
 from erpnext.stock.doctype.stock_entry.stock_entry import StockEntry
-from erpnext.stock.get_item_details import get_item_details
-from erpnext.stock.get_item_details import get_valuation_rate
+from erpnext.stock.get_item_details import get_item_details, get_valuation_rate
 
 
 @frappe.whitelist()
