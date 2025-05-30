@@ -285,7 +285,7 @@ export const useBeamStore = defineStore('beam', () => {
 		try {
 			const homeData = await getHome()
 			const company = homeData.data.company
-			const response = await httpStore.get('/api/method/erpnext.stock.doctype.stock_reconciliation.stock_reconciliation.get_items', {
+			const response = await httpStore.get('/api/method/beam.beam.overrides.stock_reconciliation.get_items', {
 				warehouse,
 				company,
 				posting_date: new Date().toLocaleDateString(),

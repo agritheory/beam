@@ -60,6 +60,7 @@ const loadItems = async (warehouse) => {
 			...item,
 			label: item.item_code,
 			count: { count: item.qty },
+			description: item.stock_uom,
 		}))
 	} catch (error) {
 		console.error('Error loading items:', error)
