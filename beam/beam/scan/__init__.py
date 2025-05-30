@@ -217,6 +217,14 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 				}
 			)
 		target.barcode = barcode_doc.barcode
+	elif barcode_doc.doc.doctype == "Warehouse" and context.frm == "Stock Reconciliation":
+		target = frappe._dict(
+			{
+				"doctype": context.frm,
+				"warehouse": barcode_doc.doc.name,
+			}
+		)
+		target.barcode = barcode_doc.barcode
 
 	if not target:
 		return []
