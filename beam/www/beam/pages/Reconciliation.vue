@@ -16,8 +16,8 @@
 	</div>
 
 	<!-- body section -->
-	<ListView :items="items" :key="componentKey" />
-	<div class="begin" v-if="items.length == 0">
+	<ListView v-if="items.length > 0" :items="items" :key="componentKey" />
+	<div class="begin" v-else>
 		<span>Scan or Select Warehouses to Begin</span>
 	</div>
 	<!-- footer section -->
@@ -25,8 +25,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-
+import { ref, computed, onMounted, watch } from 'vue'
 import ControlButtons from '@/components/ControlButtons.vue'
 import { useBeamStore } from '@/stores/beam'
 import type { ControlButton, StockReconciliation } from '@/types'
@@ -53,7 +52,29 @@ onMounted(async () => {
 
 const clearField = () => store.$patch(state => (state.cache.mappers['stock-reconciliation']['set_warehouse'] = ''))
 
+const loadItems = async (warehouse) => {
+	try {
+		const response = await store.getStockReconciliationItems(warehouse)
+		if (!response || response.length === 0) return
+		items.value = response.map(item => ({
+			...item,
+			label: item.item_code,
+			count: { count: item.qty },
+		}))
+	} catch (error) {
+		console.error('Error loading items:', error)
+	}
+}
+
 const controlButtons = computed((): ControlButton[] => [])
+
+watch(
+	() => reconciliation.value.set_warehouse,
+	warehouse => {
+		if(!warehouse) return
+		loadItems(warehouse)
+	}
+)
 </script>
 <style>
 .reconciliation {

@@ -280,6 +280,27 @@ export const useBeamStore = defineStore('beam', () => {
 		}
 	}
 
+	const getStockReconciliationItems = async (warehouse: string) => {
+		if (!warehouse) return []
+		try {
+			const homeData = await getHome()
+			const company = homeData.data.company
+			const response = await httpStore.get('/api/method/erpnext.stock.doctype.stock_reconciliation.stock_reconciliation.get_items', {
+				warehouse,
+				company,
+				posting_date: new Date().toLocaleDateString(),
+				posting_time: new Date().toLocaleTimeString(),
+				ignore_empty_stock: true,
+			})
+
+			const { message } = await response.json()
+			return message
+		} catch (error) {
+			console.error(error)
+			return []
+		}
+	}
+
 	const logout = async () => {
 		await httpStore.get(LOGOUT_URL)
 		window.location.href = '/login?redirect-to=/beam#'
@@ -327,6 +348,7 @@ export const useBeamStore = defineStore('beam', () => {
 		getOne,
 		getReceiving,
 		getStockEntryItems,
+		getStockReconciliationItems,
 		logout,
 		makeNewDoc,
 		scan,
