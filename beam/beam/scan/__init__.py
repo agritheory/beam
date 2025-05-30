@@ -8,6 +8,7 @@ from typing import Any
 import frappe
 from erpnext.stock.doctype.stock_entry.stock_entry import StockEntry
 from erpnext.stock.get_item_details import get_item_details
+from erpnext.stock.get_item_details import get_valuation_rate
 
 
 @frappe.whitelist()
@@ -216,6 +217,9 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 					"currency": frappe.defaults.get_user_default("Currency"),
 				}
 			)
+			valuation_rate = get_valuation_rate(barcode_doc.doc.name, target.company, target.warehouse)
+			if valuation_rate.get("valuation_rate"):
+				target.valuation_rate = valuation_rate.valuation_rate
 		target.barcode = barcode_doc.barcode
 	elif barcode_doc.doc.doctype == "Warehouse" and context.frm == "Stock Reconciliation":
 		target = frappe._dict(
