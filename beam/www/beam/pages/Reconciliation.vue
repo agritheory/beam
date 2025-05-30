@@ -52,7 +52,7 @@ onMounted(async () => {
 
 const clearField = () => store.$patch(state => (state.cache.mappers['stock-reconciliation']['set_warehouse'] = ''))
 
-const loadItems = async (warehouse) => {
+const loadItems = async warehouse => {
 	try {
 		const response = await store.getStockReconciliationItems(warehouse)
 		if (!response || response.length === 0) return
@@ -72,7 +72,7 @@ const controlButtons = computed((): ControlButton[] => [])
 watch(
 	() => reconciliation.value.set_warehouse,
 	warehouse => {
-		if(!warehouse) return
+		if (!warehouse) return
 		loadItems(warehouse)
 	}
 )
