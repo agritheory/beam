@@ -1,4 +1,4 @@
-<!-- Copyright (c) 2024, AgriTheory and contributors
+<!-- Copyright (c) 2025, AgriTheory and contributors
 For license information, please see license.txt-->
 
 # Extending BEAM
@@ -46,7 +46,7 @@ beam_frm = {
 }
 ```
 
-To add a custom JavaScript function, add the following hook to your application's `hooks.py`. An example implementation is available in the source code. 
+To add a custom JavaScript function, add the following hook to your application's `hooks.py`. An example implementation is available in the source code.
 
 ```python
 # hooks.py
@@ -60,7 +60,7 @@ beam_client = {
 ## Adding Custom Vue Components
 
 - Why
-- What 
+- What
 - How
 
 ```python

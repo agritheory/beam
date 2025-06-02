@@ -1,4 +1,4 @@
-<!-- Copyright (c) 2024, AgriTheory and contributors
+<!-- Copyright (c) 2025, AgriTheory and contributors
 For license information, please see license.txt-->
 
 # Listview
@@ -43,4 +43,3 @@ For example, when an Item is scanned while viewing a Delivery Note record, it wi
 Beam uses a [decision matrix](./matrix.md) to decide what action to take based on what kind of doctype has been scanned.
 
 Custom actions and client side functions can be added by using [hooks](./hooks.md).
-

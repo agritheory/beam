@@ -67,11 +67,13 @@ export default defineConfig({
 				// add routes from all apps that have defined Beam routes
 				const routes = getRoutes()
 				const componentPaths = getComponentPaths()
-				for (const route of routes) {
-					if (componentPaths[route.component]) {
-						const routeNode = root.insert(route.path, componentPaths[route.component])
-						routeNode.name = route.name
-						routeNode.addToMeta({ ...route.meta })
+				if (routes) {
+					for (const route of routes) {
+						if (componentPaths[route.component]) {
+							const routeNode = root.insert(route.path, componentPaths[route.component])
+							routeNode.name = route.name
+							routeNode.addToMeta({ ...route.meta })
+						}
 					}
 				}
 			},
@@ -114,7 +116,6 @@ export default defineConfig({
 	},
 
 	build: {
-		minify: false,
 		emptyOutDir: false,
 		sourcemap: true,
 		outDir: './beam/www/beam/',
@@ -137,7 +138,8 @@ export default defineConfig({
 					'vue-toast-notification': 'VueToast',
 					typescript: 'ts',
 				},
-				assetFileNames: 'index.[ext]',
+				chunkFileNames: 'chunks/[name].[hash].js',
+				assetFileNames: 'assets/[name].[ext]',
 				extend: true,
 				amd: {
 					id: 'beam',

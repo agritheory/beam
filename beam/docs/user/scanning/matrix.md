@@ -1,4 +1,4 @@
-<!-- Copyright (c) 2024, AgriTheory and contributors
+<!-- Copyright (c) 2025, AgriTheory and contributors
 For license information, please see license.txt-->
 
 # Listview Actions
@@ -36,7 +36,7 @@ For license information, please see license.txt-->
 |Warehouse|Stock Reconciliation|filter|warehouse|
 |Warehouse|Warehouse|route|Warehouse|
 
- --- 
+ ---
 
 # Form Actions
 | Scanned Doctype | Form                  | Action | Target |

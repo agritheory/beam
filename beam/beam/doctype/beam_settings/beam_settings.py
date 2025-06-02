@@ -12,15 +12,16 @@ class BEAMSettings(Document):
 	from typing import TYPE_CHECKING
 
 	if TYPE_CHECKING:
+		from frappe.types import DF
+
 		from beam.beam.doctype.beam_mobile_route.beam_mobile_route import BEAMMobileRoute
 		from beam.beam.doctype.warehouse_types.warehouse_types import WarehouseTypes
-		from frappe.types import DF
 
 		barcode_font_size: DF.Int
 		company: DF.Link
 		enable_demand: DF.Check
 		enable_handling_units: DF.Check
-		enable_scan_to_login: DF.Check
+		enable_scan_to_login: DF.Literal["Not Allowed", "Mobile Users Only", "All Users"]
 		ignore_drop_shipped_items: DF.Check
 		receiving_workstation: DF.Link | None
 		restrict_ip: DF.SmallText | None
