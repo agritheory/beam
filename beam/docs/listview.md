@@ -25,4 +25,3 @@ Another example: If an Item is scanned while viewing the Purchase Receipt list, 
 Beam uses a [decision matrix](./matrix.md) to decide what action to take based on what kind of doctype has been scanned.
 
 Custom actions and client side functions can be added by using [hooks](./hooks.md)
-

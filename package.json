@@ -1,22 +1,41 @@
 {
 	"name": "beam",
-	"scripts": {},
-	"dependencies": {
-		"onscan.js": "^1.5.2"
-	},
-	"devDependencies": {},
+	"private": true,
+	"type": "module",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/agritheory/beam.git"
 	},
+	"scripts": {
+		"dev": "vite --config=./beam/www/beam/vite.config.ts",
+		"build": "vite build --config=./beam/www/beam/vite.config.ts",
+		"build:watch": "vite build --watch --config=./beam/www/beam/vite.config.ts",
+		"register": "node ./beam/www/beam/resolvers.ts"
+	},
+	"dependencies": {
+		"@stonecrop/aform": "^0.4.11",
+		"@stonecrop/beam": "^0.4.11",
+		"@vueuse/core": "^13.0.0",
+		"acorn": "^8.14.1",
+		"glob": "^11.0.1",
+		"onscan.js": "^1.5.2",
+		"pinia": "^3.0.1",
+		"vue": "^3.5.13",
+		"vue-router": "^4.5.0",
+		"vue-toast-notification": "^3.1.3"
+	},
+	"devDependencies": {
+		"@types/node": "^20.17.30",
+		"@vitejs/plugin-vue": "^5.2.3",
+		"typescript": "^5.8.2",
+		"unplugin-vue-components": "^28.4.1",
+		"unplugin-vue-router": "^0.12.0",
+		"vite": "^5.4.16",
+		"vite-plugin-pwa": "^1.0.0",
+		"workbox-build": "^7.3.0",
+		"workbox-window": "^7.3.0"
+	},
 	"publishConfig": {
 		"access": "restricted"
-	},
-	"private": true,
-	"release": {
-		"branches": [
-			"version-14",
-			"version-15"
-		]
 	}
 }

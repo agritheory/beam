@@ -1,6 +1,7 @@
 # Copyright (c) 2025, AgriTheory and contributors
 # For license information, please see license.txt
 
+import copy
 import datetime
 import json
 from typing import Any
@@ -21,8 +22,8 @@ def scan(
 	context_dict = frappe._dict(json.loads(context) if isinstance(context, str) else context)
 	barcode_doc = get_barcode_context(barcode)
 	if not barcode_doc:
-		frappe.msgprint("Barcode not found", alert=True)
 		return None  # mypy asked for this
+	# print(barcode_doc.as_json())
 	if "listview" in context_dict:
 		return get_list_action(barcode_doc, context_dict)
 	elif "frm" in context_dict:
@@ -150,14 +151,23 @@ def get_list_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 			override_action = override_doctype.get(context.listview)
 			if override_action:
 				for action in override_action:
+					if callable(action.get("target")):
+						target_fn = action.get("target")
+						target = target_fn(barcode_doc, context)
 					action["context"] = target
 					action["target"] = target
+					if action.get("action") == "route":
+						action["route"] = action.get("route").format(target=target)
 				return override_action
 
-	actions = listview.get(barcode_doc.doc.doctype, {}).get(context.listview, [])
+	# avoid mutating the global `listview` dict
+	list_actions = copy.deepcopy(listview)
+	actions = list_actions.get(barcode_doc.doc.doctype, {}).get(context.listview, [])
 	for action in actions:
 		action["context"] = target
 		action["target"] = target
+		action["parent"] = barcode_doc.doc.name
+		action["parenttype"] = barcode_doc.doc.doctype
 
 	return actions
 
@@ -167,6 +177,8 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 	if barcode_doc.doc.doctype == "Handling Unit":
 		hu_details = get_handling_unit(barcode_doc.doc.name, context.frm)
 		if context.frm == "Stock Entry":
+			if not context.doc:
+				context.doc = {"doctype": "Stock Entry"}
 			target = get_stock_entry_item_details(context.doc, hu_details.item_code)
 			target.warehouse = hu_details.warehouse
 		elif context.frm in ("Putaway Rule", "Warranty Claim", "Item Price", "Quality Inspection"):
@@ -197,7 +209,7 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 				"dn_detail": hu_details.dn_detail,
 			}
 		)
-	elif barcode_doc.doc.doctype == "Item":
+	elif barcode_doc.doc.doctype == "Item" and context.doc:
 		if context.frm == "Stock Entry":
 			target = get_stock_entry_item_details(context.doc, barcode_doc.doc.name)
 		elif context.frm in ("Putaway Rule", "Warranty Claim", "Item Price", "Quality Inspection"):
@@ -229,11 +241,13 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 		)
 		target.barcode = barcode_doc.barcode
 
+	else:
+		target = frappe._dict(**barcode_doc)
+
 	if not target:
 		return []
 
 	beam_override = frappe.get_hooks("beam_frm")
-
 	if beam_override:
 		override_doctype = beam_override.get(barcode_doc.doc.doctype)
 		if override_doctype:
@@ -246,7 +260,9 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 						action["target"] = target.get(serialized_target[1])
 				return override_action
 
-	actions = frm.get(barcode_doc.doc.doctype, {}).get(context.frm, [])
+	# avoid mutating the global `frm` dict
+	form_actions = copy.deepcopy(frm)
+	actions = form_actions.get(barcode_doc.doc.doctype, {}).get(context.frm, [])
 	for action in actions:
 		action["context"] = target
 		if isinstance(action.get("target"), str) and "." in action.get("target"):
@@ -411,6 +427,22 @@ listview = {
 
 frm = {
 	"Handling Unit": {
+		"Work Order": [
+			{
+				"action": "add_or_associate",
+				"doctype": "Stock Entry",
+				"field": "handling_unit",
+				"target": "target.handling_unit",
+				"context": "target",
+			},
+			{
+				"action": "add_or_associate",
+				"doctype": "Stock Entry",
+				"field": "qty",
+				"target": "target.qty",
+				"context": "target",
+			},
+		],
 		"Delivery Note": [
 			{
 				"action": "add_or_associate",
@@ -594,6 +626,15 @@ frm = {
 		],
 	},
 	"Item": {
+		"Work Order": [
+			{
+				"action": "add_or_increment",
+				"doctype": "Stock Entry",
+				"field": "item_code",
+				"target": "target.item_code",
+				"context": "target",
+			},
+		],
 		"Delivery Note": [
 			{
 				"action": "add_or_increment",
