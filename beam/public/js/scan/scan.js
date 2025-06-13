@@ -1,4 +1,4 @@
-// import onScan from 'onscan.js'
+import onScan from 'onscan.js'
 
 function waitForElement(selector) {
 	return new Promise(resolve => {
