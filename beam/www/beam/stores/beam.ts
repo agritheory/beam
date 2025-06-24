@@ -117,9 +117,18 @@ export const useBeamStore = defineStore('beam', () => {
 	}
 
 	const setWarehouses = async () => {
-		warehouseList.value = await getAll<{ name: string }[]>('Warehouse', {
-			fields: JSON.stringify(['company', 'disabled', 'is_group', 'name', 'warehouse_name']),
-		})
+		if (warehouseList.value && warehouseList.value.length) return
+
+		try {
+			const warehouses = await getAll<{ name: string }[]>('Warehouse', {
+				fields: JSON.stringify(['company', 'disabled', 'is_group', 'name', 'warehouse_name']),
+			})
+			console.log('Warehouses fetched:', warehouses)
+			warehouseList.value = warehouses
+		} catch (error) {
+			console.error('Error fetching warehouses:', error)
+			warehouseList.value = []
+		}
 	}
 
 	const getOne = async <T>(doctype: string, name: string) => {
