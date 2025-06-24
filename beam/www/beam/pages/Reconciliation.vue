@@ -52,7 +52,7 @@ store.$subscribe(mutation => {
 })
 
 onMounted(async () => {
-	store.$patch(state => (state.cache.mappers['stock-reconciliation'] as StockReconciliation) = reconciliation.value)
+	store.$patch(state => ((state.cache.mappers['stock-reconciliation'] as StockReconciliation) = reconciliation.value))
 	warehouseList.value = store.warehouseList.filter(w => !w.is_group).map(w => w.name)
 })
 
@@ -69,7 +69,7 @@ const loadItems = async warehouse => {
 			count: { count: item.qty, uom: item.stock_uom },
 			linkComponent: 'ListCount',
 		}))
-		store.$patch(state => (state.cache.mappers['stock-reconciliation'] as StockReconciliation).items = response)
+		store.$patch(state => ((state.cache.mappers['stock-reconciliation'] as StockReconciliation).items = response))
 	} catch (error) {
 		console.error('Error loading items:', error)
 	}
@@ -106,7 +106,7 @@ const submit = async () => {
 	const res = await store.submit('Stock Reconciliation', reconciliation.value.name)
 	if (res?.data) {
 		store.$patch(state => {
-			(state.cache.mappers['stock-reconciliation'] as any) = {
+			;(state.cache.mappers['stock-reconciliation'] as any) = {
 				name: '',
 				purpose: 'Stock Reconciliation',
 				items: [],
@@ -118,7 +118,7 @@ const submit = async () => {
 
 const cancel = async () => {
 	store.$patch(state => {
-		(state.cache.mappers['stock-reconciliation'] as any) = {
+		;(state.cache.mappers['stock-reconciliation'] as any) = {
 			name: '',
 			purpose: 'Stock Reconciliation',
 			items: [],
@@ -171,7 +171,7 @@ const updateItem = (value: StockEntryItemWithCount) => {
 	}
 
 	if (itemModified) {
-		store.$patch(state => (state.cache.mappers['stock-reconciliation'] as StockEntryItem) = reconciliation.value)
+		store.$patch(state => ((state.cache.mappers['stock-reconciliation'] as StockEntryItem) = reconciliation.value))
 	}
 }
 </script>
