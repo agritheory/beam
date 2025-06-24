@@ -16,7 +16,6 @@
 	</div>
 
 	<!-- body section -->
-	 {{ console.log(reconciliation) }}
 	<ListView v-if="items.length > 0" :items="items" :key="componentKey" @update="updateItem" />
 	<div class="begin" v-else>
 		<span>Scan or Select Warehouses to Begin</span>
@@ -88,17 +87,18 @@ const create = async () => {
 		name: reconciliation.value.name,
 	}
 	console.log(body)
-	// let res
-	// if (body.name) {
-	// 	res = await store.update('Stock Reconciliation', body.name, body)
-	// } else {
-	// 	res = await store.insert('Stock Reconciliation', body)
-	// }
-	// const { data } = res
-	// if (data.name) {
-	// 	reconciliation.value.name = data.name
-	// }
-	// return res
+	let res
+	if (body.name) {
+		res = await store.update('Stock Reconciliation', body.name, body)
+	} else {
+		res = await store.insert('Stock Reconciliation', body)
+	}
+	const { data } = res
+	console.log(data)
+	if (data && data.name) {
+		reconciliation.value.name = data.name
+	}
+	return res
 }
 
 const submit = async () => {
@@ -113,7 +113,6 @@ const submit = async () => {
 				set_warehouse: '',
 			}
 		})
-		// items.value = []
 	}
 }
 
@@ -126,7 +125,6 @@ const cancel = async () => {
 			set_warehouse: '',
 		}
 	})
-	// items.value = []
 }
 
 const controlButtons = computed((): ControlButton[] => {
@@ -138,18 +136,18 @@ const controlButtons = computed((): ControlButton[] => {
 			color: { background: '#4791FF', text: 'var(--sc-btn-color)' },
 			action: create,
 		},
-		// {
-		// 	label: 'SUBMIT',
-		// 	disabled: !reconciliation.value.name,
-		// 	hidden: !reconciliation.value.name,
-		// 	color: { background: 'var(--sc-success)', text: 'var(--sc-btn-color)' },
-		// 	action: submit,
-		// },
-		// {
-		// 	label: 'CANCEL',
-		// 	color: { background: 'var(--sc-danger)', text: 'var(--sc-btn-color)' },
-		// 	action: cancel,
-		// },
+		{
+			label: 'SUBMIT',
+			disabled: !reconciliation.value.name,
+			hidden: !reconciliation.value.name,
+			color: { background: 'var(--sc-success)', text: 'var(--sc-btn-color)' },
+			action: submit,
+		},
+		{
+			label: 'CANCEL',
+			color: { background: 'var(--sc-danger)', text: 'black' },
+			action: cancel,
+		},
 	]
 })
 
