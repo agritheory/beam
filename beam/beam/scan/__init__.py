@@ -254,8 +254,9 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 	actions = form_actions.get(barcode_doc.doc.doctype, {}).get(context.frm, [])
 	for action in actions:
 		action["context"] = target
-		if isinstance(action.get("target"), str) and "." in action.get("target"):
-			serialized_target = action.get("target").split(".")
+		target_value = action.get("target")
+		if isinstance(target_value, str) and "." in target_value:
+			serialized_target = target_value.split(".")
 			action["target"] = target.get(serialized_target[1])
 
 	return actions
