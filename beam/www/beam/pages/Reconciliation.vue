@@ -145,7 +145,7 @@ const controlButtons = computed((): ControlButton[] => {
 		},
 		{
 			label: 'CANCEL',
-			color: { background: 'var(--sc-danger)', text: 'black' },
+			color: { background: 'white', text: 'black' },
 			action: cancel,
 		},
 	]
