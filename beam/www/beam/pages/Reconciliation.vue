@@ -56,7 +56,10 @@ onMounted(async () => {
 	warehouseList.value = store.warehouseList.filter(w => !w.is_group).map(w => w.name)
 })
 
-const clearField = () => store.$patch(state => (state.cache.mappers['stock-reconciliation']['set_warehouse'] = ''))
+const clearField = () => {
+	store.$patch(state => (state.cache.mappers['stock-reconciliation']['set_warehouse'] = ''))
+	store.$patch(state => ((state.cache.mappers['stock-reconciliation'] as StockReconciliation).items = []))
+}
 
 const loadItems = async warehouse => {
 	try {
