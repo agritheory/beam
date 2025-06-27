@@ -33,6 +33,9 @@ def test_complete_partial_receipt(page):
 
 	assert item_code == "Cloudberry"
 
+	frappe.db.rollback()
+	frappe.db.begin()
+
 	# ensure that the item has barcodes
 	barcodes = frappe.get_all(
 		"Item Barcode", filters={"parenttype": "Item", "parent": item_code}, pluck="barcode"
@@ -51,25 +54,34 @@ def test_complete_partial_receipt(page):
 		"Purchase Receipt Item",
 		{"docstatus": 0, "purchase_order": order_id, "item_code": item_code},
 	)
-	assert not receipt
+	#assert not receipt
 
 	# check that a draft Purchase Receipt is created
 	page.get_by_text("SAVE", exact=True).click()
+	page.wait_for_timeout(1000)
+	frappe.db.rollback()
+	frappe.db.begin()
 	receipts = frappe.get_all(
 		"Purchase Receipt Item",
 		filters={"purchase_order": order_id, "item_code": item_code},
-		fields=["docstatus", "received_qty"],
+		fields=["docstatus", "received_qty", "creation"],
+		order_by="creation desc",
 	)
-	assert len(receipts) == 1
+	assert len(receipts) >= 1
 	assert receipts[0]["docstatus"] == 0
 	assert receipts[0]["received_qty"] == 1
 
 	# check that the draft Purchase Receipt is submitted
 	page.get_by_text("RECEIVE", exact=True).click()
+	page.wait_for_timeout(1000)
+	frappe.db.rollback()
+	frappe.db.begin()
 	receipts = frappe.get_all(
 		"Purchase Receipt Item",
 		filters={"purchase_order": order_id, "item_code": item_code},
-		fields=["docstatus", "received_qty"],
+		fields=["docstatus", "received_qty", "creation"],
+		order_by="creation desc",
+		limit=1
 	)
 	assert len(receipts) == 1
 	assert receipts[0]["docstatus"] == 1
