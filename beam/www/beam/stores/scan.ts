@@ -30,6 +30,8 @@ export const useScanStore = defineStore('scan', () => {
 		store.scanner.lastDocType = ''
 		const response = await store.scan(barcode, qty)
 		if (response && response.length > 0) {
+			console.log('response')
+			console.log(response)
 			let fn: Function
 			const action = response[0].action
 			if (response[0]?.context?.doc) {
@@ -106,6 +108,7 @@ export const useScanStore = defineStore('scan', () => {
 	}
 
 	const add_or_increment = (barcode_context: FormContext[]) => {
+		console.log('add_or_increment', barcode_context)
 		for (const action of barcode_context) {
 			const existing_rows = mappedDoc.value.items.filter(
 				row =>
@@ -121,6 +124,7 @@ export const useScanStore = defineStore('scan', () => {
 			}
 
 			if (existing_rows.length > 0) {
+				console.log('0')
 				const field = itemQtyFieldMap[action.doctype] || 'qty'
 				for (const row of existing_rows) {
 					row[field] = row[field] + 1
@@ -150,14 +154,17 @@ export const useScanStore = defineStore('scan', () => {
 					item.s_warehouse = action.context.warehouse
 					item.t_warehouse = action.context.warehouse
 				}
-
+				console.log('1', item)
 				;(mappedDoc.value as StockEntry).items.push(item)
 			} else {
+				console.log('2', documentId.value)
 				const item: StockEntryItem = {
 					item_code: action.context.doc?.item_code,
+					label: action.context.doc?.item_code,
 					qty: 1,
+					debounce: 1000,
 				}
-
+				console.log(item)
 				;(mappedDoc.value as StockEntry).items.push(item)
 			}
 			store.$patch(state => (state.cache.mappers[documentId.value] = mappedDoc.value))

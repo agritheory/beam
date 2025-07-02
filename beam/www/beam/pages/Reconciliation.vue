@@ -43,6 +43,7 @@ const reconciliation = computed(
 		}
 )
 const items = computed((): StockEntryItem[] => reconciliation.value.items)
+console.log('Stock Reconciliation:', reconciliation.value.items)
 const warehouseList = ref<string[]>([])
 
 store.$subscribe(mutation => {
@@ -61,7 +62,7 @@ const clearField = () => {
 	store.$patch(state => ((state.cache.mappers['stock-reconciliation'] as StockReconciliation).items = []))
 }
 
-const loadItems = async warehouse => {
+const loadItemsFromWarehouse = async warehouse => {
 	try {
 		let response = await store.getStockReconciliationItems(warehouse)
 		if (!response || response.length === 0) return
@@ -157,10 +158,28 @@ const controlButtons = computed((): ControlButton[] => {
 watch(
 	() => reconciliation.value.set_warehouse,
 	warehouse => {
-		if (!warehouse) return
-		loadItems(warehouse)
+		if (!warehouse) return 
+		loadItemsFromWarehouse(warehouse)
 	}
 )
+
+// watch (
+// 	() => (store.cache.mappers['stock-reconciliation'] as StockReconciliation)?.items,
+// 	(items) => {
+// 		console.log('watch items', items)
+// 		if (!items) return
+// 		if (items && items.length > 0) {
+// 			for (const item of items) {
+// 				item.debounce = 1000
+// 				item.label = item.item_code
+// 				item.count = { count: item.qty ? item.qty + 1 : 1, uom: item.stock_uom }
+// 				item.linkComponent = 'ListCount'
+// 			}
+// 			store.$patch(state => ((state.cache.mappers['stock-reconciliation'] as StockReconciliation).items = items))
+// 		}
+// 	},
+// 	{ immediate: true, deep: true }
+// )
 
 const updateItem = (value: StockEntryItemWithCount) => {
 	if (!value || !value.count || !value.count.count) return
