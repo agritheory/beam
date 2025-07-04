@@ -30,7 +30,7 @@ import ControlButtons from '@/components/ControlButtons.vue'
 import { useBeamStore } from '@/stores/beam'
 import type { ControlButton, StockReconciliation, StockEntryItem } from '@/types'
 import ListView from '@/components/ListView.vue'
-type StockEntryItemWithCount = StockEntryItem & { count?: { count: number; of?: number } }
+type StockEntryItemWithCount = StockEntryItem & { count?: { count: number; of: number; uom?: string } }
 
 const store = useBeamStore()
 const componentKey = ref(0)
@@ -46,30 +46,59 @@ const reconciliation = computed(
 const items = ref([] as StockEntryItem[])
 const warehouseList = ref<string[]>([])
 
-store.$subscribe(mutation => {
-	if (['patch function', 'patch object'].includes(mutation.type)) {
-		componentKey.value++
-	}
-})
-
 const clearField = () => {
 	store.$patch(state => (state.cache.mappers['stock-reconciliation']['set_warehouse'] = ''))
 	store.$patch(state => ((state.cache.mappers['stock-reconciliation'] as StockReconciliation).items = []))
 	items.value = []
 }
 
+const mergeItems = (newItems: StockEntryItem[], fromWarehouse?: Boolean) => {
+	if (!newItems) return
+
+	newItems.forEach(newItem => {
+		const existingIndex = items.value.findIndex(item => item.item_code === newItem.item_code)
+
+		if (existingIndex !== -1) {
+			const existingItem = items.value[existingIndex] as StockEntryItemWithCount
+			const currentCount = existingItem.count?.count || 0
+			const incrementBy = fromWarehouse ? (newItem.qty || 1) : 1
+			const count = currentCount > 0 ? currentCount + incrementBy : (newItem.qty || 1)
+
+			items.value[existingIndex] = {
+				...existingItem,
+				...newItem,
+				label: newItem.item_code,
+				count: {
+					count,
+					of: 0,
+					uom: existingItem.count?.uom || newItem.stock_uom
+				},
+				debounce: 1000,
+				linkComponent: 'ListCount',
+			} as StockEntryItemWithCount
+		} else {
+			items.value.push({
+				...newItem,
+				label: newItem.item_code,
+				count: {
+					count: newItem.qty || 1,
+					of: 0,
+					uom: newItem.stock_uom
+				},
+				debounce: 1000,
+				linkComponent: 'ListCount',
+			} as StockEntryItemWithCount)
+		}
+	})
+
+	componentKey.value++
+}
+
 const loadItemsFromWarehouse = async warehouse => {
+	if (!warehouse) return
 	try {
 		let response = await store.getStockReconciliationItems(warehouse)
-		if (!response || response.length === 0) return
-		response = response.map(item => ({
-			...item,
-			debounce: 1000,
-			label: item.item_code,
-			count: { count: item.qty, uom: item.stock_uom },
-			linkComponent: 'ListCount',
-		}))
-		items.value = response as StockEntryItemWithCount[]
+		mergeItems(response || [], true)
 	} catch (error) {
 		console.error('Error loading items:', error)
 	}
@@ -112,7 +141,7 @@ const submit = async () => {
 	const res = await store.submit('Stock Reconciliation', reconciliation.value.name)
 	if (res?.data) {
 		store.$patch(state => {
-			;(state.cache.mappers['stock-reconciliation'] as any) = {
+			; (state.cache.mappers['stock-reconciliation'] as any) = {
 				name: '',
 				purpose: 'Stock Reconciliation',
 				items: [],
@@ -126,7 +155,7 @@ const submit = async () => {
 
 const cancel = async () => {
 	store.$patch(state => {
-		;(state.cache.mappers['stock-reconciliation'] as any) = {
+		; (state.cache.mappers['stock-reconciliation'] as any) = {
 			name: '',
 			purpose: 'Stock Reconciliation',
 			items: [],
@@ -163,41 +192,12 @@ const controlButtons = computed((): ControlButton[] => {
 
 watch(
 	() => reconciliation.value.set_warehouse,
-	warehouse => {
-		if (!warehouse) return 
-		loadItemsFromWarehouse(warehouse)
-	}
+	warehouse => loadItemsFromWarehouse(warehouse)
 )
 
 watch(
 	() => store.cache.mappers['stock-reconciliation']?.items,
-	newItems => {
-		if (!newItems || !Array.isArray(newItems)) return
-		
-		newItems.forEach(newItem => {
-			const existingIndex = items.value.findIndex(item => item.item_code === newItem.item_code)
-			
-			if (existingIndex !== -1) {
-				const existingItem = items.value[existingIndex] as StockEntryItemWithCount
-				const count = existingItem.count?.count ? existingItem.count.count + 1 : 1
-				
-				items.value[existingIndex] = {
-					...existingItem,
-					...newItem,
-					label: newItem.item_code,
-					count: { count, uom: existingItem.count?.uom || newItem.stock_uom },
-				} as StockEntryItemWithCount
-			} else {
-				items.value.push({
-					...newItem,
-					label: newItem.item_code,
-					count: { count: newItem.qty || 1, uom: newItem.stock_uom },
-				} as StockEntryItemWithCount)
-			}
-		})
-		
-		componentKey.value++
-	},
+	newItems => mergeItems(newItems || []),
 	{ immediate: true, deep: true }
 )
 
