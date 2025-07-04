@@ -61,8 +61,8 @@ const mergeItems = (newItems: StockEntryItem[], fromWarehouse?: Boolean) => {
 		if (existingIndex !== -1) {
 			const existingItem = items.value[existingIndex] as StockEntryItemWithCount
 			const currentCount = existingItem.count?.count || 0
-			const incrementBy = fromWarehouse ? (newItem.qty || 1) : 1
-			const count = currentCount > 0 ? currentCount + incrementBy : (newItem.qty || 1)
+			const incrementBy = fromWarehouse ? newItem.qty || 1 : 1
+			const count = currentCount > 0 ? currentCount + incrementBy : newItem.qty || 1
 
 			items.value[existingIndex] = {
 				...existingItem,
@@ -71,7 +71,7 @@ const mergeItems = (newItems: StockEntryItem[], fromWarehouse?: Boolean) => {
 				count: {
 					count,
 					of: 0,
-					uom: existingItem.count?.uom || newItem.stock_uom
+					uom: existingItem.count?.uom || newItem.stock_uom,
 				},
 				debounce: 1000,
 				linkComponent: 'ListCount',
@@ -83,7 +83,7 @@ const mergeItems = (newItems: StockEntryItem[], fromWarehouse?: Boolean) => {
 				count: {
 					count: newItem.qty || 1,
 					of: 0,
-					uom: newItem.stock_uom
+					uom: newItem.stock_uom,
 				},
 				debounce: 1000,
 				linkComponent: 'ListCount',
@@ -141,7 +141,7 @@ const submit = async () => {
 	const res = await store.submit('Stock Reconciliation', reconciliation.value.name)
 	if (res?.data) {
 		store.$patch(state => {
-			; (state.cache.mappers['stock-reconciliation'] as any) = {
+			;(state.cache.mappers['stock-reconciliation'] as any) = {
 				name: '',
 				purpose: 'Stock Reconciliation',
 				items: [],
@@ -155,7 +155,7 @@ const submit = async () => {
 
 const cancel = async () => {
 	store.$patch(state => {
-		; (state.cache.mappers['stock-reconciliation'] as any) = {
+		;(state.cache.mappers['stock-reconciliation'] as any) = {
 			name: '',
 			purpose: 'Stock Reconciliation',
 			items: [],
