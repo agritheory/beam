@@ -160,11 +160,9 @@ export const useScanStore = defineStore('scan', () => {
 				console.log('2', documentId.value)
 				const item: StockEntryItem = {
 					item_code: action.context.doc?.item_code,
-					label: action.context.doc?.item_code,
 					qty: 1,
-					debounce: 1000,
 				}
-				console.log(item)
+
 				;(mappedDoc.value as StockEntry).items.push(item)
 			}
 			store.$patch(state => (state.cache.mappers[documentId.value] = mappedDoc.value))

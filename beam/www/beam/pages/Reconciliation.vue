@@ -30,6 +30,7 @@ import ControlButtons from '@/components/ControlButtons.vue'
 import { useBeamStore } from '@/stores/beam'
 import type { ControlButton, StockReconciliation, StockEntryItem } from '@/types'
 import ListView from '@/components/ListView.vue'
+type StockEntryItemWithCount = StockEntryItem & { count?: { count: number; of?: number } }
 
 const store = useBeamStore()
 const componentKey = ref(0)
@@ -42,8 +43,7 @@ const reconciliation = computed(
 			set_warehouse: '',
 		}
 )
-const items = computed((): StockEntryItem[] => reconciliation.value.items)
-console.log('Stock Reconciliation:', reconciliation.value.items)
+const items = ref([] as StockEntryItem[])
 const warehouseList = ref<string[]>([])
 
 store.$subscribe(mutation => {
@@ -52,14 +52,10 @@ store.$subscribe(mutation => {
 	}
 })
 
-onMounted(async () => {
-	store.$patch(state => ((state.cache.mappers['stock-reconciliation'] as StockReconciliation) = reconciliation.value))
-	warehouseList.value = store.warehouseList.filter(w => !w.is_group).map(w => w.name)
-})
-
 const clearField = () => {
 	store.$patch(state => (state.cache.mappers['stock-reconciliation']['set_warehouse'] = ''))
 	store.$patch(state => ((state.cache.mappers['stock-reconciliation'] as StockReconciliation).items = []))
+	items.value = []
 }
 
 const loadItemsFromWarehouse = async warehouse => {
@@ -73,13 +69,22 @@ const loadItemsFromWarehouse = async warehouse => {
 			count: { count: item.qty, uom: item.stock_uom },
 			linkComponent: 'ListCount',
 		}))
-		store.$patch(state => ((state.cache.mappers['stock-reconciliation'] as StockReconciliation).items = response))
+		items.value = response as StockEntryItemWithCount[]
 	} catch (error) {
 		console.error('Error loading items:', error)
 	}
 }
 
-type StockEntryItemWithCount = StockEntryItem & { count?: { count: number; of?: number } }
+const updateItem = (value: StockEntryItemWithCount) => {
+	if (!value || !value.count || !value.count.count) return
+	for (const item of reconciliation.value.items) {
+		if (item.item_code === value.item_code && item.qty !== value.count.count) {
+			item.qty = value.count.count
+			break
+		}
+	}
+}
+
 const create = async () => {
 	const body = {
 		purpose: 'Stock Reconciliation',
@@ -90,7 +95,7 @@ const create = async () => {
 		})),
 		name: reconciliation.value.name,
 	}
-	console.log(body)
+
 	let res
 	if (body.name) {
 		res = await store.update('Stock Reconciliation', body.name, body)
@@ -98,10 +103,7 @@ const create = async () => {
 		res = await store.insert('Stock Reconciliation', body)
 	}
 	const { data } = res
-	console.log(data)
-	if (data && data.name) {
-		reconciliation.value.name = data.name
-	}
+	if (data && data.name) reconciliation.value.name = data.name
 	return res
 }
 
@@ -117,6 +119,8 @@ const submit = async () => {
 				set_warehouse: '',
 			}
 		})
+		items.value = []
+		componentKey.value++
 	}
 }
 
@@ -129,6 +133,8 @@ const cancel = async () => {
 			set_warehouse: '',
 		}
 	})
+	items.value = []
+	componentKey.value++
 }
 
 const controlButtons = computed((): ControlButton[] => {
@@ -163,39 +169,42 @@ watch(
 	}
 )
 
-// watch (
-// 	() => (store.cache.mappers['stock-reconciliation'] as StockReconciliation)?.items,
-// 	(items) => {
-// 		console.log('watch items', items)
-// 		if (!items) return
-// 		if (items && items.length > 0) {
-// 			for (const item of items) {
-// 				item.debounce = 1000
-// 				item.label = item.item_code
-// 				item.count = { count: item.qty ? item.qty + 1 : 1, uom: item.stock_uom }
-// 				item.linkComponent = 'ListCount'
-// 			}
-// 			store.$patch(state => ((state.cache.mappers['stock-reconciliation'] as StockReconciliation).items = items))
-// 		}
-// 	},
-// 	{ immediate: true, deep: true }
-// )
+watch(
+	() => store.cache.mappers['stock-reconciliation']?.items,
+	newItems => {
+		if (!newItems || !Array.isArray(newItems)) return
+		
+		newItems.forEach(newItem => {
+			const existingIndex = items.value.findIndex(item => item.item_code === newItem.item_code)
+			
+			if (existingIndex !== -1) {
+				const existingItem = items.value[existingIndex] as StockEntryItemWithCount
+				const count = existingItem.count?.count ? existingItem.count.count + 1 : 1
+				
+				items.value[existingIndex] = {
+					...existingItem,
+					...newItem,
+					label: newItem.item_code,
+					count: { count, uom: existingItem.count?.uom || newItem.stock_uom },
+				} as StockEntryItemWithCount
+			} else {
+				items.value.push({
+					...newItem,
+					label: newItem.item_code,
+					count: { count: newItem.qty || 1, uom: newItem.stock_uom },
+				} as StockEntryItemWithCount)
+			}
+		})
+		
+		componentKey.value++
+	},
+	{ immediate: true, deep: true }
+)
 
-const updateItem = (value: StockEntryItemWithCount) => {
-	if (!value || !value.count || !value.count.count) return
-	let itemModified = false
-	for (const item of reconciliation.value.items) {
-		if (item.item_code === value.item_code && item.qty !== value.count.count) {
-			item.qty = value.count.count
-			itemModified = true
-			break
-		}
-	}
-
-	if (itemModified) {
-		store.$patch(state => ((state.cache.mappers['stock-reconciliation'] as StockEntryItem) = reconciliation.value))
-	}
-}
+onMounted(async () => {
+	store.$patch(state => ((state.cache.mappers['stock-reconciliation'] as StockReconciliation) = reconciliation.value))
+	warehouseList.value = store.warehouseList.filter(w => !w.is_group).map(w => w.name)
+})
 </script>
 <style>
 .reconciliation {
