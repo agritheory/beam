@@ -45,6 +45,7 @@ export type ChildDoctype = ChildDoctypeMeta & {
 	qty?: number
 	stock_qty?: number
 	warehouse?: string
+	stock_uom?: string
 	doc?: Omit<ChildDoctype, 'doc'>
 }
 
@@ -100,6 +101,7 @@ export type StockEntryItem = ChildDoctype & {
 	t_warehouse?: string
 	transfer_qty?: number
 	transferred_qty?: number
+	stock_uom?: string
 }
 
 export type WorkOrder = ParentDoctype & {
