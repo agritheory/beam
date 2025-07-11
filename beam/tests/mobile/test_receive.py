@@ -34,14 +34,13 @@ def test_complete_partial_receipt(page):
 
 	assert item_code == "Cloudberry"
 
-	frappe.db.rollback()
-	frappe.db.begin()
-
-	# ensure that the item has barcodes
-	barcodes = frappe.get_all(
-		"Item Barcode", filters={"parenttype": "Item", "parent": item_code}, pluck="barcode"
-	)
-	assert len(barcodes) > 0
+	# Refresh transaction to see setup data
+	with use_current_db_transaction():
+		# ensure that the item has barcodes
+		barcodes = frappe.get_all(
+			"Item Barcode", filters={"parenttype": "Item", "parent": item_code}, pluck="barcode"
+		)
+		assert len(barcodes) > 0
 
 	# scan barcode and expect increment by 1
 	with page.expect_request(
