@@ -7,6 +7,7 @@ import frappe
 import pytest
 
 from playwright.sync_api import expect
+from beam.tests.test_utils import use_current_db_transaction
 
 
 @pytest.mark.order(1)
@@ -81,26 +82,24 @@ def test_complete_partial_stock_entry(page):
 	# check that a draft Stock Entry is created
 	page.get_by_text("SAVE", exact=True).click()
 	page.wait_for_timeout(1000)
-	frappe.db.rollback()
-	frappe.db.begin()
-	entries = frappe.get_all(
-		"Stock Entry",
-		filters={"work_order": order_id},
-		fields=["docstatus"],
-	)
+	with use_current_db_transaction():
+		entries = frappe.get_all(
+			"Stock Entry",
+			filters={"work_order": order_id},
+			fields=["docstatus"],
+		)
 	assert len(entries) >= 1
 	assert entries[0]["docstatus"] == 0
 
 	# check that the draft Purchase Receipt is submitted
 	page.get_by_text("TRANSFER", exact=True).click()
 	page.wait_for_timeout(1000)
-	frappe.db.rollback()
-	frappe.db.begin()
-	receipts = frappe.get_all(
-		"Stock Entry",
-		filters={"work_order": order_id},
-		fields=["docstatus"],
-	)
+	with use_current_db_transaction():
+		receipts = frappe.get_all(
+			"Stock Entry",
+			filters={"work_order": order_id},
+			fields=["docstatus"],
+		)
 	assert len(receipts) >= 1
 	assert receipts[0]["docstatus"] == 1
 
