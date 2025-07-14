@@ -18,15 +18,6 @@ from beam.beam.doctype.beam_settings.beam_settings import create_beam_settings
 def create_beam_barcode(doc, method=None):
 	if doc.doctype == "Item" and doc.is_stock_item == 0:
 		return
-	if (
-		doc.get("item_group")
-		and doc.doctype == "Item"
-		and frappe.db.exists("Item Group", "Products")
-		and doc.item_group
-		in frappe.get_all("Item Group", {"name": ("descendants of", "Products")}, pluck="name")
-	):
-		# TODO: refactor this to be configurable to "Products" or "sold" items that do not require handling units
-		return
 	if any([b for b in doc.barcodes if b.barcode_type == "Code128"]):
 		return
 	# move all other rows back
@@ -53,10 +44,11 @@ def barcode128(barcode_text: str) -> str:
 	)
 	font_size = settings.barcode_font_size or 0
 	temp = BytesIO()
-	instance = Code128(barcode_text, writer=ImageWriter())
-	instance.write(
-		options={"module_width": 0.4, "module_height": 10, "font_size": font_size, "compress": True},
-	)
+
+	barcode_instance = Code128(barcode_text, writer=ImageWriter())
+	options = {"module_width": 0.4, "module_height": 10, "font_size": font_size, "compress": True}
+
+	barcode_instance.write(temp, options)
 	encoded = base64.b64encode(temp.getvalue()).decode("ascii")
 	return f'<img src="data:image/png;base64,{encoded}"/>'
 
