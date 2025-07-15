@@ -33,7 +33,7 @@ Set up a new bench, substitute a path to the python version to use, which should
 
 ```
 # for linux development
-bench init --frappe-branch version-15 {{ bench name }} --python ~/.pyenv/versions/3.10.13/bin/python3
+bench init --frappe-branch version-15 {{ bench name }} --python python3
 ```
 Create a new site in that bench
 ```
@@ -74,7 +74,10 @@ bench build
 Setup test data
 ```shell
 bench execute 'beam.tests.setup.before_test'
-# for complete reset to run before tests:
+```
+
+For a complete database reset to re-run tests, run the following
+```shell
 bench reinstall --yes --admin-password admin --mariadb-root-password admin && bench execute 'beam.tests.setup.before_test'
 ```
 
@@ -85,6 +88,28 @@ mypy ./apps/beam/beam --ignore-missing-imports
 pytest ./apps/beam/beam/tests -s --disable-warnings
 ```
 
+### Beam Portal setup
+
+<details>
+<summary>Development</summary>
+
+```shell
+# start the development server
+yarn dev
+```
+</details>
+
+<details>
+<summary>Production</summary>
+
+```shell
+# build assets for the portal page(s)
+bench build
+
+# visit `{server URL}/beam` to access the portal page.
+```
+</details>
+
 ### Printer Server setup
 ```shell
 sudo apt-get install gcc cups python3-dev libcups2-dev -y
@@ -94,9 +119,8 @@ sudo apt-get install gcc cups python3-dev libcups2-dev -y
 bench pip install pycups
 sudo usermod -a -G lpadmin {username} # the "frappe" user in most installations
 ```
-Go to `{server URL or localhost}:631` to access the CUPS web interface
-Configuration on a remote server will take extra steps to secure:
-https://askubuntu.com/questions/23936/how-do-you-administer-cups-remotely-using-the-web-interface
+
+Go to `{server URL or localhost}:631` to access the CUPS web interface. Configuration on a remote server will take [extra steps](https://askubuntu.com/questions/23936/how-do-you-administer-cups-remotely-using-the-web-interface) to secure.
 
 #### License
 

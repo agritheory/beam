@@ -24,7 +24,7 @@ frappe.ui.form.on('Stock Entry', {
 async function show_handling_unit_recombine_dialog(frm) {
 	const data = await get_handling_units(frm)
 	if (!data) {
-		return resolve({})
+		return new Promise(resolve => {})
 	}
 	let fields = [
 		{
@@ -92,7 +92,6 @@ async function show_handling_unit_recombine_dialog(frm) {
 					editable_grid: false,
 					cannot_add_rows: true,
 					cannot_delete_rows: true,
-					reqd: 1,
 					data: data,
 					get_data: () => {
 						return data
