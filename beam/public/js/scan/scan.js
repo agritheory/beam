@@ -208,6 +208,36 @@ class ScanHandler {
 				frappe.model.set_value(row.doctype, row.name, 's_warehouse', barcode_context.target)
 				frappe.model.set_value(row.doctype, row.name, 't_warehouse', barcode_context.target)
 			}
+		} else if (
+			barcode_context.doctype == 'Stock Reconciliation Item' ||
+			barcode_context.doctype == 'Stock Reconciliation'
+		) {
+			cur_frm.set_value('set_warehouse', barcode_context.target)
+			cur_frm.set_value('purpose', 'Stock Reconciliation')
+			frappe.call({
+				method: 'erpnext.stock.doctype.stock_reconciliation.stock_reconciliation.get_items',
+				args: {
+					warehouse: barcode_context.target,
+					posting_date: cur_frm.doc.posting_date,
+					posting_time: cur_frm.doc.posting_time,
+					company: cur_frm.doc.company,
+				},
+				callback: function (r) {
+					if (r.exc || !r.message || !r.message.length) return
+
+					cur_frm.clear_table('items')
+
+					r.message.forEach(row => {
+						let item = cur_frm.add_child('items')
+						$.extend(item, row)
+
+						item.qty = item.qty || 0
+						item.valuation_rate = item.valuation_rate || 0
+						item.use_serial_batch_fields = cint(frappe.user_defaults?.use_serial_batch_fields)
+					})
+					cur_frm.refresh_field('items')
+				},
+			})
 		}
 	}
 	add_or_increment(barcode_context) {
