@@ -24,7 +24,12 @@ def get_items(
 	)
 	dimensions = get_inventory_dimensions()
 
+	filtered_items = []
+	
 	for item in items:
+		if item.get("valuation_rate", 0) == 0:
+			continue
+
 		item_defaults = get_item_defaults(item["item_code"], company)
 		item["stock_uom"] = item_defaults.get("stock_uom")
 
@@ -32,5 +37,7 @@ def get_items(
 			fieldname = dim.get("fieldname")
 			if fieldname and fieldname in item_defaults:
 				item[fieldname] = item_defaults[fieldname]
-
-	return items
+		
+		filtered_items.append(item)
+	
+	return filtered_items
