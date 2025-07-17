@@ -29,7 +29,6 @@ import { ref, computed, onMounted, watch } from 'vue'
 import ControlButtons from '@/components/ControlButtons.vue'
 import { useBeamStore } from '@/stores/beam'
 import type { ControlButton, StockReconciliation, StockEntryItem } from '@/types'
-import ListView from '@/components/ListView.vue'
 type StockEntryItemWithCount = StockEntryItem & { count?: { count: number; of: number; uom?: string } }
 
 const store = useBeamStore()
