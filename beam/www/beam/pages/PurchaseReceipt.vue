@@ -30,7 +30,7 @@ import type { ControlButton, PurchaseReceipt, PurchaseReceiptItem } from '@/type
 
 const route = useRoute()
 const store = useBeamStore()
-const purchaseOrderId = route.query.id.toString()
+const purchaseOrderId = route.params.id?.toString() || 'new-purchase-receipt'
 
 const purchaseReceipt = ref(store.cache.mappers[purchaseOrderId] as PurchaseReceipt)
 const refreshKey = ref(0)

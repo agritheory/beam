@@ -1,5 +1,5 @@
 exclude: 'node_modules|.git'
-default_stages: [prepare-commit-msg, pre-commit]
+default_stages: [pre-commit]
 fail_fast: false
 
 repos:
@@ -20,7 +20,7 @@ repos:
       - id: debug-statements
 
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.19.0
+    rev: v3.19.1
     hooks:
       - id: pyupgrade
         args: ['--py310-plus']
@@ -36,6 +36,11 @@ repos:
       - id: autoflake
         args: [--remove-all-unused-imports, --in-place]
 
+  - repo: https://github.com/PyCQA/isort
+    rev: 6.0.0
+    hooks:
+      - id: isort
+
   - repo: https://github.com/PyCQA/flake8
     rev: 7.1.1
     hooks:
@@ -43,14 +48,14 @@ repos:
         additional_dependencies: ['flake8-bugbear']
 
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.3.0
+    rev: v2.4.1
     hooks:
       - id: codespell
         additional_dependencies:
           - tomli
 
   - repo: https://github.com/agritheory/test_utils
-    rev: v0.17.0
+    rev: v1.0.0
     hooks:
       - id: update_pre_commit_config
       - id: validate_copyright
@@ -64,8 +69,8 @@ repos:
     hooks:
       - id: prettier
         name: prettier
-        entry: npx prettier -w . --config .prettierrc.cjs --ignore-path .prettierignore
-        language: system
+        entry: npx prettier . --write --ignore-path .prettierignore
+        language: node
 
 ci:
   autoupdate_schedule: weekly

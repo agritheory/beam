@@ -1,4 +1,4 @@
-# Copyright (c) 2024, AgriTheory and contributors
+# Copyright (c) 2025, AgriTheory and contributors
 # For license information, please see license.txt
 
 import copy
@@ -8,7 +8,7 @@ from typing import Any
 
 import frappe
 from erpnext.stock.doctype.stock_entry.stock_entry import StockEntry
-from erpnext.stock.get_item_details import get_item_details
+from erpnext.stock.get_item_details import get_item_details, get_valuation_rate
 
 
 @frappe.whitelist()
@@ -228,6 +228,17 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 					"currency": frappe.defaults.get_user_default("Currency"),
 				}
 			)
+			valuation_rate = get_valuation_rate(barcode_doc.doc.name, target.company, target.warehouse)
+			if valuation_rate.get("valuation_rate"):
+				target.valuation_rate = valuation_rate.valuation_rate
+		target.barcode = barcode_doc.barcode
+	elif barcode_doc.doc.doctype == "Warehouse" and context.frm == "Stock Reconciliation":
+		target = frappe._dict(
+			{
+				"doctype": context.frm,
+				"warehouse": barcode_doc.doc.name,
+			}
+		)
 		target.barcode = barcode_doc.barcode
 
 	else:
@@ -254,8 +265,9 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 	actions = form_actions.get(barcode_doc.doc.doctype, {}).get(context.frm, [])
 	for action in actions:
 		action["context"] = target
-		if isinstance(action.get("target"), str) and "." in action.get("target"):
-			serialized_target = action.get("target").split(".")
+		target_value = action.get("target")
+		if isinstance(target_value, str) and "." in target_value:
+			serialized_target = target_value.split(".")
 			action["target"] = target.get(serialized_target[1])
 
 	return actions
