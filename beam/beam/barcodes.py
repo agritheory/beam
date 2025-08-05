@@ -55,7 +55,13 @@ def barcode128(barcode_text: str) -> str:
 	temp = BytesIO()
 	instance = Code128(barcode_text, writer=ImageWriter())
 	instance.write(
-		options={"module_width": 0.4, "module_height": 10, "font_size": font_size, "compress": True},
+		temp,
+		options={
+			"module_width": 0.4,
+			"module_height": 10,
+			"font_size": font_size,
+			"compress": True,
+		},
 	)
 	encoded = base64.b64encode(temp.getvalue()).decode("ascii")
 	return f'<img src="data:image/png;base64,{encoded}"/>'
@@ -129,7 +135,12 @@ def add_to_label(label: Label, element: Printable):
 
 class ZPLLabelStringOutput(Label):
 	def __init__(
-		self, width: int = 100, length: int = 100, dpi: int = 203, print_speed: int = 2, copies: int = 1
+		self,
+		width: int = 100,
+		length: int = 100,
+		dpi: int = 203,
+		print_speed: int = 2,
+		copies: int = 1,
 	):
 		super().__init__(width, length, dpi, print_speed, copies)
 
