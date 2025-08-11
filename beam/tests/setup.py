@@ -702,14 +702,13 @@ def create_production_plan(settings, prod_plan_from_doc):
 			job_card.append(
 				"time_logs",
 				{
-					"completed_qty": wo.qty,
+					#"completed_qty": wo.qty,
 					"from_time": start_time,
 					"to_time": start_time + datetime.timedelta(minutes=time_in_mins),
 					"time_in_mins": time_in_mins,
 					"remaining_time_in_mins": time_in_mins,
 				},
 			)
-			job_card.is_corrective_job_card = 1
 			job_card.save()
 			start_time = job_card.time_logs[0].to_time + datetime.timedelta(minutes=2)
 			# job_card.submit() # TODO: don't submit for demand tests
