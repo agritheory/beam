@@ -8,6 +8,8 @@ from typing import Any
 import frappe
 from erpnext.stock.doctype.stock_entry.stock_entry import StockEntry
 from erpnext.stock.get_item_details import get_item_details, get_valuation_rate
+from frappe.query_builder import Case, DocType
+from frappe.query_builder.functions import Coalesce
 
 
 @frappe.whitelist()
@@ -51,6 +53,7 @@ def get_handling_unit(handling_unit: str, parent_doctype: str | None = None) -> 
 		fields=[
 			"item_code",
 			"SUM(actual_qty) AS stock_qty",
+			"company",
 			"handling_unit",
 			"voucher_no",
 			"posting_date",
@@ -255,6 +258,127 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 			action["target"] = target.get(serialized_target[1])
 
 	return actions
+
+
+def get_serial_no(serial_no: str, parent_doctype: str | None = None) -> frappe._dict:
+	sle = DocType("Stock Ledger Entry")
+	snb = DocType("Serial and Batch Entry")
+	snb_bundle = DocType("Serial and Batch Bundle")
+	se_detail = DocType("Stock Entry Detail")
+	pr_item = DocType("Purchase Receipt Item")
+	pi_item = DocType("Purchase Invoice Item")
+	si_item = DocType("Sales Invoice Item")
+	dn_item = DocType("Delivery Note Item")
+
+	main_query = (
+		frappe.qb.from_(sle)
+		.left_join(snb_bundle)
+		.on(sle.serial_and_batch_bundle == snb_bundle.name)
+		.left_join(snb)
+		.on(snb_bundle.name == snb.parent)
+		.left_join(se_detail)
+		.on((sle.voucher_type == "Stock Entry") & (sle.voucher_detail_no == se_detail.name))
+		.left_join(pr_item)
+		.on((sle.voucher_type == "Purchase Receipt") & (sle.voucher_detail_no == pr_item.name))
+		.left_join(pi_item)
+		.on((sle.voucher_type == "Purchase Invoice") & (sle.voucher_detail_no == pi_item.name))
+		.left_join(si_item)
+		.on((sle.voucher_type == "Sales Invoice") & (sle.voucher_detail_no == si_item.name))
+		.left_join(dn_item)
+		.on((sle.voucher_type == "Delivery Note") & (sle.voucher_detail_no == dn_item.name))
+		.select(
+			sle.item_code,
+			sle.actual_qty.as_("stock_qty"),
+			sle.company,
+			sle.voucher_no,
+			sle.posting_date,
+			sle.posting_time,
+			sle.stock_uom,
+			sle.voucher_type,
+			sle.voucher_detail_no,
+			sle.warehouse,
+			sle.serial_and_batch_bundle,
+			Coalesce(snb.serial_no, sle.serial_no).as_("serial_no"),
+			# Item details from whichever child table matches
+			Coalesce(se_detail.uom, pr_item.uom, pi_item.uom, si_item.uom, dn_item.uom).as_("uom"),
+			Coalesce(se_detail.qty, pr_item.qty, pi_item.qty, si_item.qty, dn_item.qty).as_("qty"),
+			Coalesce(
+				se_detail.conversion_factor,
+				pr_item.conversion_factor,
+				pi_item.conversion_factor,
+				si_item.conversion_factor,
+				dn_item.conversion_factor,
+			).as_("conversion_factor"),
+			Coalesce(se_detail.idx, pr_item.idx, pi_item.idx, si_item.idx, dn_item.idx).as_("idx"),
+			Coalesce(
+				se_detail.item_name, pr_item.item_name, pi_item.item_name, si_item.item_name, dn_item.item_name
+			).as_("item_name"),
+			Coalesce(se_detail.name, pr_item.name, pi_item.name, si_item.name, dn_item.name).as_(
+				"detail_name"
+			),
+			# Special field for Purchase Receipt
+			Case()
+			.when(sle.voucher_type == "Purchase Receipt", pr_item.stock_qty)
+			.else_(None)
+			.as_("stock_qty_field"),
+			# For Packing Slip case - get delivery note item details
+			Case()
+			.when(
+				(dn_item.docstatus == 0)
+				& ((snb.serial_no == serial_no) | (dn_item.serial_no.like(f"%{serial_no}%"))),
+				dn_item.name,
+			)
+			.else_(None)
+			.as_("dn_detail"),
+		)
+		.where(
+			(sle.is_cancelled == 0)
+			& (
+				(snb.serial_no == serial_no)
+				| (sle.serial_no.like(f"%{serial_no}%"))  # Serial and Batch method  # Direct field method
+			)
+		)
+		.groupby(sle.voucher_no, sle.voucher_detail_no)
+		.orderby(sle.posting_date, order=frappe.qb.desc)
+		.orderby(sle.posting_time, order=frappe.qb.desc)
+		.limit(1)
+	)
+
+	result = main_query.run(as_dict=True)
+
+	if not result:
+		return
+
+	sle_data = frappe._dict(result[0])
+
+	if sle_data.stock_qty_field is not None:
+		sle_data.stock_qty = sle_data.stock_qty_field
+
+	if parent_doctype == "Packing Slip" and sle_data.dn_detail:
+		sle_data.dn_detail = sle_data.dn_detail
+
+	sle_data.qty = 1.0
+
+	if sle_data.conversion_factor and sle_data.conversion_factor != 0:
+		sle_data.stock_qty = sle_data.qty / sle_data.conversion_factor
+	else:
+		sle_data.stock_qty = sle_data.qty
+
+	sle_data.posting_datetime = (
+		datetime.datetime(
+			sle_data.posting_date.year, sle_data.posting_date.month, sle_data.posting_date.day
+		)
+		+ sle_data.posting_time
+	)
+
+	sle_data.user = frappe.session.user
+	sle_data.pop("posting_date", None)
+	sle_data.pop("posting_time", None)
+	sle_data.pop("voucher_detail_no", None)
+	sle_data.pop("stock_qty_field", None)
+	sle_data.pop("detail_name", None)
+
+	return sle_data
 
 
 listview = {
