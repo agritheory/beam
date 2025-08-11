@@ -1,5 +1,5 @@
 exclude: 'node_modules|.git'
-default_stages: [commit]
+default_stages: [pre-commit]
 fail_fast: false
 
 repos:
@@ -56,17 +56,15 @@ repos:
           - tomli
 
   - repo: https://github.com/agritheory/test_utils
-    rev: v0.15.0
+    rev: v1.0.0
     hooks:
       - id: update_pre_commit_config
       - id: validate_copyright
         files: '\.(js|ts|py|md)$'
-        args: ["--app", "beam"]
+        args: ['--app', 'beam']
       - id: clean_customized_doctypes
-        args: ["--app", "beam"]
+        args: ['--app', 'beam']
       - id: validate_customizations
-      - id: validate_python_dependencies
-      - id: validate_javascript_dependencies
 
 ci:
   autoupdate_schedule: weekly

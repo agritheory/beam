@@ -4,12 +4,7 @@
 	"doctype": "Item Barcode",
 	"property_setters": [
 		{
-			"_assign": null,
-			"_comments": null,
-			"_liked_by": null,
-			"_user_tags": null,
 			"creation": "2022-06-16 09:40:22.875922",
-			"default_value": null,
 			"doc_type": "Item Barcode",
 			"docstatus": 0,
 			"doctype_or_field": "DocField",
@@ -20,12 +15,8 @@
 			"module": "BEAM",
 			"name": "Item Barcode-barcode_type-options",
 			"owner": "Administrator",
-			"parent": null,
-			"parentfield": null,
-			"parenttype": null,
 			"property": "options",
 			"property_type": "Text",
-			"row_name": null,
 			"value": "\nEAN\nUPC-A\nCode128"
 		}
 	],
