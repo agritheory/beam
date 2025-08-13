@@ -533,22 +533,35 @@ def create_production_plan(settings, prod_plan_from_doc):
 
 	pp.make_work_order()
 	wos = frappe.get_all("Work Order", {"production_plan": pp.name})
+	start_time = datetime.datetime(settings.day.year, settings.day.month, settings.day.day, 0, 0)
 	for wo in wos:
 		wo = frappe.get_doc("Work Order", wo)
 		wo.wip_warehouse = "Kitchen - APC"
+		wo.actual_start_date = wo.planned_start_date = start_time
+		wo.required_items = sorted(wo.required_items, key=lambda x: x.get("item_code"))
+		for idx, w in enumerate(wo.required_items, start=1):
+			w.idx = idx
 		wo.save()
 		wo.submit()
+		frappe.db.set_value("Work Order", wo.name, "creation", start_time)
 		job_cards = frappe.get_all("Job Card", {"work_order": wo.name})
 		for job_card in job_cards:
 			job_card = frappe.get_doc("Job Card", job_card)
+			batch_size, total_operation_time = frappe.get_value(
+				"Operation", job_card.operation, ["batch_size", "total_operation_time"]
+			)
+			time_in_mins = (total_operation_time / batch_size) * wo.qty
 			job_card.append(
 				"time_logs",
 				{
-					"completed_qty": wo.qty,
+					"from_time": start_time,
+					"to_time": start_time + datetime.timedelta(minutes=time_in_mins),
+					"time_in_mins": time_in_mins,
+					"remaining_time_in_mins": time_in_mins,
 				},
 			)
 			job_card.save()
-			job_card.submit()
+			start_time = job_card.time_logs[0].to_time + datetime.timedelta(minutes=2)
 
 
 def create_purchase_receipt_for_received_qty_test(settings):
