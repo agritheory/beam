@@ -1,6 +1,11 @@
 # Copyright (c) 2024, AgriTheory and contributors
 # For license information, please see license.txt
 
+# To test locally:
+#  active the virtual environment
+#  bench start, and then run:
+#  pytest ./beam/tests/mobile/test_manufacture.py --browser firefox --headed --disable-warnings
+
 import re
 
 import frappe
