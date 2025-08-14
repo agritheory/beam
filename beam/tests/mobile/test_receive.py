@@ -1,6 +1,11 @@
 # Copyright (c) 2024, AgriTheory and contributors
 # For license information, please see license.txt
 
+# To test locally:
+#  active the virtual environment
+#  bench start, and then run:
+#  pytest ./beam/tests/mobile/test_receive.py --browser firefox --headed --disable-warnings
+
 import re
 from urllib.parse import urlparse, parse_qs
 
@@ -22,8 +27,13 @@ def test_complete_partial_receipt(page):
 	page.locator("css=.beam_list-item").first.click()
 
 	# get the selected Purchase Order
+	# NOTE: URL format changed: the id lives in the path after the hash (e.g. #/purchase-receipt/PUR-ORD-...)
+	# this PR changed the URL format:
+	# https://github.com/agritheory/beam/pull/274
 	parsed_url = urlparse(page.url.replace("#", ""))
-	order_id = parse_qs(parsed_url.query)["id"][0]
+	path_parts = [p for p in parsed_url.path.split("/") if p]
+	order_id = path_parts[-1] if path_parts else None
+
 	assert order_id
 
 	# find the first item in the list
@@ -54,7 +64,7 @@ def test_complete_partial_receipt(page):
 		"Purchase Receipt Item",
 		{"docstatus": 0, "purchase_order": order_id, "item_code": item_code},
 	)
-	#assert not receipt
+	assert not receipt
 
 	# check that a draft Purchase Receipt is created
 	page.get_by_text("SAVE", exact=True).click()
