@@ -10,9 +10,7 @@ import re
 
 import frappe
 import pytest
-
 from playwright.sync_api import expect
-
 
 # NOTE: any navigation tests should be done using `expect(page).to_have_url` since
 # `page.expect_navigation()` since the latter won't work with Beam's hash-based routes

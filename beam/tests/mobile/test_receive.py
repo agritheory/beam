@@ -7,14 +7,13 @@
 #  pytest ./beam/tests/mobile/test_receive.py --browser firefox --headed --disable-warnings
 
 import re
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import urlparse
 
 import frappe
 import pytest
-
 from playwright.sync_api import expect
-from beam.tests.test_utils import use_current_db_transaction
 
+from beam.tests.test_utils import use_current_db_transaction
 
 # NOTE: any navigation tests should be done using `expect(page).to_have_url` since
 # `page.expect_navigation()` won't work with Beam's hash-based routes
@@ -89,7 +88,7 @@ def test_complete_partial_receipt(page):
 			filters={"purchase_order": order_id, "item_code": item_code},
 			fields=["docstatus", "received_qty", "creation"],
 			order_by="creation desc",
-			limit=1
+			limit=1,
 		)
 	assert len(receipts) == 1
 	assert receipts[0]["docstatus"] == 1

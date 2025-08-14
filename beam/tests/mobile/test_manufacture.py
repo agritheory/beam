@@ -10,21 +10,21 @@ import re
 
 import frappe
 import pytest
-
 from playwright.sync_api import expect
+
 from beam.tests.test_utils import use_current_db_transaction
 
 
 @pytest.mark.order(1)
 def test_complete_partial_stock_entry(page):
 	"""
-	 This test needs to disable handling units on Beam Settings and
-	 populate the item in Stock Entry, otherwise we will obtain the error:
+	This test needs to disable handling units on Beam Settings and
+	populate the item in Stock Entry, otherwise we will obtain the error:
 
-	 'frappe.exceptions.ValidationError: Row #1: Handling Unit is missing for item Butter'
-	   or
-	 'erpnext.stock.stock_ledger.NegativeStockError: 1.0 units of
-	 Item Butter needed in Warehouse Refrigerator - APC to complete this transaction.'
+	'frappe.exceptions.ValidationError: Row #1: Handling Unit is missing for item Butter'
+	  or
+	'erpnext.stock.stock_ledger.NegativeStockError: 1.0 units of
+	Item Butter needed in Warehouse Refrigerator - APC to complete this transaction.'
 	"""
 
 	frappe.db.set_value("BEAM Settings", "Ambrosia Pie Company", "enable_handling_units", 0)
