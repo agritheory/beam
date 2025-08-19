@@ -50,6 +50,9 @@ bench start &> bench_run_logs.txt &
 CI=Yes &
 bench --site test_site reinstall --yes --admin-password admin
 
+bench --site test_site migrate
+bench --site test_site build
+
 bench setup requirements --dev
 
 echo "BENCH VERSION NUMBERS:"
