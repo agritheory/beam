@@ -212,3 +212,54 @@ def test_complete_partial_receipt(page):
 	assert receipts[0]["received_qty"] == 1
 
 
+@pytest.mark.order(5)
+def test_rapid_barcode_scanning(page):
+	"""Test scanning multiple barcodes quickly"""
+	# navigate to a Purchase Order
+	page.get_by_text("Receive").click()
+	page.locator("css=.beam_list-item").first.click()
+
+	# get the selected Purchase Order
+	parsed_url = urlparse(page.url.replace("#", ""))
+	path_parts = [p for p in parsed_url.path.split("/") if p]
+	order_id = path_parts[-1] if path_parts else None
+	assert order_id
+
+	# find the first item in the list
+	item = page.locator("css=.box .beam_list-item").first
+	item_code, *others = item.inner_text().split("\n")
+	item_count = page.locator("css=.box .beam_item-count").first
+	expect(item_count).to_have_text(re.compile("0/"))
+
+	# get barcode for the item
+	with use_current_db_transaction():
+		barcodes = frappe.get_all(
+			"Item Barcode", filters={"parenttype": "Item", "parent": item_code}, pluck="barcode"
+		)
+		assert len(barcodes) > 0
+
+	# scan the same barcode multiple times quickly
+	scan_count = 10
+	for _ in range(scan_count):
+		page.evaluate("barcode => scanner.simulate(window, barcode)", barcodes[0])
+		# very short delay between scans to simulate rapid scanning
+		page.wait_for_timeout(100)
+
+	page.wait_for_timeout(1000)
+
+	expect(item_count).to_have_text(re.compile(f"{scan_count}/"))
+
+	page.get_by_text("SAVE", exact=True).click()
+	page.wait_for_timeout(1000)
+
+	with use_current_db_transaction():
+		receipts = frappe.get_all(
+			"Purchase Receipt Item",
+			filters={"purchase_order": order_id, "item_code": item_code},
+			fields=["docstatus", "received_qty"],
+			order_by="creation desc",
+			limit=1,
+		)
+	assert len(receipts) == 1
+	assert receipts[0]["docstatus"] == 0
+	assert receipts[0]["received_qty"] == scan_count
