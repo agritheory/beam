@@ -20,6 +20,66 @@ from beam.tests.test_utils import use_current_db_transaction
 
 
 @pytest.mark.order(2)
+def test_scan_invalid_barcode(page):
+	# navigate to a Purchase Order
+	page.get_by_text("Receive").click()
+	page.locator("css=.beam_list-item").first.click()
+
+	# get the selected Purchase Order
+	parsed_url = urlparse(page.url.replace("#", ""))
+	path_parts = [p for p in parsed_url.path.split("/") if p]
+	order_id = path_parts[-1] if path_parts else None
+	assert order_id
+
+	# find all items in the list
+	all_item_counts = page.locator("css=.box .beam_item-count")
+
+	# get all item counts before scanning invalid barcode
+	initial_counts = []
+	for i in range(all_item_counts.count()):
+		count_text = all_item_counts.nth(i).inner_text()
+		initial_counts.append(count_text)
+
+	# ensure all items start with 0 count
+	for count in initial_counts:
+		assert count.startswith("0/"), f"Expected item to start with 0/, but got: {count}"
+
+	# verify there are no existing Purchase Receipts created by test user
+	with use_current_db_transaction():
+		existing_receipts = frappe.get_all(
+			"Purchase Receipt", filters={"owner": "support@agritheory.dev", "docstatus": 0}, fields=["name"]
+		)
+		assert (
+			len(existing_receipts) == 0
+		), f"Found existing draft Purchase Receipts created by test user: {existing_receipts}"
+
+	# scan an invalid barcode that doesn't exist
+	invalid_barcode = "INVALID_BARCODE_12345"
+	page.evaluate("barcode => scanner.simulate(window, barcode)", invalid_barcode)
+
+	page.wait_for_timeout(500)
+
+	# verify ALL item counts remain unchanged (all should still start with "0/")
+	initial_counts = []
+	for i in range(all_item_counts.count()):
+		count_text = all_item_counts.nth(i).inner_text()
+		initial_counts.append(count_text)
+
+	# ensure all items start with 0 count
+	for count in initial_counts:
+		assert count.startswith("0/"), f"Expected item to start with 0/, but got: {count}"
+
+	# verify no draft Purchase Receipt was created by test user
+	with use_current_db_transaction():
+		new_receipts = frappe.get_all(
+			"Purchase Receipt", filters={"owner": "support@agritheory.dev", "docstatus": 0}, fields=["name"]
+		)
+		assert (
+			len(new_receipts) == 0
+		), f"Invalid barcode scan should not create any Purchase Receipts, but found: {new_receipts}"
+
+
+@pytest.mark.order(3)
 def test_complete_partial_receipt(page):
 	# navigate in the following order: Home -> Receive -> Purchase Order
 	page.get_by_text("Receive").click()
@@ -61,7 +121,12 @@ def test_complete_partial_receipt(page):
 	# ensure there are no existing Purchase Receipts against this Purchase Order
 	receipt = frappe.db.exists(
 		"Purchase Receipt Item",
-		{"docstatus": 0, "purchase_order": order_id, "item_code": item_code},
+		{
+			"docstatus": 0,
+			"purchase_order": order_id,
+			"item_code": item_code,
+			"owner": "support@agritheory.dev",
+		},
 	)
 	assert not receipt
 
@@ -93,3 +158,4 @@ def test_complete_partial_receipt(page):
 	assert len(receipts) == 1
 	assert receipts[0]["docstatus"] == 1
 	assert receipts[0]["received_qty"] == 1
+
