@@ -80,6 +80,58 @@ def test_scan_invalid_barcode(page):
 
 
 @pytest.mark.order(3)
+def test_receive_without_scanning(page):
+	"""Test trying to receive without scanning any items"""
+	# navigate to a Purchase Order
+	page.get_by_text("Receive").click()
+	page.locator("css=.beam_list-item").first.click()
+
+	# get the selected Purchase Order
+	parsed_url = urlparse(page.url.replace("#", ""))
+	path_parts = [p for p in parsed_url.path.split("/") if p]
+	order_id = path_parts[-1] if path_parts else None
+	assert order_id
+
+	item = page.locator("css=.box .beam_list-item").first
+	item_code, *others = item.inner_text().split("\n")
+
+	# find all items in the list
+	all_item_counts = page.locator("css=.box .beam_item-count")
+	initial_counts = []
+	for i in range(all_item_counts.count()):
+		count_text = all_item_counts.nth(i).inner_text()
+		initial_counts.append(count_text)
+
+	# ensure all items start with 0 count
+	for count in initial_counts:
+		assert count.startswith("0/"), f"Expected item to start with 0/, but got: {count}"
+
+	# count existing Purchase Receipts before attempting to save
+	with use_current_db_transaction():
+		existing_receipts = frappe.get_all(
+			"Purchase Receipt Item",
+			filters={"purchase_order": order_id, "item_code": item_code, "owner": "support@agritheory.dev"},
+			fields=["docstatus", "received_qty"],
+		)
+		initial_count = len(existing_receipts)
+
+	# try to click SAVE without scanning anything
+	save_button = page.get_by_text("SAVE", exact=True)
+	save_button.click()
+	page.wait_for_timeout(1000)
+
+	# verify no new draft Purchase Receipt was created
+	with use_current_db_transaction():
+		new_receipts = frappe.get_all(
+			"Purchase Receipt Item",
+			filters={"purchase_order": order_id, "item_code": item_code, "owner": "support@agritheory.dev"},
+			fields=["docstatus", "received_qty"],
+		)
+		final_count = len(new_receipts)
+		assert final_count == initial_count, f"Expected no new receipts, but count changed from {initial_count} to {final_count}"
+
+
+@pytest.mark.order(4)
 def test_complete_partial_receipt(page):
 	# navigate in the following order: Home -> Receive -> Purchase Order
 	page.get_by_text("Receive").click()
@@ -158,4 +210,5 @@ def test_complete_partial_receipt(page):
 	assert len(receipts) == 1
 	assert receipts[0]["docstatus"] == 1
 	assert receipts[0]["received_qty"] == 1
+
 
