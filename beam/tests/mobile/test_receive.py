@@ -21,7 +21,6 @@ from beam.tests.test_utils import use_current_db_transaction
 
 @pytest.mark.order(2)
 def test_scan_invalid_barcode(page):
-	# navigate to a Purchase Order
 	page.get_by_text("Receive").click()
 	page.locator("css=.beam_list-item").first.click()
 
