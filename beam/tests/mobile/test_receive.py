@@ -128,7 +128,9 @@ def test_receive_without_scanning(page):
 			fields=["docstatus", "received_qty"],
 		)
 		final_count = len(new_receipts)
-		assert final_count == initial_count, f"Expected no new receipts, but count changed from {initial_count} to {final_count}"
+		assert (
+			final_count == initial_count
+		), f"Expected no new receipts, but count changed from {initial_count} to {final_count}"
 
 
 @pytest.mark.order(4)
