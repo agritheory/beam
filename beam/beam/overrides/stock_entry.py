@@ -26,11 +26,16 @@ class BEAMStockEntry(StockEntry):
 				if hasattr(sle, 'voucher_detail_no') and sle.voucher_detail_no:
 					for item in self.get("items"):
 						if item.name == sle.voucher_detail_no:
-							if item.handling_unit:
+							# For transfers with both handling_unit and to_handling_unit
+							if item.handling_unit and item.to_handling_unit:
+								if sle.get('warehouse') == item.s_warehouse:
+									# Source warehouse uses original handling_unit
+									sle.handling_unit = item.handling_unit
+								elif sle.get('warehouse') == item.t_warehouse:
+									# Target warehouse uses to_handling_unit
+									sle.handling_unit = item.to_handling_unit
+							elif item.handling_unit:
 								sle.handling_unit = item.handling_unit
-							elif item.to_handling_unit and sle.get('warehouse') == item.t_warehouse:
-								# For transfers, use to_handling_unit for target warehouse
-								sle.handling_unit = item.to_handling_unit
 							break
 		
 		if self.docstatus == 2:
