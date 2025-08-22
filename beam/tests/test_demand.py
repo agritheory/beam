@@ -348,6 +348,9 @@ def test_allocation_reversal_on_delivery_cancel():
 
 @pytest.mark.order(13)
 def test_allocation_from_purchasing():
+	# Rebuild demand allocation map to ensure purchase receipts with handling units are reflected
+	build_demand_allocation_map()
+	
 	receipts = frappe.get_all(
 		"Purchase Receipt", ["name", "'Purchase Receipt' AS doctype"]
 	) + frappe.get_all("Purchase Invoice", ["name", "'Purchase Invoice' AS doctype"])
