@@ -2,8 +2,8 @@
 # For license information, please see license.txt
 
 import random
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 import frappe
 import pytest
@@ -24,6 +24,7 @@ from beam.tests.fixtures import customers
 # add filters to Demand Map: manufactured items, purchased items, finished goods
 
 current_year = datetime.now().year
+
 
 @pytest.mark.order(1)
 def test_opening_demand():
@@ -258,7 +259,7 @@ def test_insufficient_total_demand_scenario():
 def test_demand_removal_on_order_cancel():
 	# Force rebuild demand allocation map to ensure it's up to date
 	build_demand_allocation_map()
-	
+
 	pie = get_demand(filters={"item_code": "Ambrosia Pie"})
 	assert len(pie) == 1
 
@@ -353,7 +354,7 @@ def test_allocation_reversal_on_delivery_cancel():
 def test_allocation_from_purchasing():
 	# Rebuild demand allocation map to ensure purchase receipts with handling units are reflected
 	build_demand_allocation_map()
-	
+
 	receipts = frappe.get_all(
 		"Purchase Receipt", ["name", "'Purchase Receipt' AS doctype"]
 	) + frappe.get_all("Purchase Invoice", ["name", "'Purchase Invoice' AS doctype"])

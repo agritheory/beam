@@ -9,9 +9,10 @@
 # For license information, please see license.txt
 
 
+from datetime import datetime
+
 import frappe
 import pytest
-from datetime import datetime
 
 from beam.beam.demand.receiving import (
 	_get_receiving_demand,
@@ -21,9 +22,10 @@ from beam.beam.demand.receiving import (
 
 current_year = datetime.now().year
 
+
 @pytest.mark.order(2)
 def test_opening_receiving():
-	
+
 	receiving_demand = _get_receiving_demand()
 	assert receiving_demand[0].item_code == "Cloudberry"
 	assert receiving_demand[1].item_code == "Hairless Rambutan"
