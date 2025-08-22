@@ -256,6 +256,9 @@ def test_insufficient_total_demand_scenario():
 
 @pytest.mark.order(31)  # run after other tests
 def test_demand_removal_on_order_cancel():
+	# Force rebuild demand allocation map to ensure it's up to date
+	build_demand_allocation_map()
+	
 	pie = get_demand(filters={"item_code": "Ambrosia Pie"})
 	assert len(pie) == 1
 
