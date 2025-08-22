@@ -3,7 +3,6 @@
 
 import json
 from pathlib import Path
-from unittest.mock import MagicMock
 
 import frappe
 import pytest
@@ -42,9 +41,8 @@ def db_instance():
 	if (sites / "common_site_config.json").is_file():
 		currentsite = json.loads((sites / "common_site_config.json").read_text()).get("default_site")
 
-	frappe.init(site=currentsite, sites_path=sites)
+	frappe.init(site=currentsite, sites_path=sites, force=True)
 	frappe.connect()
-	frappe.db.commit = MagicMock()
 
 	build_demand_allocation_map()
 	reset_build_receiving_map()

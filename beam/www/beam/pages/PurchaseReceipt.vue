@@ -63,9 +63,9 @@ const create = async () => {
 		for (const item of document.items) {
 			item.qty = item.received_qty
 		}
-		const { data, exception } = await store.insert('Purchase Receipt', document)
+		const { data, response } = await store.insert('Purchase Receipt', document)
 
-		if (!exception) {
+		if (response.ok) {
 			store.$patch(() => {
 				purchaseReceipt.value = data
 				purchaseReceipt.value.dirty = false
