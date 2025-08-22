@@ -19,6 +19,20 @@ class BEAMStockEntry(StockEntry):
 		finished_item_row = self.get_finished_item_row()
 		self.get_sle_for_source_warehouse(sl_entries, finished_item_row)
 		self.get_sle_for_target_warehouse(sl_entries, finished_item_row)
+		
+		# Add handling_unit to Stock Ledger Entries
+		if settings.enable_handling_units:
+			for sle in sl_entries:
+				if hasattr(sle, 'voucher_detail_no') and sle.voucher_detail_no:
+					for item in self.get("items"):
+						if item.name == sle.voucher_detail_no:
+							if item.handling_unit:
+								sle.handling_unit = item.handling_unit
+							elif item.to_handling_unit and sle.get('warehouse') == item.t_warehouse:
+								# For transfers, use to_handling_unit for target warehouse
+								sle.handling_unit = item.to_handling_unit
+							break
+		
 		if self.docstatus == 2:
 			sl_entries.reverse()
 		self.make_sl_entries(sl_entries)
