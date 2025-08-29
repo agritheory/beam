@@ -9,6 +9,7 @@ import frappe
 from erpnext.stock.doctype.stock_entry.stock_entry import StockEntry
 from erpnext.stock.get_item_details import get_item_details, get_valuation_rate
 from frappe.query_builder import Case, DocType
+from frappe.query_builder.custom import ConstantColumn
 from frappe.query_builder.functions import Coalesce
 
 
@@ -33,17 +34,51 @@ def scan(
 
 
 def get_barcode_context(barcode: str) -> frappe._dict | None:
+	settings = frappe.get_cached_doc("BEAM Settings", "BEAM Settings")
 	item_barcode = frappe.db.get_value(
 		"Item Barcode", {"barcode": barcode}, ["parent", "parenttype"], as_dict=True
 	)
-	if not item_barcode:
-		return None  # mypy asked for this
-	return frappe._dict(
-		{
-			"doc": frappe.get_doc(item_barcode.parenttype, item_barcode.parent),
-			"barcode": barcode,
-		}
-	)
+	if item_barcode:
+		return frappe._dict(
+			{
+				"doc": frappe.get_doc(item_barcode.parenttype, item_barcode.parent),
+				"barcode": barcode,
+			}
+		)
+	elif not item_barcode and settings.scan_serial_no:
+		serial_no_table = frappe.qb.DocType("Serial No")
+		bundle_entry_table = frappe.qb.DocType("Serial and Batch Entry")
+		bundle_table = frappe.qb.DocType("Serial and Batch Bundle")
+		serial_lookup = (
+			(
+				frappe.qb.from_(serial_no_table)
+				.select(
+					ConstantColumn("Serial No").as_("doctype"),
+					serial_no_table.name,
+				)
+				.where(serial_no_table.name == barcode)
+			)
+			.union(
+				frappe.qb.from_(bundle_entry_table)
+				.join(bundle_table)
+				.on(bundle_entry_table.parent == bundle_table.name)
+				.select(
+					ConstantColumn("Serial and Batch Bundle").as_("doctype"),
+					bundle_entry_table.parent,
+				)
+				.where(bundle_entry_table.serial_no == barcode)
+			)
+			.limit(1)
+			.run(as_dict=True)
+		)
+		if serial_lookup:
+			return frappe._dict(
+				{
+					"doc": frappe.get_doc(serial_lookup[0].doctype, serial_lookup[0].name),
+					"barcode": barcode,
+				}
+			)
+	return None
 
 
 def get_handling_unit(handling_unit: str, parent_doctype: str | None = None) -> frappe._dict:
@@ -532,6 +567,56 @@ listview = {
 			{"action": "route", "doctype": "Warehouse", "field": "Warehouse", "target": "target"}
 		],
 	},
+	"Serial No": {
+		"Delivery Note": [
+			{"action": "filter", "doctype": "Delivery Note", "field": "name", "target": "target"}
+		],
+		"Item": [{"action": "route", "doctype": "Item", "field": "Item", "target": "target"}],
+		"Packing Slip": [
+			{"action": "filter", "doctype": "Packing Slip", "field": "name", "target": "target"}
+		],
+		"Purchase Invoice": [
+			{
+				"action": "filter",
+				"doctype": "Purchase Invoice",
+				"field": "name",
+				"target": "target",
+			}
+		],
+		"Purchase Receipt": [
+			{
+				"action": "route",
+				"doctype": "Purchase Receipt",
+				"field": "Purchase Receipt",
+				"target": "target",
+			}
+		],
+		"Putaway Rule": [
+			{"action": "filter", "doctype": "Putaway Rule", "field": "item_code", "target": "target"},
+		],
+		"Quality Inspection": [
+			{
+				"action": "filter",
+				"doctype": "Quality Inspection",
+				"field": "handling_unit",
+				"target": "target",
+			},
+		],
+		"Sales Invoice": [
+			{"action": "filter", "doctype": "Sales Invoice", "field": "name", "target": "target"}
+		],
+		"Stock Entry": [
+			{"action": "filter", "doctype": "Stock Entry", "field": "name", "target": "target"}
+		],
+		"Stock Reconciliation": [
+			{
+				"action": "filter",
+				"doctype": "Stock Reconciliation",
+				"field": "name",
+				"target": "target",
+			}
+		],
+	},
 }
 
 frm = {
@@ -871,6 +956,189 @@ frm = {
 				"doctype": "Stock Reconciliation Item",
 				"field": "warehouse",
 				"target": "target.warehouse",
+				"context": "target",
+			},
+		],
+	},
+	"Serial No": {
+		"Delivery Note": [
+			{
+				"action": "add_or_associate",
+				"doctype": "Delivery Note Item",
+				"field": "handling_unit",
+				"target": "target.handling_unit",
+				"context": "target",
+			},
+			{
+				"action": "add_or_associate",
+				"doctype": "Delivery Note Item",
+				"field": "rate",
+				"target": "target.rate",
+				"context": "target",
+			},
+		],
+		"Item Price": [
+			{
+				"action": "set_item_code_and_handling_unit",
+				"doctype": "Item Price",
+				"field": "item_code",
+				"target": "target.item_code",
+				"context": "target",
+			},
+		],
+		"Packing Slip": [
+			{
+				"action": "add_or_associate",
+				"doctype": "Packing Slip Item",
+				"field": "conversion_factor",
+				"target": "target.conversion_factor",
+				"context": "target",
+			},
+			{
+				"action": "add_or_associate",
+				"doctype": "Packing Slip Item",
+				"field": "handling_unit",
+				"target": "target.handling_unit",
+				"context": "target",
+			},
+			{
+				"action": "add_or_associate",
+				"doctype": "Packing Slip Item",
+				"field": "pulled_quantity",
+				"target": "target.qty",
+				"context": "target",
+			},
+			{
+				"action": "add_or_associate",
+				"doctype": "Packing Slip Item",
+				"field": "rate",
+				"target": "target.rate",
+				"context": "target",
+			},
+			{
+				"action": "add_or_associate",
+				"doctype": "Packing Slip Item",
+				"field": "stock_qty",
+				"target": "target.stock_qty",
+				"context": "target",
+			},
+			{
+				"action": "add_or_associate",
+				"doctype": "Packing Slip Item",
+				"field": "warehouse",
+				"target": "target.warehouse",
+				"context": "target",
+			},
+			{
+				"action": "add_or_associate",
+				"doctype": "Packing Slip Item",
+				"field": "dn_detail",
+				"target": "target.dn_detail",
+				"context": "target",
+			},
+		],
+		"Purchase Invoice": [
+			{
+				"action": "add_or_associate",
+				"doctype": "Purchase Invoice Item",
+				"field": "handling_unit",
+				"target": "target.handling_unit",
+				"context": "target",
+			},
+		],
+		"Putaway Rule": [
+			{
+				"action": "set_item_code_and_handling_unit",
+				"doctype": "Putaway Rule",
+				"field": "item_code",
+				"target": "target.item_code",
+				"context": "target",
+			},
+		],
+		"Quality Inspection": [
+			{
+				"action": "set_item_code_and_handling_unit",
+				"doctype": "Quality Inspection",
+				"field": "item_code",
+				"target": "target.item_code",
+				"context": "target",
+			},
+			{
+				"action": "set_item_code_and_handling_unit",
+				"doctype": "Quality Inspection",
+				"field": "handling_unit",
+				"target": "target.handling_unit",
+				"context": "target",
+			},
+		],
+		"Sales Invoice": [
+			{
+				"action": "add_or_associate",
+				"doctype": "Sales Invoice Item",
+				"field": "handling_unit",
+				"target": "target.handling_unit",
+				"context": "target",
+			},
+		],
+		"Stock Entry": [
+			{
+				"action": "add_or_associate",
+				"doctype": "Stock Entry Detail",
+				"field": "basic_rate",
+				"target": "target.valuation_rate",
+				"context": "target",
+			},
+			{
+				"action": "add_or_associate",
+				"doctype": "Stock Entry Detail",
+				"field": "conversion_factor",
+				"target": "target.conversion_factor",
+				"context": "target",
+			},
+			{
+				"action": "add_or_associate",
+				"doctype": "Stock Entry Detail",
+				"field": "handling_unit",
+				"target": "target.handling_unit",
+				"context": "target",
+			},
+			{
+				"action": "add_or_associate",
+				"doctype": "Stock Entry Detail",
+				"field": "s_warehouse",
+				"target": "target.warehouse",
+				"context": "target",
+			},
+			{
+				"action": "add_or_associate",
+				"doctype": "Stock Entry Detail",
+				"field": "transfer_qty",
+				"target": "target.stock_qty",
+				"context": "target",
+			},
+		],
+		"Stock Reconciliation": [
+			{
+				"action": "add_or_associate",
+				"doctype": "Stock Reconciliation Item",
+				"field": "handling_unit",
+				"target": "target.handling_unit",
+				"context": "target",
+			},
+		],
+		"Warranty Claim": [
+			{
+				"action": "set_item_code_and_handling_unit",
+				"doctype": "Warranty Claim",
+				"field": "item_code",
+				"target": "target.item_code",
+				"context": "target",
+			},
+			{
+				"action": "set_item_code_and_handling_unit",
+				"doctype": "Warranty Claim",
+				"field": "handling_unit",
+				"target": "target.handling_unit",
 				"context": "target",
 			},
 		],
