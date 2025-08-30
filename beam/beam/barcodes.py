@@ -12,15 +12,15 @@ from zebra_zpl import Barcode, Label, Printable, Text
 def create_beam_barcode(doc, method=None):
 	if doc.doctype == "Item" and doc.is_stock_item == 0:
 		return
-	if (
-		doc.get("item_group")
-		and doc.doctype == "Item"
-		and frappe.db.exists("Item Group", "Products")
-		and doc.item_group
-		in frappe.get_all("Item Group", {"name": ("descendants of", "Products")}, pluck="name")
-	):
-		# TODO: refactor this to be configurable to "Products" or "sold" items that do not require handling units
-		return
+	# if (
+	# 	doc.get("item_group")
+	# 	and doc.doctype == "Item"
+	# 	and frappe.db.exists("Item Group", "Products")
+	# 	and doc.item_group
+	# 	in frappe.get_all("Item Group", {"name": ("descendants of", "Products")}, pluck="name")
+	# ):
+	# 	# TODO: refactor this to be configurable to "Products" or "sold" items that do not require handling units
+	# 	return		
 	if any([b for b in doc.barcodes if b.barcode_type == "Code128"]):
 		return
 	# move all other rows back
