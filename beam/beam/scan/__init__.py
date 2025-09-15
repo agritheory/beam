@@ -271,6 +271,16 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 			}
 		)
 		target.barcode = barcode_doc.barcode
+	elif barcode_doc.doc.doctype == "Serial No":
+		if context.frm in ("Putaway Rule", "Warranty Claim", "Item Price", "Quality Inspection"):
+			target = frappe._dict(
+				{
+					"doctype": context.frm,
+					"item_code": barcode_doc.doc.item_code,
+				}
+			)
+		else:
+			target = get_serial_no(barcode_doc.doc.name, context.frm)
 
 	if not target:
 		return []
@@ -296,7 +306,7 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 		if isinstance(target_value, str) and "." in target_value:
 			serialized_target = target_value.split(".")
 			action["target"] = target.get(serialized_target[1])
-
+	print(actions)
 	return actions
 
 
