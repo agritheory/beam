@@ -272,15 +272,38 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 		)
 		target.barcode = barcode_doc.barcode
 	elif barcode_doc.doc.doctype == "Serial No":
-		if context.frm in ("Putaway Rule", "Warranty Claim", "Item Price", "Quality Inspection"):
+		serial_no_details = get_serial_no(barcode_doc.doc.name, context.frm)
+		if context.frm == "Stock Entry":
+			target = get_stock_entry_item_details(context.doc, serial_no_details.item_code)
+			target.warehouse = serial_no_details.warehouse
+		elif context.frm in ("Putaway Rule", "Warranty Claim", "Item Price", "Quality Inspection"):
 			target = frappe._dict(
 				{
 					"doctype": context.frm,
-					"item_code": barcode_doc.doc.item_code,
+					"item_code": serial_no_details.item_code,
 				}
 			)
 		else:
-			target = get_serial_no(barcode_doc.doc.name, context.frm)
+			target = get_item_details(
+				{
+					"doctype": context.frm,
+					"item_code": serial_no_details.item_code,
+					"company": frappe.defaults.get_user_default("Company"),
+					"currency": frappe.defaults.get_user_default("Currency"),
+				}
+			)
+		target.update(
+			{
+				"handling_unit": serial_no_details.handling_unit,
+				"voucher_no": serial_no_details.voucher_no,
+				"stock_qty": serial_no_details.stock_qty,
+				"qty": serial_no_details.stock_qty / target.conversion_factor
+				if target.conversion_factor
+				else serial_no_details.stock_qty,
+				"posting_datetime": serial_no_details.posting_datetime,
+				"dn_detail": serial_no_details.dn_detail,
+			}
+		)
 
 	if not target:
 		return []
