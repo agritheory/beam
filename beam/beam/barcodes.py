@@ -91,7 +91,6 @@ def get_qr_code(qr_text: str) -> str:
 	)
 	temp.seek(0)
 	encoded = base64.b64encode(temp.getvalue()).decode("ascii")
-	print(encoded)
 	return f'<img src="data:image/png;base64,{encoded}"/>'
 
 

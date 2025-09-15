@@ -176,6 +176,12 @@ def get_list_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 		else:
 			target = get_handling_unit(barcode_doc.doc.name)
 			target = target.get("voucher_no") if target else None
+	elif barcode_doc.doc.doctype == "Serial No":
+		if context.get("listview") in ["Item", "Putaway Rule"]:
+			target = barcode_doc.doc.item_code
+		else:
+			target = get_serial_no(barcode_doc.doc.name, context.get("listview"))
+			target = target.get("voucher_no") if target else None
 
 	if not target:
 		return []
@@ -196,7 +202,6 @@ def get_list_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 	for action in actions:
 		action["context"] = target
 		action["target"] = target
-
 	return actions
 
 
