@@ -247,6 +247,11 @@ def create_items(settings):
 		if frappe.db.exists("Item", item.get("item_code")):
 			continue
 		i = frappe.new_doc("Item")
+
+		if item.get("item_code") == "Sugar":
+			i.has_serial_no = 1
+			i.serial_no_series = "SUG.XXXXX"
+
 		i.item_code = i.item_name = item.get("item_code")
 		i.item_group = item.get("item_group")
 		i.stock_uom = item.get("uom")
@@ -527,6 +532,8 @@ def create_production_plan(settings, prod_plan_from_doc):
 					"buying_price_list": pr.buying_price_list,
 				}
 			)
+			if item.item_code == "Sugar":
+				item_details["use_serial_batch_fields"] = 1
 			pr.append("items", {**item_details})
 		pr.save()
 		# pr.submit() # don't submit - needed to test handling unit generation
