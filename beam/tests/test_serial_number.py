@@ -129,7 +129,6 @@ def test_serial_number_scan():
 	assert scan[0]["doctype"] == "Sales Invoice"
 	assert scan[0]["field"] == "name"
 	assert scan[0]["target"] == si.name
-
 	# TODO: fix delivery note serial no scan
 	dn = make_delivery_note(si.name)
 	dn.posting_date = today()
