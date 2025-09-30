@@ -247,11 +247,6 @@ def create_items(settings):
 		if frappe.db.exists("Item", item.get("item_code")):
 			continue
 		i = frappe.new_doc("Item")
-
-		if item.get("item_code") == "Sugar":
-			i.has_serial_no = 1
-			i.serial_no_series = "SUG.XXXXX"
-
 		i.item_code = i.item_name = item.get("item_code")
 		i.item_group = item.get("item_group")
 		i.stock_uom = item.get("uom")
@@ -264,8 +259,15 @@ def create_items(settings):
 			"Purchase" if item.get("item_group") in ("Bakery Supplies", "Ingredients") else "Manufacture"
 		)
 		i.valuation_method = "FIFO"
-		i.is_purchase_item = 1 if item.get("item_group") in ("Bakery Supplies", "Ingredients") else 0
-		i.is_sales_item = 1 if item.get("item_group") == "Baked Goods" else 0
+		i.is_purchase_item = (
+			1
+			if item.get("item_group") in ("Bakery Supplies", "Ingredients")
+			or item.get("is_purchase_item", 0)
+			else 0
+		)
+		i.is_sales_item = (
+			1 if item.get("item_group") == "Baked Goods" or item.get("is_sales_item", 0) else 0
+		)
 		i.append(
 			"item_defaults",
 			{"company": settings.company, "default_warehouse": item.get("default_warehouse")},
@@ -275,6 +277,9 @@ def create_items(settings):
 		if i.item_code == "Parchment Paper":
 			i.append("uoms", {"uom": "Box", "conversion_factor": 100})
 			i.purchase_uom = "Box"
+
+		i.has_serial_no = item.get("has_serial_no", 0) or 0
+		i.serial_no_series = item.get("serial_no_series", "") or ""
 		i.save()
 		if item.get("item_price"):
 			ip = frappe.new_doc("Item Price")
@@ -532,8 +537,6 @@ def create_production_plan(settings, prod_plan_from_doc):
 					"buying_price_list": pr.buying_price_list,
 				}
 			)
-			if item.item_code == "Sugar":
-				item_details["use_serial_batch_fields"] = 1
 			pr.append("items", {**item_details})
 		pr.save()
 		# pr.submit() # don't submit - needed to test handling unit generation
