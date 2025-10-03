@@ -340,7 +340,6 @@ def get_serial_no(serial_no: str, parent_doctype: str | None = None) -> frappe._
 	se_detail = DocType("Stock Entry Detail")
 	pr_item = DocType("Purchase Receipt Item")
 	pi_item = DocType("Purchase Invoice Item")
-	si_item = DocType("Sales Invoice Item")
 	dn_item = DocType("Delivery Note Item")
 
 	main_query = (
@@ -355,8 +354,6 @@ def get_serial_no(serial_no: str, parent_doctype: str | None = None) -> frappe._
 		.on((sle.voucher_type == "Purchase Receipt") & (sle.voucher_detail_no == pr_item.name))
 		.left_join(pi_item)
 		.on((sle.voucher_type == "Purchase Invoice") & (sle.voucher_detail_no == pi_item.name))
-		.left_join(si_item)
-		.on((sle.voucher_type == "Sales Invoice") & (sle.voucher_detail_no == si_item.name))
 		.left_join(dn_item)
 		.on((sle.voucher_type == "Delivery Note") & (sle.voucher_detail_no == dn_item.name))
 		.select(
@@ -373,22 +370,19 @@ def get_serial_no(serial_no: str, parent_doctype: str | None = None) -> frappe._
 			sle.serial_and_batch_bundle,
 			Coalesce(snb.serial_no, sle.serial_no).as_("serial_no"),
 			# Item details from whichever child table matches
-			Coalesce(se_detail.uom, pr_item.uom, pi_item.uom, si_item.uom, dn_item.uom).as_("uom"),
-			Coalesce(se_detail.qty, pr_item.qty, pi_item.qty, si_item.qty, dn_item.qty).as_("qty"),
+			Coalesce(se_detail.uom, pr_item.uom, pi_item.uom, dn_item.uom).as_("uom"),
+			Coalesce(se_detail.qty, pr_item.qty, pi_item.qty, dn_item.qty).as_("qty"),
 			Coalesce(
 				se_detail.conversion_factor,
 				pr_item.conversion_factor,
 				pi_item.conversion_factor,
-				si_item.conversion_factor,
 				dn_item.conversion_factor,
 			).as_("conversion_factor"),
-			Coalesce(se_detail.idx, pr_item.idx, pi_item.idx, si_item.idx, dn_item.idx).as_("idx"),
-			Coalesce(
-				se_detail.item_name, pr_item.item_name, pi_item.item_name, si_item.item_name, dn_item.item_name
-			).as_("item_name"),
-			Coalesce(se_detail.name, pr_item.name, pi_item.name, si_item.name, dn_item.name).as_(
-				"detail_name"
+			Coalesce(se_detail.idx, pr_item.idx, pi_item.idx, dn_item.idx).as_("idx"),
+			Coalesce(se_detail.item_name, pr_item.item_name, pi_item.item_name, dn_item.item_name).as_(
+				"item_name"
 			),
+			Coalesce(se_detail.name, pr_item.name, pi_item.name, dn_item.name).as_("detail_name"),
 			# Special field for Purchase Receipt
 			Case()
 			.when(sle.voucher_type == "Purchase Receipt", pr_item.stock_qty)
@@ -639,9 +633,6 @@ listview = {
 				"field": "handling_unit",
 				"target": "target",
 			},
-		],
-		"Sales Invoice": [
-			{"action": "filter", "doctype": "Sales Invoice", "field": "name", "target": "target"}
 		],
 		"Stock Entry": [
 			{"action": "filter", "doctype": "Stock Entry", "field": "name", "target": "target"}
@@ -1104,15 +1095,6 @@ frm = {
 			{
 				"action": "set_item_code_and_handling_unit",
 				"doctype": "Quality Inspection",
-				"field": "handling_unit",
-				"target": "target.handling_unit",
-				"context": "target",
-			},
-		],
-		"Sales Invoice": [
-			{
-				"action": "add_or_associate",
-				"doctype": "Sales Invoice Item",
 				"field": "handling_unit",
 				"target": "target.handling_unit",
 				"context": "target",
