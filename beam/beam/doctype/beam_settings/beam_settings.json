@@ -1,22 +1,18 @@
 {
 	"actions": [],
-	"allow_rename": 1,
-	"autoname": "field:company",
 	"creation": "2024-03-18 17:06:58.552999",
 	"doctype": "DocType",
 	"engine": "InnoDB",
-	"field_order": ["company", "enable_handling_units", "barcode_font_size"],
+	"field_order": [
+		"enable_handling_units",
+		"scan_serial_no",
+		"barcode_font_size",
+		"column_break_vhpb",
+		"qr_scale",
+		"qr_border",
+		"qr_error_correct"
+	],
 	"fields": [
-		{
-			"fieldname": "company",
-			"fieldtype": "Link",
-			"in_list_view": 1,
-			"label": "Company",
-			"options": "Company",
-			"reqd": 1,
-			"set_only_once": 1,
-			"unique": 1
-		},
 		{
 			"default": "1",
 			"fieldname": "enable_handling_units",
@@ -29,11 +25,42 @@
 			"fieldname": "barcode_font_size",
 			"fieldtype": "Int",
 			"label": "Barcode Font Size"
+		},
+		{
+			"default": "8",
+			"fieldname": "qr_scale",
+			"fieldtype": "Int",
+			"label": "QR Scale",
+			"non_negative": 1
+		},
+		{
+			"default": "4",
+			"fieldname": "qr_border",
+			"fieldtype": "Int",
+			"label": "QR Border",
+			"non_negative": 1
+		},
+		{
+			"default": "M",
+			"fieldname": "qr_error_correct",
+			"fieldtype": "Select",
+			"label": "QR Error Correct",
+			"options": "L\nM\nQ\nH"
+		},
+		{
+			"fieldname": "column_break_vhpb",
+			"fieldtype": "Column Break"
+		},
+		{
+			"default": "0",
+			"fieldname": "scan_serial_no",
+			"fieldtype": "Check",
+			"label": "Enable Scanning of Serial Numbers"
 		}
 	],
-	"index_web_pages_for_search": 1,
+	"issingle": 1,
 	"links": [],
-	"modified": "2024-05-29 01:43:57.177980",
+	"modified": "2025-08-29 10:31:24.924249",
 	"modified_by": "Administrator",
 	"module": "BEAM",
 	"name": "BEAM Settings",
@@ -44,10 +71,8 @@
 			"create": 1,
 			"delete": 1,
 			"email": 1,
-			"export": 1,
 			"print": 1,
 			"read": 1,
-			"report": 1,
 			"role": "System Manager",
 			"share": 1,
 			"write": 1
@@ -56,15 +81,14 @@
 			"create": 1,
 			"delete": 1,
 			"email": 1,
-			"export": 1,
 			"print": 1,
 			"read": 1,
-			"report": 1,
 			"role": "Stock Manager",
 			"share": 1,
 			"write": 1
 		}
 	],
+	"row_format": "Dynamic",
 	"sort_field": "modified",
 	"sort_order": "DESC",
 	"states": [],
