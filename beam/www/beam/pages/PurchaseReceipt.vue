@@ -44,9 +44,7 @@ const handlePhotosCaptured = (photos: File[]) => {
 }
 
 const handleItemUpdate = (updatedItem: PurchaseReceiptItem & ListViewItem) => {
-	const itemIndex = purchaseReceipt.value.items.findIndex(
-		item => item.item_code === updatedItem.item_code
-	)
+	const itemIndex = purchaseReceipt.value.items.findIndex(item => item.item_code === updatedItem.item_code)
 
 	if (itemIndex !== -1) {
 		if (updatedItem.count?.count !== undefined) {

@@ -287,7 +287,7 @@ export const useBeamStore = defineStore('beam', () => {
 
 	const uploadFiles = async (doctype: string, docname: string, files: File[]) => {
 		if (files.length === 0) return
-		
+
 		for (const file of files) {
 			const formData = new FormData()
 			formData.append('file', file, file.name)
@@ -304,9 +304,9 @@ export const useBeamStore = defineStore('beam', () => {
 					method: 'POST',
 					headers: {
 						'X-Frappe-CSRF-Token': frappe.csrf_token,
-						'Accept': 'application/json',
+						Accept: 'application/json',
 					},
-					body: formData
+					body: formData,
 				})
 
 				if (response.ok) {

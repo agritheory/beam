@@ -1,46 +1,48 @@
 <template>
-    <div v-if="showComponent" class="camera-component">
-        <button @click="toggleCamera" class="camera-btn">
-            <span v-if="!isOpen">Take photo</span>
-            <span v-else>Close</span>
-        </button>
+	<div v-if="showComponent" class="camera-component">
+		<button @click="toggleCamera" class="camera-btn">
+			<span v-if="!isOpen">Take photo</span>
+			<span v-else>Close</span>
+		</button>
 
-        <div v-if="allowPreview && capturedPhotos.length > 0" class="photos-preview">
-            <div v-for="(photo, index) in capturedPhotos" :key="index" class="photo-item">
-                <img :src="photo.preview" alt="Captured photo" />
-                <button @click="removePhoto(index)" class="remove-photo">✕</button>
-            </div>
-        </div>
+		<div v-if="allowPreview && capturedPhotos.length > 0" class="photos-preview">
+			<div v-for="(photo, index) in capturedPhotos" :key="index" class="photo-item">
+				<img :src="photo.preview" alt="Captured photo" />
+				<button @click="removePhoto(index)" class="remove-photo">✕</button>
+			</div>
+		</div>
 
-        <!-- Camera -->
-        <div v-if="isOpen" class="camera-container">
-            <video ref="videoElement" autoplay playsinline class="camera-video"></video>
-            <canvas ref="canvasElement" class="camera-canvas"></canvas>
+		<!-- Camera -->
+		<div v-if="isOpen" class="camera-container">
+			<video ref="videoElement" autoplay playsinline class="camera-video"></video>
+			<canvas ref="canvasElement" class="camera-canvas"></canvas>
 
-            <div class="camera-controls">
-                <button @click="capturePhoto" class="capture-btn">
-                    <span class="capture-circle"></span>
-                </button>
-            </div>
-        </div>
+			<div class="camera-controls">
+				<button @click="capturePhoto" class="capture-btn">
+					<span class="capture-circle"></span>
+				</button>
+			</div>
+		</div>
 
-        <div v-if="errorMessage" class="error-message">
-            <p><strong>{{ errorMessage }}</strong></p>
-        </div>
-    </div>
+		<div v-if="errorMessage" class="error-message">
+			<p>
+				<strong>{{ errorMessage }}</strong>
+			</p>
+		</div>
+	</div>
 </template>
 
 <script setup lang="ts">
 import { ref, onUnmounted } from 'vue'
 
 interface CapturedPhoto {
-    file: File
-    preview: string
+	file: File
+	preview: string
 }
 const { allowPreview = true } = defineProps<{ allowPreview: Boolean }>()
 
 const emit = defineEmits<{
-    photosCaptured: [files: File[]]
+	photosCaptured: [files: File[]]
 }>()
 
 const isOpen = ref(false)
@@ -52,235 +54,245 @@ const capturedPhotos = ref<CapturedPhoto[]>([])
 let stream: MediaStream | null = null
 
 const toggleCamera = async () => {
-    if (!isOpen.value) {
-        await startCamera()
-    } else {
-        stopCamera()
-    }
+	if (!isOpen.value) {
+		await startCamera()
+	} else {
+		stopCamera()
+	}
 }
 
 const startCamera = async () => {
-    errorMessage.value = ''
+	errorMessage.value = ''
 
-    try {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            showComponent.value = false
-            return
-        }
+	try {
+		if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+			showComponent.value = false
+			return
+		}
 
-        stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'environment' },
-            audio: false
-        })
+		stream = await navigator.mediaDevices.getUserMedia({
+			video: { facingMode: 'environment' },
+			audio: false,
+		})
 
-        isOpen.value = true
+		isOpen.value = true
 
-        await new Promise(resolve => setTimeout(resolve, 100))
+		await new Promise(resolve => setTimeout(resolve, 100))
 
-        if (videoElement.value) {
-            videoElement.value.srcObject = stream
-        }
-    } catch (err: any) {
-        isOpen.value = false
+		if (videoElement.value) {
+			videoElement.value.srcObject = stream
+		}
+	} catch (err: any) {
+		isOpen.value = false
 
-        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-            errorMessage.value = 'Permission denied to access camera'
-        } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-            errorMessage.value = 'There is no camera found on this device'
-        } else {
-            errorMessage.value = err.message || err.toString()
-        }
-    }
+		if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+			errorMessage.value = 'Permission denied to access camera'
+		} else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+			errorMessage.value = 'There is no camera found on this device'
+		} else {
+			errorMessage.value = err.message || err.toString()
+		}
+	}
 }
 
 const stopCamera = () => {
-    if (stream) {
-        stream.getTracks().forEach(track => track.stop())
-        stream = null
-    }
-    isOpen.value = false
+	if (stream) {
+		stream.getTracks().forEach(track => track.stop())
+		stream = null
+	}
+	isOpen.value = false
 }
 
 const capturePhoto = () => {
-    if (!videoElement.value || !canvasElement.value) return
+	if (!videoElement.value || !canvasElement.value) return
 
-    const video = videoElement.value
-    const canvas = canvasElement.value
+	const video = videoElement.value
+	const canvas = canvasElement.value
 
-    canvas.width = video.videoWidth
-    canvas.height = video.videoHeight
+	canvas.width = video.videoWidth
+	canvas.height = video.videoHeight
 
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
+	const ctx = canvas.getContext('2d')
+	if (!ctx) return
 
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+	ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
 
-    canvas.toBlob((blob) => {
-        if (!blob) return
+	canvas.toBlob(
+		blob => {
+			if (!blob) return
 
-        const timestamp = new Date().getTime()
-        const fileName = `photo_${timestamp}.jpg`
+			const timestamp = new Date().getTime()
+			const fileName = `photo_${timestamp}.jpg`
 
-        const file = new File([blob], fileName, {
-            type: 'image/jpeg',
-            lastModified: timestamp
-        })
+			const file = new File([blob], fileName, {
+				type: 'image/jpeg',
+				lastModified: timestamp,
+			})
 
-        const preview = URL.createObjectURL(blob)
+			const preview = URL.createObjectURL(blob)
 
-        capturedPhotos.value.push({ file, preview })
+			capturedPhotos.value.push({ file, preview })
 
-        emit('photosCaptured', capturedPhotos.value.map(p => p.file))
+			emit(
+				'photosCaptured',
+				capturedPhotos.value.map(p => p.file)
+			)
 
-        stopCamera()
-    }, 'image/jpeg', 0.95)
+			stopCamera()
+		},
+		'image/jpeg',
+		0.95
+	)
 }
 
 const removePhoto = (index: number) => {
-    URL.revokeObjectURL(capturedPhotos.value[index].preview)
+	URL.revokeObjectURL(capturedPhotos.value[index].preview)
 
-    capturedPhotos.value.splice(index, 1)
+	capturedPhotos.value.splice(index, 1)
 
-    emit('photosCaptured', capturedPhotos.value.map(p => p.file))
+	emit(
+		'photosCaptured',
+		capturedPhotos.value.map(p => p.file)
+	)
 }
 
 onUnmounted(() => {
-    stopCamera()
-    capturedPhotos.value.forEach(photo => URL.revokeObjectURL(photo.preview))
+	stopCamera()
+	capturedPhotos.value.forEach(photo => URL.revokeObjectURL(photo.preview))
 })
 </script>
 
 <style scoped>
 .camera-component {
-    margin: 1rem 0;
+	margin: 1rem 0;
 }
 
 @media (min-width: 769px) {
-    .camera-component {
-        display: none;
-    }
+	.camera-component {
+		display: none;
+	}
 }
 
 .camera-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1rem;
-    background: #42b883;
-    color: white;
-    border: none;
-    border-radius: 2px;
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.75rem 1rem;
+	background: #42b883;
+	color: white;
+	border: none;
+	border-radius: 2px;
 }
 
 .camera-icon {
-    width: 24px;
-    height: 24px;
+	width: 24px;
+	height: 24px;
 }
 
 .photos-preview {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 1rem;
-    margin-top: 1rem;
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+	gap: 1rem;
+	margin-top: 1rem;
 }
 
 .photo-item {
-    position: relative;
-    border: 2px solid #42b883;
-    border-radius: 8px;
-    overflow: hidden;
+	position: relative;
+	border: 2px solid #42b883;
+	border-radius: 8px;
+	overflow: hidden;
 }
 
 .photo-item img {
-    width: 100%;
-    height: 150px;
-    object-fit: cover;
-    display: block;
+	width: 100%;
+	height: 150px;
+	object-fit: cover;
+	display: block;
 }
 
 .remove-photo {
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    background: rgba(255, 0, 0, 0.8);
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 30px;
-    height: 30px;
-    font-size: 18px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+	position: absolute;
+	top: 5px;
+	right: 5px;
+	background: rgba(255, 0, 0, 0.8);
+	color: white;
+	border: none;
+	border-radius: 50%;
+	width: 30px;
+	height: 30px;
+	font-size: 18px;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
 }
 
 .camera-container {
-    position: relative;
-    margin-top: 1rem;
-    background: #000;
-    border-radius: 8px;
-    overflow: hidden;
-    max-width: 600px;
-    margin-left: auto;
-    margin-right: auto;
+	position: relative;
+	margin-top: 1rem;
+	background: #000;
+	border-radius: 8px;
+	overflow: hidden;
+	max-width: 600px;
+	margin-left: auto;
+	margin-right: auto;
 }
 
 .camera-video {
-    width: 100%;
-    height: 400px;
-    object-fit: cover;
-    display: block;
+	width: 100%;
+	height: 400px;
+	object-fit: cover;
+	display: block;
 }
 
 .camera-canvas {
-    display: none;
+	display: none;
 }
 
 .camera-controls {
-    position: absolute;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 10;
+	position: absolute;
+	bottom: 20px;
+	left: 50%;
+	transform: translateX(-50%);
+	z-index: 10;
 }
 
 .capture-btn {
-    background: white;
-    border: 4px solid #42b883;
-    border-radius: 50%;
-    width: 70px;
-    height: 70px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: transform 0.1s;
+	background: white;
+	border: 4px solid #42b883;
+	border-radius: 50%;
+	width: 70px;
+	height: 70px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	transition: transform 0.1s;
 }
 
 .capture-btn:active {
-    transform: scale(0.95);
+	transform: scale(0.95);
 }
 
 .capture-circle {
-    width: 50px;
-    height: 50px;
-    background: #42b883;
-    border-radius: 50%;
+	width: 50px;
+	height: 50px;
+	background: #42b883;
+	border-radius: 50%;
 }
 
 .error-message {
-    color: #721c24;
-    text-align: left;
-    padding: 1rem;
-    background: #f8d7da;
-    border: 1px solid #f5c6cb;
-    border-radius: 4px;
-    margin-top: 0.5rem;
+	color: #721c24;
+	text-align: left;
+	padding: 1rem;
+	background: #f8d7da;
+	border: 1px solid #f5c6cb;
+	border-radius: 4px;
+	margin-top: 0.5rem;
 }
 
 .error-message strong {
-    display: block;
-    margin-bottom: 0.5rem;
+	display: block;
+	margin-bottom: 0.5rem;
 }
 </style>
