@@ -10,9 +10,11 @@
 		</template>
 	</Navbar>
 
+	<Camera @photos-captured="handlePhotosCaptured" />
+
 	<!-- body section -->
 	<div class="box" v-show="items.length">
-		<ListView :items="items" :key="refreshKey" />
+		<ListView :items="items" :key="refreshKey" @update="handleItemUpdate" />
 	</div>
 
 	<!-- footer section -->
@@ -25,6 +27,7 @@ import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
 import ControlButtons from '@/components/ControlButtons.vue'
+import Camera from '@/components/Camera.vue'
 import { useBeamStore } from '@/stores/beam'
 import type { ControlButton, PurchaseReceipt, PurchaseReceiptItem } from '@/types'
 
@@ -34,6 +37,25 @@ const purchaseOrderId = route.params.id?.toString() || 'new-purchase-receipt'
 
 const purchaseReceipt = ref(store.cache.mappers[purchaseOrderId] as PurchaseReceipt)
 const refreshKey = ref(0)
+const capturedFiles = ref<File[]>([])
+
+const handlePhotosCaptured = (photos: File[]) => {
+	capturedFiles.value = photos
+}
+
+const handleItemUpdate = (updatedItem: PurchaseReceiptItem & ListViewItem) => {
+	const itemIndex = purchaseReceipt.value.items.findIndex(
+		item => item.item_code === updatedItem.item_code
+	)
+
+	if (itemIndex !== -1) {
+		if (updatedItem.count?.count !== undefined) {
+			purchaseReceipt.value.items[itemIndex].received_qty = updatedItem.count.count
+		}
+
+		purchaseReceipt.value.dirty = true
+	}
+}
 
 // hack: since array reactivity is not present in Vue 3, force-refresh the listviews on store update
 store.$subscribe(mutation => {
@@ -65,7 +87,11 @@ const create = async () => {
 		}
 		const { data, response } = await store.insert('Purchase Receipt', document)
 
-		if (response.ok) {
+		if (response.ok && data) {
+			if (capturedFiles.value.length > 0) {
+				await store.uploadFiles('Purchase Receipt', data.name || '', capturedFiles.value)
+			}
+
 			store.$patch(() => {
 				purchaseReceipt.value = data
 				purchaseReceipt.value.dirty = false

@@ -285,6 +285,45 @@ export const useBeamStore = defineStore('beam', () => {
 		window.location.href = '/login?redirect-to=/beam#'
 	}
 
+	const uploadFiles = async (doctype: string, docname: string, files: File[]) => {
+		if (files.length === 0) return
+		
+		for (const file of files) {
+			const formData = new FormData()
+			formData.append('file', file, file.name)
+			formData.append('file_name', file.name)
+			formData.append('is_private', '0')
+			formData.append('doctype', doctype)
+			formData.append('docname', docname)
+			formData.append('fieldname', 'image')
+			formData.append('folder', 'Home')
+
+			try {
+				// Do NOT use httpStore.post, we mustn't use Content-Type: application/json
+				const response = await fetch('/api/method/upload_file', {
+					method: 'POST',
+					headers: {
+						'X-Frappe-CSRF-Token': frappe.csrf_token,
+						'Accept': 'application/json',
+					},
+					body: formData
+				})
+
+				if (response.ok) {
+					const result = await response.json()
+					toast.success(`File ${file.name} attached successfully`)
+				} else {
+					const errorData = await response.json()
+					const errorMsg = errorData?.exception || errorData?.message || 'Unknown error'
+					toast.error(errorMsg)
+				}
+			} catch (error: any) {
+				const errorMsg = error?.message || 'Conection error'
+				toast.error(errorMsg)
+			}
+		}
+	}
+
 	const formatDate = (date: Date) => {
 		if (isNaN(Date.parse(date.toString()))) {
 			return ''
@@ -317,6 +356,7 @@ export const useBeamStore = defineStore('beam', () => {
 		insert,
 		update,
 		submit,
+		uploadFiles,
 
 		// other api actions
 		formatDate,
