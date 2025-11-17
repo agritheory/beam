@@ -11,7 +11,9 @@
 		</div>
 
 		<div v-if="errorMessage" class="error-message">
-			<p><strong>{{ errorMessage }}</strong></p>
+			<p>
+				<strong>{{ errorMessage }}</strong>
+			</p>
 			<div v-if="showPermissionHelp">
 				<p>You must allow camera access in your browser settings.</p>
 				<p><small>On mobile devices, check the permissions in Settings → Apps → Browser</small></p>
@@ -74,7 +76,7 @@ const startScanning = async () => {
 
 		try {
 			const stream = await navigator.mediaDevices.getUserMedia({
-				video: { facingMode: 'environment' }
+				video: { facingMode: 'environment' },
 			})
 			stream.getTracks().forEach(track => track.stop())
 		} catch (err: any) {
@@ -114,7 +116,7 @@ const startScanning = async () => {
 		await html5QrCode.start(
 			cameraConfig,
 			config,
-			(decodedText) => {
+			decodedText => {
 				lastScanned.value = decodedText
 				emit('scan', decodedText, 1)
 			},
@@ -158,7 +160,6 @@ onUnmounted(() => {
 		stopScanning()
 	}
 })
-
 </script>
 
 <style scoped>
