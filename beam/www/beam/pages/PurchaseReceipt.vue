@@ -30,7 +30,7 @@ import type { ControlButton, PurchaseReceipt, PurchaseReceiptItem } from '@/type
 
 const route = useRoute()
 const store = useBeamStore()
-const purchaseOrderId = route.query.id.toString()
+const purchaseOrderId = route.params.id?.toString() || 'new-purchase-receipt'
 
 const purchaseReceipt = ref(store.cache.mappers[purchaseOrderId] as PurchaseReceipt)
 const refreshKey = ref(0)
@@ -63,9 +63,9 @@ const create = async () => {
 		for (const item of document.items) {
 			item.qty = item.received_qty
 		}
-		const { data, exception } = await store.insert('Purchase Receipt', document)
+		const { data, response } = await store.insert('Purchase Receipt', document)
 
-		if (!exception) {
+		if (response.ok) {
 			store.$patch(() => {
 				purchaseReceipt.value = data
 				purchaseReceipt.value.dirty = false

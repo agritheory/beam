@@ -601,6 +601,12 @@ beam_mobile = {
 			"meta": {"requiresAuth": True, "doctype": "Purchase Receipt", "view": "form"},
 		},
 		{
+			"path": "/purchase-receipt/:id",
+			"name": "purchase-receipt",
+			"component": "PurchaseReceipt",
+			"meta": {"requiresAuth": True, "doctype": "Purchase Receipt", "view": "form"},
+		},
+		{
 			"path": "/ship",
 			"name": "ship",
 			"component": "Ship",

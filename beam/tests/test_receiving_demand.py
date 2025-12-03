@@ -9,6 +9,8 @@
 # For license information, please see license.txt
 
 
+from datetime import datetime
+
 import frappe
 import pytest
 
@@ -18,9 +20,12 @@ from beam.beam.demand.receiving import (
 	reset_build_receiving_map,
 )
 
+current_year = datetime.now().year
+
 
 @pytest.mark.order(2)
 def test_opening_receiving():
+
 	receiving_demand = _get_receiving_demand()
 	assert receiving_demand[0].item_code == "Cloudberry"
 	assert receiving_demand[1].item_code == "Hairless Rambutan"
@@ -45,7 +50,7 @@ def test_opening_receiving():
 	water = get_receiving_demand(filters={"item_code": "Water"})
 	assert len(water) == 1
 
-	assert water[0].parent == "PUR-ORD-2024-00002"
+	assert water[0].parent == f"PUR-ORD-{current_year}-00002"
 	assert water[0].stock_qty == 24.999442
 	assert water[0].warehouse == "Kitchen - APC"
 

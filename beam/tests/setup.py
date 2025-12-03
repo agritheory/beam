@@ -702,7 +702,7 @@ def create_production_plan(settings, prod_plan_from_doc):
 			job_card.append(
 				"time_logs",
 				{
-					"completed_qty": wo.qty,
+					# "completed_qty": wo.qty,
 					"from_time": start_time,
 					"to_time": start_time + datetime.timedelta(minutes=time_in_mins),
 					"time_in_mins": time_in_mins,
