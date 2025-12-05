@@ -33,26 +33,87 @@ export const useHttpStore = defineStore('http', () => {
 		const formattedUrl = new URL(fragment, window.location.origin)
 		return await fetch(formattedUrl, {
 			method: 'GET',
-			headers: headers.value,
+			headers: {
+				'Content-Type': 'application/json',
+				'X-Frappe-CSRF-Token': frappe.csrf_token,
+			},
 		})
 	}
 
 	const post = async (url: string, data: Record<string, any>) => {
 		const formattedUrl = new URL(url, window.location.origin)
-		return await fetch(formattedUrl, {
-			method: 'POST',
-			headers: headers.value,
-			body: JSON.stringify(data),
-		})
+		const isFrappeMethod = url.includes('/api/method/')
+		
+		if (isFrappeMethod) {
+			// For Frappe methods, send as FormData
+			const formData = new URLSearchParams()
+			if (data) {
+				for (const [key, value] of Object.entries(data)) {
+					if (typeof value === 'object') {
+						formData.append(key, JSON.stringify(value))
+					} else {
+						formData.append(key, String(value))
+					}
+				}
+			}
+			return await fetch(formattedUrl, {
+				method: 'POST',
+				headers: {
+					'Accept': 'application/json',
+					'X-Frappe-CSRF-Token': frappe.csrf_token,
+					'X-Frappe-CMD': url.replace('/api/method/', ''),
+				},
+				body: formData,
+			})
+		} else {
+			// For REST API, send as JSON
+			return await fetch(formattedUrl, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-Frappe-CSRF-Token': frappe.csrf_token,
+				},
+				body: JSON.stringify(data),
+			})
+		}
 	}
 
 	const put = async (url: string, data: Record<string, any>) => {
 		const formattedUrl = new URL(url, window.location.origin)
-		return await fetch(formattedUrl, {
-			method: 'PUT',
-			headers: headers.value,
-			body: JSON.stringify(data),
-		})
+		const isFrappeMethod = url.includes('/api/method/')
+		
+		if (isFrappeMethod) {
+			// For Frappe methods, send as FormData
+			const formData = new URLSearchParams()
+			if (data) {
+				for (const [key, value] of Object.entries(data)) {
+					if (typeof value === 'object') {
+						formData.append(key, JSON.stringify(value))
+					} else {
+						formData.append(key, String(value))
+					}
+				}
+			}
+			return await fetch(formattedUrl, {
+				method: 'PUT',
+				headers: {
+					'Accept': 'application/json',
+					'X-Frappe-CSRF-Token': frappe.csrf_token,
+					'X-Frappe-CMD': url.replace('/api/method/', ''),
+				},
+				body: formData,
+			})
+		} else {
+			// For REST API, send as JSON
+			return await fetch(formattedUrl, {
+				method: 'PUT',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-Frappe-CSRF-Token': frappe.csrf_token,
+				},
+				body: JSON.stringify(data),
+			})
+		}
 	}
 
 	return {
