@@ -1,4 +1,4 @@
-# Copyright (c) 2024, AgriTheory and contributors
+# Copyright (c) 2025, AgriTheory and contributors
 # For license information, please see license.txt
 
 import datetime
@@ -53,8 +53,8 @@ def before_test():
 	enable_all_roles_and_domains()
 	set_defaults_for_tests()
 	frappe.db.commit()
-	for modu in frappe.get_all("Module Onboarding"):
-		frappe.db.set_value("Module Onboarding", modu, "is_complete", 1)
+	for module in frappe.get_all("Module Onboarding"):
+		frappe.db.set_value("Module Onboarding", module, "is_complete", True)
 	frappe.set_value("Website Settings", "Website Settings", "home_page", "login")
 	create_test_data()
 
@@ -179,7 +179,7 @@ def setup_manufacturing_settings(settings):
 	if frappe.db.exists("Account", {"account_name": "Work In Progress", "company": settings.company}):
 		return
 	wip = frappe.new_doc("Account")
-	wip.account_name = "Inventory Write Off"
+	wip.account_name = "Standard Costing Reconciliation"
 	wip.parent_account = "1400 - Stock Assets - APC"
 	wip.account_number = "1430"
 	wip.company = settings.company
@@ -708,7 +708,7 @@ def create_production_plan(settings, prod_plan_from_doc):
 			job_card.append(
 				"time_logs",
 				{
-					"completed_qty": wo.qty,
+					# "completed_qty": wo.qty,
 					"from_time": start_time,
 					"to_time": start_time + datetime.timedelta(minutes=time_in_mins),
 					"time_in_mins": time_in_mins,

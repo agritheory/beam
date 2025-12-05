@@ -12,9 +12,10 @@ class BEAMSettings(Document):
 	from typing import TYPE_CHECKING
 
 	if TYPE_CHECKING:
+		from frappe.types import DF
+
 		from beam.beam.doctype.beam_mobile_route.beam_mobile_route import BEAMMobileRoute
 		from beam.beam.doctype.warehouse_types.warehouse_types import WarehouseTypes
-		from frappe.types import DF
 
 		barcode_font_size: DF.Int
 		company: DF.Link

@@ -1,7 +1,11 @@
+# Copyright (c) 2024, AgriTheory and contributors
+# For license information, please see license.txt
+
 import frappe
-from beam.beam.scan import get_barcode_context
-from frappe.core.doctype.user.user import get_restricted_ip_list
 from erpnext import get_default_company
+from frappe.core.doctype.user.user import get_restricted_ip_list
+
+from beam.beam.scan import get_barcode_context
 
 
 @frappe.whitelist(allow_guest=True)

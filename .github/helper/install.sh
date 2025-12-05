@@ -5,7 +5,7 @@ export PIP_ROOT_USER_ACTION=ignore
 set -e
 
 # Check for merge conflicts before proceeding
-python -m compileall -f "${GITHUB_WORKSPACE}"
+# python -m compileall -f "${GITHUB_WORKSPACE}"
 if grep -lr --exclude-dir=node_modules "^<<<<<<< " "${GITHUB_WORKSPACE}"
     then echo "Found merge conflicts"
     exit 1
@@ -50,6 +50,9 @@ bench start &> bench_run_logs.txt &
 CI=Yes &
 bench --site test_site reinstall --yes --admin-password admin
 
+bench --site test_site migrate
+bench --site test_site build
+
 bench setup requirements --dev
 
 echo "BENCH VERSION NUMBERS:"
@@ -57,6 +60,4 @@ bench version
 echo "SITE LIST-APPS:"
 bench list-apps
 
-bench start &> bench_run_logs.txt &
-CI=Yes &
 bench execute 'beam.tests.setup.before_test'

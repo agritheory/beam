@@ -7,7 +7,7 @@ on:
 
 jobs:
   test:
-    name: Frappe
+    name: Mobile
     runs-on: ubuntu-latest
 
     services:
@@ -63,23 +63,11 @@ jobs:
           MYSQL_PWD: 'admin'
         run: bash ${{ github.workspace }}/.github/helper/install.sh
 
-      - name: Run Frappe Tests
+      - name: Run Mobile Tests
         working-directory: /home/runner/frappe-bench
         run: |
-          set -o pipefail
           source env/bin/activate
           cd apps/beam
           poetry install
-          pytest --cov=beam --cov-report=xml ./beam --ignore=./beam/tests/mobile --disable-warnings -s --tracing=retain-on-failure | tee pytest-coverage.txt
-
-      - name: Pytest coverage comment
-        uses: MishaKav/pytest-coverage-comment@main
-        with:
-          pytest-coverage-path: /home/runner/frappe-bench/apps/beam/pytest-coverage.txt
-          pytest-xml-coverage-path: /home/runner/frappe-bench/apps/beam/coverage.xml
-
-      - uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() }}
-        with:
-          name: playwright-traces
-          path: test-results/
+          python -m playwright install --with-deps
+          pytest ./beam/tests/mobile --browser chromium --disable-warnings

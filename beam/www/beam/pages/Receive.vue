@@ -73,7 +73,7 @@ const setReceive = () => {
 					Warehouse: ${row.warehouse}
 					Supplier: ${row.supplier}
 				`.trim(),
-			route: `#/purchase_order/${row.parent || 'new-purchase-order'}`,
+			route: `#/purchase-receipt/${row.parent || 'new-purchase-receipt'}`,
 		})
 	}
 }

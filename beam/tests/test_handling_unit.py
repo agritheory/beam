@@ -1,4 +1,4 @@
-# Copyright (c) 2024, AgriTheory and contributors
+# Copyright (c) 2025, AgriTheory and contributors
 # For license information, please see license.txt
 
 import frappe
@@ -222,6 +222,9 @@ def test_stock_entry_for_manufacture():
 	job_cards = frappe.get_all("Job Card", {"work_order": wo})
 	for job_card in job_cards:
 		job_card = frappe.get_doc("Job Card", job_card)
+		# Complete the job card by setting completed qty equal to qty to manufacture
+		for time_log in job_card.time_logs:
+			time_log.completed_qty = job_card.for_quantity
 		job_card.submit()
 
 	se = make_stock_entry(wo, "Manufacture", 40)
