@@ -3,14 +3,13 @@
 
 # Tests for camera scanner component.
 
-import pytest
 
-import frappe
 from playwright.sync_api import expect
 
 
 def test_camera_scanner_button_visible(page, setup):
-	page.add_init_script("""
+	page.add_init_script(
+		"""
 		navigator.mediaDevices.enumerateDevices = async () => {
 			return [
 				{
@@ -21,7 +20,8 @@ def test_camera_scanner_button_visible(page, setup):
 				}
 			];
 		};
-	""")
+	"""
+	)
 
 	page.get_by_text("Move").click()
 	page.wait_for_url("**/beam#/move")
@@ -33,11 +33,13 @@ def test_camera_scanner_button_visible(page, setup):
 
 
 def test_camera_scanner_button_hidden(page, setup):
-	page.add_init_script("""
+	page.add_init_script(
+		"""
 		navigator.mediaDevices.enumerateDevices = async () => {
 			return []; // No cameras
 		};
-	""")
+	"""
+	)
 
 	page.get_by_text("Move").click()
 	page.wait_for_url("**/beam#/move")
@@ -48,9 +50,12 @@ def test_camera_scanner_button_hidden(page, setup):
 	expect(camera_scanner).not_to_be_visible()
 
 
-def test_camera_scanner_permission_denied(page, setup):
-	# Mock camera APIs to simulate permission denial
-	page.add_init_script("""
+def test_camera_scanner_activates_camera(page, setup):
+	page.add_init_script(
+		"""
+		window.getUserMediaCalled = false;
+		window.getUserMediaConstraints = null;
+
 		navigator.mediaDevices.enumerateDevices = async () => {
 			return [
 				{
@@ -61,13 +66,63 @@ def test_camera_scanner_permission_denied(page, setup):
 				}
 			];
 		};
-		
+
+		const originalGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+		navigator.mediaDevices.getUserMedia = async (constraints) => {
+			window.getUserMediaCalled = true;
+			window.getUserMediaConstraints = constraints;
+			// Return a minimal fake stream
+			const canvas = document.createElement('canvas');
+			canvas.width = 640;
+			canvas.height = 480;
+			return canvas.captureStream(30);
+		};
+	"""
+	)
+
+	page.get_by_text("Move").click()
+	page.wait_for_url("**/beam#/move")
+	page.wait_for_timeout(1000)
+
+	was_called_before = page.evaluate("window.getUserMediaCalled")
+	assert was_called_before == False, "getUserMedia should not be called before clicking button"
+
+	camera_button = page.locator("button:has-text('Open Camera')")
+	camera_button.click()
+	page.wait_for_timeout(500)
+
+	was_called_after = page.evaluate("window.getUserMediaCalled")
+	assert was_called_after == True, "getUserMedia should be called after clicking 'Open Camera'"
+
+	# Verify correct constraints (should request video with back camera)
+	constraints = page.evaluate("window.getUserMediaConstraints")
+	assert constraints is not None, "getUserMedia should receive constraints"
+	assert "video" in constraints, "Should request video stream"
+	assert constraints["video"]["facingMode"] == "environment", "Should request back camera"
+
+
+def test_camera_scanner_permission_denied(page, setup):
+	# Mock camera APIs to simulate permission denial
+	page.add_init_script(
+		"""
+		navigator.mediaDevices.enumerateDevices = async () => {
+			return [
+				{
+					kind: 'videoinput',
+					deviceId: 'mock-camera-1',
+					label: 'Mock Camera',
+					groupId: 'mock-group'
+				}
+			];
+		};
+
 		navigator.mediaDevices.getUserMedia = async (constraints) => {
 			const error = new Error('Permission denied');
 			error.name = 'NotAllowedError';
 			throw error;
 		};
-	""")
+	"""
+	)
 
 	page.get_by_text("Move").click()
 	page.wait_for_url("**/beam#/move")
