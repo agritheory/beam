@@ -6,7 +6,7 @@
 		</BeamBtn>
 
 		<div v-if="isScanning" class="scanner-container">
-			<div id="camera-reader" ref="readerElement"></div>
+			<div id="camera-reader"></div>
 			<p v-if="lastScanned" class="last-scan">Last scanned: {{ lastScanned }}</p>
 		</div>
 
@@ -32,7 +32,6 @@ const emit = defineEmits<{
 
 const isScanning = ref(false)
 const showComponent = ref(true)
-const readerElement = ref<HTMLElement | null>(null)
 const lastScanned = ref<string>('')
 const errorMessage = ref<string>('')
 const showPermissionHelp = ref(false)
