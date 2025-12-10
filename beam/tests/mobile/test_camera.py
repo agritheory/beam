@@ -4,7 +4,7 @@
 
 from playwright.sync_api import expect
 
-	
+
 def test_camera_button_visible(page, setup):
 	page.add_init_script(
 		"""
@@ -96,4 +96,3 @@ def test_camera_opens_and_closes(page, setup):
 
 	expect(close_camera_button).not_to_be_visible()
 	expect(camera_button).to_be_visible()
-
