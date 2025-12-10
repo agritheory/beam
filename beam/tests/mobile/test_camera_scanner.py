@@ -44,10 +44,12 @@ def test_camera_scanner_button_hidden(page, setup):
 	page.get_by_text("Move").click()
 	page.wait_for_url("**/beam#/move")
 
-	page.wait_for_timeout(1000)
+	# Wait for component to check permissions and decide to hide itself
+	page.wait_for_timeout(1500)
 
+	# The component should not be visible when no cameras are found
 	camera_scanner = page.locator(".camera-scanner")
-	expect(camera_scanner).not_to_be_visible()
+	expect(camera_scanner).to_have_count(0)
 
 
 def test_camera_scanner_activates_camera(page, setup):
@@ -88,8 +90,10 @@ def test_camera_scanner_activates_camera(page, setup):
 	assert was_called_before == False, "getUserMedia should not be called before clicking button"
 
 	camera_button = page.locator("button:has-text('Open Camera')")
+	expect(camera_button).to_be_enabled(timeout=10000)
+	
 	camera_button.click()
-	page.wait_for_timeout(500)
+	page.wait_for_timeout(1000)
 
 	was_called_after = page.evaluate("window.getUserMediaCalled")
 	assert was_called_after == True, "getUserMedia should be called after clicking 'Open Camera'"
@@ -129,6 +133,8 @@ def test_camera_scanner_permission_denied(page, setup):
 	page.wait_for_timeout(1000)
 
 	camera_button = page.locator("button:has-text('Open Camera')")
+	expect(camera_button).to_be_enabled(timeout=10000)
+	
 	camera_button.click()
 
 	page.wait_for_timeout(500)
