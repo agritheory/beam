@@ -61,11 +61,9 @@ def test_upload_photo_to_purchase_receipt(page, setup):
 
 	with use_current_db_transaction():
 		barcodes = frappe.get_all(
-			"Item Barcode", 
-			filters={"parenttype": "Item", "parent": item_code}, 
-			pluck="barcode"
+			"Item Barcode", filters={"parenttype": "Item", "parent": item_code}, pluck="barcode"
 		)
-	
+
 	assert len(barcodes) > 0, f"No barcodes found for item {item_code}"
 
 	# Scan the barcode to add item to receipt
@@ -85,21 +83,22 @@ def test_upload_photo_to_purchase_receipt(page, setup):
 			order_by="creation desc",
 			limit=1,
 		)
-	
+
 	assert len(receipts) > 0, "No Purchase Receipt was created"
 	receipt_name = receipts[0]["name"]
 
 	with use_current_db_transaction():
 		files = frappe.get_all(
 			"File",
-			filters={
-				"attached_to_doctype": "Purchase Receipt", 
-				"attached_to_name": receipt_name
-			},
+			filters={"attached_to_doctype": "Purchase Receipt", "attached_to_name": receipt_name},
 			fields=["name", "file_name", "file_url"],
 		)
 
 	assert len(files) == 1, f"Expected 1 attached file, found {len(files)}"
-	assert files[0]["file_name"].startswith("photo_"), f"File name should start with 'photo_', got {files[0]['file_name']}"
-	assert files[0]["file_name"].endswith(".jpg"), f"File should be a .jpg, got {files[0]['file_name']}"
+	assert files[0]["file_name"].startswith(
+		"photo_"
+	), f"File name should start with 'photo_', got {files[0]['file_name']}"
+	assert files[0]["file_name"].endswith(
+		".jpg"
+	), f"File should be a .jpg, got {files[0]['file_name']}"
 	assert files[0]["file_url"], "File URL should not be empty"
