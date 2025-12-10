@@ -50,6 +50,7 @@ def test_complete_partial_stock_entry(page):
 
 	# navigate in the following order: Home -> Manufacture -> Work Order
 	page.get_by_text("Manufacture").click()
+	page.wait_for_url("**/beam#/manufacture")
 	page.locator("css=.beam_list-item").first.click()
 
 	# get the selected Work Order

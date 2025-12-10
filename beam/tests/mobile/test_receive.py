@@ -226,6 +226,8 @@ def test_rapid_barcode_scanning(page):
 	order_id = path_parts[-1] if path_parts else None
 	assert order_id
 
+	page.wait_for_timeout(1500)
+
 	# find the first item in the list
 	item = page.locator("css=.box .beam_list-item").first
 	item_code, *others = item.inner_text().split("\n")
