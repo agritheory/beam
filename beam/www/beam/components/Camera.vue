@@ -33,7 +33,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 
 interface CapturedPhoto {
 	file: File
@@ -157,6 +157,10 @@ const removePhoto = (index: number) => {
 }
 
 onUnmounted(() => {
+	if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+		showComponent.value = false
+	}
+
 	stopCamera()
 	capturedPhotos.value.forEach(photo => URL.revokeObjectURL(photo.preview))
 })
