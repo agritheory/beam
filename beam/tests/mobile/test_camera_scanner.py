@@ -10,9 +10,19 @@ from playwright.sync_api import expect
 def test_camera_scanner_button_hidden(page, setup):
 	page.add_init_script(
 		"""
-		navigator.mediaDevices.enumerateDevices = async () => {
-			return []; // No cameras
-		};
+		Object.defineProperty(navigator, 'mediaDevices', {
+			value: {
+				enumerateDevices: async () => {
+					return []; // No cameras available
+				},
+				getUserMedia: async (constraints) => {
+					const canvas = document.createElement('canvas');
+					canvas.width = 640;
+					canvas.height = 480;
+					return canvas.captureStream(30);
+				}
+			},
+		});
 	"""
 	)
 
