@@ -91,7 +91,7 @@ def test_camera_scanner_activates_camera(page, setup):
 
 	camera_button = page.locator("button:has-text('Open Camera')")
 	expect(camera_button).to_be_enabled(timeout=10000)
-	
+
 	camera_button.click()
 	page.wait_for_timeout(1000)
 
@@ -134,7 +134,7 @@ def test_camera_scanner_permission_denied(page, setup):
 
 	camera_button = page.locator("button:has-text('Open Camera')")
 	expect(camera_button).to_be_enabled(timeout=10000)
-	
+
 	camera_button.click()
 
 	page.wait_for_timeout(500)
