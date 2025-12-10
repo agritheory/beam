@@ -7,6 +7,7 @@ from playwright.sync_api import expect
 from beam.tests.test_utils import use_current_db_transaction
 
 
+@pytest.mark.order(10)
 def test_upload_photo_to_purchase_receipt(page, setup):
 	page.add_init_script(
 		"""

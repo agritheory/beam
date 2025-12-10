@@ -5,6 +5,7 @@
 from playwright.sync_api import expect
 
 
+@pytest.mark.order(7)
 def test_camera_button_visible(page, setup):
 	page.add_init_script(
 		"""
@@ -40,6 +41,7 @@ def test_camera_button_visible(page, setup):
 	expect(camera_button).to_be_visible()
 
 
+@pytest.mark.order(8)
 def test_camera_component_hidden(page, setup):
 	page.add_init_script(
 		"""
@@ -60,6 +62,7 @@ def test_camera_component_hidden(page, setup):
 	expect(camera_component).to_have_count(0)
 
 
+@pytest.mark.order(9)
 def test_camera_opens_and_closes(page, setup):
 	page.add_init_script(
 		"""
