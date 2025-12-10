@@ -16,7 +16,8 @@ def boot_session(bootinfo):
 
 
 def redirect_to_beam():
-	user_roles = frappe.get_roles(frappe.session.user)
-
+	user_roles = frappe.get_all(
+		"Has Role", fields=["role"], filters={"parent": frappe.session.user}, pluck="role"
+	)
 	if "BEAM Mobile User" in user_roles:
 		frappe.local.response["home_page"] = "/beam#/"
