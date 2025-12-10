@@ -156,11 +156,13 @@ const removePhoto = (index: number) => {
 	)
 }
 
-onUnmounted(() => {
+onMounted(() => {
 	if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
 		showComponent.value = false
 	}
+})
 
+onUnmounted(() => {
 	stopCamera()
 	capturedPhotos.value.forEach(photo => URL.revokeObjectURL(photo.preview))
 })
