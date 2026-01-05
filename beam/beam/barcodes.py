@@ -6,6 +6,7 @@ import uuid
 from io import BytesIO
 
 import frappe
+import pyqrcode
 from barcode import Code128
 from barcode.writer import ImageWriter
 from erpnext import get_default_company
@@ -53,16 +54,42 @@ def barcode128(barcode_text: str) -> str:
 	)
 	font_size = settings.barcode_font_size or 0
 	temp = BytesIO()
-	instance = Code128(barcode_text, writer=ImageWriter())
-	instance.write(
-		temp,
-		options={
-			"module_width": 0.4,
-			"module_height": 10,
-			"font_size": font_size,
-			"compress": True,
-		},
+
+	barcode_instance = Code128(barcode_text, writer=ImageWriter())
+	options = {"module_width": 0.4, "module_height": 10, "font_size": font_size, "compress": True}
+
+	barcode_instance.write(temp, options)
+	encoded = base64.b64encode(temp.getvalue()).decode("ascii")
+	return f'<img src="data:image/png;base64,{encoded}"/>'
+
+
+@frappe.whitelist()
+@frappe.read_only()
+def get_qr_code(qr_text: str) -> str:
+	if not qr_text:
+		return ""
+
+	company = get_default_company()
+	settings = (
+		create_beam_settings(company)
+		if not frappe.db.exists("BEAM Settings", {"company": company})
+		else frappe.get_doc("BEAM Settings", {"company": company})
 	)
+
+	qr_scale = getattr(settings, "qr_scale", 8)  # Module size in pixels
+	qr_border = getattr(settings, "qr_border", 4)  # Border size in modules
+	qr_error_correct = getattr(settings, "qr_error_correct", "M")  # Error correction level
+
+	qr = pyqrcode.create(qr_text, error=qr_error_correct)
+	temp = BytesIO()
+	qr.png(
+		temp,
+		scale=int(qr_scale),
+		module_color=(0, 0, 0, 255),
+		background=(255, 255, 255, 255),
+		quiet_zone=int(qr_border),
+	)
+	temp.seek(0)
 	encoded = base64.b64encode(temp.getvalue()).decode("ascii")
 	return f'<img src="data:image/png;base64,{encoded}"/>'
 

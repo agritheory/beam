@@ -60,6 +60,7 @@ jinja = {
 	"methods": [
 		"beam.beam.barcodes.add_to_label",
 		"beam.beam.barcodes.barcode128",
+		"beam.beam.barcodes.get_qr_code",
 		"beam.beam.barcodes.formatted_zpl_barcode",
 		"beam.beam.barcodes.formatted_zpl_label",
 		"beam.beam.barcodes.formatted_zpl_text",
@@ -68,6 +69,7 @@ jinja = {
 		"beam.beam.barcodes.zebra_zpl_text",
 		"beam.beam.printing.labelary_api",
 		"beam.beam.scan.get_handling_unit",
+		"beam.beam.scan.get_serial_no",
 	],
 }
 
