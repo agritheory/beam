@@ -204,30 +204,33 @@ def setup_manufacturing_settings(settings):
 
 
 def setup_beam_settings(settings):
-	beams = frappe.new_doc("BEAM Settings")
-	beams.company = settings.company
-	beams.enable_demand = True
-	beams.enable_handling_units = True
-	beams.receiving_workstation = "Receiving"
-	beams.shipping_workstation = "Shipping"
-	beams.set("warehouse_types", [{"warehouse_type": "Quarantine"}])
-	beams.set(
-		"routes",
-		[
-			{
-				"label": "Manufacture",
-				"route": "#/manufacture",
-				"dt": "Stock Entry",
-				"component": "Manufacture",
-			},
-			{"label": "Demand", "route": "#/demand", "dt": "Stock Entry", "component": "Demand"},
-			{"label": "Move", "route": "#/move", "dt": "Stock Entry", "component": "Demand"},
-			{"label": "Receive", "route": "#/receive", "dt": "Purchase Receipt", "component": "Receive"},
-			{"label": "Ship", "route": "#/ship", "dt": "Delivery Note", "component": "Ship"},
-			{"label": "Repack", "route": "#/repack", "dt": "Stock Entry", "component": "Repack"},
-		],
-	)
-	beams.save()
+	if frappe.db.exists("BEAM Settings", settings.company):
+		beams = frappe.get_doc("BEAM Settings", settings.company)
+	else:
+		beams = frappe.new_doc("BEAM Settings")
+		beams.company = settings.company
+		beams.enable_demand = True
+		beams.enable_handling_units = True
+		beams.receiving_workstation = "Receiving"
+		beams.shipping_workstation = "Shipping"
+		beams.set("warehouse_types", [{"warehouse_type": "Quarantine"}])
+		beams.set(
+			"routes",
+			[
+				{
+					"label": "Manufacture",
+					"route": "#/manufacture",
+					"dt": "Stock Entry",
+					"component": "Manufacture",
+				},
+				{"label": "Demand", "route": "#/demand", "dt": "Stock Entry", "component": "Demand"},
+				{"label": "Move", "route": "#/move", "dt": "Stock Entry", "component": "Demand"},
+				{"label": "Receive", "route": "#/receive", "dt": "Purchase Receipt", "component": "Receive"},
+				{"label": "Ship", "route": "#/ship", "dt": "Delivery Note", "component": "Ship"},
+				{"label": "Repack", "route": "#/repack", "dt": "Stock Entry", "component": "Repack"},
+			],
+		)
+		beams.save()
 
 
 def create_workstations():
