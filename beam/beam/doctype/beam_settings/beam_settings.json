@@ -1,5 +1,6 @@
 {
 	"actions": [],
+	"autoname": "field:company",
 	"creation": "2024-03-18 17:06:58.552999",
 	"doctype": "DocType",
 	"engine": "InnoDB",
@@ -7,6 +8,7 @@
 		"enable_handling_units",
 		"scan_serial_no",
 		"barcode_font_size",
+		"company",
 		"column_break_vhpb",
 		"qr_scale",
 		"qr_border",
@@ -56,15 +58,21 @@
 			"fieldname": "scan_serial_no",
 			"fieldtype": "Check",
 			"label": "Enable Scanning of Serial Numbers"
+		},
+		{
+			"fieldname": "company",
+			"fieldtype": "Link",
+			"label": "Company",
+			"options": "Company",
+			"unique": 1
 		}
 	],
-	"issingle": 1,
 	"links": [],
-	"modified": "2025-08-29 10:31:24.924249",
-	"modified_by": "Administrator",
+	"modified": "2026-01-02 20:34:56.013615",
+	"modified_by": "ishwaryamohan1030@gmail.com",
 	"module": "BEAM",
 	"name": "BEAM Settings",
-	"naming_rule": "Expression (old style)",
+	"naming_rule": "By fieldname",
 	"owner": "Administrator",
 	"permissions": [
 		{
