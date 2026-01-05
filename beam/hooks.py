@@ -172,6 +172,9 @@ doc_events = {
 			"beam.beam.demand.demand.modify_allocations",
 		],
 	},
+	"Company": {
+		"after_insert": "beam.beam.overrides.company.create_company_beam_settings",
+	},
 }
 
 # Types
