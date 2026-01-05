@@ -227,16 +227,20 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 			if override_action:
 				for action in override_action:
 					action["context"] = target
-					if "." in action.get("target"):
-						serialized_target = action.get("target").split(".")
+					raw_target = action.get("target")
+					
+					if isinstance(raw_target, str) and "." in raw_target:
+						serialized_target = raw_target.split(".")
 						action["target"] = target.get(serialized_target[1])
 				return override_action
 
 	actions = frm.get(barcode_doc.doc.doctype, {}).get(context.frm, [])
 	for action in actions:
 		action["context"] = target
-		if isinstance(action.get("target"), str) and "." in action.get("target"):
-			serialized_target = action.get("target").split(".")
+		raw_target = action.get("target")
+		
+		if isinstance(raw_target, str) and "." in raw_target:
+			serialized_target = raw_target.split(".")
 			action["target"] = target.get(serialized_target[1])
 
 	return actions
