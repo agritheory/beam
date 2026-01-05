@@ -5,58 +5,47 @@ import datetime
 from itertools import groupby
 
 import frappe
-from erpnext.buying.doctype.purchase_order.purchase_order import (
-	make_purchase_invoice,
-	make_purchase_receipt,
-)
 from erpnext.manufacturing.doctype.production_plan.production_plan import (
 	get_items_for_material_requests,
 )
-from erpnext.manufacturing.doctype.work_order.work_order import get_default_warehouse
 from erpnext.setup.utils import enable_all_roles_and_domains, set_defaults_for_tests
 from erpnext.stock.get_item_details import get_item_details
 from frappe.desk.page.setup_wizard.setup_wizard import setup_complete
 
-from beam.tests.fixtures import (
-	boms,
-	customers,
-	employees,
-	items,
-	operations,
-	suppliers,
-	workstations,
-)
+from beam.tests.fixtures import boms, customers, items, operations, suppliers, workstations
 
 
 def before_test():
 	frappe.clear_cache()
-	today = frappe.utils.getdate()
-	setup_complete(
-		{
-			"currency": "USD",
-			"full_name": "Administrator",
-			"company_name": "Ambrosia Pie Company",
-			"timezone": "America/New_York",
-			"company_abbr": "APC",
-			"domains": ["Distribution"],
-			"country": "United States",
-			"fy_start_date": today.replace(month=1, day=1).isoformat(),
-			"fy_end_date": today.replace(month=12, day=31).isoformat(),
-			"language": "english",
-			"company_tagline": "Ambrosia Pie Company",
-			"email": "support@agritheory.dev",
-			"password": "admin",
-			"chart_of_accounts": "Standard with Numbers",
-			"bank_account": "Primary Checking",
-		}
-	)
+	if not frappe.db.exists("Company", "Ambrosia Pie Company"):
+		today = frappe.utils.getdate()
+		setup_complete(
+			{
+				"currency": "USD",
+				"full_name": "Administrator",
+				"company_name": "Ambrosia Pie Company",
+				"timezone": "America/New_York",
+				"company_abbr": "APC",
+				"domains": ["Distribution"],
+				"country": "United States",
+				"fy_start_date": today.replace(month=1, day=1).isoformat(),
+				"fy_end_date": today.replace(month=12, day=31).isoformat(),
+				"language": "english",
+				"company_tagline": "Ambrosia Pie Company",
+				"email": "support@agritheory.dev",
+				"password": "admin",
+				"chart_of_accounts": "Standard with Numbers",
+				"bank_account": "Primary Checking",
+			}
+		)
 	enable_all_roles_and_domains()
 	set_defaults_for_tests()
 	frappe.db.commit()
-	for module in frappe.get_all("Module Onboarding"):
-		frappe.db.set_value("Module Onboarding", module, "is_complete", True)
-	frappe.set_value("Website Settings", "Website Settings", "home_page", "login")
 	create_test_data()
+	for modu in frappe.get_all("Module Onboarding"):
+		frappe.db.set_value("Module Onboarding", modu, "is_complete", 1)
+	frappe.set_value("Website Settings", "Website Settings", "home_page", "login")
+	frappe.db.commit()
 
 
 def create_test_data():
@@ -76,26 +65,31 @@ def create_test_data():
 			),
 		}
 	)
-	company_address = frappe.new_doc("Address")
-	company_address.title = settings.company
-	company_address.address_type = "Office"
-	company_address.address_line1 = "67C Sweeny Street"
-	company_address.city = "Chelsea"
-	company_address.state = "MA"
-	company_address.pincode = "89077"
-	company_address.is_your_company_address = True
-	company_address.append("links", {"link_doctype": "Company", "link_name": settings.company})
-	company_address.save()
+	if not frappe.db.exists(
+		"Address",
+		{
+			"address_type": "Office",
+			"is_your_company_address": 1,
+		},
+	):
+		company_address = frappe.new_doc("Address")
+		company_address.title = settings.company
+		company_address.address_type = "Office"
+		company_address.address_line1 = "67C Sweeny Street"
+		company_address.city = "Chelsea"
+		company_address.state = "MA"
+		company_address.pincode = "89077"
+		company_address.is_your_company_address = 1
+		company_address.append("links", {"link_doctype": "Company", "link_name": settings.company})
+		company_address.save()
 	frappe.set_value("Company", settings.company, "tax_id", "04-1871930")
 	create_warehouses(settings)
 	setup_manufacturing_settings(settings)
 	create_workstations()
-	setup_beam_settings(settings)
 	create_operations()
 	create_item_groups(settings)
 	create_suppliers(settings)
 	create_customers(settings)
-	create_employees(settings)
 	create_items(settings)
 	create_boms(settings)
 	prod_plan_from_doc = "Sales Order"
@@ -117,6 +111,8 @@ def create_suppliers(settings):
 
 	addresses = frappe._dict({})
 	for supplier in suppliers:
+		if frappe.db.exists("Supplier", supplier[0]):
+			continue
 		biz = frappe.new_doc("Supplier")
 		biz.supplier_name = supplier[0]
 		biz.supplier_group = "Bakery"
@@ -147,6 +143,8 @@ def create_suppliers(settings):
 
 def create_customers(settings):
 	for customer_name in customers:
+		if frappe.db.exists("Customer", customer_name):
+			continue
 		customer = frappe.new_doc("Customer")
 		customer.customer_name = customer_name
 		customer.customer_group = "Commercial"
@@ -157,11 +155,11 @@ def create_customers(settings):
 
 def setup_manufacturing_settings(settings):
 	mfg_settings = frappe.get_doc("Manufacturing Settings", "Manufacturing Settings")
-	mfg_settings.material_consumption = True
+	mfg_settings.material_consumption = 1
 	mfg_settings.default_wip_warehouse = "Kitchen - APC"
 	mfg_settings.default_fg_warehouse = "Baked Goods - APC"
 	mfg_settings.overproduction_percentage_for_work_order = 5.00
-	mfg_settings.job_card_excess_transfer = True
+	mfg_settings.job_Card_excess_transfer = 1
 	mfg_settings.save()
 
 	if frappe.db.exists("Account", {"account_name": "Work In Progress", "company": settings.company}):
@@ -189,33 +187,6 @@ def setup_manufacturing_settings(settings):
 	wip.save()
 
 	frappe.set_value("Warehouse", "Kitchen - APC", "account", wip.name)
-
-
-def setup_beam_settings(settings):
-	beams = frappe.new_doc("BEAM Settings")
-	beams.company = settings.company
-	beams.enable_demand = True
-	beams.enable_handling_units = True
-	beams.receiving_workstation = "Receiving"
-	beams.shipping_workstation = "Shipping"
-	beams.set("warehouse_types", [{"warehouse_type": "Quarantine"}])
-	beams.set(
-		"routes",
-		[
-			{
-				"label": "Manufacture",
-				"route": "#/manufacture",
-				"dt": "Stock Entry",
-				"component": "Manufacture",
-			},
-			{"label": "Demand", "route": "#/demand", "dt": "Stock Entry", "component": "Demand"},
-			{"label": "Move", "route": "#/move", "dt": "Stock Entry", "component": "Demand"},
-			{"label": "Receive", "route": "#/receive", "dt": "Purchase Receipt", "component": "Receive"},
-			{"label": "Ship", "route": "#/ship", "dt": "Delivery Note", "component": "Ship"},
-			{"label": "Repack", "route": "#/repack", "dt": "Stock Entry", "component": "Repack"},
-		],
-	)
-	beams.save()
 
 
 def create_workstations():
@@ -260,21 +231,21 @@ def create_items(settings):
 	if not frappe.db.exists("Price List", "Bakery Buying"):
 		pl = frappe.new_doc("Price List")
 		pl.price_list_name = "Bakery Buying"
-		pl.buying = True
+		pl.buying = 1
 		pl.append("countries", {"country": "United States"})
 		pl.save()
 
 	if not frappe.db.exists("Price List", "Bakery Wholesale"):
 		pl = frappe.new_doc("Price List")
 		pl.price_list_name = "Bakery Wholesale"
-		pl.selling = True
+		pl.selling = 1
 		pl.append("countries", {"country": "United States"})
 		pl.save()
 
 	if not frappe.db.exists("Pricing Rule", "Bakery Retail"):
 		pr = frappe.new_doc("Pricing Rule")
 		pr.title = "Bakery Retail"
-		pr.selling = True
+		pr.selling = 1
 		pr.apply_on = "Item Group"
 		pr.company = settings.company
 		pr.margin_type = "Percentage"
@@ -292,16 +263,23 @@ def create_items(settings):
 		i.item_group = item.get("item_group")
 		i.stock_uom = item.get("uom")
 		i.description = item.get("description")
-		i.maintain_stock = True
-		i.enable_handling_unit = i.item_code not in ("Water", "Ice Water")
-		i.include_item_in_manufacturing = True
+		i.maintain_stock = 1
+		i.enable_handling_unit = 0 if i.item_code in ("Water", "Ice Water") else 1
+		i.include_item_in_manufacturing = 1
 		i.default_warehouse = settings.get("warehouse")
 		i.default_material_request_type = (
 			"Purchase" if item.get("item_group") in ("Bakery Supplies", "Ingredients") else "Manufacture"
 		)
 		i.valuation_method = "FIFO"
-		i.is_purchase_item = item.get("item_group") in ("Bakery Supplies", "Ingredients")
-		i.is_sales_item = item.get("item_group") == "Baked Goods"
+		i.is_purchase_item = (
+			1
+			if item.get("item_group") in ("Bakery Supplies", "Ingredients")
+			or item.get("is_purchase_item", 0)
+			else 0
+		)
+		i.is_sales_item = (
+			1 if item.get("item_group") == "Baked Goods" or item.get("is_sales_item", 0) else 0
+		)
 		i.append(
 			"item_defaults",
 			{"company": settings.company, "default_warehouse": item.get("default_warehouse")},
@@ -311,17 +289,16 @@ def create_items(settings):
 		if i.item_code == "Parchment Paper":
 			i.append("uoms", {"uom": "Box", "conversion_factor": 100})
 			i.purchase_uom = "Box"
-		if i.item_code in ("Water", "Ice Water"):
-			i.append("uoms", {"uom": "Gallon Liquid (US)", "conversion_factor": 15.142})
-			i.purchase_uom = "Gallon Liquid (US)"
-			i.valuation_rate = 0.01 if i.item_code == "Water" else 0.02
+
+		i.has_serial_no = item.get("has_serial_no", 0) or 0
+		i.serial_no_series = item.get("serial_no_series", "") or ""
 		i.save()
 		if item.get("item_price"):
 			ip = frappe.new_doc("Item Price")
 			ip.item_code = i.item_code
 			ip.uom = i.stock_uom
 			ip.price_list = "Bakery Wholesale" if i.is_sales_item else "Bakery Buying"
-			ip.buying = True
+			ip.buying = 1
 			ip.valid_from = "2018-1-1"
 			ip.price_list_rate = item.get("item_price")
 			ip.save()
@@ -332,22 +309,20 @@ def create_items(settings):
 		"items",
 		{
 			"item_code": "Water",
-			"qty": 9,  # intentionally to help with demand tests
+			"qty": 10000000,
 			"t_warehouse": "Refrigerator - APC",
-			"uom": "Cup",
-			"basic_rate": 0.15,
-			"expense_account": "5111 - Cost of Goods Sold - APC",
+			"basic_rate": 0.0,
+			"allow_zero_valuation_rate": 1,
 		},
 	)
 	water.append(
 		"items",
 		{
 			"item_code": "Ice Water",
-			"qty": 11,  # intentionally to help with demand tests
-			"uom": "Cup",
+			"qty": 10000000,
 			"t_warehouse": "Refrigerator - APC",
-			"basic_rate": 0.30,
-			"expense_account": "5111 - Cost of Goods Sold - APC",
+			"basic_rate": 0.0,
+			"allow_zero_valuation_rate": 1,
 		},
 	)
 	water.save()
@@ -370,90 +345,6 @@ def create_warehouses(settings):
 		wh.parent_warehouse = root_wh
 		wh.company = settings.company
 		wh.save()
-	create_quarantine_warehouse(settings, parent_wh=root_wh)
-
-
-# TODO: replace with test utils functionality
-def create_quarantine_warehouse(
-	settings,
-	wh_name="Quarantined, Scrap and Rejected Items",
-	account_name=None,
-	parent_account=None,
-	account_number="1430",
-	parent_wh=None,
-	is_default_scrap_wh=True,
-):
-	if not account_name:
-		if not parent_account:
-			# If one possible parent account in system, use it, if zero or 2+, account is standalone
-			parent_accts = frappe.get_all(
-				"Account",
-				{
-					"company": settings.company,
-					"root_type": "Asset",
-					"account_type": "Stock",
-					"is_group": 1,
-				},
-				"name",
-				pluck="name",
-			)
-			parent_account = parent_accts[0] if len(parent_accts) == 1 else ""
-
-		if not frappe.db.exists(
-			"Account",
-			{
-				"name": wh_name,
-				"company": settings.company,
-				"root_type": "Asset",
-				"account_type": "Stock",
-			},
-		):
-			a = frappe.new_doc("Account")
-			a.name = a.account_name = wh_name
-			a.account_number = account_number
-			a.is_group = 0
-			a.company = settings.company
-			a.root_type = "Asset"
-			a.report_type = "Balance Sheet"
-			a.account_currency = frappe.get_value("Company", settings.company, "default_currency")
-			a.parent_account = parent_account
-			a.account_type = "Stock"
-			a.save()
-			account_name = a.name
-
-	if not parent_wh:
-		parent_wh = frappe.get_value("Warehouse", {"company": settings.company, "is_group": 1})
-
-	wh_type = "Quarantine"
-	if not frappe.db.exists("Warehouse Type", wh_type):
-		wht = frappe.new_doc("Warehouse Type")
-		wht.name = wh_type
-		wht.save()
-
-	if not frappe.db.exists(
-		"Warehouse",
-		{
-			"warehouse_name": wh_name,
-			"company": settings.company,
-			"is_rejected_warehouse": 1,
-			"account": account_name,
-		},
-	):
-		wh = frappe.new_doc("Warehouse")
-		wh.warehouse_name = wh_name
-		wh.company = settings.company
-		wh.is_group = 0
-		wh.parent_warehouse = parent_wh
-		wh.is_rejected_warehouse = 1
-		wh.account = account_name
-		wh.warehouse_type = wh_type
-		wh.save()
-		wh_name = wh.name
-
-	if is_default_scrap_wh:
-		ms = frappe.get_doc("Manufacturing Settings")
-		ms.default_scrap_warehouse = wh_name
-		ms.save()
 
 
 def create_boms(settings):
@@ -468,7 +359,7 @@ def create_boms(settings):
 		b.rm_cost_as_per = "Price List"
 		b.buying_price_list = "Bakery Buying"
 		b.currency = "USD"
-		b.with_operations = True
+		b.with_operations = 1
 		for item in bom.get("items"):
 			b.append("items", {**item, "stock_uom": item.get("uom")})
 			b.items[-1].bom_no = frappe.get_value("BOM", {"item": item.get("item_code")})
@@ -501,7 +392,7 @@ def create_sales_order(settings):
 		"items",
 		{
 			"item_code": "Double Plum Pie",
-			"delivery_date": so.transaction_date + datetime.timedelta(days=1),
+			"delivery_date": so.transaction_date,
 			"qty": 40,
 			"warehouse": "Baked Goods - APC",
 		},
@@ -510,7 +401,7 @@ def create_sales_order(settings):
 		"items",
 		{
 			"item_code": "Gooseberry Pie",
-			"delivery_date": so.transaction_date + datetime.timedelta(days=2),
+			"delivery_date": so.transaction_date,
 			"qty": 10,
 			"warehouse": "Baked Goods - APC",
 		},
@@ -519,7 +410,7 @@ def create_sales_order(settings):
 		"items",
 		{
 			"item_code": "Kaduka Key Lime Pie",
-			"delivery_date": so.transaction_date + datetime.timedelta(days=3),
+			"delivery_date": so.transaction_date,
 			"qty": 10,
 			"warehouse": "Baked Goods - APC",
 		},
@@ -546,7 +437,7 @@ def create_material_request(settings):
 		"items",
 		{
 			"item_code": "Double Plum Pie",
-			"schedule_date": mr.schedule_date + datetime.timedelta(days=1),
+			"schedule_date": mr.schedule_date,
 			"qty": 40,
 			"warehouse": "Baked Goods - APC",
 		},
@@ -555,7 +446,7 @@ def create_material_request(settings):
 		"items",
 		{
 			"item_code": "Gooseberry Pie",
-			"schedule_date": mr.schedule_date + datetime.timedelta(days=2),
+			"schedule_date": mr.schedule_date,
 			"qty": 10,
 			"warehouse": "Baked Goods - APC",
 		},
@@ -564,7 +455,7 @@ def create_material_request(settings):
 		"items",
 		{
 			"item_code": "Kaduka Key Lime Pie",
-			"schedule_date": mr.schedule_date + datetime.timedelta(days=3),
+			"schedule_date": mr.schedule_date,
 			"qty": 10,
 			"warehouse": "Baked Goods - APC",
 		},
@@ -577,7 +468,7 @@ def create_production_plan(settings, prod_plan_from_doc):
 	pp = frappe.new_doc("Production Plan")
 	pp.posting_date = settings.day
 	pp.company = settings.company
-	pp.combine_sub_items = True
+	pp.combine_sub_items = 1
 	if prod_plan_from_doc == "Sales Order":
 		pp.get_items_from = "Sales Order"
 		pp.append(
@@ -596,20 +487,12 @@ def create_production_plan(settings, prod_plan_from_doc):
 			},
 		)
 		pp.get_mr_items()
-
-	pp.po_items = sorted(pp.po_items, key=lambda x: x.get("item_code"))
-
-	for idx, item in enumerate(pp.po_items):
-		item.planned_start_date = settings.day + datetime.timedelta(days=idx)
-
+	for item in pp.po_items:
+		item.planned_start_date = settings.day
 	pp.get_sub_assembly_items()
-	start_time = datetime.datetime(settings.day.year, settings.day.month, settings.day.day, 0, 0)
 	for item in pp.sub_assembly_items:
-		item.schedule_date = start_time
-		time = frappe.get_value("BOM Operation", {"parent": item.bom_no}, "sum(time_in_mins) AS time")
-		start_time += datetime.timedelta(minutes=time + 2)
+		item.schedule_date = settings.day
 	pp.for_warehouse = "Storeroom - APC"
-	pp.sub_assembly_items = sorted(pp.sub_assembly_items, key=lambda x: x.get("production_item"))
 	raw_materials = get_items_for_material_requests(
 		pp.as_dict(), warehouses=None, get_parent_warehouse_data=None
 	)
@@ -640,47 +523,38 @@ def create_production_plan(settings, prod_plan_from_doc):
 		sorted((m for m in mr.items if m.supplier), key=lambda d: d.supplier),
 		lambda x: x.get("supplier"),
 	):
-		if supplier == "No Supplier":
-			continue
 		items = list(_items)
-		po = frappe.new_doc("Purchase Order")
-		po.company = settings.company
-		po.supplier = supplier
-		po.transaction_date = po.schedule_date = settings.day
-		po.buying_price_list = "Bakery Buying"
+		if supplier == "No Supplier":
+			# make a stock entry here?
+			continue
+		if supplier == "Freedom Provisions":
+			pr = frappe.new_doc("Purchase Invoice")
+			pr.update_stock = 1
+		else:
+			pr = frappe.new_doc("Purchase Receipt")
+		pr.company = settings.company
+		pr.supplier = supplier
+		pr.posting_date = settings.day
+		pr.set_posting_time = 1
+		pr.buying_price_list = "Bakery Buying"
 		for item in items:
 			item_details = get_item_details(
 				{
 					"item_code": item.item_code,
 					"qty": item.qty,
-					"supplier": po.supplier,
-					"company": po.company,
-					"doctype": po.doctype,
-					"currency": po.currency,
-					"buying_price_list": po.buying_price_list,
+					"supplier": pr.supplier,
+					"company": pr.company,
+					"doctype": pr.doctype,
+					"currency": pr.currency,
+					"buying_price_list": pr.buying_price_list,
 				}
 			)
-			po.append("items", {**item_details})
-		po.save()
-		po.submit()
-
-		if supplier == "Freedom Provisions":
-			pr = make_purchase_invoice(po.name)
-			pr.update_stock = True
-		else:
-			pr = make_purchase_receipt(po.name)
-
-		pr.set_posting_time = True
-		pr.posting_date = settings.day
+			pr.append("items", {**item_details})
 		pr.save()
 		# pr.submit() # don't submit - needed to test handling unit generation
 
-	wo_list, po_list = [], []
-	subcontracted_po = {}
-	default_warehouses = get_default_warehouse()
-	pp.make_work_order_for_subassembly_items(wo_list, subcontracted_po, default_warehouses)
-	pp.make_work_order_for_finished_goods(wo_list, default_warehouses)
-	wos = frappe.get_all("Work Order", {"production_plan": pp.name}, order_by="name ASC")
+	pp.make_work_order()
+	wos = frappe.get_all("Work Order", {"production_plan": pp.name})
 	start_time = datetime.datetime(settings.day.year, settings.day.month, settings.day.day, 0, 0)
 	for wo in wos:
 		wo = frappe.get_doc("Work Order", wo)
@@ -702,7 +576,6 @@ def create_production_plan(settings, prod_plan_from_doc):
 			job_card.append(
 				"time_logs",
 				{
-					# "completed_qty": wo.qty,
 					"from_time": start_time,
 					"to_time": start_time + datetime.timedelta(minutes=time_in_mins),
 					"time_in_mins": time_in_mins,
@@ -711,7 +584,6 @@ def create_production_plan(settings, prod_plan_from_doc):
 			)
 			job_card.save()
 			start_time = job_card.time_logs[0].to_time + datetime.timedelta(minutes=2)
-			# job_card.submit() # TODO: don't submit for demand tests
 
 
 def create_purchase_receipt_for_received_qty_test(settings):
@@ -719,7 +591,7 @@ def create_purchase_receipt_for_received_qty_test(settings):
 	pr.company = settings.company
 	pr.supplier = "Freedom Provisions"
 	pr.posting_date = settings.day
-	pr.set_posting_time = True
+	pr.set_posting_time = 1
 	pr.buying_price_list = "Bakery Buying"
 	item = frappe.get_doc("Item", "Gooseberry")
 	pr.append(
@@ -755,44 +627,3 @@ def create_network_printer_settings(settings):
 			nps.port = ps["port"]
 			nps.printer_name = ps["name"]
 			nps.save()
-
-
-def create_employees(settings, only_create=None):
-	for employee in employees:
-		if only_create and employee.get("employee_name") not in only_create:
-			continue
-
-		if frappe.db.exists("Employee", {"employee_name": employee.get("employee_name")}):
-			continue
-
-		if not frappe.db.exists("Designation", employee.get("designation")):
-			desg = frappe.new_doc("Designation")
-			desg.designation_name = employee.get("designation")
-			desg.save()
-
-		empl = frappe.new_doc("Employee")
-		name = employee.pop("name")
-		empl.first_name = name.split(" ")[0]
-		empl.last_name = name.split(" ")[1]
-		empl.update(employee)
-		empl.reports_to = None
-		if settings.company:
-			empl.company = settings.company
-		empl.save()
-
-		user = frappe.new_doc("User")
-		user.email = f"{empl.first_name[0].lower()}{empl.last_name.lower()}@cfc.co"
-		user.first_name = empl.first_name
-		user.last_name = empl.last_name
-		user.send_welcome_email = 0
-		user.enabled = 1
-		user.language = settings.language
-		user.time_zone = settings.time_zone
-		for r in employee.get("roles", []):
-			user.append("roles", {"role": r})
-
-		user.save()
-		empl.user_id = user.email
-		if employee.get("reports_to"):
-			empl.reports_to = frappe.get_value("Employee", {"employee_name": employee.get("reports_to")})
-		empl.save()
