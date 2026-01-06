@@ -162,7 +162,12 @@ def add_to_label(label: Label, element: Printable):
 
 class ZPLLabelStringOutput(Label):
 	def __init__(
-		self, width: int = 100, length: int = 100, dpi: int = 203, print_speed: int = 2, copies: int = 1
+		self,
+		width: int = 100,
+		length: int = 100,
+		dpi: int = 203,
+		print_speed: int = 2,
+		copies: int = 1,
 	):
 		super().__init__(width, length, dpi, print_speed, copies)
 
