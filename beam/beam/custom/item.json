@@ -6,9 +6,7 @@
 			"bold": 0,
 			"collapsible": 0,
 			"columns": 0,
-			"creation": "2024-02-26 23:52:53.051024",
 			"default": "1",
-			"docstatus": 0,
 			"dt": "Item",
 			"fetch_if_empty": 0,
 			"fieldname": "enable_handling_unit",
@@ -29,15 +27,11 @@
 			"is_virtual": 0,
 			"label": "Enable Handling Unit",
 			"length": 0,
-			"modified": "2024-02-26 23:52:53.051024",
-			"modified_by": "Administrator",
 			"module": "BEAM",
 			"name": "Item-enable_handling_unit",
 			"no_copy": 0,
 			"non_negative": 0,
-			"owner": "Administrator",
 			"permlevel": 0,
-			"precision": "",
 			"print_hide": 0,
 			"print_hide_if_no_value": 0,
 			"read_only": 0,
@@ -49,9 +43,7 @@
 			"unique": 0
 		}
 	],
-	"custom_perms": [],
 	"doctype": "Item",
-	"links": [],
 	"property_setters": [],
 	"sync_on_migrate": 1
 }
