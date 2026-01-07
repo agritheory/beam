@@ -1,14 +1,16 @@
 [tool.poetry]
 name = "beam"
 version = "15.5.0"
-authors = ["AgriTheory <support@agritheory.dev>"]
 description = "Barcode Scanning for ERPNext"
+authors = ["AgriTheory <support@agritheory.dev>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
 python = ">=3.10"
 python-barcode = "^0.15.1"
-zebra-zpl = {git = "https://github.com/mtking2/py-zebra-zpl.git"}
+zebra-zpl = { git = "https://github.com/mtking2/py-zebra-zpl.git" }
+packaging = "<25"
+typing-extensions = "<4.16"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.2"
@@ -32,7 +34,6 @@ line-length = 99
 line_length = 99
 multi_line_output = 3
 include_trailing_comma = true
-force_grid_wrap = 0
 use_parentheses = true
 ensure_newline_before_comments = true
 indent = "\t"
@@ -40,7 +41,7 @@ indent = "\t"
 [tool.semantic_release]
 version_variables = [
     "beam/__init__.py:__version__",
-    "pyproject.toml:version"
+    "pyproject.toml:tool.poetry.version"
 ]
 
 [tool.semantic_release.branches.version]
