@@ -169,6 +169,11 @@ doc_events = {
 			"beam.beam.handling_unit.generate_handling_units",
 		],
 	},
+	"Company": {
+		"after_insert": [
+			"beam.beam.overrides.company.create_company_beam_settings",
+		],
+	},
 }
 
 # Scheduled Tasks

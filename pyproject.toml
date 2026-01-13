@@ -1,9 +1,13 @@
-[tool.poetry]
+[project]
 name = "beam"
 version = "15.5.0"
-authors = ["AgriTheory <support@agritheory.dev>"]
+authors = [
+    { name = "AgriTheory", email = "support@agritheory.dev" }
+]
 description = "Barcode Scanning for ERPNext"
+requires-python = ">=3.10"
 readme = "README.md"
+dynamic = ["dependencies"]
 
 [tool.poetry.dependencies]
 python = ">=3.10"
