@@ -30,26 +30,27 @@ from beam.tests.fixtures import (
 
 def before_test():
 	frappe.clear_cache()
-	today = frappe.utils.getdate()
-	setup_complete(
-		{
-			"currency": "USD",
-			"full_name": "Administrator",
-			"company_name": "Ambrosia Pie Company",
-			"timezone": "America/New_York",
-			"company_abbr": "APC",
-			"domains": ["Distribution"],
-			"country": "United States",
-			"fy_start_date": today.replace(month=1, day=1).isoformat(),
-			"fy_end_date": today.replace(month=12, day=31).isoformat(),
-			"language": "english",
-			"company_tagline": "Ambrosia Pie Company",
-			"email": "support@agritheory.dev",
-			"password": "admin",
-			"chart_of_accounts": "Standard with Numbers",
-			"bank_account": "Primary Checking",
-		}
-	)
+	if not frappe.db.exists("Company", "Ambrosia Pie Company"):
+		today = frappe.utils.getdate()
+		setup_complete(
+			{
+				"currency": "USD",
+				"full_name": "Administrator",
+				"company_name": "Ambrosia Pie Company",
+				"timezone": "America/New_York",
+				"company_abbr": "APC",
+				"domains": ["Distribution"],
+				"country": "United States",
+				"fy_start_date": today.replace(month=1, day=1).isoformat(),
+				"fy_end_date": today.replace(month=12, day=31).isoformat(),
+				"language": "english",
+				"company_tagline": "Ambrosia Pie Company",
+				"email": "support@agritheory.dev",
+				"password": "admin",
+				"chart_of_accounts": "Standard with Numbers",
+				"bank_account": "Primary Checking",
+			}
+		)
 	enable_all_roles_and_domains()
 	set_defaults_for_tests()
 	frappe.db.commit()
@@ -76,16 +77,23 @@ def create_test_data():
 			),
 		}
 	)
-	company_address = frappe.new_doc("Address")
-	company_address.title = settings.company
-	company_address.address_type = "Office"
-	company_address.address_line1 = "67C Sweeny Street"
-	company_address.city = "Chelsea"
-	company_address.state = "MA"
-	company_address.pincode = "89077"
-	company_address.is_your_company_address = True
-	company_address.append("links", {"link_doctype": "Company", "link_name": settings.company})
-	company_address.save()
+	if not frappe.db.exists(
+		"Address",
+		{
+			"address_type": "Office",
+			"is_your_company_address": 1,
+		},
+	):
+		company_address = frappe.new_doc("Address")
+		company_address.title = settings.company
+		company_address.address_type = "Office"
+		company_address.address_line1 = "67C Sweeny Street"
+		company_address.city = "Chelsea"
+		company_address.state = "MA"
+		company_address.pincode = "89077"
+		company_address.is_your_company_address = True
+		company_address.append("links", {"link_doctype": "Company", "link_name": settings.company})
+		company_address.save()
 	frappe.set_value("Company", settings.company, "tax_id", "04-1871930")
 	create_warehouses(settings)
 	setup_manufacturing_settings(settings)
@@ -117,6 +125,8 @@ def create_suppliers(settings):
 
 	addresses = frappe._dict({})
 	for supplier in suppliers:
+		if frappe.db.exists("Supplier", supplier[0]):
+			continue
 		biz = frappe.new_doc("Supplier")
 		biz.supplier_name = supplier[0]
 		biz.supplier_group = "Bakery"
@@ -147,6 +157,8 @@ def create_suppliers(settings):
 
 def create_customers(settings):
 	for customer_name in customers:
+		if frappe.db.exists("Customer", customer_name):
+			continue
 		customer = frappe.new_doc("Customer")
 		customer.customer_name = customer_name
 		customer.customer_group = "Commercial"
@@ -192,30 +204,33 @@ def setup_manufacturing_settings(settings):
 
 
 def setup_beam_settings(settings):
-	beams = frappe.new_doc("BEAM Settings")
-	beams.company = settings.company
-	beams.enable_demand = True
-	beams.enable_handling_units = True
-	beams.receiving_workstation = "Receiving"
-	beams.shipping_workstation = "Shipping"
-	beams.set("warehouse_types", [{"warehouse_type": "Quarantine"}])
-	beams.set(
-		"routes",
-		[
-			{
-				"label": "Manufacture",
-				"route": "#/manufacture",
-				"dt": "Stock Entry",
-				"component": "Manufacture",
-			},
-			{"label": "Demand", "route": "#/demand", "dt": "Stock Entry", "component": "Demand"},
-			{"label": "Move", "route": "#/move", "dt": "Stock Entry", "component": "Demand"},
-			{"label": "Receive", "route": "#/receive", "dt": "Purchase Receipt", "component": "Receive"},
-			{"label": "Ship", "route": "#/ship", "dt": "Delivery Note", "component": "Ship"},
-			{"label": "Repack", "route": "#/repack", "dt": "Stock Entry", "component": "Repack"},
-		],
-	)
-	beams.save()
+	if frappe.db.exists("BEAM Settings", settings.company):
+		beams = frappe.get_doc("BEAM Settings", settings.company)
+	else:
+		beams = frappe.new_doc("BEAM Settings")
+		beams.company = settings.company
+		beams.enable_demand = True
+		beams.enable_handling_units = True
+		beams.receiving_workstation = "Receiving"
+		beams.shipping_workstation = "Shipping"
+		beams.set("warehouse_types", [{"warehouse_type": "Quarantine"}])
+		beams.set(
+			"routes",
+			[
+				{
+					"label": "Manufacture",
+					"route": "#/manufacture",
+					"dt": "Stock Entry",
+					"component": "Manufacture",
+				},
+				{"label": "Demand", "route": "#/demand", "dt": "Stock Entry", "component": "Demand"},
+				{"label": "Move", "route": "#/move", "dt": "Stock Entry", "component": "Demand"},
+				{"label": "Receive", "route": "#/receive", "dt": "Purchase Receipt", "component": "Receive"},
+				{"label": "Ship", "route": "#/ship", "dt": "Delivery Note", "component": "Ship"},
+				{"label": "Repack", "route": "#/repack", "dt": "Stock Entry", "component": "Repack"},
+			],
+		)
+		beams.save()
 
 
 def create_workstations():
