@@ -1,13 +1,13 @@
 [project]
 name = "beam"
+version = "15.5.0"
+authors = [
+    { name = "AgriTheory", email = "support@agritheory.dev" }
+]
 description = "Barcode Scanning for ERPNext"
-authors = [{name = "AgriTheory", email = "support@agritheory.dev"}]
+requires-python = ">=3.10"
 readme = "README.md"
-license = { file = "LICENSE" }
-dynamic = [ "version", "dependencies", "requires-python" ]
-
-[tool.poetry]
-version = "15.4.0"
+dynamic = ["dependencies"]
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.14"
@@ -69,7 +69,7 @@ exclude_also = [
 ]
 
 [tool.semantic_release]
-version_toml = ["pyproject.toml:tool.poetry.version"]
+version_toml = ["pyproject.toml:project.version"]
 version_variable = [
     "beam/__init__.py:__version__"
 ]
