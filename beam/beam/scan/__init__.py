@@ -1,3 +1,6 @@
+# Copyright (c) 2026, AgriTheory and contributors
+# For license information, please see license.txt
+
 import datetime
 import json
 from typing import Any, Optional, Union
@@ -187,9 +190,11 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 				"handling_unit": hu_details.handling_unit,
 				"voucher_no": hu_details.voucher_no,
 				"stock_qty": hu_details.stock_qty,
-				"qty": hu_details.stock_qty / target.conversion_factor
-				if target.conversion_factor
-				else hu_details.stock_qty,
+				"qty": (
+					hu_details.stock_qty / target.conversion_factor
+					if target.conversion_factor
+					else hu_details.stock_qty
+				),
 				"posting_datetime": hu_details.posting_datetime,
 				"dn_detail": hu_details.dn_detail,
 			}
@@ -227,16 +232,18 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 			if override_action:
 				for action in override_action:
 					action["context"] = target
-					if "." in action.get("target"):
-						serialized_target = action.get("target").split(".")
+					raw_target = action.get("target")
+					if isinstance(raw_target, str) and "." in raw_target:
+						serialized_target = raw_target.split(".")
 						action["target"] = target.get(serialized_target[1])
 				return override_action
 
 	actions = frm.get(barcode_doc.doc.doctype, {}).get(context.frm, [])
 	for action in actions:
 		action["context"] = target
-		if isinstance(action.get("target"), str) and "." in action.get("target"):
-			serialized_target = action.get("target").split(".")
+		raw_target = action.get("target")
+		if isinstance(raw_target, str) and "." in raw_target:
+			serialized_target = raw_target.split(".")
 			action["target"] = target.get(serialized_target[1])
 
 	return actions
@@ -268,7 +275,12 @@ listview = {
 			}
 		],
 		"Putaway Rule": [
-			{"action": "filter", "doctype": "Putaway Rule", "field": "item_code", "target": "target"},
+			{
+				"action": "filter",
+				"doctype": "Putaway Rule",
+				"field": "item_code",
+				"target": "target",
+			},
 		],
 		"Quality Inspection": [
 			{
@@ -295,14 +307,29 @@ listview = {
 	},
 	"Item": {
 		"Delivery Note": [
-			{"action": "filter", "doctype": "Delivery Note Item", "field": "item_code", "target": "target"},
+			{
+				"action": "filter",
+				"doctype": "Delivery Note Item",
+				"field": "item_code",
+				"target": "target",
+			},
 		],
 		"Item": [{"action": "route", "doctype": "Item", "field": "Item", "target": "target"}],
 		"Item Price": [
-			{"action": "filter", "doctype": "Item Price", "field": "item_code", "target": "target"},
+			{
+				"action": "filter",
+				"doctype": "Item Price",
+				"field": "item_code",
+				"target": "target",
+			},
 		],
 		"Packing Slip": [
-			{"action": "filter", "doctype": "Packing Slip Item", "field": "item_code", "target": "target"},
+			{
+				"action": "filter",
+				"doctype": "Packing Slip Item",
+				"field": "item_code",
+				"target": "target",
+			},
 		],
 		"Purchase Invoice": [
 			{
@@ -321,16 +348,36 @@ listview = {
 			},
 		],
 		"Putaway Rule": [
-			{"action": "filter", "doctype": "Putaway Rule", "field": "item_code", "target": "target"},
+			{
+				"action": "filter",
+				"doctype": "Putaway Rule",
+				"field": "item_code",
+				"target": "target",
+			},
 		],
 		"Quality Inspection": [
-			{"action": "filter", "doctype": "Quality Inspection", "field": "item_code", "target": "target"},
+			{
+				"action": "filter",
+				"doctype": "Quality Inspection",
+				"field": "item_code",
+				"target": "target",
+			},
 		],
 		"Sales Invoice": [
-			{"action": "filter", "doctype": "Sales Invoice Item", "field": "item_code", "target": "target"},
+			{
+				"action": "filter",
+				"doctype": "Sales Invoice Item",
+				"field": "item_code",
+				"target": "target",
+			},
 		],
 		"Stock Entry": [
-			{"action": "filter", "doctype": "Stock Entry Detail", "field": "item_code", "target": "target"},
+			{
+				"action": "filter",
+				"doctype": "Stock Entry Detail",
+				"field": "item_code",
+				"target": "target",
+			},
 		],
 		"Stock Reconciliation": [
 			{
@@ -341,12 +388,22 @@ listview = {
 			},
 		],
 		"Warranty Claim": [
-			{"action": "filter", "doctype": "Warranty Claim", "field": "item_code", "target": "target"},
+			{
+				"action": "filter",
+				"doctype": "Warranty Claim",
+				"field": "item_code",
+				"target": "target",
+			},
 		],
 	},
 	"Warehouse": {
 		"Delivery Note": [
-			{"action": "filter", "doctype": "Delivery Note Item", "field": "warehouse", "target": "target"},
+			{
+				"action": "filter",
+				"doctype": "Delivery Note Item",
+				"field": "warehouse",
+				"target": "target",
+			},
 		],
 		"Item": [
 			{
@@ -357,7 +414,12 @@ listview = {
 			},
 		],
 		"Packing Slip": [
-			{"action": "filter", "doctype": "Packing Slip Item", "field": "warehouse", "target": "target"},
+			{
+				"action": "filter",
+				"doctype": "Packing Slip Item",
+				"field": "warehouse",
+				"target": "target",
+			},
 		],
 		"Purchase Invoice": [
 			{
@@ -376,10 +438,20 @@ listview = {
 			},
 		],
 		"Sales Invoice": [
-			{"action": "filter", "doctype": "Sales Invoice Item", "field": "warehouse", "target": "target"},
+			{
+				"action": "filter",
+				"doctype": "Sales Invoice Item",
+				"field": "warehouse",
+				"target": "target",
+			},
 		],
 		"Stock Entry": [
-			{"action": "filter", "doctype": "Stock Entry Detail", "field": "warehouse", "target": "target"},
+			{
+				"action": "filter",
+				"doctype": "Stock Entry Detail",
+				"field": "warehouse",
+				"target": "target",
+			},
 		],
 		"Stock Reconciliation": [
 			{

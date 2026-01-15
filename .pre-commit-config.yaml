@@ -61,9 +61,9 @@ repos:
       - id: update_pre_commit_config
       - id: validate_copyright
         files: '\.(js|ts|py|md)$'
-        args: ["--app", "beam"]
+        args: ['--app', 'beam']
       - id: clean_customized_doctypes
-        args: ["--app", "beam"]
+        args: ['--app', 'beam']
       - id: validate_customizations
       - id: validate_python_dependencies
       - id: validate_javascript_dependencies
