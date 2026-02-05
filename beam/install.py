@@ -24,11 +24,11 @@ def create_beam_mobile_user_role():
 def setup_beam_mobile_user_permissions():
 	"""Grant necessary permissions to BEAM Mobile User role for mobile app functionality"""
 	role = "BEAM Mobile User"
-	
+
 	# Core doctypes - READ only (for reference data)
 	read_only_doctypes = [
 		"Address",
-		"Contact", 
+		"Contact",
 		"Company",
 		"Currency",
 		"Customer",
@@ -44,51 +44,55 @@ def setup_beam_mobile_user_permissions():
 		"Brand",
 		"UOM Conversion Detail",
 	]
-	
+
 	# Source doctypes - READ only (for mapping to new documents)
 	source_doctypes = [
 		"Purchase Order",
 		"Sales Order",
 		"Work Order",
 	]
-	
+
 	# Target doctypes - Full CRUD permissions
 	crud_doctypes = [
 		"Purchase Receipt",
-		"Delivery Note", 
+		"Delivery Note",
 		"Stock Entry",
 	]
-	
+
 	# Add READ permissions
 	for doctype in read_only_doctypes + source_doctypes:
 		if not frappe.db.exists("Custom DocPerm", {"parent": doctype, "role": role, "permlevel": 0}):
-			frappe.get_doc({
-				"doctype": "Custom DocPerm",
-				"parent": doctype,
-				"parenttype": "DocType",
-				"parentfield": "permissions",
-				"role": role,
-				"read": 1,
-				"permlevel": 0,
-			}).insert(ignore_permissions=True)
-	
+			frappe.get_doc(
+				{
+					"doctype": "Custom DocPerm",
+					"parent": doctype,
+					"parenttype": "DocType",
+					"parentfield": "permissions",
+					"role": role,
+					"read": 1,
+					"permlevel": 0,
+				}
+			).insert(ignore_permissions=True)
+
 	# Add CRUD permissions for transactional doctypes
 	for doctype in crud_doctypes:
 		if not frappe.db.exists("Custom DocPerm", {"parent": doctype, "role": role, "permlevel": 0}):
-			frappe.get_doc({
-				"doctype": "Custom DocPerm",
-				"parent": doctype,
-				"parenttype": "DocType",
-				"parentfield": "permissions",
-				"role": role,
-				"read": 1,
-				"write": 1,
-				"create": 1,
-				"submit": 1,
-				"cancel": 1,
-				"permlevel": 0,
-			}).insert(ignore_permissions=True)
-	
+			frappe.get_doc(
+				{
+					"doctype": "Custom DocPerm",
+					"parent": doctype,
+					"parenttype": "DocType",
+					"parentfield": "permissions",
+					"role": role,
+					"read": 1,
+					"write": 1,
+					"create": 1,
+					"submit": 1,
+					"cancel": 1,
+					"permlevel": 0,
+				}
+			).insert(ignore_permissions=True)
+
 	frappe.db.commit()
 
 
