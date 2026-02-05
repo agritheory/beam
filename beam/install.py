@@ -21,6 +21,77 @@ def create_beam_mobile_user_role():
 		role.insert(ignore_permissions=True)
 
 
+def setup_beam_mobile_user_permissions():
+	"""Grant necessary permissions to BEAM Mobile User role for mobile app functionality"""
+	role = "BEAM Mobile User"
+	
+	# Core doctypes - READ only (for reference data)
+	read_only_doctypes = [
+		"Address",
+		"Contact", 
+		"Company",
+		"Currency",
+		"Customer",
+		"Supplier",
+		"Item",
+		"Warehouse",
+		"UOM",
+		"Price List",
+		"Item Price",
+		"Batch",
+		"Serial No",
+		"Item Group",
+		"Brand",
+		"UOM Conversion Detail",
+	]
+	
+	# Source doctypes - READ only (for mapping to new documents)
+	source_doctypes = [
+		"Purchase Order",
+		"Sales Order",
+		"Work Order",
+	]
+	
+	# Target doctypes - Full CRUD permissions
+	crud_doctypes = [
+		"Purchase Receipt",
+		"Delivery Note", 
+		"Stock Entry",
+	]
+	
+	# Add READ permissions
+	for doctype in read_only_doctypes + source_doctypes:
+		if not frappe.db.exists("Custom DocPerm", {"parent": doctype, "role": role, "permlevel": 0}):
+			frappe.get_doc({
+				"doctype": "Custom DocPerm",
+				"parent": doctype,
+				"parenttype": "DocType",
+				"parentfield": "permissions",
+				"role": role,
+				"read": 1,
+				"permlevel": 0,
+			}).insert(ignore_permissions=True)
+	
+	# Add CRUD permissions for transactional doctypes
+	for doctype in crud_doctypes:
+		if not frappe.db.exists("Custom DocPerm", {"parent": doctype, "role": role, "permlevel": 0}):
+			frappe.get_doc({
+				"doctype": "Custom DocPerm",
+				"parent": doctype,
+				"parenttype": "DocType",
+				"parentfield": "permissions",
+				"role": role,
+				"read": 1,
+				"write": 1,
+				"create": 1,
+				"submit": 1,
+				"cancel": 1,
+				"permlevel": 0,
+			}).insert(ignore_permissions=True)
+	
+	frappe.db.commit()
+
+
 def after_install():
 	load_customizations()
 	print("Setting up Handling Unit Inventory Dimension")
@@ -63,4 +134,5 @@ def after_install():
 	build_demand_allocation_map()
 	reset_build_receiving_map()
 	create_beam_mobile_user_role()
+	setup_beam_mobile_user_permissions()
 	execute()
