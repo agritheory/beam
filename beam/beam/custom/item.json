@@ -6,7 +6,7 @@
 			"bold": 0,
 			"collapsible": 0,
 			"columns": 0,
-			"default": "1",
+			"default": "0",
 			"dt": "Item",
 			"fetch_if_empty": 0,
 			"fieldname": "enable_handling_unit",
