@@ -60,9 +60,8 @@ def test_print_by_server_explicit_format():
 				print_format="Item Barcode",
 			)
 		except Exception:
-			# Item Barcode exists, so it will get further and fail elsewhere
-			# Just verify it doesn't fail on "Standard"
-			pass
+			# Should NOT fail on "Standard" - should use explicit format
+            assert "Standard" not in str(e), "Should use explicit format, not Standard"
 
 
 def test_print_by_server_with_serialized_doc():
