@@ -10,8 +10,8 @@
 		</template>
 	</Navbar>
 
-	<Camera @photos-captured="handlePhotosCaptured" />
-
+	<Camera :allowPreview="true" @photos-captured="handlePhotosCaptured" />
+	{{ console.log({items}) }}
 	<!-- body section -->
 	<div class="box" v-show="items.length">
 		<ListView :items="items" :key="refreshKey" @update="handleItemUpdate" />
