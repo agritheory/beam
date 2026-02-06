@@ -40,7 +40,10 @@ def test_serial_number_scan():
 	pr.submit()
 
 	# Serial No scanning disabled
-	settings = frappe.get_doc("BEAM Settings", "BEAM Settings")
+	company = frappe.defaults.get_defaults().get("company")
+	settings = frappe.get_doc("BEAM Settings", {"company": company})
+	settings.scan_serial_no = 0
+	settings.save()
 	assert settings.scan_serial_no == 0
 	scan = frappe.call(
 		"beam.beam.scan.scan",
@@ -84,7 +87,8 @@ def test_serial_number_scan():
 	pi.save()
 	pi.submit()
 
-	settings = frappe.get_doc("BEAM Settings", "BEAM Settings")
+	company = frappe.defaults.get_defaults().get("company")
+	settings = frappe.get_doc("BEAM Settings", {"company": company})
 	settings.scan_serial_no = 1
 	settings.save()
 	scan = frappe.call(
@@ -117,7 +121,8 @@ def test_serial_number_scan():
 	dn.save()
 	dn.submit()
 
-	settings = frappe.get_doc("BEAM Settings", "BEAM Settings")
+	company = frappe.defaults.get_defaults().get("company")
+	settings = frappe.get_doc("BEAM Settings", {"company": company})
 	settings.scan_serial_no = 1
 	settings.save()
 	scan = frappe.call(

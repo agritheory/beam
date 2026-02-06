@@ -463,7 +463,11 @@ def test_stock_entry_material_transfer():
 			"Item", row.item_code, "enable_handling_unit"
 		):
 			continue
-		sle = frappe.get_doc("Stock Ledger Entry", {"handling_unit": row.handling_unit})
+		# For Material Transfer, there are two SLEs - one for source (negative) and one for target (positive)
+		# Get the source warehouse SLE (the one consuming from the handling unit)
+		sle = frappe.get_doc(
+			"Stock Ledger Entry", {"handling_unit": row.handling_unit, "warehouse": row.s_warehouse}
+		)
 		hu = get_handling_unit(str(row.handling_unit))
 		assert row.transfer_qty == abs(sle.actual_qty)
 		assert hu.stock_qty == 95  # net qty
