@@ -22,6 +22,78 @@ def submit_all_purchase_receipts():
 		pr.submit()
 
 
+def test_enable_handling_units_setting():
+	"""Test that enable_handling_units setting controls whether handling units are assigned to SLEs"""
+	company = frappe.defaults.get_defaults().get("company")
+	
+	# Test with enable_handling_units = False (default)
+	beam_settings = frappe.get_doc("BEAM Settings", {"company": company})
+	original_value = beam_settings.enable_handling_units
+	beam_settings.enable_handling_units = 0
+	beam_settings.save()
+	
+	try:
+		se_disabled = frappe.new_doc("Stock Entry")
+		se_disabled.stock_entry_type = se_disabled.purpose = "Material Receipt"
+		se_disabled.company = company
+		se_disabled.append(
+			"items",
+			{
+				"item_code": "Ambrosia Pie",
+				"qty": 10,
+				"t_warehouse": "Baked Goods - APC",
+				"basic_rate": frappe.get_value("Item Price", {"item_code": "Ambrosia Pie"}, "price_list_rate"),
+			},
+		)
+		se_disabled.save()
+		se_disabled.submit()
+		
+		# When disabled, handling_unit should NOT be generated
+		item_row = se_disabled.items[0]
+		assert not item_row.handling_unit, \
+			f"Item row should not have handling_unit when setting is disabled, but got: {item_row.handling_unit}"
+		
+		# Check SLE - handling_unit should also NOT be set
+		sle_disabled = frappe.get_doc("Stock Ledger Entry", {"voucher_detail_no": item_row.name})
+		assert not sle_disabled.handling_unit or sle_disabled.handling_unit == "", \
+			f"SLE should not have handling_unit when enable_handling_units is disabled, but got: {sle_disabled.handling_unit}"
+		
+		# Now test with enable_handling_units = True
+		beam_settings.enable_handling_units = 1
+		beam_settings.save()
+		
+		se_enabled = frappe.new_doc("Stock Entry")
+		se_enabled.stock_entry_type = se_enabled.purpose = "Material Receipt"
+		se_enabled.company = company
+		se_enabled.append(
+			"items",
+			{
+				"item_code": "Ambrosia Pie",
+				"qty": 10,
+				"t_warehouse": "Baked Goods - APC",
+				"basic_rate": frappe.get_value("Item Price", {"item_code": "Ambrosia Pie"}, "price_list_rate"),
+			},
+		)
+		se_enabled.save()
+		se_enabled.submit()
+		
+		# When enabled, handling_unit should be generated on item row
+		item_row_enabled = se_enabled.items[0]
+		assert item_row_enabled.handling_unit, "Item row should have handling_unit when setting is enabled"
+		
+		# Check SLE - handling_unit SHOULD be set when enabled
+		sle_enabled = frappe.get_doc("Stock Ledger Entry", {"voucher_detail_no": item_row_enabled.name})
+		assert sle_enabled.handling_unit, "SLE should have handling_unit when enable_handling_units is enabled"
+		assert sle_enabled.handling_unit == item_row_enabled.handling_unit, \
+			f"SLE handling_unit should match item row: {sle_enabled.handling_unit} != {item_row_enabled.handling_unit}"
+		
+	finally:
+		# Restore original setting
+		beam_settings.enable_handling_units = original_value
+		beam_settings.save()
+
+
+
 @pytest.mark.order(1)
 def test_purchase_receipt_handling_unit_generation():
 	for pr in frappe.get_all("Purchase Receipt"):
