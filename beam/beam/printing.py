@@ -34,6 +34,9 @@ def print_by_server(
 		doc = frappe._dict(json.loads(doc))
 	if not print_format:
 		print_format = frappe.get_meta(doctype).get("default_print_format")
+	# Default to "Standard" print format if still empty
+	if not print_format:
+		print_format = "Standard"
 	print_format = frappe.get_doc("Print Format", print_format)
 	try:
 		cups.setServer(print_settings.server_ip)
