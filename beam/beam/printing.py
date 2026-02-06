@@ -31,7 +31,9 @@ def print_by_server(
 ):
 	print_settings = frappe.get_doc("Network Printer Settings", printer_setting)
 	if isinstance(doc, str):
-		doc = frappe._dict(json.loads(doc))
+		_doc = frappe._dict(json.loads(doc))
+		doc = frappe.get_doc(_doc.doctype, _doc.name)
+		doc.update(_doc)
 	if not print_format:
 		print_format = frappe.get_meta(doctype).get("default_print_format")
 	# Default to "Standard" print format if still empty
@@ -102,8 +104,9 @@ def print_handling_units(
 	doctype=None, name=None, printer_setting=None, print_format=None, doc=None
 ):
 	if isinstance(doc, str):
-		doc = frappe._dict(json.loads(doc))
-
+		_doc = frappe._dict(json.loads(doc))
+		doc = frappe.get_doc(_doc.doctype, _doc.name)
+		doc.update(_doc)
 	for row in doc.get("items"):
 		if not row.get("handling_unit"):
 			continue

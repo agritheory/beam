@@ -3,6 +3,7 @@
 
 from unittest.mock import Mock, patch
 
+import frappe
 from frappe.exceptions import DoesNotExistError
 
 
@@ -62,3 +63,28 @@ def test_print_by_server_explicit_format():
 			# Item Barcode exists, so it will get further and fail elsewhere
 			# Just verify it doesn't fail on "Standard"
 			pass
+
+
+def test_print_by_server_with_serialized_doc():
+	"""Serialized doc should be properly deserialized as full document instance"""
+	from beam.beam.printing import print_by_server
+
+	# Get a real item doc and serialize it like the frontend would
+	item = frappe.get_doc("Item", "Ambrosia Pie")
+	serialized_doc = frappe.as_json(item.as_dict())
+
+	mock_cups = Mock()
+	mock_cups.IPPError = Exception
+	with patch("beam.beam.printing.cups", mock_cups):
+		try:
+			print_by_server(
+				doctype="Item",
+				name="Ambrosia Pie",
+				printer_setting="Kitchen Printer",
+				print_format="Item Barcode",
+				doc=serialized_doc,  # Pass as JSON string
+			)
+		except Exception as e:
+			# Should not fail with AttributeError about 'in_print'
+			assert "in_print" not in str(e)
+			assert not isinstance(e, AttributeError)
