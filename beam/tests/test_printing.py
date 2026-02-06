@@ -6,11 +6,11 @@ from unittest.mock import Mock, patch
 import frappe
 from frappe.exceptions import DoesNotExistError
 
+from beam.beam.printing import print_by_server
+
 
 def test_print_by_server_empty_string_uses_standard():
 	"""Empty print_format should default to Standard"""
-	from beam.beam.printing import print_by_server
-
 	mock_cups = Mock()
 	mock_cups.IPPError = Exception
 	with patch("beam.beam.printing.cups", mock_cups):
@@ -28,8 +28,6 @@ def test_print_by_server_empty_string_uses_standard():
 
 def test_print_by_server_none_uses_standard():
 	"""None print_format should default to Standard"""
-	from beam.beam.printing import print_by_server
-
 	mock_cups = Mock()
 	mock_cups.IPPError = Exception
 	with patch("beam.beam.printing.cups", mock_cups):
@@ -59,15 +57,13 @@ def test_print_by_server_explicit_format():
 				printer_setting="Kitchen Printer",
 				print_format="Item Barcode",
 			)
-		except Exception:
+		except Exception as e:
 			# Should NOT fail on "Standard" - should use explicit format
-            assert "Standard" not in str(e), "Should use explicit format, not Standard"
+			assert "Standard" not in str(e), "Should use explicit format, not Standard"
 
 
 def test_print_by_server_with_serialized_doc():
 	"""Serialized doc should be properly deserialized as full document instance"""
-	from beam.beam.printing import print_by_server
-
 	# Get a real item doc and serialize it like the frontend would
 	item = frappe.get_doc("Item", "Ambrosia Pie")
 	serialized_doc = frappe.as_json(item.as_dict())
