@@ -34,7 +34,12 @@ def scan(
 
 
 def get_barcode_context(barcode: str) -> frappe._dict | None:
-	settings = frappe.get_cached_doc("BEAM Settings", "BEAM Settings")
+	# Get BEAM Settings for default company
+	company = frappe.defaults.get_defaults().get("company")
+	settings = None
+	if company and frappe.db.exists("BEAM Settings", {"company": company}):
+		settings = frappe.get_cached_doc("BEAM Settings", company)
+
 	item_barcode = frappe.db.get_value(
 		"Item Barcode", {"barcode": barcode}, ["parent", "parenttype"], as_dict=True
 	)
@@ -45,7 +50,7 @@ def get_barcode_context(barcode: str) -> frappe._dict | None:
 				"barcode": barcode,
 			}
 		)
-	elif not item_barcode and settings.scan_serial_no:
+	elif not item_barcode and settings and settings.scan_serial_no:
 		serial_no_table = frappe.qb.DocType("Serial No")
 		bundle_entry_table = frappe.qb.DocType("Serial and Batch Entry")
 		bundle_table = frappe.qb.DocType("Serial and Batch Bundle")

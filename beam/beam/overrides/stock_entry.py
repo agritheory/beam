@@ -19,6 +19,29 @@ class BEAMStockEntry(StockEntry):
 		finished_item_row = self.get_finished_item_row()
 		self.get_sle_for_source_warehouse(sl_entries, finished_item_row)
 		self.get_sle_for_target_warehouse(sl_entries, finished_item_row)
+
+		# Ensure handling_unit is set on SLE entries if enabled
+		if settings.enable_handling_units:
+			for sle in sl_entries:
+				if hasattr(sle, "get") and "voucher_detail_no" in sle:
+					item_row = next(
+						(item for item in self.items if item.name == sle.get("voucher_detail_no")), None
+					)
+					if item_row:
+						# For source warehouse (consumption), use handling_unit
+						if (
+							sle.get("warehouse") == item_row.s_warehouse
+							and hasattr(item_row, "handling_unit")
+							and item_row.handling_unit
+						):
+							sle["handling_unit"] = item_row.handling_unit
+						# For target warehouse (receipt), use to_handling_unit if it exists, otherwise handling_unit
+						elif sle.get("warehouse") == item_row.t_warehouse:
+							if hasattr(item_row, "to_handling_unit") and item_row.to_handling_unit:
+								sle["handling_unit"] = item_row.to_handling_unit
+							elif hasattr(item_row, "handling_unit") and item_row.handling_unit:
+								sle["handling_unit"] = item_row.handling_unit
+
 		if self.docstatus == 2:
 			sl_entries.reverse()
 		self.make_sl_entries(sl_entries)

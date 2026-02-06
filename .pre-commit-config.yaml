@@ -55,7 +55,7 @@ repos:
           - tomli
 
   - repo: https://github.com/agritheory/test_utils
-    rev: v1.12.0
+    rev: v1.13.0
     hooks:
       - id: update_pre_commit_config
       - id: validate_copyright
