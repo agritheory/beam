@@ -53,7 +53,12 @@ class BEAMStockEntry(StockEntry):
 	def make_handling_unit_sles(self):
 		hu_sles = []
 		for d in self.get("items"):
-			if self.docstatus == 2 and not d.recombine_on_cancel and d.handling_unit and d.to_handling_unit:
+			# Only process when cancelling AND user wants to keep separate (NOT recombine)
+			if self.docstatus != 2 or d.recombine_on_cancel or not d.handling_unit:
+				continue
+
+			if d.handling_unit and d.to_handling_unit:
+				# Material Transfer types: both HUs on the same row
 				sle = self.get_sl_entries(
 					d,
 					{
@@ -76,6 +81,32 @@ class BEAMStockEntry(StockEntry):
 				_sle["handling_unit"] = d.to_handling_unit
 				_sle["is_cancelled"] = 0
 				hu_sles.append(_sle)
+			elif d.s_warehouse and not d.t_warehouse:
+				# Repack/Manufacture source row: re-consume from source HU
+				sle = self.get_sl_entries(
+					d,
+					{
+						"warehouse": cstr(d.s_warehouse),
+						"actual_qty": -flt(d.transfer_qty),
+						"incoming_rate": flt(d.valuation_rate),
+					},
+				)
+				sle["handling_unit"] = d.handling_unit
+				sle["is_cancelled"] = 0
+				hu_sles.append(sle)
+			elif d.t_warehouse and not d.s_warehouse:
+				# Repack/Manufacture target row: re-add to target HU
+				sle = self.get_sl_entries(
+					d,
+					{
+						"warehouse": cstr(d.t_warehouse),
+						"actual_qty": flt(d.transfer_qty),
+						"incoming_rate": flt(d.valuation_rate),
+					},
+				)
+				sle["handling_unit"] = d.handling_unit
+				sle["is_cancelled"] = 0
+				hu_sles.append(sle)
 		return hu_sles
 
 

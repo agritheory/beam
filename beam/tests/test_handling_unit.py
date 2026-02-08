@@ -763,3 +763,223 @@ def test_handling_units_overconsumption_in_delivery_note():
 		f"Row #1: Handling Unit for Ambrosia Pie cannot be more than {hu.stock_qty} {hu.stock_uom}. You have {row_qty:.1f} {row_stock_uom}"
 		in exc_info.value.args[0]
 	)
+
+
+@pytest.mark.order(15)
+def test_repack_cancel_without_recombine():
+	"""Test cancelling a Repack Stock Entry without recombining handling units"""
+	# Create a material receipt with a known handling unit
+	se_receipt = frappe.new_doc("Stock Entry")
+	se_receipt.stock_entry_type = se_receipt.purpose = "Material Receipt"
+	se_receipt.append(
+		"items",
+		{
+			"item_code": "Parchment Paper",
+			"qty": 100,
+			"t_warehouse": "Storeroom - APC",
+			"basic_rate": frappe.get_value(
+				"Item Price", {"item_code": "Parchment Paper"}, "price_list_rate"
+			),
+		},
+	)
+	se_receipt.save()
+	se_receipt.submit()
+	source_hu = se_receipt.items[0].handling_unit
+
+	# Create a repack entry
+	se_repack = frappe.new_doc("Stock Entry")
+	se_repack.stock_entry_type = se_repack.purpose = "Repack"
+	se_repack.append(
+		"items",
+		{
+			"item_code": "Parchment Paper",
+			"qty": 1,
+			"uom": "Box",
+			"conversion_factor": 100,
+			"stock_qty": 100,
+			"actual_qty": 100,
+			"transfer_qty": 100,
+			"s_warehouse": "Storeroom - APC",
+			"handling_unit": source_hu,
+		},
+	)
+	se_repack.append(
+		"items",
+		{
+			"item_code": "Parchment Paper",
+			"uom": "Nos",
+			"qty": 100,
+			"actual_qty": 100,
+			"transfer_qty": 100,
+			"t_warehouse": "Storeroom - APC",
+		},
+	)
+	se_repack.save()
+	se_repack.submit()
+
+	source_row = se_repack.items[0]
+	target_row = se_repack.items[1]
+	target_hu = target_row.handling_unit
+
+	# Verify initial state
+	source_hu_doc = get_handling_unit(source_hu)
+	target_hu_doc = get_handling_unit(target_hu)
+	assert source_hu_doc.stock_qty == 0  # consumed
+	assert target_hu_doc.stock_qty == 100  # created
+
+	# Cancel WITHOUT recombine (don't set recombine_on_cancel)
+	se_repack.cancel()
+
+	# After cancel without recombine:
+	# - Source HU should have qty 0 (consumed stays consumed)
+	# - Target HU should still exist with qty 100 (produced stays produced)
+	# This "keep separate" behavior maintains the split in cancelled state
+	source_hu_doc = get_handling_unit(source_hu)
+	target_hu_doc = get_handling_unit(target_hu)
+	assert source_hu_doc.stock_qty == 0  # consumed
+	assert target_hu_doc.stock_qty == 100  # produced
+
+
+@pytest.mark.order(16)
+def test_repack_cancel_with_recombine():
+	"""Test cancelling a Repack Stock Entry WITH recombining handling units"""
+	# Create a material receipt with a known handling unit
+	se_receipt = frappe.new_doc("Stock Entry")
+	se_receipt.stock_entry_type = se_receipt.purpose = "Material Receipt"
+	se_receipt.append(
+		"items",
+		{
+			"item_code": "Parchment Paper",
+			"qty": 100,
+			"t_warehouse": "Storeroom - APC",
+			"basic_rate": frappe.get_value(
+				"Item Price", {"item_code": "Parchment Paper"}, "price_list_rate"
+			),
+		},
+	)
+	se_receipt.save()
+	se_receipt.submit()
+	source_hu = se_receipt.items[0].handling_unit
+
+	# Create a repack entry
+	se_repack = frappe.new_doc("Stock Entry")
+	se_repack.stock_entry_type = se_repack.purpose = "Repack"
+	se_repack.append(
+		"items",
+		{
+			"item_code": "Parchment Paper",
+			"qty": 1,
+			"uom": "Box",
+			"conversion_factor": 100,
+			"stock_qty": 100,
+			"actual_qty": 100,
+			"transfer_qty": 100,
+			"s_warehouse": "Storeroom - APC",
+			"handling_unit": source_hu,
+		},
+	)
+	se_repack.append(
+		"items",
+		{
+			"item_code": "Parchment Paper",
+			"uom": "Nos",
+			"qty": 100,
+			"actual_qty": 100,
+			"transfer_qty": 100,
+			"t_warehouse": "Storeroom - APC",
+		},
+	)
+	se_repack.save()
+	se_repack.submit()
+
+	source_row = se_repack.items[0]
+	target_row = se_repack.items[1]
+	target_hu = target_row.handling_unit
+
+	# Set recombine_on_cancel on BOTH rows (as the frontend does)
+	source_row.db_set("recombine_on_cancel", True)
+	target_row.db_set("recombine_on_cancel", True)
+
+	# Cancel WITH recombine
+	se_repack.reload()
+	se_repack.cancel()
+
+	# After cancel with recombine:
+	# - Source HU should NOT get additional entries (recombine prevents split)
+	# - Target HU should NOT exist (was recombined back)
+	source_hu_doc = get_handling_unit(source_hu)
+	target_hu_doc = get_handling_unit(target_hu)
+
+	# Source HU should have the original quantity (no split entries added)
+	assert source_hu_doc.stock_qty == 100
+	# Target HU should be empty/zero (recombined back to source)
+	assert target_hu_doc is None or target_hu_doc.stock_qty == 0
+
+
+@pytest.mark.order(17)
+def test_material_transfer_cancel_without_recombine():
+	"""Test cancelling a Material Transfer Stock Entry without recombining handling units"""
+	# Create a material receipt
+	se_receipt = frappe.new_doc("Stock Entry")
+	se_receipt.stock_entry_type = se_receipt.purpose = "Material Receipt"
+	se_receipt.append(
+		"items",
+		{
+			"item_code": "Parchment Paper",
+			"qty": 100,
+			"t_warehouse": "Storeroom - APC",
+			"basic_rate": frappe.get_value(
+				"Item Price", {"item_code": "Parchment Paper"}, "price_list_rate"
+			),
+		},
+	)
+	se_receipt.save()
+	se_receipt.submit()
+	source_hu = se_receipt.items[0].handling_unit
+
+	# Create a material transfer
+	se_transfer = frappe.new_doc("Stock Entry")
+	se_transfer.stock_entry_type = se_transfer.purpose = "Material Transfer"
+	se_transfer.company = frappe.defaults.get_defaults().get("company")
+
+	scan = frappe.call(
+		"beam.beam.scan.scan",
+		**{
+			"barcode": str(source_hu),
+			"context": {"frm": "Stock Entry", "doc": se_transfer.as_dict()},
+			"current_qty": 1,
+		},
+	)
+	se_transfer.append(
+		"items",
+		{
+			**scan[0]["context"],
+			"qty": 50,
+			"actual_qty": 50,
+			"transfer_qty": 50,
+			"s_warehouse": "Storeroom - APC",
+			"t_warehouse": "Kitchen - APC",
+		},
+	)
+	se_transfer.save()
+	se_transfer.submit()
+
+	transfer_row = se_transfer.items[0]
+	target_hu = transfer_row.to_handling_unit
+
+	# Verify initial state
+	source_hu_doc = get_handling_unit(source_hu)
+	target_hu_doc = get_handling_unit(target_hu)
+	assert source_hu_doc.stock_qty == 50  # remaining in source
+	assert target_hu_doc.stock_qty == 50  # transferred to target
+
+	# Cancel WITHOUT recombine
+	se_transfer.cancel()
+
+	# After cancel without recombine:
+	# - Source HU should be restored
+	# - Target HU should also be restored (both persist separately)
+	source_hu_doc = get_handling_unit(source_hu)
+	target_hu_doc = get_handling_unit(target_hu)
+	assert source_hu_doc.stock_qty == 50  # restored in source warehouse
+	assert target_hu_doc.stock_qty == 50  # restored in target warehouse

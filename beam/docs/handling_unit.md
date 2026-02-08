@@ -76,9 +76,25 @@ When material is transferred from one warehouse to another, it will generate a n
 | Cocoplum         | Work In Progress   |            456 |          20 Ea |
 
 
-When cancelling a Stock Entry, the user will be given an option to re-combine or let handling units remain tracked separately.
+#### Cancelling Material Transfer Entries
+
+When cancelling a Material Transfer Stock Entry (including Send to Subcontractor and Material Transfer for Manufacture), a dialog appears asking whether to recombine handling units or keep them tracked separately.
 
 ![Screen shot of the recombine dialog](./assets/recombine.png)
+
+The dialog shows each source handling unit along with its corresponding target handling unit that was created during the transfer. By default, all rows are pre-selected for recombination (the recommended action).
+
+**Recombine (Default):** When rows are selected and "Cancel and Recombine" is clicked:
+- The source and target handling units are merged back together
+- The original handling unit retains its full quantity as if the transfer never happened
+- The target handling unit is removed from inventory
+- This is the typical choice when correcting errors or undoing temporary transfers
+
+**Keep Separate:** When rows are unchecked before clicking "Cancel and Recombine":
+- Both handling units remain in the system with their respective quantities
+- Stock ledger entries are created to restore the quantities in both warehouses
+- The handling units continue to be tracked independently
+- Useful when you want to maintain the split for future reference or traceability
 
 ### Repack and Manufacture
 
@@ -97,6 +113,22 @@ In a case where less than the total quantity associated with a Handling Unit is 
 | Cocoplum         | Storeroom          |            123 |       	 -20 Ea |
 | Cocoplum Puree   | Work In Progress   |            012 |        1 liter |
 | Cocoplum         | Scrap              |                |           1 Ea |
+
+#### Cancelling Repack and Manufacture Entries
+
+Similar to Material Transfer entries, when cancelling a Repack or Manufacture Stock Entry, a dialog appears to choose the recombine behavior. The dialog shows each consumed (source) handling unit paired with its corresponding produced (target) handling unit. All rows are pre-selected for recombination by default.
+
+**Recombine (Default):** When rows are selected:
+- The consumed handling unit is restored to its original quantity
+- The produced handling unit is removed from inventory
+- The transformation is completely reversed
+- Best for correcting data entry errors or voiding incorrect manufacturing entries
+
+**Keep Separate:** When rows are unchecked:
+- The consumed handling unit receives its quantity back
+- The produced handling unit also retains its quantity
+- Both handling units coexist in inventory
+- Useful for maintaining audit trails when a production run needs to be reversed but you want to preserve the separate handling unit records for compliance or tracking purposes
 
 #### BOM Scrap Item
 In a Manufacturing or Repack Stock Entry, scrap items can be toggled to create a Handling Unit corresponding with their scrap quantity. This can be changed after a BOM is submitted.
