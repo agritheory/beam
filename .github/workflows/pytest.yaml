@@ -78,6 +78,8 @@ jobs:
           MYSQL_PWD: 'admin'
           BRANCH_NAME: ${{ env.BRANCH_NAME}}
         run: |
+          source /home/runner/frappe-bench/env/bin/activate
+          pip install --upgrade pip setuptools
           bash ${{ github.workspace }}/.github/helper/install.sh
 
       - name: Run Tests
