@@ -24,7 +24,19 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
-addopts = "--cov=beam --cov-report term-missing"
+addopts = "--cov=beam --cov-report=term-missing --cov-report=xml"
+
+[tool.coverage.run]
+omit = [
+    "*/__init__.py",
+    "*/boot.py",
+    "*/customize.py",
+    "*/hooks.py",
+    "*/install.py",
+    "*/patches/*",
+    "*/tests/*",
+    "*/test_*.py",
+]
 
 [tool.codespell]
 skip = "CHANGELOG.md,*.js.map"
