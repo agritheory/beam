@@ -1,7 +1,7 @@
 # Copyright (c) 2024, AgriTheory and contributors
 # For license information, please see license.txt
 
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Optional
 
 import frappe
 from frappe.query_builder import DocType
@@ -21,8 +21,6 @@ from beam.beam.demand.utils import (
 if TYPE_CHECKING:
 	from sqlite3 import Cursor
 
-	from erpnext.accounts.doctype.purchase_invoice.purchase_invoice import PurchaseInvoice
-	from erpnext.buying.doctype.purchase_order.purchase_order import PurchaseOrder
 
 
 def _get_receiving_demand(
@@ -143,7 +141,7 @@ def modify_receiving(doc, method: str | None = None) -> None:
 	"""Update receiving table for Purchase Orders, Purchase Invoices, and Purchase Receipts"""
 	if method == "on_submit":
 		if doc.doctype == "Purchase Receipt":
-			purchase_orders = set(item.purchase_order for item in doc.items if item.purchase_order)
+			purchase_orders = {item.purchase_order for item in doc.items if item.purchase_order}
 			for po_name in purchase_orders:
 				remove_receiving(po_name)
 				add_receiving(po_name)
@@ -151,7 +149,7 @@ def modify_receiving(doc, method: str | None = None) -> None:
 			add_receiving(doc.name)
 	elif method == "on_cancel":
 		if doc.doctype == "Purchase Receipt":
-			purchase_orders = set(item.purchase_order for item in doc.items if item.purchase_order)
+			purchase_orders = {item.purchase_order for item in doc.items if item.purchase_order}
 			for po_name in purchase_orders:
 				remove_receiving(po_name)
 				add_receiving(po_name)
