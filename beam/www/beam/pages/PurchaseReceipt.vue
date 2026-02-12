@@ -66,9 +66,9 @@ const items = computed((): (PurchaseReceiptItem & ListViewItem)[] => {
 	if (!purchaseReceipt.value) return []
 
 	if (!purchaseReceipt.value.items) return []
-	
+
 	if (!Array.isArray(purchaseReceipt.value.items)) return []
-	
+
 	const mappedItems = purchaseReceipt.value.items.map(item => {
 		return {
 			...item,
@@ -80,7 +80,7 @@ const items = computed((): (PurchaseReceiptItem & ListViewItem)[] => {
 			},
 		}
 	})
-	
+
 	return mappedItems
 })
 
@@ -112,9 +112,9 @@ const create = async () => {
 	}
 }
 
-const submit = async () => {	
+const submit = async () => {
 	if (!purchaseReceipt.value?.name) return
-	
+
 	const { data, response } = await store.submit<PurchaseReceipt>('Purchase Receipt', purchaseReceipt.value.name)
 
 	if (response.ok && data) {
@@ -126,9 +126,9 @@ const submit = async () => {
 
 const cancel = async () => {
 	if (!purchaseReceipt.value?.name) return
-	
+
 	const { data, response } = await store.cancel<PurchaseReceipt>('Purchase Receipt', purchaseReceipt.value.name)
-	
+
 	if (response.ok && data) {
 		store.$patch(() => {
 			purchaseReceipt.value = data
