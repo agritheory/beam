@@ -11,7 +11,7 @@
 	</Navbar>
 
 	<Camera :allowPreview="true" @photos-captured="handlePhotosCaptured" />
-	{{ console.log({items}) }}
+
 	<!-- body section -->
 	<div class="box" v-show="items.length">
 		<ListView :items="items" :key="refreshKey" @update="handleItemUpdate" />
@@ -35,17 +35,9 @@ const route = useRoute()
 const store = useBeamStore()
 const purchaseOrderId = route.params.id?.toString() || 'new-purchase-receipt'
 
-console.log('Initializing with purchaseOrderId:', purchaseOrderId)
-console.log('Store cache.mappers keys:', Object.keys(store.cache.mappers))
-console.log('Full store.cache.mappers:', store.cache.mappers)
-
 const purchaseReceipt = ref(store.cache.mappers[purchaseOrderId] as PurchaseReceipt)
 const refreshKey = ref(0)
 const capturedFiles = ref<File[]>([])
-
-console.log('purchaseReceipt.value:', purchaseReceipt.value)
-console.log('purchaseReceipt.value?.items:', purchaseReceipt.value?.items)
-console.log('purchaseReceipt.value?.items length:', purchaseReceipt.value?.items?.length)
 
 const handlePhotosCaptured = (photos: File[]) => {
 	capturedFiles.value = photos
@@ -65,32 +57,17 @@ const handleItemUpdate = (updatedItem: PurchaseReceiptItem & ListViewItem) => {
 
 // hack: since array reactivity is not present in Vue 3, force-refresh the listviews on store update
 store.$subscribe(mutation => {
-	console.log('Store mutation:', mutation.type, mutation)
 	if (['patch function', 'patch object'].includes(mutation.type)) {
-		console.log('Refreshing ListView, new refreshKey:', refreshKey.value + 1)
 		refreshKey.value++
 	}
 })
 
 const items = computed((): (PurchaseReceiptItem & ListViewItem)[] => {
-	console.log('items computed - purchaseReceipt.value:', purchaseReceipt.value)
-	console.log('items computed - purchaseReceipt.value?.items:', purchaseReceipt.value?.items)
+	if (!purchaseReceipt.value) return []
+
+	if (!purchaseReceipt.value.items) return []
 	
-	if (!purchaseReceipt.value) {
-		console.error('items computed - purchaseReceipt.value is null/undefined!')
-		return []
-	}
-	
-	if (!purchaseReceipt.value.items) {
-		console.error('items computed - purchaseReceipt.value.items is null/undefined!')
-		console.log('items computed - Full purchaseReceipt object:', JSON.stringify(purchaseReceipt.value, null, 2))
-		return []
-	}
-	
-	if (!Array.isArray(purchaseReceipt.value.items)) {
-		console.error('items computed - purchaseReceipt.value.items is not an array!', typeof purchaseReceipt.value.items)
-		return []
-	}
+	if (!Array.isArray(purchaseReceipt.value.items)) return []
 	
 	const mappedItems = purchaseReceipt.value.items.map(item => {
 		return {
@@ -104,65 +81,68 @@ const items = computed((): (PurchaseReceiptItem & ListViewItem)[] => {
 		}
 	})
 	
-	console.log('items computed - mapped items count:', mappedItems.length)
-	console.log('items computed - mapped items:', mappedItems)
-	
 	return mappedItems
 })
 
 const create = async () => {
-	console.log('create() called')
-	console.log('create() - purchaseReceipt.value:', purchaseReceipt.value)
-	console.log('create() - purchaseReceipt.value.dirty:', purchaseReceipt.value?.dirty)
-	
 	if (purchaseReceipt.value.dirty) {
 		const document: PurchaseReceipt = { ...purchaseReceipt.value }
-		console.log('create() - document before filter:', document)
 		document.items = document.items.filter(item => item.received_qty > 0)
-		console.log('create() - document.items after filter:', document.items)
+
 		for (const item of document.items) {
 			item.qty = item.received_qty
 		}
-		console.log('create() - Calling store.insert with document:', document)
+
 		const { data, response } = await store.insert('Purchase Receipt', document)
 
-		console.log('create() - Response:', { ok: response.ok, status: response.status, data })
-		
 		if (response.ok && data) {
-			console.log('create() - Success! Data received:', data)
 			if (capturedFiles.value.length > 0) {
-				console.log('create() - Uploading files:', capturedFiles.value.length)
 				await store.uploadFiles('Purchase Receipt', data.name || '', capturedFiles.value)
 			}
 
 			store.$patch(() => {
 				purchaseReceipt.value = data
 				purchaseReceipt.value.dirty = false
-				console.log('create() - Updated purchaseReceipt.value:', purchaseReceipt.value)
 			})
-		} else {
-			console.error('create() - Failed!', { ok: response.ok, status: response.status, data })
 		}
 	} else {
-		console.log('create() - Not dirty, skipping save')
 		// TODO: a few options here:
 		// 1. allow setting a condition in ControlButtons to control when to enable the button
 		// 2. add a toast message here telling the user why this is a no-op
 	}
 }
 
-const controlButtons = computed((): ControlButton[] => {
-	console.log('controlButtons computed - purchaseReceipt.value:', purchaseReceipt.value)
-	if (!purchaseReceipt.value) {
-		console.log('controlButtons - No purchaseReceipt, returning empty array')
-		return []
+const submit = async () => {	
+	if (!purchaseReceipt.value?.name) return
+	
+	const { data, response } = await store.submit<PurchaseReceipt>('Purchase Receipt', purchaseReceipt.value.name)
+
+	if (response.ok && data) {
+		store.$patch(() => {
+			purchaseReceipt.value = data
+		})
 	}
+}
+
+const cancel = async () => {
+	if (!purchaseReceipt.value?.name) return
+	
+	const { data, response } = await store.cancel<PurchaseReceipt>('Purchase Receipt', purchaseReceipt.value.name)
+	
+	if (response.ok && data) {
+		store.$patch(() => {
+			purchaseReceipt.value = data
+		})
+	} else {
+		console.error('cancel() - Failed!', { ok: response.ok, status: response.status, data })
+	}
+}
+
+const controlButtons = computed((): ControlButton[] => {
+	if (!purchaseReceipt.value) return []
 
 	const form = purchaseReceipt.value as PurchaseReceipt
-	if (!form.items) {
-		console.log('controlButtons - No form.items, returning empty array')
-		return []
-	}
+	if (!form.items) return []
 
 	return [
 		{
@@ -176,14 +156,14 @@ const controlButtons = computed((): ControlButton[] => {
 			disabled: form.items.length === 0 || !form.name,
 			hidden: Boolean(form.__islocal) || form.docstatus !== 0,
 			color: { background: 'var(--sc-success)', text: 'var(--sc-btn-color)' },
-			action: async () => await store.submit<PurchaseReceipt>('Purchase Receipt', form.name),
+			action: submit,
 		},
 		{
 			label: 'CANCEL',
 			disabled: form.items.length === 0 || !form.name,
 			hidden: Boolean(form.__islocal) || form.docstatus !== 1,
 			color: { background: 'var(--sc-alert)', text: 'var(--sc-btn-color)' },
-			action: async () => await store.cancel<PurchaseReceipt>('Purchase Receipt', form.name),
+			action: cancel,
 		},
 	]
 })
