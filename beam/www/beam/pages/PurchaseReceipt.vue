@@ -24,15 +24,18 @@
 <script setup lang="ts">
 import type { ListViewItem } from '@stonecrop/beam'
 import { computed, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import ControlButtons from '@/components/ControlButtons.vue'
 import Camera from '@/components/Camera.vue'
 import { useBeamStore } from '@/stores/beam'
+import { useBeamToast } from '@/utils/toast'
 import type { ControlButton, PurchaseReceipt, PurchaseReceiptItem } from '@/types'
 
 const route = useRoute()
+const router = useRouter()
 const store = useBeamStore()
+const toast = useBeamToast()
 const purchaseOrderId = route.params.id?.toString() || 'new-purchase-receipt'
 
 const purchaseReceipt = ref(store.cache.mappers[purchaseOrderId] as PurchaseReceipt)
@@ -121,6 +124,11 @@ const submit = async () => {
 		store.$patch(() => {
 			purchaseReceipt.value = data
 		})
+		
+		toast.info('Redirecting...', { duration: 3000 })
+		setTimeout(() => {
+			router.push('/receive/')
+		}, 3000)
 	}
 }
 
@@ -133,6 +141,11 @@ const cancel = async () => {
 		store.$patch(() => {
 			purchaseReceipt.value = data
 		})
+		
+		toast.info('Redirecting...', { duration: 3000 })
+		setTimeout(() => {
+			router.push('/receive/')
+		}, 3000)
 	}
 }
 
