@@ -127,10 +127,10 @@ const submit = async () => {
 			purchaseReceipt.value = data
 		})
 
-		toast.info('Redirecting...', { duration: 3000 })
+		toast.info('Redirecting...', { duration: 1500 })
 		setTimeout(() => {
 			router.push('/receive/')
-		}, 3000)
+		}, 1500)
 	}
 }
 
@@ -144,10 +144,10 @@ const cancel = async () => {
 			purchaseReceipt.value = data
 		})
 
-		toast.info('Redirecting...', { duration: 3000 })
+		toast.info('Redirecting...', { duration: 1500 })
 		setTimeout(() => {
 			router.push('/receive/')
-		}, 3000)
+		}, 1500)
 	}
 }
 
