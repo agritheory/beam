@@ -89,6 +89,14 @@ jobs:
           poetry install
           pytest --cov=beam --cov-report=xml --disable-warnings -s | tee pytest-coverage.txt
 
+      - name: Filter Coverage Report
+        working-directory: /home/runner/frappe-bench/apps/beam
+        run: |
+          python ${{ github.workspace }}/.github/scripts/filter_coverage.py \
+            pytest-coverage.txt \
+            filtered-coverage.txt \
+            1
+
       - name: Pytest coverage comment
         uses: MishaKav/pytest-coverage-comment@main
         with:
