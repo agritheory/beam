@@ -139,13 +139,24 @@ def _get_receiving_demand(
 
 
 @validate_demand_enabled
-def modify_receiving(
-	doc: Union["PurchaseOrder", "PurchaseInvoice"], method: str | None = None
-) -> None:
+def modify_receiving(doc, method: str | None = None) -> None:
+	"""Update receiving table for Purchase Orders, Purchase Invoices, and Purchase Receipts"""
 	if method == "on_submit":
-		add_receiving(doc.name)
+		if doc.doctype == "Purchase Receipt":
+			purchase_orders = set(item.purchase_order for item in doc.items if item.purchase_order)
+			for po_name in purchase_orders:
+				remove_receiving(po_name)
+				add_receiving(po_name)
+		else:
+			add_receiving(doc.name)
 	elif method == "on_cancel":
-		remove_receiving(doc.name)
+		if doc.doctype == "Purchase Receipt":
+			purchase_orders = set(item.purchase_order for item in doc.items if item.purchase_order)
+			for po_name in purchase_orders:
+				remove_receiving(po_name)
+				add_receiving(po_name)
+		else:
+			remove_receiving(doc.name)
 
 
 def add_receiving(name: str) -> None:
@@ -281,6 +292,8 @@ def get_receiving_demand(*args, **kwargs) -> list[Receiving]:
 
 	for r_filter in r_filters:
 		receiving_query = receiving_query.where(*r_filter)
+
+	receiving_query = receiving_query.where(receiving.received_qty < receiving.stock_qty)
 
 	record_offset = records_per_page * (page - 1)
 

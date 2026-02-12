@@ -162,6 +162,10 @@ doc_events = {
 		"on_submit": ["beam.beam.demand.receiving.modify_receiving"],
 		"on_cancel": ["beam.beam.demand.receiving.modify_receiving"],
 	},
+	"Purchase Receipt": {
+		"on_submit": ["beam.beam.demand.receiving.modify_receiving"],
+		"on_cancel": ["beam.beam.demand.receiving.modify_receiving"],
+	},
 	"Purchase Invoice": {
 		"on_submit": [
 			"beam.beam.demand.receiving.modify_receiving",
