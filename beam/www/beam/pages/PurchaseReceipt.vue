@@ -9,9 +9,11 @@
 			<RouterLink :to="{ name: 'home' }">Home</RouterLink>
 		</template>
 	</Navbar>
-
-	<Camera :allowPreview="true" @photos-captured="handlePhotosCaptured" />
-
+	
+	<div style="margin: 0.5rem;">
+		<Camera :allowPreview="true" @photos-captured="handlePhotosCaptured" />
+	</div>
+	
 	<!-- body section -->
 	<div class="box" v-show="items.length">
 		<ListView :items="items" :key="refreshKey" @update="handleItemUpdate" />
