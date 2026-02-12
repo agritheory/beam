@@ -124,7 +124,7 @@ const submit = async () => {
 		store.$patch(() => {
 			purchaseReceipt.value = data
 		})
-		
+
 		toast.info('Redirecting...', { duration: 3000 })
 		setTimeout(() => {
 			router.push('/receive/')
@@ -141,7 +141,7 @@ const cancel = async () => {
 		store.$patch(() => {
 			purchaseReceipt.value = data
 		})
-		
+
 		toast.info('Redirecting...', { duration: 3000 })
 		setTimeout(() => {
 			router.push('/receive/')
