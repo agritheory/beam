@@ -133,8 +133,6 @@ const cancel = async () => {
 		store.$patch(() => {
 			purchaseReceipt.value = data
 		})
-	} else {
-		console.error('cancel() - Failed!', { ok: response.ok, status: response.status, data })
 	}
 }
 
