@@ -854,4 +854,21 @@ employees = [
 		"department": "Operations",
 		"designation": "Baker",
 	},
+	{
+		"name": "Marcus Reynolds",
+		"gender": "Male",
+		"date_of_birth": "1990-05-15",
+		"date_of_joining": "2023-03-01",
+		"address": {
+			"address_line1": "456 Testing Lane",
+			"city": "Boston",
+			"state": "MA",
+			"postal_code": "02101",
+		},
+		"phone": "(555) 123-4567",
+		"roles": ["Stock User"],  # NO BEAM Mobile User role - for restriction tests
+		"reports_to": "Tristan Hawkins",
+		"department": "Operations",
+		"designation": "Warehouse Associate",
+	},
 ]
