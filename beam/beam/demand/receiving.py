@@ -22,7 +22,6 @@ if TYPE_CHECKING:
 	from sqlite3 import Cursor
 
 
-
 def _get_receiving_demand(
 	name: str | None = None, item_code: str | None = None
 ) -> list[Receiving]:
