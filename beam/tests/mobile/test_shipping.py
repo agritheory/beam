@@ -258,3 +258,90 @@ def test_prevent_over_delivery(page):
 		if len(notes) > 0:
 			assert notes[0]["qty"] <= remaining_qty, "Delivery Note qty should not exceed remaining qty"
 
+
+@pytest.mark.order(18)
+def test_cancel_submitted_delivery_note_workflow(page):
+	"""Test cancelling a submitted Delivery Note through the complete workflow"""
+	page.get_by_text("Ship").click()
+	page.locator("css=.beam_list-item").first.click()
+
+	parsed_url = urlparse(page.url.replace("#", ""))
+	order_id = parsed_url.query.replace("id=", "")
+	assert order_id
+
+	item = page.locator("css=.box .beam_list-item").first
+	item_code, *others = item.inner_text().split("\n")
+
+	with use_current_db_transaction():
+		barcodes = frappe.get_all(
+			"Item Barcode", filters={"parenttype": "Item", "parent": item_code}, pluck="barcode"
+		)
+		assert len(barcodes) > 0
+
+	with page.expect_request(
+		lambda request: request.headers.get("x-frappe-cmd") == "beam.beam.scan.scan"
+	):
+		page.evaluate("barcode => scanner.simulate(window, barcode)", barcodes[0])
+		page.wait_for_timeout(500)
+
+	page.get_by_text("SAVE", exact=True).click()
+	page.wait_for_timeout(1000)
+
+	# Verify draft Delivery Note was created
+	with use_current_db_transaction():
+		delivery_notes = frappe.get_all(
+			"Delivery Note Item",
+			filters={"against_sales_order": order_id, "item_code": item_code},
+			fields=["docstatus", "parent"],
+			order_by="creation desc",
+			limit=1,
+		)
+		assert len(delivery_notes) > 0
+		assert delivery_notes[0]["docstatus"] == 0
+		dn_name = delivery_notes[0]["parent"]
+
+	# Submit the Delivery Note
+	ship_button = page.get_by_text("SHIP", exact=True)
+	expect(ship_button).to_be_visible()
+	ship_button.click()
+	page.wait_for_timeout(1500)
+
+	# Verify Delivery Note is submitted
+	with use_current_db_transaction():
+		dn = frappe.get_doc("Delivery Note", dn_name)
+		assert dn.docstatus == 1, f"Expected docstatus 1 (Submitted), got {dn.docstatus}"
+
+	# Verify CANCEL button is visible and SHIP button is hidden
+	cancel_button = page.get_by_text("CANCEL", exact=True)
+	expect(cancel_button).to_be_visible()
+	expect(ship_button).not_to_be_visible()
+
+	with use_current_db_transaction():
+		sle_before = frappe.get_all(
+			"Stock Ledger Entry",
+			filters={"voucher_type": "Delivery Note", "voucher_no": dn_name},
+			fields=["name", "actual_qty"],
+		)
+		sle_count_before = len(sle_before)
+		assert sle_count_before > 0, "Should have stock ledger entries after submission"
+
+	# Click CANCEL button
+	cancel_button.click()
+	page.wait_for_timeout(1500)
+
+	with use_current_db_transaction():
+		dn = frappe.get_doc("Delivery Note", dn_name)
+		assert dn.docstatus == 2, f"Expected docstatus 2 (Cancelled), got {dn.docstatus}"
+
+		# Verify stock ledger entries were reversed
+		sle_after = frappe.get_all(
+			"Stock Ledger Entry",
+			filters={"voucher_type": "Delivery Note", "voucher_no": dn_name},
+			fields=["name", "actual_qty"],
+		)
+		sle_count_after = len(sle_after)
+		
+		# Should have double the entries (original + reversal)
+		assert sle_count_after == sle_count_before * 2, f"Expected {sle_count_before * 2} SLE entries, got {sle_count_after}"
+
+	expect(cancel_button).not_to_be_visible()
