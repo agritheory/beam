@@ -61,10 +61,8 @@ def test_ship_without_scanning(page):
 	page.get_by_text("Ship").click()
 	page.locator("css=.beam_list-item").first.click()
 
-	# get the selected Sales Order
 	parsed_url = urlparse(page.url.replace("#", ""))
-	path_parts = [p for p in parsed_url.path.split("/") if p]
-	order_id = path_parts[-1] if path_parts else None
+	order_id = parsed_url.query.replace("id=", "")
 	assert order_id
 
 	item = page.locator("css=.box .beam_list-item").first
