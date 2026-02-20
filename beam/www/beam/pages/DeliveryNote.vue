@@ -23,7 +23,7 @@
 <script setup lang="ts">
 import type { ListViewItem } from '@stonecrop/beam'
 import { computed, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { onBeforeRouteLeave, useRoute } from 'vue-router'
 
 import ControlButtons from '@/components/ControlButtons.vue'
 import ScanOutput from '@/components/ScanOutput.vue'
@@ -41,6 +41,21 @@ const refreshKey = ref(0)
 store.$subscribe(mutation => {
 	if (['patch function', 'patch object'].includes(mutation.type)) {
 		refreshKey.value++
+	}
+})
+
+onBeforeRouteLeave((to, from, next) => {
+	if (deliveryNote.value?.dirty) {
+		const answer = window.confirm(
+			'You have unsaved changes. Do you want to leave without saving?'
+		)
+		if (answer) {
+			next()
+		} else {
+			next(false)
+		}
+	} else {
+		next()
 	}
 })
 

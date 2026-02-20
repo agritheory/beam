@@ -370,3 +370,62 @@ def test_cancel_submitted_delivery_note(page):
 	cancel_button = page.get_by_role("button", name="Cancel")
 	expect(cancel_button).to_be_visible()
 
+
+@pytest.mark.order(20)
+def test_unsaved_changes_warning(page):
+	"""Test that user is warned when navigating away with unsaved changes"""
+	page.get_by_text("Ship").click()
+	page.locator("css=.beam_list-item").first.click()
+
+	parsed_url = urlparse(page.url.replace("#", ""))
+	order_id = parsed_url.query.replace("id=", "")
+	assert order_id
+
+	unsaved_indicator = page.locator("span.dirty")
+	expect(unsaved_indicator).not_to_be_visible()
+
+	item = page.locator("css=.box .beam_list-item").first
+	item_code, *others = item.inner_text().split("\n")
+
+	with use_current_db_transaction():
+		barcodes = frappe.get_all(
+			"Item Barcode", filters={"parenttype": "Item", "parent": item_code}, pluck="barcode"
+		)
+		assert len(barcodes) > 0
+
+	# Scan barcode to create unsaved changes
+	with page.expect_request(
+		lambda request: request.headers.get("x-frappe-cmd") == "beam.beam.scan.scan"
+	):
+		page.evaluate("barcode => scanner.simulate(window, barcode)", barcodes[0])
+		page.wait_for_timeout(500)
+
+	expect(unsaved_indicator).to_be_visible()
+	expect(unsaved_indicator).to_have_text("Unsaved")
+
+	should_accept = [False]
+	def handle_dialog(dialog):
+		if should_accept[0]:
+			dialog.accept()
+		else:
+			dialog.dismiss()
+	
+	page.on("dialog", handle_dialog)
+
+	# First attempt: dismiss the dialog
+	home_link = page.get_by_role("link", name="Home")
+	home_link.click()
+	page.wait_for_timeout(500)
+
+	# Verify we stayed on the same page (dialog was shown and dismissed)
+	assert "delivery-note" in page.url, "Should still be on delivery-note page after dismissing warning" 
+
+	# Second attempt: accept the dialog
+	should_accept[0] = True
+	home_link.click()
+	page.wait_for_timeout(500)
+
+	# Verify we navigated away (dialog was shown and accepted)
+	assert "delivery-note" not in page.url, "Should have left delivery-note page after accepting warning"
+
+
