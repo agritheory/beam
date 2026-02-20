@@ -122,7 +122,11 @@ export const useScanStore = defineStore('scan', () => {
 			if (existing_rows.length > 0) {
 				const field = itemQtyFieldMap[action.doctype] || 'qty'
 				for (const row of existing_rows) {
-					row[field] = row[field] + 1
+					if (row.qty) {
+						row[field] = Math.min(row[field] + 1, row.qty)
+					} else {
+						row[field] = row[field] + 1
+					}
 				}
 			} else if (action.doctype === 'Stock Entry') {
 				const source_warehouses = ['Material Consumption for Manufacture', 'Material Issue']
