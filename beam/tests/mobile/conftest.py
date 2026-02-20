@@ -22,15 +22,21 @@ def setup(page):
 	# delete all existing draft Purchase Receipts
 	delete_draft_records(["Purchase Receipt", "Stock Entry"])
 
-	page.set_default_timeout(5000)
+	page.set_default_timeout(30000)
 
-	base_url = frappe.utils.get_url()
+	# base_url = frappe.utils.get_url()
+	base_url = "http://127.0.0.1:8000"
+
 	page.goto(base_url)
+	page.wait_for_load_state("networkidle")
 
 	# visiting the home page redirects to login page
-	page.get_by_role("textbox", name="Email").fill("support@agritheory.dev")
-	page.get_by_role("textbox", name="Password").fill("admin")
-	page.get_by_role("button", name="Login").click()  # this will redirect to `/beam`
+	# page.get_by_role("textbox", name="Email").fill("support@agritheory.dev")
+	# page.get_by_role("textbox", name="Password").fill("admin")
+	page.locator("#login_email").fill("support@agritheory.dev")
+	page.locator("#login_password").fill("admin")
+	page.locator(".btn-login").click()
+	# page.get_by_role("button", name="Login").click()  # this will redirect to `/beam`
 	yield
 
 	# delete all Purchase Receipts created during the test

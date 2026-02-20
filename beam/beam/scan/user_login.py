@@ -21,7 +21,16 @@ def scan_login(barcode):
 	if user["doc"].doctype != "User":
 		frappe.throw("Wrong barcode", title="Login Error")
 
-	employee = frappe.get_doc("Employee", {"user_id": user["doc"].name})
+	# employee = frappe.get_doc("Employee", {"user_id": user["doc"].name})
+	employee_name = frappe.db.get_value(
+		"Employee",
+		{"user_id": user["doc"].name},
+		"name",
+	)
+	if not employee_name:
+		frappe.throw("Employee not found", title="Login Error")
+
+	employee = frappe.get_doc("Employee", employee_name)
 	company = employee.company or get_default_company()
 
 	BEAMSettings = frappe.get_doc("BEAM Settings", {"company": company})
