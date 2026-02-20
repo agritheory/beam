@@ -107,3 +107,96 @@ def test_ship_without_scanning(page):
 			final_count == initial_count
 		), f"Expected no new delivery notes, but count changed from {initial_count} to {final_count}"
 
+
+@pytest.mark.order(16)
+def test_complete_partial_shipment(page):
+	"""Test completing a partial shipment"""
+	page.get_by_text("Ship").click()
+	page.locator("css=.beam_list-item").first.click()
+
+	parsed_url = urlparse(page.url.replace("#", ""))
+	order_id = parsed_url.query.replace("id=", "")
+	assert order_id
+
+	# find the first item in the list
+	item = page.locator("css=.box .beam_list-item").first
+	item_code, *others = item.inner_text().split("\n")
+	item_count = page.locator("css=.box .beam_item-count").first
+	expect(item_count).to_have_text(re.compile("0/"))
+
+	with use_current_db_transaction():
+		barcodes = frappe.get_all(
+			"Item Barcode", filters={"parenttype": "Item", "parent": item_code}, pluck="barcode"
+		)
+		assert len(barcodes) > 0
+
+		# get the ordered quantity for validation
+		so_items = frappe.get_all(
+			"Sales Order Item",
+			filters={"parent": order_id, "item_code": item_code},
+			fields=["qty", "delivered_qty"],
+		)
+
+		assert len(so_items) > 0
+		ordered_qty = so_items[0]["qty"]
+		delivered_qty = so_items[0]["delivered_qty"]
+
+	with page.expect_request(
+		lambda request: request.headers.get("x-frappe-cmd") == "beam.beam.scan.scan"
+	):
+		page.evaluate("barcode => scanner.simulate(window, barcode)", barcodes[0])
+		expect(item_count).to_have_text(re.compile("1/"))
+
+	# ensure there are no existing Delivery Notes against this Sales Order for this item
+	delivery_note = frappe.db.exists(
+		"Delivery Note Item",
+		{
+			"docstatus": 0,
+			"against_sales_order": order_id,
+			"item_code": item_code,
+			"owner": "support@agritheory.dev",
+		},
+	)
+	assert not delivery_note
+
+	# check that a draft Delivery Note is created
+	page.get_by_text("SAVE", exact=True).click()
+	page.wait_for_timeout(1000)
+	with use_current_db_transaction():
+		delivery_note = frappe.get_all(
+			"Delivery Note Item",
+			filters={"against_sales_order": order_id, "item_code": item_code},
+			fields=["docstatus", "qty", "creation", "parent"],
+			order_by="creation desc",
+		)
+	assert len(delivery_note) >= 1
+	assert delivery_note[0]["docstatus"] == 0
+	assert delivery_note[0]["qty"] == 1
+
+	# check that the draft Delivery Note is submitted
+	page.get_by_text("SHIP", exact=True).click()
+	page.wait_for_timeout(1500)
+	with use_current_db_transaction():
+		delivery_note = frappe.get_all(
+			"Delivery Note Item",
+			filters={"against_sales_order": order_id, "item_code": item_code},
+			fields=["docstatus", "qty", "creation"],
+			order_by="creation desc",
+			limit=1,
+		)
+	assert len(delivery_note) == 1
+	assert delivery_note[0]["docstatus"] == 1
+	assert delivery_note[0]["qty"] == 1
+
+	# verify remaining qty is still available for future shipment
+	with use_current_db_transaction():
+		so_items = frappe.get_all(
+			"Sales Order Item",
+			filters={"parent": order_id, "item_code": item_code},
+			fields=["qty", "delivered_qty"],
+		)
+		assert len(so_items) > 0
+		new_delivered_qty = so_items[0]["delivered_qty"]
+		assert new_delivered_qty == delivered_qty + 1
+		assert new_delivered_qty < ordered_qty, "Should still have remaining qty available"
+
