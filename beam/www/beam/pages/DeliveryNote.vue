@@ -80,6 +80,26 @@ const create = async () => {
 	}
 }
 
+const submit = async () => {
+	const { data, response } = await store.submit<DeliveryNote>('Delivery Note', deliveryNote.value.name)
+	if (response.ok) {
+		store.$patch(() => {
+			deliveryNote.value = data
+			deliveryNote.value.dirty = false
+		})
+	}
+}
+
+const cancel = async () => {
+	const { data, response } = await store.cancel<DeliveryNote>('Delivery Note', deliveryNote.value.name)
+	if (response.ok) {
+		store.$patch(() => {
+			deliveryNote.value = data
+			deliveryNote.value.dirty = false
+		})
+	}
+}
+
 const controlButtons = computed((): ControlButton[] => {
 	if (!deliveryNote.value) return []
 
@@ -98,14 +118,14 @@ const controlButtons = computed((): ControlButton[] => {
 			disabled: form.items.length === 0 || !form.name,
 			hidden: Boolean(form.__islocal) || form.docstatus !== 0,
 			color: { background: 'var(--sc-success)', text: 'var(--sc-btn-color)' },
-			action: async () => await store.submit<DeliveryNote>('Delivery Note', form.name),
+			action: submit,
 		},
 		{
 			label: 'CANCEL',
 			disabled: form.items.length === 0 || !form.name,
 			hidden: Boolean(form.__islocal) || form.docstatus !== 1,
 			color: { background: 'var(--sc-alert)', text: 'var(--sc-btn-color)' },
-			action: async () => await store.cancel<DeliveryNote>('Delivery Note', form.name),
+			action: cancel,
 		},
 	]
 })
