@@ -345,3 +345,28 @@ def test_cancel_submitted_delivery_note_workflow(page):
 		assert sle_count_after == sle_count_before * 2, f"Expected {sle_count_before * 2} SLE entries, got {sle_count_after}"
 
 	expect(cancel_button).not_to_be_visible()
+
+
+@pytest.mark.order(19)
+@pytest.mark.skip(reason="Frontend does not load docstatus when navigating directly to delivery-note URL")
+def test_cancel_submitted_delivery_note(page):
+	"""Test cancelling a submitted Delivery Note"""
+	with use_current_db_transaction():
+		submitted_notes = frappe.get_all(
+			"Delivery Note",
+			filters={"docstatus": 1, "owner": "support@agritheory.dev"},
+			fields=["name"],
+			order_by="creation desc",
+			limit=1,
+		)
+		
+		assert len(submitted_notes) > 0, "Should have at least one submitted Delivery Note from previous tests"
+		dn_name = submitted_notes[0]["name"]
+
+	base_url = frappe.utils.get_url()
+	page.goto(f"{base_url}/app/delivery-note/{dn_name}")
+	page.wait_for_timeout(1000)
+
+	cancel_button = page.get_by_role("button", name="Cancel")
+	expect(cancel_button).to_be_visible()
+
