@@ -200,3 +200,63 @@ def test_complete_partial_shipment(page):
 		assert new_delivered_qty == delivered_qty + 1
 		assert new_delivered_qty < ordered_qty, "Should still have remaining qty available"
 
+
+@pytest.mark.order(17)
+def test_prevent_over_delivery(page):
+	"""Test that system prevents over-delivery beyond ordered quantity"""
+	page.get_by_text("Ship").click()
+	page.locator("css=.beam_list-item").first.click()
+
+	parsed_url = urlparse(page.url.replace("#", ""))
+	order_id = parsed_url.query.replace("id=", "")
+	assert order_id
+
+	item = page.locator("css=.box .beam_list-item").first
+	item_code, *others = item.inner_text().split("\n")
+	item_count = page.locator("css=.box .beam_item-count").first
+
+	# get the ordered quantity and remaining quantity
+	with use_current_db_transaction():
+		barcodes = frappe.get_all(
+			"Item Barcode", filters={"parenttype": "Item", "parent": item_code}, pluck="barcode"
+		)
+		assert len(barcodes) > 0
+
+		so_items = frappe.get_all(
+			"Sales Order Item",
+			filters={"parent": order_id, "item_code": item_code},
+			fields=["qty", "delivered_qty"],
+		)
+		assert len(so_items) > 0
+		ordered_qty = so_items[0]["qty"]
+		delivered_qty = so_items[0]["delivered_qty"]
+		remaining_qty = ordered_qty - delivered_qty
+
+	assert remaining_qty > 0
+
+	# scan barcode beyond the remaining quantity
+	scan_attempts = int(remaining_qty) + 5  # try to scan 5 more than allowed
+	for i in range(scan_attempts):
+		page.evaluate("barcode => scanner.simulate(window, barcode)", barcodes[0])
+		page.wait_for_timeout(100)
+
+	page.wait_for_timeout(500)
+
+	count_text = item_count.inner_text()
+	current_count = int(count_text.split("/")[0])
+	assert current_count <= remaining_qty, f"Count {current_count} should not exceed remaining qty {remaining_qty}"
+
+	page.get_by_text("SAVE", exact=True).click()
+	page.wait_for_timeout(1000)
+
+	with use_current_db_transaction():
+		notes = frappe.get_all(
+			"Delivery Note Item",
+			filters={"against_sales_order": order_id, "item_code": item_code},
+			fields=["qty"],
+			order_by="creation desc",
+			limit=1,
+		)
+		if len(notes) > 0:
+			assert notes[0]["qty"] <= remaining_qty, "Delivery Note qty should not exceed remaining qty"
+
