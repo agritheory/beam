@@ -67,7 +67,7 @@ const create = async () => {
 		}
 		const { data, response } = await store.insert('Delivery Note', document)
 
-		if (!response.ok) {
+		if (response.ok) {
 			store.$patch(() => {
 				deliveryNote.value = data
 				deliveryNote.value.dirty = false
