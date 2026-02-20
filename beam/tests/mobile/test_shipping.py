@@ -40,7 +40,11 @@ def test_ship_without_scanning(page):
 	with use_current_db_transaction():
 		existing_notes = frappe.get_all(
 			"Delivery Note Item",
-			filters={"against_sales_order": order_id, "item_code": item_code, "owner": "support@agritheory.dev"},
+			filters={
+				"against_sales_order": order_id,
+				"item_code": item_code,
+				"owner": "support@agritheory.dev",
+			},
 			fields=["docstatus", "qty"],
 		)
 		initial_count = len(existing_notes)
@@ -54,7 +58,11 @@ def test_ship_without_scanning(page):
 	with use_current_db_transaction():
 		new_notes = frappe.get_all(
 			"Delivery Note Item",
-			filters={"against_sales_order": order_id, "item_code": item_code, "owner": "support@agritheory.dev"},
+			filters={
+				"against_sales_order": order_id,
+				"item_code": item_code,
+				"owner": "support@agritheory.dev",
+			},
 			fields=["docstatus", "qty"],
 		)
 		final_count = len(new_notes)
@@ -199,7 +207,9 @@ def test_prevent_over_delivery(page):
 
 	count_text = item_count.inner_text()
 	current_count = int(count_text.split("/")[0])
-	assert current_count <= remaining_qty, f"Count {current_count} should not exceed remaining qty {remaining_qty}"
+	assert (
+		current_count <= remaining_qty
+	), f"Count {current_count} should not exceed remaining qty {remaining_qty}"
 
 	page.get_by_text("SAVE", exact=True).click()
 	page.wait_for_timeout(1000)
@@ -297,15 +307,19 @@ def test_cancel_submitted_delivery_note_workflow(page):
 			fields=["name", "actual_qty"],
 		)
 		sle_count_after = len(sle_after)
-		
+
 		# Should have double the entries (original + reversal)
-		assert sle_count_after == sle_count_before * 2, f"Expected {sle_count_before * 2} SLE entries, got {sle_count_after}"
+		assert (
+			sle_count_after == sle_count_before * 2
+		), f"Expected {sle_count_before * 2} SLE entries, got {sle_count_after}"
 
 	expect(cancel_button).not_to_be_visible()
 
 
 @pytest.mark.order(19)
-@pytest.mark.skip(reason="Frontend does not load docstatus when navigating directly to delivery-note URL")
+@pytest.mark.skip(
+	reason="Frontend does not load docstatus when navigating directly to delivery-note URL"
+)
 def test_cancel_submitted_delivery_note(page):
 	"""Test cancelling a submitted Delivery Note"""
 	with use_current_db_transaction():
@@ -316,8 +330,10 @@ def test_cancel_submitted_delivery_note(page):
 			order_by="creation desc",
 			limit=1,
 		)
-		
-		assert len(submitted_notes) > 0, "Should have at least one submitted Delivery Note from previous tests"
+
+		assert (
+			len(submitted_notes) > 0
+		), "Should have at least one submitted Delivery Note from previous tests"
 		dn_name = submitted_notes[0]["name"]
 
 	base_url = frappe.utils.get_url()
@@ -361,12 +377,13 @@ def test_unsaved_changes_warning(page):
 	expect(unsaved_indicator).to_have_text("Unsaved")
 
 	should_accept = [False]
+
 	def handle_dialog(dialog):
 		if should_accept[0]:
 			dialog.accept()
 		else:
 			dialog.dismiss()
-	
+
 	page.on("dialog", handle_dialog)
 
 	# First attempt: dismiss the dialog
@@ -375,7 +392,9 @@ def test_unsaved_changes_warning(page):
 	page.wait_for_timeout(500)
 
 	# Verify we stayed on the same page (dialog was shown and dismissed)
-	assert "delivery-note" in page.url, "Should still be on delivery-note page after dismissing warning" 
+	assert (
+		"delivery-note" in page.url
+	), "Should still be on delivery-note page after dismissing warning"
 
 	# Second attempt: accept the dialog
 	should_accept[0] = True
@@ -383,10 +402,11 @@ def test_unsaved_changes_warning(page):
 	page.wait_for_timeout(500)
 
 	# Verify we navigated away (dialog was shown and accepted)
-	assert "delivery-note" not in page.url, "Should have left delivery-note page after accepting warning"
+	assert (
+		"delivery-note" not in page.url
+	), "Should have left delivery-note page after accepting warning"
 
 
 @pytest.mark.order(21)
 def test_scan_handling_unit_on_delivery_note(page):
 	"""Test scanning a handling unit barcode instead of item barcode"""
-	pass

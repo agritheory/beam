@@ -46,9 +46,7 @@ store.$subscribe(mutation => {
 
 onBeforeRouteLeave((to, from, next) => {
 	if (deliveryNote.value?.dirty) {
-		const answer = window.confirm(
-			'You have unsaved changes. Do you want to leave without saving?'
-		)
+		const answer = window.confirm('You have unsaved changes. Do you want to leave without saving?')
 		if (answer) {
 			next()
 		} else {
