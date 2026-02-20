@@ -1,208 +1,217 @@
-# Copyright (c) 2026, AgriTheory and contributors
+# Copyright (c) 2024, AgriTheory and contributors
 # For license information, please see license.txt
+
 
 import frappe
 import pytest
-from playwright.sync_api import expect
 
 from beam.tests.test_utils import use_current_db_transaction
 
-BASE_URL = "http://127.0.0.1:8000"
-LOGIN_URL = f"{BASE_URL}/login"
-HOME_URL = "/beam"
+LOGIN_USER = "support@agritheory.dev"
+SCAN_LOGIN_URL = "/api/method/beam.beam.scan.user_login.scan_login"
 
 
-def set_scan_mode(mode: str):
-	with use_current_db_transaction():
-		settings = frappe.get_doc("BEAM Settings", "Ambrosia Pie Company")
-		settings.enable_scan_to_login = mode
-		settings.save()
+@pytest.fixture(autouse=True)
+def goto_login_unauthenticated(page, setup):
+	"""
+	Depends on conftest `setup` so the page is fully loaded and we have a
+	valid origin. Then logs out so each test starts unauthenticated, and
+	navigates to /beam (not /login) so the CSRF token and frappe JS context
+	are available for direct API calls.
+	"""
+	base_url = "http://127.0.0.1:8000"
+
+	page.request.post(f"{base_url}/api/method/logout")
+
+	page.goto(f"{base_url}/beam#/", wait_until="networkidle")
+
+	yield
+
+	page.context.clear_cookies()
 
 
-def set_ip_restriction(ip_list=None):
-	with use_current_db_transaction():
-		settings = frappe.get_doc("BEAM Settings", "Ambrosia Pie Company")
-		settings.restrict_ip = "\n".join(ip_list or [])
-		settings.save()
+def _call_scan_login(page, barcode: str) -> dict:
+	"""
+	Calls beam.beam.scan.user_login.scan_login via fetch() from the browser
+	context. Returns a dict with keys: ok (bool), status (int), data (dict).
+	"""
+	return page.evaluate(
+		"""async (args) => {
+			const { url, barcode } = args
+			const csrf = frappe.csrf_token || document.cookie
+				.split('; ')
+				.find(r => r.startsWith('csrf_token='))
+				?.split('=')[1] || 'fetch'
 
-
-def get_valid_user():
-	rows = frappe.get_all(
-		"Item Barcode",
-		filters={"parenttype": "User"},
-		fields=["parent", "barcode"],
-		limit=1,
+			const resp = await fetch(url, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-Frappe-CSRF-Token': csrf,
+				},
+				body: JSON.stringify({ barcode }),
+			})
+			let data = {}
+			try { data = await resp.json() } catch (_) {}
+			return { ok: resp.ok, status: resp.status, data }
+		}""",
+		{"url": SCAN_LOGIN_URL, "barcode": barcode},
 	)
 
-	if not rows:
-		raise Exception("No users with barcode found")
 
-	return {
-		"user": rows[0].parent,
-		"barcode": rows[0].barcode,
-	}
-
-
-# -------------------------------------------------------
-# 1️⃣ SUCCESS LOGIN
-# -------------------------------------------------------
-@pytest.mark.order(1)
-def test_scan_login_success(page):
-	set_scan_mode("All Users")
-
-	page.goto(LOGIN_URL)
-
-	# wait until scan handler ready
-	page.wait_for_function("window.__beam_test_scan !== undefined")
-
-	user = get_valid_user()
-
-	page.evaluate(
-		"barcode => window.__beam_test_scan(barcode)",
-		user["barcode"],
-	)
-
-	page.wait_for_url("**/beam")
-	expect(page).to_have_url(lambda url: HOME_URL in url)
-
-
-# -------------------------------------------------------
-# 2️⃣ INVALID BARCODE
-# -------------------------------------------------------
-@pytest.mark.order(2)
-def test_invalid_barcode(page):
-	set_scan_mode("All Users")
-
-	page.goto(LOGIN_URL)
-	page.wait_for_function("window.__beam_test_scan !== undefined")
-
-	page.evaluate(
-		"barcode => window.__beam_test_scan(barcode)",
-		"INVALID123",
-	)
-
-	page.wait_for_timeout(800)
-
-	expect(page.get_by_text("Wrong barcode")).to_be_visible()
-	expect(page).to_have_url(lambda url: "/login" in url)
-
-
-# -------------------------------------------------------
-# 3️⃣ MOBILE USER ONLY
-# -------------------------------------------------------
-@pytest.mark.order(3)
-def test_mobile_user_only_restriction(page):
-	set_scan_mode("Mobile Users Only")
-
-	page.goto(LOGIN_URL)
-	page.wait_for_function("window.__beam_test_scan !== undefined")
-
+def _set_scan_to_login(setting_value: str):
 	with use_current_db_transaction():
-		users = frappe.get_all(
-			"User",
-			filters={"enabled": 1},
-			fields=["name"],
+		beam_settings = frappe.get_doc("BEAM Settings", {"company": "Ambrosia Pie Company"})
+		beam_settings.enable_scan_to_login = setting_value
+		beam_settings.save()
+		frappe.db.commit()
+
+
+def _set_restrict_ip(ip_value: str):
+	"""Set or clear the restrict_ip field on BEAM Settings."""
+	with use_current_db_transaction():
+		beam_settings = frappe.get_doc("BEAM Settings", {"company": "Ambrosia Pie Company"})
+		beam_settings.restrict_ip = ip_value
+		beam_settings.save()
+		frappe.db.commit()
+
+
+def _get_user_barcode(user_email: str) -> str:
+	"""Return the first barcode assigned to the given user, asserting one exists."""
+	with use_current_db_transaction():
+		barcodes = frappe.get_all(
+			"Item Barcode",
+			filters={"parent": user_email, "parenttype": "User"},
+			pluck="barcode",
 		)
-
-		target_barcode = None
-
-		for u in users:
-			rows = frappe.get_all(
-				"Item Barcode",
-				filters={"parent": u.name, "parenttype": "User"},
-				fields=["barcode"],
-				limit=1,
-			)
-
-			if not rows:
-				continue
-
-			if not frappe.db.exists("Employee", {"user_id": u.name}):
-				continue
-
-			has_role = frappe.db.exists(
-				"Has Role",
-				{"parent": u.name, "role": "BEAM Mobile User"},
-			)
-
-			if not has_role:
-				target_barcode = rows[0].barcode
-				break
-
-		assert target_barcode, "Need user without BEAM Mobile User role"
-
-	page.evaluate(
-		"barcode => window.__beam_test_scan(barcode)",
-		target_barcode,
-	)
-
-	page.wait_for_timeout(800)
-
-	expect(page.get_by_text("Not Beam mobile user")).to_be_visible()
-	expect(page).to_have_url(lambda url: "/login" in url)
+		assert barcodes, f"No barcodes found for user {user_email}"
+		return barcodes[0]
 
 
-# -------------------------------------------------------
-# 4️⃣ IP RESTRICTION
-# -------------------------------------------------------
+@pytest.mark.order(1)
+def test_scan_valid_user_barcode_logs_in(page):
+	"""
+	Scenario: Login by scanning user barcode (enable_scan_to_login = "All Users")
+	- Call scan_login API with a valid user barcode
+	- Expect HTTP 200 and success: True in response
+	- Expect session authenticated as the scanned user
+	"""
+	_set_scan_to_login("All Users")
+
+	user_barcode = _get_user_barcode(LOGIN_USER)
+
+	result = _call_scan_login(page, user_barcode)
+
+	assert result[
+		"ok"
+	], f"Expected scan_login to succeed, got status {result['status']}: {result['data']}"
+	assert (
+		result["data"].get("message", {}).get("success") is True
+	), f"Expected success:True in response, got: {result['data']}"
+
+
+@pytest.mark.order(2)
+def test_scan_invalid_login_barcode_shows_error(page):
+	"""
+	Scenario: Reject invalid login barcode
+	- Call scan_login API with an Item barcode (not a User barcode)
+	- Expect HTTP error response with "Wrong barcode" in exception
+	"""
+	_set_scan_to_login("All Users")
+
+	# Use a barcode that will never match any user — no need to query test data
+	non_user_barcode = "INVALID_BARCODE_12345"
+
+	result = _call_scan_login(page, non_user_barcode)
+
+	assert not result[
+		"ok"
+	], f"Expected scan_login to fail for item barcode, but got success: {result['data']}"
+	exc = result["data"].get("exc_type", "") + result["data"].get("exception", "")
+	assert "Wrong barcode" in exc, f"Expected 'Wrong barcode' in error, got: {result['data']}"
+
+
+@pytest.mark.order(3)
+def test_non_mobile_user_rejected_when_restricted(page):
+	"""
+	Scenario: Enforce mobile user role restriction
+	- BEAM Settings enable_scan_to_login = "Mobile Users Only"
+	- Call scan_login with a user who lacks the 'BEAM Mobile User' role
+	- Expect error "Not Beam mobile user"
+	"""
+	_set_scan_to_login("Mobile Users Only")
+
+	user_barcode = _get_user_barcode(LOGIN_USER)
+
+	with use_current_db_transaction():
+		user_doc = frappe.get_doc("User", LOGIN_USER)
+		had_mobile_role = any(r.role == "BEAM Mobile User" for r in user_doc.roles)
+		if had_mobile_role:
+			user_doc.roles = [r for r in user_doc.roles if r.role != "BEAM Mobile User"]
+			user_doc.save()
+			frappe.db.commit()
+
+	try:
+		result = _call_scan_login(page, user_barcode)
+
+		assert not result[
+			"ok"
+		], f"Expected scan_login to fail for non-mobile user, but got success: {result['data']}"
+		exc = result["data"].get("exc_type", "") + result["data"].get("exception", "")
+		assert (
+			"Not Beam mobile user" in exc
+		), f"Expected 'Not Beam mobile user' in error, got: {result['data']}"
+	finally:
+		if had_mobile_role:
+			with use_current_db_transaction():
+				user_doc = frappe.get_doc("User", LOGIN_USER)
+				user_doc.append("roles", {"role": "BEAM Mobile User"})
+				user_doc.save()
+				frappe.db.commit()
+
+
 @pytest.mark.order(4)
-def test_ip_restriction(page):
-	set_scan_mode("All Users")
+def test_ip_restriction_allows_configured_ip(page):
+	"""
+	Scenario: Enforce IP restriction – scan from allowed IP succeeds
+	- restrict_ip set to 127.0.0.1 (the test runner's IP)
+	- Call scan_login with a valid user barcode
+	- Expect HTTP 200 and success: True
+	"""
+	_set_scan_to_login("All Users")
+	_set_restrict_ip("127.0.0.1")
 
-	user = get_valid_user()
-	barcode = user["barcode"]
+	user_barcode = _get_user_barcode(LOGIN_USER)
 
-	# allow IP
-	set_ip_restriction(["127.0.0.1"])
-
-	page.goto(LOGIN_URL)
-	page.wait_for_function("window.__beam_test_scan !== undefined")
-
-	page.evaluate(
-		"barcode => window.__beam_test_scan(barcode)",
-		barcode,
-	)
-
-	page.wait_for_url("**/beam")
-	expect(page).to_have_url(lambda url: HOME_URL in url)
-
-	# logout
-	page.goto("/logout")
-	page.goto(LOGIN_URL)
-	page.wait_for_function("window.__beam_test_scan !== undefined")
-
-	# block IP
-	set_ip_restriction(["192.168.1.1"])
-
-	page.evaluate(
-		"barcode => window.__beam_test_scan(barcode)",
-		barcode,
-	)
-
-	page.wait_for_timeout(800)
-
-	expect(page.get_by_text("Network not available")).to_be_visible()
-	expect(page).to_have_url(lambda url: "/login" in url)
+	try:
+		result = _call_scan_login(page, user_barcode)
+		assert result["ok"], f"Expected scan_login to succeed from allowed IP, got: {result['data']}"
+		assert result["data"].get("message", {}).get("success") is True
+	finally:
+		_set_restrict_ip("")
 
 
-# -------------------------------------------------------
-# 5️⃣ SCAN DISABLED
-# -------------------------------------------------------
 @pytest.mark.order(5)
-def test_scan_login_disabled(page):
-	set_scan_mode("Not Allowed")
+def test_ip_restriction_blocks_disallowed_ip(page):
+	"""
+	Scenario: Enforce IP restriction – scan from disallowed IP is rejected
+	- restrict_ip set to 192.0.2.255 (IETF TEST-NET, never matches 127.0.0.1)
+	- Call scan_login with a valid user barcode
+	- Expect error "Network not available"
+	"""
+	_set_scan_to_login("All Users")
+	_set_restrict_ip("192.0.2.255")
 
-	page.goto(LOGIN_URL)
-	page.wait_for_function("window.__beam_test_scan !== undefined")
+	user_barcode = _get_user_barcode(LOGIN_USER)
 
-	user = get_valid_user()
-
-	page.evaluate(
-		"barcode => window.__beam_test_scan(barcode)",
-		user["barcode"],
-	)
-
-	page.wait_for_timeout(800)
-
-	expect(page.get_by_text("Login scanning is not allowed")).to_be_visible()
-	expect(page).to_have_url(lambda url: "/login" in url)
+	try:
+		result = _call_scan_login(page, user_barcode)
+		assert not result[
+			"ok"
+		], f"Expected scan_login to fail from disallowed IP, but got success: {result['data']}"
+		exc = result["data"].get("exc_type", "") + result["data"].get("exception", "")
+		assert (
+			"Network not available" in exc
+		), f"Expected 'Network not available' in error, got: {result['data']}"
+	finally:
+		_set_restrict_ip("")

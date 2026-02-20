@@ -19,27 +19,17 @@ def browser_context_args(browser_context_args):
 
 @pytest.fixture(autouse=True)
 def setup(page):
-	# delete all existing draft Purchase Receipts
 	delete_draft_records(["Purchase Receipt", "Stock Entry"])
 
 	page.set_default_timeout(30000)
+	page.goto("http://127.0.0.1:8000")
+	page.set_default_timeout(5000)
 
-	# base_url = frappe.utils.get_url()
-	base_url = "http://127.0.0.1:8000"
-
-	page.goto(base_url)
-	page.wait_for_load_state("networkidle")
-
-	# visiting the home page redirects to login page
-	# page.get_by_role("textbox", name="Email").fill("support@agritheory.dev")
-	# page.get_by_role("textbox", name="Password").fill("admin")
-	page.locator("#login_email").fill("support@agritheory.dev")
-	page.locator("#login_password").fill("admin")
-	page.locator(".btn-login").click()
-	# page.get_by_role("button", name="Login").click()  # this will redirect to `/beam`
+	page.get_by_role("textbox", name="Email").fill("support@agritheory.dev")
+	page.get_by_role("textbox", name="Password").fill("admin")
+	page.get_by_role("button", name="Login").click()
 	yield
 
-	# delete all Purchase Receipts created during the test
 	receipts = frappe.get_all(
 		"Purchase Receipt", filters={"docstatus": ["in", [1, 2]]}, fields=["name", "docstatus"]
 	)
@@ -47,8 +37,6 @@ def setup(page):
 		receipt_doc = frappe.get_doc("Purchase Receipt", receipt.name)
 		if receipt.docstatus == 1:
 			receipt_doc.cancel()
-		# only delete if the document is in draft state, since cancelled documents are
-		# linked to SLEs, which can't be deleted
 		elif receipt.docstatus == 0:
 			receipt_doc.delete()
 
