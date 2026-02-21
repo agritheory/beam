@@ -11,13 +11,21 @@ repos:
         exclude: '.*json$|.*txt$|.*csv|.*md|.*svg'
       - id: check-yaml
       - id: no-commit-to-branch
-        args: ['--branch', 'develop']
+        args: ['--branch', 'version-15', '--branch', 'version-16']
       - id: check-merge-conflict
       - id: check-ast
       - id: check-json
       - id: check-toml
-      - id: check-yaml
       - id: debug-statements
+
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.1
+    hooks:
+      - id: codespell
+        args: ["--ignore-words-list", "notin"]
+        exclude: 'yarn.lock|poetry.lock'
+        additional_dependencies:
+          - tomli
 
   - repo: https://github.com/asottile/pyupgrade
     rev: v3.19.1
@@ -30,47 +38,41 @@ repos:
     hooks:
       - id: black
 
-  - repo: https://github.com/PyCQA/autoflake
-    rev: v2.3.1
-    hooks:
-      - id: autoflake
-        args: [--remove-all-unused-imports, --in-place]
-
-  - repo: https://github.com/PyCQA/isort
-    rev: 6.0.0
-    hooks:
-      - id: isort
-
   - repo: https://github.com/PyCQA/flake8
-    rev: 7.1.1
+    rev: 7.2.0
     hooks:
       - id: flake8
         additional_dependencies: ['flake8-bugbear']
 
-  - repo: https://github.com/codespell-project/codespell
-    rev: v2.4.1
-    hooks:
-      - id: codespell
-        additional_dependencies:
-          - tomli
-
   - repo: https://github.com/agritheory/test_utils
-    rev: v1.13.0
+    rev: v1.15.4
     hooks:
       - id: update_pre_commit_config
+      - id: validate_frappe_project
       - id: validate_copyright
         files: '\.(js|ts|py|md)$'
         args: ['--app', 'beam']
+      - id: bylines
+        exclude: 'README.md|CHANGELOG.md'
       - id: clean_customized_doctypes
         args: ['--app', 'beam']
       - id: validate_customizations
+      - id: patch_linters
+        args: ['--app', 'beam']
+      - id: track_overrides
+        args: ['--directory', '.', '--app', 'beam', '--base-branch', 'version-15']
 
-  - repo: local
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.1.0
     hooks:
       - id: prettier
-        name: prettier
-        entry: npx prettier . --write --ignore-path .prettierignore
-        language: node
+        types_or: [javascript, vue, scss]
+        exclude: |
+          (?x)^(
+            .*node_modules.*|
+            beam/public/dist/.*|
+            beam/public/js/lib/.*
+          )$
 
 ci:
   autoupdate_schedule: weekly

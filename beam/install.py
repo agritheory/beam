@@ -8,7 +8,6 @@ from beam.customize import load_customizations
 
 
 def after_install():
-	load_customizations()
 	print("Setting up Handling Unit Inventory Dimension")
 	if frappe.db.exists("Inventory Dimension", "Handling Unit"):
 		return
