@@ -3,6 +3,11 @@ For license information, please see license.txt-->
 
 # Form
 
+<div class="byline">
+  AgriTheory 2026-02-08
+</div>
+
+
 The result of scanning a barcode in the form depends on several factors:
 
  - Is the barcode recognized?
