@@ -4,7 +4,7 @@ For license information, please see license.txt-->
 # Zebra Printing
 
 <div class="byline">
-  AgriTheory 2026-02-08
+  Tyler Matteson 2026-02-21
 </div>
 
 
