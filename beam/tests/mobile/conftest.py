@@ -1,6 +1,8 @@
 # Copyright (c) 2024, AgriTheory and contributors
 # For license information, please see license.txt
 
+import re
+
 import frappe
 import pytest
 
@@ -17,6 +19,14 @@ def browser_context_args(browser_context_args):
 	}
 
 
+def get_local_url():
+	url = frappe.utils.get_url()
+	# Only force http for local development
+	if re.search(r"(127\.0\.0\.1|localhost|\.localhost)", url):
+		url = url.replace("https://", "http://")
+	return url
+
+
 @pytest.fixture(autouse=True)
 def setup(page):
 	# delete all existing draft Purchase Receipts
@@ -24,8 +34,7 @@ def setup(page):
 
 	page.set_default_timeout(30000)
 
-	# base_url = frappe.utils.get_url()
-	base_url = "http://127.0.0.1:8000"
+	base_url = get_local_url()
 
 	page.goto(base_url)
 	page.wait_for_load_state("networkidle")
