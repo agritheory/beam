@@ -4,7 +4,7 @@ For license information, please see license.txt-->
 # Extending Beam With Custom Hooks
 
 <div class="byline">
-  AgriTheory 2026-02-08
+  Tyler Matteson 2026-02-21
 </div>
 
 
