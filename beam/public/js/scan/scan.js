@@ -58,10 +58,6 @@ class ScanHandler {
 				ignoreIfFocusOn: '.frappe-input',
 			})
 			window.scanHandler = me
-
-			window.__beam_test_scan = async function (barcode) {
-				await me.get_scanned_context(barcode, 1)
-			}
 		}
 	}
 	reduceContext() {
