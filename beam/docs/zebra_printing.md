@@ -3,6 +3,11 @@ For license information, please see license.txt-->
 
 # Zebra Printing
 
+<div class="byline">
+  AgriTheory and Tyler Matteson 2026-02-24
+</div>
+
+
 To create a Zebra print format, you need the following documents:
 - A ZPL Print Format made against Doctype that may contain barcodes (Item, Warehouse, Handling Units, etc.) that uses the available Jinja utility functions to generate ZPL code.
 - A document Print Format that uses the free Labelary API to convert the above ZPL code and generate a preview of the print output for the linked document.

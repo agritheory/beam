@@ -8,6 +8,7 @@ app_publisher = "AgriTheory"
 app_description = "Barcode Scanning for ERPNext"
 app_email = "support@agritheory.dev"
 app_license = "MIT"
+required_apps = ["erpnext"]
 
 # Includes in <head>
 # ------------------

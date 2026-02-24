@@ -3,6 +3,11 @@ For license information, please see license.txt-->
 
 # Form
 
+<div class="byline">
+  Tyler Matteson 2026-02-21
+</div>
+
+
 The result of scanning a barcode in the form depends on several factors:
 
  - Is the barcode recognized?
