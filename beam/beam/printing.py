@@ -151,6 +151,18 @@ def labelary_api(doc, print_format, settings=None):
 		e.globals.update(methods)
 	template = e.from_string(print_format.raw_commands)
 	output = template.render(doc=doc)
-	url = "http://api.labelary.com/v1/printers/8dpmm/labels/6x4/0/"
+
+	# Extract label dimensions and DPI from settings
+	# dpmm: dots per millimeter (default 8 = ~203 DPI)
+	# width: label width in inches (default 6)
+	# height: label height in inches (default 4)
+	# index: label index for multi-label formats (default 0)
+	dpmm = settings.get("dpmm", 8)  # 8 dpmm ≈ 203 DPI, 12 dpmm ≈ 300 DPI
+	width = settings.get("width", 6)
+	height = settings.get("height", 4)
+	index = settings.get("index", 0)
+
+	url = f"http://api.labelary.com/v1/printers/{dpmm}dpmm/labels/{width}x{height}/{index}/"
 	r = requests.post(url, files={"file": output})
-	return base64.b64encode(r.content).decode("ascii")
+	content = r.content
+	return base64.b64encode(content).decode("ascii")
