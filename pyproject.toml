@@ -37,6 +37,7 @@ addopts = "--cov=beam --cov-report term-missing"
 
 [tool.codespell]
 skip = "CHANGELOG.md"
+ignore-words-list = "fo"
 
 [tool.black]
 line-length = 99
