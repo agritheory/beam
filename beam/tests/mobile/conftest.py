@@ -18,19 +18,24 @@ def browser_context_args(browser_context_args):
 
 
 @pytest.fixture(autouse=True)
-def setup(page):
+def setup(page, request):
 	# delete all existing draft Purchase Receipts
-	delete_draft_records(["Purchase Receipt", "Stock Entry", "Delivery Note"])
+	delete_draft_records(["Purchase Receipt", "Stock Entry"])
 
 	page.set_default_timeout(5000)
 
 	base_url = frappe.utils.get_url()
-	page.goto(base_url)
 
-	# visiting the home page redirects to login page
-	page.get_by_role("textbox", name="Email").fill("support@agritheory.dev")
-	page.get_by_role("textbox", name="Password").fill("admin")
-	page.get_by_role("button", name="Login").click()  # this will redirect to `/beam`
+	# Skip auto-login for scan-to-login tests (they need to start from login page)
+	is_login_test = "scan_to_login" in request.node.name
+
+	if not is_login_test:
+		page.goto(base_url)
+		# visiting the home page redirects to login page
+		page.get_by_role("textbox", name="Email").fill("support@agritheory.dev")
+		page.get_by_role("textbox", name="Password").fill("admin")
+		page.get_by_role("button", name="Login").click()  # this will redirect to `/beam`
+
 	yield
 
 	# delete all Purchase Receipts created during the test

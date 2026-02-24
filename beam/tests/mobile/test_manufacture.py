@@ -50,12 +50,15 @@ def test_complete_partial_stock_entry(page):
 
 	# navigate in the following order: Home -> Manufacture -> Work Order
 	page.get_by_text("Manufacture").click()
+
+	expect(page.locator("css=.beam_list-item").first).to_be_visible()
 	page.locator("css=.beam_list-item").first.click()
 
 	# get the selected Work Order
 	order_id = page.url.split("/")[-1]
 	assert order_id
 
+	expect(page.locator("css=.box .beam_list-item").first).to_be_visible()
 	# ensure there are no existing Stock Entries against this Work Order
 	entry = frappe.db.exists(
 		"Stock Entry",
