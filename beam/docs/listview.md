@@ -4,7 +4,7 @@ For license information, please see license.txt-->
 # Listview
 
 <div class="byline">
-  Tyler Matteson 2026-02-21
+  Tyler Matteson 2026-02-23
 </div>
 
 
@@ -27,7 +27,7 @@ Another example: If an Item is scanned while viewing the Purchase Receipt list, 
 |Item|Purchase Receipt|filter|item_code|
 
 
-Beam uses a [decision matrix](./matrix.md) to decide what action to take based on what kind of doctype has been scanned.
+BEAM uses a [decision matrix](./matrix.md) to decide what action to take based on what kind of doctype has been scanned.
 
 Custom actions and client side functions can be added by using [hooks](./hooks.md)
 

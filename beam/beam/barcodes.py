@@ -28,6 +28,15 @@ def create_beam_barcode(doc, method=None):
 	):
 		# TODO: refactor this to be configurable to "Products" or "sold" items that do not require handling units
 		return
+	company = get_default_company()
+	if frappe.db.exists("BEAM Settings", {"company": company}):
+		settings = frappe.get_cached_doc("BEAM Settings", {"company": company})
+		try:
+			allowed = frappe.parse_json(settings.auto_barcode_doctypes or '["Item", "Warehouse"]')
+		except Exception:
+			allowed = ["Item", "Warehouse"]
+		if doc.doctype not in allowed:
+			return
 	if any([b for b in doc.barcodes if b.barcode_type == "Code128"]):
 		return
 	# move all other rows back
