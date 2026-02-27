@@ -715,7 +715,7 @@ employees = [
 		},
 		"phone": "(704) 885-0542",
 		"roles": ["Stock Manager", "Item Manager"],
-		"department": "Management",
+		"department": "Operations",
 		"designation": "Bakery Manager",
 	},
 	{

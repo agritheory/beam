@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import re
+
 import frappe
 import pytest
 from playwright.sync_api import expect
