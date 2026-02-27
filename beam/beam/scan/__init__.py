@@ -455,6 +455,13 @@ frm = {
 			{
 				"action": "add_or_associate",
 				"doctype": "Delivery Note Item",
+				"field": "delivered_qty",
+				"target": "target.qty",
+				"context": "target",
+			},
+			{
+				"action": "add_or_associate",
+				"doctype": "Delivery Note Item",
 				"field": "rate",
 				"target": "target.rate",
 				"context": "target",
