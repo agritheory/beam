@@ -410,3 +410,83 @@ def test_unsaved_changes_warning(page):
 @pytest.mark.order(21)
 def test_scan_handling_unit_on_delivery_note(page):
 	"""Test scanning a handling unit barcode instead of item barcode"""
+	page.get_by_text("Ship").click()
+	page.locator("css=.beam_list-item").first.click()
+
+	parsed_url = urlparse(page.url.replace("#", ""))
+	order_id = parsed_url.query.replace("id=", "")
+	assert order_id
+
+	item = page.locator("css=.box .beam_list-item").first
+	item_code, *others = item.inner_text().split("\n")
+	item_count = page.locator("css=.box .beam_item-count").first
+	expect(item_count).to_have_text(re.compile("0/"))
+
+	# find a handling unit with available stock for this item
+	with use_current_db_transaction():
+		hu_candidates = frappe.get_all(
+			"Stock Ledger Entry",
+			filters={"item_code": item_code, "warehouse": "Baked Goods - APC", "is_cancelled": 0},
+			fields=["handling_unit", "SUM(actual_qty) AS stock_qty"],
+			group_by="handling_unit",
+			order_by="SUM(actual_qty) desc",
+		)
+
+		hu_candidates = [h for h in hu_candidates if h.handling_unit and h.stock_qty > 0]
+		assert len(hu_candidates) > 0, f"No Handling Unit with stock found for item {item_code}"
+
+		hu_name = hu_candidates[0]["handling_unit"]
+		hu_stock_qty = hu_candidates[0]["stock_qty"]
+
+		hu_barcode = frappe.db.get_value(
+			"Item Barcode",
+			{"parenttype": "Handling Unit", "parent": hu_name},
+			"barcode",
+		)
+		assert hu_barcode, f"No barcode registered for Handling Unit {hu_name}"
+
+		# get remaining qty on the SO to know what to expect on the form
+		so_items = frappe.get_all(
+			"Sales Order Item",
+			filters={"parent": order_id, "item_code": item_code},
+			fields=["qty", "delivered_qty"],
+		)
+		assert len(so_items) > 0
+		remaining_so_qty = so_items[0]["qty"] - so_items[0]["delivered_qty"]
+		assert remaining_so_qty > 0, "Sales Order has no remaining qty for this item"
+
+	with page.expect_request(
+		lambda request: request.headers.get("x-frappe-cmd") == "beam.beam.scan.scan"
+	):
+		page.evaluate("barcode => scanner.simulate(window, barcode)", hu_barcode)
+		page.wait_for_timeout(500)
+
+	# verify that count changed from 0 to a positive value
+	count_text = item_count.inner_text()
+	current_count = int(count_text.split("/")[0])
+	expected_count = min(int(hu_stock_qty), int(remaining_so_qty))
+	assert current_count == expected_count, (
+		f"Expected count {expected_count} after scanning HU (hu_qty={hu_stock_qty}, "
+		f"remaining_so_qty={remaining_so_qty}), got {current_count}"
+	)
+
+	page.get_by_text("SAVE", exact=True).click()
+	page.wait_for_timeout(1000)
+
+	# verify the draft Delivery Note was created with the handling_unit field populated
+	with use_current_db_transaction():
+		dn_items = frappe.get_all(
+			"Delivery Note Item",
+			filters={"against_sales_order": order_id, "item_code": item_code},
+			fields=["docstatus", "qty", "handling_unit", "parent"],
+			order_by="creation desc",
+			limit=1,
+		)
+		assert len(dn_items) > 0, "No Delivery Note item was created"
+		assert dn_items[0]["docstatus"] == 0, "Delivery Note should be in draft state"
+		assert dn_items[0]["handling_unit"] == hu_name, (
+			f"Expected handling_unit '{hu_name}' on DN item, got '{dn_items[0]['handling_unit']}'"
+		)
+		assert dn_items[0]["qty"] == expected_count, (
+			f"Expected qty {expected_count} on DN item, got {dn_items[0]['qty']}"
+		)
