@@ -72,8 +72,7 @@ export const useScanStore = defineStore('scan', () => {
 					const isHuScan = action.context.handling_unit != null
 					return (
 						row.handling_unit === action.context.handling_unit ||
-						(row.item_code === action.context.item_code &&
-							(isHuScan || row.stock_qty === action.context.stock_qty))
+						(row.item_code === action.context.item_code && (isHuScan || row.stock_qty === action.context.stock_qty))
 					)
 				}
 			})

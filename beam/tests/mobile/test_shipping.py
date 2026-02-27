@@ -484,9 +484,9 @@ def test_scan_handling_unit_on_delivery_note(page):
 		)
 		assert len(dn_items) > 0, "No Delivery Note item was created"
 		assert dn_items[0]["docstatus"] == 0, "Delivery Note should be in draft state"
-		assert dn_items[0]["handling_unit"] == hu_name, (
-			f"Expected handling_unit '{hu_name}' on DN item, got '{dn_items[0]['handling_unit']}'"
-		)
-		assert dn_items[0]["qty"] == expected_count, (
-			f"Expected qty {expected_count} on DN item, got {dn_items[0]['qty']}"
-		)
+		assert (
+			dn_items[0]["handling_unit"] == hu_name
+		), f"Expected handling_unit '{hu_name}' on DN item, got '{dn_items[0]['handling_unit']}'"
+		assert (
+			dn_items[0]["qty"] == expected_count
+		), f"Expected qty {expected_count} on DN item, got {dn_items[0]['qty']}"
