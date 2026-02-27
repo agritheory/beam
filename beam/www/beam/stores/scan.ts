@@ -6,6 +6,7 @@ import { computed } from 'vue'
 
 import { useBeamStore } from '@/stores/beam.js'
 import type {
+	DeliveryNoteItem,
 	FormContext,
 	ListContext,
 	ParentDoctypesForStockTransfer,
@@ -67,19 +68,23 @@ export const useScanStore = defineStore('scan', () => {
 				if (is_stock_entry) {
 					return row.item_code === action.context.item_code || row.handling_unit
 				} else {
+					// For HU scans, match by item_code alone — HU stock_qty may differ from SO qty
+					const isHuScan = action.context.handling_unit != null
 					return (
-						(row.item_code === action.context.item_code && row.stock_qty === action.context.stock_qty) ||
-						row.handling_unit === action.context.handling_unit
+						row.handling_unit === action.context.handling_unit ||
+						(row.item_code === action.context.item_code &&
+							(isHuScan || row.stock_qty === action.context.stock_qty))
 					)
 				}
 			})
-
 			if (existing_rows.length > 0) {
 				for (const row of existing_rows) {
 					if (action.field === 'qty') {
 						if (row.doctype === 'Stock Entry Detail') {
 							row[action.field] = Math.min((row as StockEntryItem).transfer_qty!, action.target)
 						}
+					} else if (action.field === 'delivered_qty' && (row as DeliveryNoteItem).qty != null) {
+						;(row as DeliveryNoteItem).delivered_qty = Math.min(action.target, (row as DeliveryNoteItem).qty)
 					} else {
 						row[action.field] = action.target
 					}
@@ -88,12 +93,14 @@ export const useScanStore = defineStore('scan', () => {
 				if (mappedDoc.value.doctype === 'Purchase Receipt') {
 					;(mappedDoc.value as PurchaseReceipt).items.push({
 						item_code: action.context.item_code,
+						item_name: action.context.item_name,
 						received_qty: 1,
 						[action.field]: action.target,
 					})
 				} else {
 					;(mappedDoc.value as Exclude<ParentDoctypesForStockTransfer, PurchaseReceipt>).items.push({
 						item_code: action.context.item_code,
+						item_name: action.context.item_name,
 						qty: 1,
 						[action.field]: action.target,
 					})
