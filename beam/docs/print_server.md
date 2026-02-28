@@ -20,6 +20,8 @@ There are several steps to get a print server connected in ERPNext.
 
 ![Screen shot of the Network Printer Settings document fields, including Name, Printer Name, Server IP, and Port.](./assets/network_printer_settings.png)
 
+The **Printer Name** field is an autocomplete that queries the configured CUPS server and displays available printers by their CUPS identifier, with the make/model and location shown as secondary text. Selecting a printer automatically fills in the **Printer Location** field from CUPS. The location can be edited freely — saving the record pushes the updated value back to CUPS, keeping the two in sync. The **Printer Type** field (`General Purpose` or `Label / RAW`) can be used to distinguish IPP or PDF printers from ZPL/raw label printers.
+
 ---
 
 A convenient Print Handling Unit button on relevant doctypes enables the user to print new Handling Unit labels directly from the ERPNext user interface.
