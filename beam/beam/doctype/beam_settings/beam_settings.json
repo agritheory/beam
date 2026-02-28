@@ -12,7 +12,11 @@
 		"column_break_vhpb",
 		"qr_scale",
 		"qr_border",
-		"qr_error_correct"
+		"qr_error_correct",
+		"barcode_generation_section",
+		"barcode_exclusions_html",
+		"column_break_barcode",
+		"auto_barcode_doctypes"
 	],
 	"fields": [
 		{
@@ -65,6 +69,27 @@
 			"label": "Company",
 			"options": "Company",
 			"unique": 1
+		},
+		{
+			"fieldname": "barcode_generation_section",
+			"fieldtype": "Section Break",
+			"label": "Barcode Generation"
+		},
+		{
+			"fieldname": "barcode_exclusions_html",
+			"fieldtype": "HTML",
+			"label": "Disable Auto-Generation For"
+		},
+		{
+			"fieldname": "column_break_barcode",
+			"fieldtype": "Column Break"
+		},
+		{
+			"default": "[\"Item\", \"Warehouse\"]",
+			"fieldname": "auto_barcode_doctypes",
+			"fieldtype": "JSON",
+			"hidden": 1,
+			"label": "Auto Barcode Doctypes"
 		}
 	],
 	"links": [],

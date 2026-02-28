@@ -27,6 +27,14 @@ repos:
         additional_dependencies:
           - tomli
 
+  - repo: local
+    hooks:
+      - id: no-titled-beam
+        name: "Use 'BEAM' not 'Beam'"
+        language: pygrep
+        entry: '\bBeam\b'
+        files: '\.md$'
+
   - repo: https://github.com/asottile/pyupgrade
     rev: v3.19.1
     hooks:

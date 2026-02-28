@@ -4,7 +4,7 @@ For license information, please see license.txt-->
 # Zebra Printing
 
 <div class="byline">
-  AgriTheory and Tyler Matteson 2026-02-24
+  Tyler Matteson 2026-02-24
 </div>
 
 
@@ -14,16 +14,16 @@ To create a Zebra print format, you need the following documents:
 
 ### ZPL Code Generation
 
-Currently, only three types of printable ZPL data can be generated with utilities within Beam:
+Currently, only three types of printable ZPL data can be generated with utilities within BEAM:
 - `Text`
 - `Barcode`
 - `Label`
 
-Beam uses the [py-zebra-zpl](https://github.com/mtking2/py-zebra-zpl) library to generate the above types, as it provides a basic interface to create ZPL code using Python objects. Please refer to the library's documentation for more information on how to use it.
+BEAM uses the [py-zebra-zpl](https://github.com/mtking2/py-zebra-zpl) library to generate the above types, as it provides a basic interface to create ZPL code using Python objects. Please refer to the library's documentation for more information on how to use it.
 
 **Note:** Additional ZPL elements (like graphic fields) and commands (text mirroring, character encoding, etc.) can be developed separately and added as text directly to the ZPL Print Format. For more information, visit the [official documentation page](https://supportcommunity.zebra.com/s/article/ZPL-Command-Information-and-DetailsV2?language=en_US) or the [Labelary ZPL Programming Guide](https://labelary.com/zpl.html).
 
-In addition, Beam exposes the following Jinja functions to be used within a Print Format:
+In addition, BEAM exposes the following Jinja functions to be used within a Print Format:
 
 ---
 

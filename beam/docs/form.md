@@ -4,7 +4,7 @@ For license information, please see license.txt-->
 # Form
 
 <div class="byline">
-  Tyler Matteson 2026-02-21
+  Tyler Matteson 2026-02-23
 </div>
 
 
@@ -19,7 +19,7 @@ For example, when an Item is scanned while viewing a Delivery Note record, it wi
 |-----------------|-----------------------|--------|--------|
 |Item|Delivery Note|add_or_increment|item_code|
 
-Beam uses a [decision matrix](./matrix.md) to decide what action to take based on what kind of doctype has been scanned.
+BEAM uses a [decision matrix](./matrix.md) to decide what action to take based on what kind of doctype has been scanned.
 
 Custom actions and client side functions can be added by using [hooks](./hooks.md).
 
