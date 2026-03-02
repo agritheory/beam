@@ -9,7 +9,6 @@ from frappe.utils import get_site_path
 from beam.beam.demand.demand import build_demand_allocation_map
 from beam.beam.demand.receiving import reset_build_receiving_map
 from beam.beam.scan.config import get_scan_doctypes
-from beam.customize import load_customizations
 from beam.patches.v15.setup_beam_mobile_settings import execute
 
 
@@ -22,7 +21,6 @@ def create_beam_mobile_user_role():
 
 
 def after_install():
-	load_customizations()
 	print("Setting up Handling Unit Inventory Dimension")
 	if frappe.db.exists("Inventory Dimension", "Handling Unit"):
 		return

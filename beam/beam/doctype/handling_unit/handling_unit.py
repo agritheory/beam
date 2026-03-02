@@ -23,6 +23,8 @@ class HandlingUnit(Document):
 		self.handling_unit_name = self.name = str(uuid.uuid4().int >> 64)
 
 	def validate(self):
+		if frappe.db.exists("Item Barcode", {"barcode": self.name, "parent": self.name}):
+			return
 		barcode = frappe.new_doc("Item Barcode")
 		barcode.parenttype = "Handling Unit"
 		barcode.barcode_type = "Code128"
