@@ -33,7 +33,6 @@ def disable_handling_unit_for_tests():
 		frappe.db.set_value("Item", item, "enable_handling_unit", 1)
 	frappe.db.commit()
 
-
 @pytest.mark.order(8)
 def test_repack_items_manually(page):
 	page.get_by_text("Repack").click()
@@ -59,6 +58,9 @@ def test_repack_items_manually(page):
 		source_wh = "Refrigerator - APC"
 		target_wh = "Baked Goods - APC"
 
+	qty_input = page.locator("input.aform_input-field[type='number']")
+	expect(qty_input).to_have_value("0")
+
 	with page.expect_request(
 		lambda request: request.headers.get("x-frappe-cmd") == "beam.beam.scan.scan"
 	):
@@ -66,7 +68,16 @@ def test_repack_items_manually(page):
 
 	page.wait_for_timeout(800)
 
+	expect(qty_input).to_have_value("1")
+
 	page.get_by_role("button", name="+").click()
+
+	expect(qty_input).to_have_value("2")
+
+	page.get_by_role("button", name="-").click()
+
+	expect(qty_input).to_have_value("1")
+
 	fill_warehouse_dropdown(page, "Source Warehouse", source_wh)
 	page.get_by_role("button", name="ADD", exact=True).click()
 
@@ -98,7 +109,7 @@ def test_repack_items_manually(page):
 		)
 	assert entries, "Expected draft Stock Entry to be created"
 	stock_entry_name = entries[0]["name"]
-
+	
 	page.get_by_role("button", name="REPACK", exact=True).click()
 	page.wait_for_timeout(1500)
 
