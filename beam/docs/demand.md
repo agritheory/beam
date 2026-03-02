@@ -3,6 +3,11 @@ For license information, please see license.txt-->
 
 # Demand
 
+<div class="byline">
+  Rohan Bansal, Myuddin Khatri, Tyler Matteson, and ViralKansodiya-Fosserp 2024-09-02
+</div>
+
+
 This feature computes the what Items are needed and where they are available.
 
 ### Demand Map

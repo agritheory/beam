@@ -72,3 +72,20 @@ def get_configuration_hooks():
 	bm = frappe.get_hooks().get("beam_mobile")
 	components = sorted(list(set(bm.get("components").keys())))
 	return frappe._dict({"components": components})
+
+
+@frappe.whitelist()
+def get_doctypes_with_item_barcodes() -> list[str]:
+	"""Return all doctypes that have a Table field with options 'Item Barcode'."""
+	existing_doctypes = set(frappe.get_all("DocType", pluck="name"))
+	standard = frappe.get_all(
+		"DocField",
+		filters={"fieldtype": "Table", "options": "Item Barcode"},
+		pluck="parent",
+	)
+	custom = frappe.get_all(
+		"Custom Field",
+		filters={"fieldtype": "Table", "options": "Item Barcode"},
+		pluck="dt",
+	)
+	return sorted(existing_doctypes.intersection(standard + custom))

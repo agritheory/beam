@@ -8,6 +8,7 @@ app_publisher = "AgriTheory"
 app_description = "Barcode Scanning for ERPNext"
 app_email = "support@agritheory.dev"
 app_license = "MIT"
+required_apps = ["erpnext"]
 
 # Includes in <head>
 # ------------------
@@ -31,7 +32,10 @@ web_include_js = ["beam-web.bundle.js"]
 # page_js = {"page" : "public/js/file.js"}
 
 # include js in doctype views
-doctype_js = {"Stock Entry": "public/js/stock_entry_custom.js"}
+doctype_js = {
+	"Network Printer Settings": "public/js/network_printer_settings_custom.js",
+	"Stock Entry": "public/js/stock_entry_custom.js",
+}
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
@@ -60,6 +64,7 @@ jinja = {
 	"methods": [
 		"beam.beam.barcodes.add_to_label",
 		"beam.beam.barcodes.barcode128",
+		"beam.beam.barcodes.get_qr_code",
 		"beam.beam.barcodes.formatted_zpl_barcode",
 		"beam.beam.barcodes.formatted_zpl_label",
 		"beam.beam.barcodes.formatted_zpl_text",
@@ -68,6 +73,7 @@ jinja = {
 		"beam.beam.barcodes.zebra_zpl_text",
 		"beam.beam.printing.labelary_api",
 		"beam.beam.scan.get_handling_unit",
+		"beam.beam.scan.get_serial_no",
 	],
 }
 
@@ -111,6 +117,7 @@ extend_bootinfo = "beam.beam.boot.boot_session"
 # Override standard doctype classes
 override_doctype_class = {
 	"Sales Order": "beam.beam.overrides.sales_order.BEAMSalesOrder",
+	"Network Printer Settings": "beam.beam.overrides.network_printer_settings.BEAMNetworkPrinterSettings",
 	"Stock Entry": "beam.beam.overrides.stock_entry.BEAMStockEntry",
 	"Subcontracting Receipt": "beam.beam.overrides.subcontracting_receipt.BEAMSubcontractingReceipt",
 	"Work Order": "beam.beam.overrides.work_order.BEAMWorkOrder",
@@ -170,6 +177,11 @@ doc_events = {
 		"on_cancel": [
 			"beam.beam.demand.receiving.modify_receiving",
 			"beam.beam.demand.demand.modify_allocations",
+		],
+	},
+	"Company": {
+		"after_insert": [
+			"beam.beam.overrides.company.create_company_beam_settings",
 		],
 	},
 }
