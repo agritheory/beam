@@ -33,6 +33,7 @@ def disable_handling_unit_for_tests():
 		frappe.db.set_value("Item", item, "enable_handling_unit", 1)
 	frappe.db.commit()
 
+
 @pytest.mark.order(8)
 def test_repack_items_manually(page):
 	page.get_by_text("Repack").click()
@@ -109,7 +110,7 @@ def test_repack_items_manually(page):
 		)
 	assert entries, "Expected draft Stock Entry to be created"
 	stock_entry_name = entries[0]["name"]
-	
+
 	page.get_by_role("button", name="REPACK", exact=True).click()
 	page.wait_for_timeout(1500)
 
