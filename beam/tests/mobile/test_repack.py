@@ -111,36 +111,41 @@ def test_repack_items_manually(page):
 
 	assert submitted, f"Expected Stock Entry {stock_entry_name} to be submitted"
 
-
 @pytest.mark.order(9)
 def test_repack_using_bom(page):
 	page.get_by_text("Repack").click()
 	page.wait_for_load_state("networkidle")
 	assert "/repack" in page.url
 
+	bom_name = "BOM-Gooseberry Pie Filling-001"
+	target_wh = "Refrigerator - APC"
+
 	with use_current_db_transaction():
-		boms = frappe.get_all(
-			"BOM",
-			filters={"is_active": 1, "is_default": 1, "docstatus": 1},
-			pluck="name",
+		finished_barcode = frappe.get_all(
+			"Item Barcode",
+			filters={"parent": "Gooseberry Pie"},
+			pluck="barcode",
 			limit=1,
 		)
-		assert boms, "No active default BOM found in test data"
-		bom_name = boms[0]
+		assert finished_barcode, "Gooseberry Pie must have a barcode"
 
-		warehouse = frappe.get_all(
-			"Warehouse",
-			filters={"is_group": 0, "company": "Ambrosia Pie Company"},
-			pluck="name",
-			limit=1,
-		)[0]
+	with page.expect_request(
+		lambda request: request.headers.get("x-frappe-cmd") == "beam.beam.scan.scan"
+	):
+		page.evaluate("barcode => scanner.simulate(window, barcode)", finished_barcode[0])
+
+	page.wait_for_timeout(800)
+
+	page.get_by_role("button", name="+").click()
+	page.wait_for_timeout(300)
 
 	fill_warehouse_dropdown(page, "BOM (Optional)", bom_name)
 	page.wait_for_timeout(1000)
 
-	expect(page.locator("css=.beam_list-item").first).to_be_visible()
+	fill_warehouse_dropdown(page, "Target Warehouse", target_wh)
 
-	fill_warehouse_dropdown(page, "Target Warehouse", warehouse)
+	page.get_by_role("button", name="ADD", exact=True).click()
+	page.wait_for_timeout(1000)
 
 	page.get_by_role("button", name="SAVE", exact=True).click()
 	page.wait_for_timeout(1500)
