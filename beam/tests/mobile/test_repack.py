@@ -111,6 +111,7 @@ def test_repack_items_manually(page):
 
 	assert submitted, f"Expected Stock Entry {stock_entry_name} to be submitted"
 
+
 @pytest.mark.order(9)
 def test_repack_using_bom(page):
 	page.get_by_text("Repack").click()
