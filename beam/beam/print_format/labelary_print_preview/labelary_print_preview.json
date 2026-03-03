@@ -10,7 +10,7 @@
 	"docstatus": 0,
 	"doctype": "Print Format",
 	"font_size": 14,
-	"html": "<div class=\"zpl-label\">\n<img src=\"data:image/png;base64,{{ labelary_api(doc, 'Handling Unit 6x4 ZPL Format', {}) }}\" />    \n</div>\n",
+	"html": "<div class=\"zpl-label\">\n<img src=\"data:image/png;base64,{{ labelary_api(doc, 'Handling Unit 6x4 ZPL Format', {'width': 6, 'height': 4, 'dpmm': 8}) }}\" />    \n</div>\n",
 	"idx": 0,
 	"line_breaks": 0,
 	"margin_bottom": 15.0,

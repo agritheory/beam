@@ -1,9 +1,14 @@
 <!-- Copyright (c) 2025, AgriTheory and contributors
 For license information, please see license.txt-->
 
-# Extending Beam With Custom Hooks
+# Extending BEAM With Custom Hooks
 
-Beam can be extended by adding configurations to your application's `hooks.py`.
+<div class="byline">
+  Rohan Bansal, Heather Kusmierz, and Tyler Matteson 2025-05-28
+</div>
+
+
+BEAM can be extended by adding configurations to your application's `hooks.py`.
 
 To make scanning available on a custom doctype, add a table field for "Item Barcode" directly in the doctype or via customize form. Then add a key that is a peer with "Item" in the example below.
 
