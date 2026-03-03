@@ -6,10 +6,7 @@
 			"bold": 0,
 			"collapsible": 0,
 			"columns": 0,
-			"creation": "2023-09-13 12:51:04.950175",
 			"default": null,
-			"depends_on": "",
-			"docstatus": 0,
 			"dt": "Stock Entry Detail",
 			"fetch_if_empty": 0,
 			"fieldname": "recombine_on_cancel",
@@ -30,15 +27,11 @@
 			"is_virtual": 0,
 			"label": "Recombine On Cancel",
 			"length": 0,
-			"modified": "2023-09-13 12:51:04.950175",
-			"modified_by": "Administrator",
 			"module": "BEAM",
 			"name": "Stock Entry Detail-recombine_on_cancel",
 			"no_copy": 1,
 			"non_negative": 0,
-			"owner": "Administrator",
 			"permlevel": 0,
-			"precision": "",
 			"print_hide": 0,
 			"print_hide_if_no_value": 0,
 			"read_only": 1,
@@ -50,9 +43,7 @@
 			"unique": 0
 		}
 	],
-	"custom_perms": [],
 	"doctype": "Stock Entry Detail",
-	"links": [],
 	"property_setters": [],
 	"sync_on_migrate": 1
 }
