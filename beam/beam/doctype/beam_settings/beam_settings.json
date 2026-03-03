@@ -85,7 +85,6 @@
 			"fieldtype": "Column Break"
 		},
 		{
-			"default": "[\"Item\", \"Warehouse\"]",
 			"fieldname": "auto_barcode_doctypes",
 			"fieldtype": "JSON",
 			"hidden": 1,

@@ -13,6 +13,7 @@ class BEAMSettings(Document):
 def create_beam_settings(company: str) -> str:
 	beams = frappe.new_doc("BEAM Settings")
 	beams.company = company
+	beams.auto_barcode_doctypes = '["Item", "Warehouse"]'
 	beams.save()
 	return beams
 
