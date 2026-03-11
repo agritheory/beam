@@ -221,8 +221,7 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 	target = None
 	beam_override = frappe.get_hooks("beam_frm")
 	has_frm_override = bool(
-		beam_override
-		and beam_override.get(barcode_doc.doc.doctype, {}).get(context.frm)
+		beam_override and beam_override.get(barcode_doc.doc.doctype, {}).get(context.frm)
 	)
 
 	if barcode_doc.doc.doctype == "Handling Unit":
