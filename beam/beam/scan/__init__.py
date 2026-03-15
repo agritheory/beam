@@ -83,6 +83,13 @@ def get_barcode_context(barcode: str) -> frappe._dict | None:
 					"barcode": barcode,
 				}
 			)
+
+	# Fallback: custom barcode resolvers registered by other apps via beam_barcode_resolver hook
+	for resolver in frappe.get_hooks("beam_barcode_resolver"):
+		result = frappe.call(resolver, barcode=barcode)
+		if result:
+			return result
+
 	return None
 
 
@@ -212,12 +219,26 @@ def get_list_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 
 def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[dict[str, Any]]:
 	target = None
+	beam_override = frappe.get_hooks("beam_frm")
+	has_frm_override = bool(
+		beam_override and beam_override.get(barcode_doc.doc.doctype, {}).get(context.frm)
+	)
+
 	if barcode_doc.doc.doctype == "Handling Unit":
 		hu_details = get_handling_unit(barcode_doc.doc.name, context.frm)
 		if context.frm == "Stock Entry":
 			target = get_stock_entry_item_details(context.doc, hu_details.item_code)
 			target.warehouse = hu_details.warehouse
 		elif context.frm in ("Putaway Rule", "Warranty Claim", "Item Price", "Quality Inspection"):
+			target = frappe._dict(
+				{
+					"doctype": context.frm,
+					"item_code": hu_details.item_code,
+				}
+			)
+		elif has_frm_override:
+			# A beam_frm override handles this form - skip get_item_details() which would
+			# fail for forms without a standard "{doctype} Item" child table.
 			target = frappe._dict(
 				{
 					"doctype": context.frm,
@@ -249,6 +270,15 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 		if context.frm == "Stock Entry":
 			target = get_stock_entry_item_details(context.doc, barcode_doc.doc.name)
 		elif context.frm in ("Putaway Rule", "Warranty Claim", "Item Price", "Quality Inspection"):
+			target = frappe._dict(
+				{
+					"doctype": context.frm,
+					"item_code": barcode_doc.doc.name,
+				}
+			)
+		elif has_frm_override:
+			# A beam_frm override handles this form — skip get_item_details() which would
+			# fail for forms without a standard "{doctype} Item" child table.
 			target = frappe._dict(
 				{
 					"doctype": context.frm,
@@ -312,8 +342,6 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 
 	if not target:
 		return []
-
-	beam_override = frappe.get_hooks("beam_frm")
 
 	if beam_override:
 		override_doctype = beam_override.get(barcode_doc.doc.doctype)
