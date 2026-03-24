@@ -1,6 +1,6 @@
 [project]
 name = "beam"
-version = "15.9.0"
+version = "15.10.0"
 authors = [
     { name = "AgriTheory", email = "support@agritheory.dev" }
 ]
