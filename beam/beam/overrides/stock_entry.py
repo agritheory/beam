@@ -165,6 +165,9 @@ def validate_items_with_handling_unit(doc, method=None):
 	if not beam_settings.enable_handling_units:
 		return
 
+	if frappe.flags.get("beam_allow_source_rows_without_hu"):
+		return
+
 	if doc.stock_entry_type != "Material Receipt":
 		for row in doc.items:
 			if not frappe.get_value("Item", row.item_code, "enable_handling_unit"):
