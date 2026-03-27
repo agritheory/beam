@@ -370,6 +370,19 @@ items = [
 		"default_warehouse": "Kitchen - APC",
 		"supplier": "Freedom Provisions",
 	},
+	{
+		"item_code": "Whipped Cream Canister",
+		"uom": "Nos",
+		"item_group": "Bakery Supplies",
+		"default_warehouse": "Storeroom - APC",
+		"description": "Pressurized whipped cream canister for serving pies; also sold retail.",
+		"item_price": 2.75,
+		"supplier": "Unity Bakery Supply",
+		"is_sales_item": 1,
+		"is_purchase_item": 1,
+		"has_serial_no": 1,
+		"serial_no_series": "WCC-.#####",
+	},
 ]
 
 boms = [

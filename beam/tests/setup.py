@@ -193,8 +193,11 @@ def setup_manufacturing_settings(settings):
 
 
 def setup_beam_settings(settings):
-	beams = frappe.new_doc("BEAM Settings")
-	beams.company = settings.company
+	if frappe.db.exists("BEAM Settings", settings.company):
+		beams = frappe.get_doc("BEAM Settings", settings.company)
+	else:
+		beams = frappe.new_doc("BEAM Settings")
+		beams.company = settings.company
 	beams.enable_demand = True
 	beams.enable_handling_units = True
 	beams.receiving_workstation = "Receiving"
@@ -301,8 +304,15 @@ def create_items(settings):
 			"Purchase" if item.get("item_group") in ("Bakery Supplies", "Ingredients") else "Manufacture"
 		)
 		i.valuation_method = "FIFO"
-		i.is_purchase_item = item.get("item_group") in ("Bakery Supplies", "Ingredients")
-		i.is_sales_item = item.get("item_group") == "Baked Goods"
+		i.is_purchase_item = (
+			1
+			if item.get("item_group") in ("Bakery Supplies", "Ingredients")
+			or item.get("is_purchase_item", 0)
+			else 0
+		)
+		i.is_sales_item = (
+			1 if item.get("item_group") == "Baked Goods" or item.get("is_sales_item", 0) else 0
+		)
 		i.append(
 			"item_defaults",
 			{"company": settings.company, "default_warehouse": item.get("default_warehouse")},
@@ -316,6 +326,9 @@ def create_items(settings):
 			i.append("uoms", {"uom": "Gallon Liquid (US)", "conversion_factor": 15.142})
 			i.purchase_uom = "Gallon Liquid (US)"
 			i.valuation_rate = 0.01 if i.item_code == "Water" else 0.02
+
+		i.has_serial_no = item.get("has_serial_no", 0) or 0
+		i.serial_no_series = item.get("serial_no_series", "") or ""
 		i.save()
 		if item.get("item_price"):
 			ip = frappe.new_doc("Item Price")
@@ -722,9 +735,12 @@ def create_production_plan(settings, prod_plan_from_doc):
 		wo.save()
 		wo.submit()
 		frappe.db.set_value("Work Order", wo.name, "creation", start_time)
-		job_cards = frappe.get_all("Job Card", {"work_order": wo.name})
-		for job_card in job_cards:
-			job_card = frappe.get_doc("Job Card", job_card)
+		# Get job cards and sort by sequence_id to process in order
+		job_cards = frappe.get_all(
+			"Job Card", {"work_order": wo.name}, ["name", "sequence_id"], order_by="sequence_id asc"
+		)
+		for jc in job_cards:
+			job_card = frappe.get_doc("Job Card", jc.name)
 			batch_size, total_operation_time = frappe.get_value(
 				"Operation", job_card.operation, ["batch_size", "total_operation_time"]
 			)
@@ -739,6 +755,8 @@ def create_production_plan(settings, prod_plan_from_doc):
 					"remaining_time_in_mins": time_in_mins,
 				},
 			)
+			# Complete the job card
+			job_card.total_completed_qty = wo.qty
 			job_card.save()
 			start_time = job_card.time_logs[0].to_time + datetime.timedelta(minutes=2)
 			# job_card.submit() # TODO: don't submit for demand tests
