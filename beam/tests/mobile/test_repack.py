@@ -34,7 +34,7 @@ def disable_handling_unit_for_tests():
 	frappe.db.commit()
 
 
-@pytest.mark.order(8)
+@pytest.mark.order(1)
 def test_repack_items_manually(page):
 	page.get_by_text("Repack").click()
 	expect(page).to_have_url(re.compile(r"#/repack"), timeout=15000)
@@ -124,7 +124,7 @@ def test_repack_items_manually(page):
 	assert submitted, f"Expected Stock Entry {stock_entry_name} to be submitted"
 
 
-@pytest.mark.order(9)
+@pytest.mark.order(2)
 def test_repack_using_bom(page):
 	page.get_by_text("Repack").click()
 	page.wait_for_load_state("networkidle")
@@ -174,7 +174,7 @@ def test_repack_using_bom(page):
 	assert entries, "Expected a draft Stock Entry to be created from BOM repack"
 
 
-@pytest.mark.order(10)
+@pytest.mark.order(3)
 def test_scan_item_for_repack(page):
 	page.get_by_text("Repack").click()
 	page.wait_for_load_state("networkidle")
@@ -214,7 +214,7 @@ def test_scan_item_for_repack(page):
 	expect(qty_input).to_have_value("2")
 
 
-@pytest.mark.order(11)
+@pytest.mark.order(4)
 def test_clear_repack_form(page):
 	page.get_by_text("Repack").click()
 	page.wait_for_load_state("networkidle")
@@ -260,7 +260,7 @@ def test_clear_repack_form(page):
 	expect(page.get_by_role("button", name="CLEAN", exact=True)).to_be_hidden()
 
 
-@pytest.mark.order(12)
+@pytest.mark.order(5)
 def test_repack_validation_single_warehouse_direction(page):
 	page.get_by_text("Repack").click()
 	page.wait_for_load_state("networkidle")

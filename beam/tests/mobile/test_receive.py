@@ -19,7 +19,7 @@ from beam.tests.test_utils import use_current_db_transaction
 # `page.expect_navigation()` won't work with Beam's hash-based routes
 
 
-@pytest.mark.order(2)
+@pytest.mark.order(1)
 def test_scan_invalid_barcode(page):
 	page.get_by_text("Receive").click()
 	# wait for list to load
@@ -82,7 +82,7 @@ def test_scan_invalid_barcode(page):
 		), f"Invalid barcode scan should not create any Purchase Receipts, but found: {new_receipts}"
 
 
-@pytest.mark.order(3)
+@pytest.mark.order(2)
 def test_receive_without_scanning(page):
 	"""Test trying to receive without scanning any items"""
 	# navigate to a Purchase Order
@@ -140,7 +140,7 @@ def test_receive_without_scanning(page):
 		), f"Expected no new receipts, but count changed from {initial_count} to {final_count}"
 
 
-@pytest.mark.order(4)
+@pytest.mark.order(3)
 def test_complete_partial_receipt(page):
 	# navigate in the following order: Home -> Receive -> Purchase Order
 	page.get_by_text("Receive").click()
@@ -224,7 +224,7 @@ def test_complete_partial_receipt(page):
 	assert receipts[0]["received_qty"] == 1
 
 
-@pytest.mark.order(5)
+@pytest.mark.order(4)
 def test_rapid_barcode_scanning(page):
 	"""Test scanning multiple barcodes quickly"""
 	# navigate to a Purchase Order

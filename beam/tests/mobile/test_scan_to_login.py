@@ -33,7 +33,7 @@ def logout(page):
 	page.wait_for_timeout(1000)
 
 
-@pytest.mark.order(7)
+@pytest.mark.order(1)
 def test_scan_to_login_success_all_users(page):
 	"""Test successful login scanning - All Users mode"""
 	with use_current_db_transaction():
@@ -64,7 +64,7 @@ def test_scan_to_login_success_all_users(page):
 	logout(page)
 
 
-@pytest.mark.order(8)
+@pytest.mark.order(2)
 def test_scan_to_login_invalid_barcode(page):
 	"""Test rejection of non-user barcode"""
 	with use_current_db_transaction():
@@ -88,7 +88,7 @@ def test_scan_to_login_invalid_barcode(page):
 	expect(page).to_have_url(frappe.utils.get_url() + "/login#login")
 
 
-@pytest.mark.order(9)
+@pytest.mark.order(3)
 def test_scan_to_login_mobile_users_only_success(page):
 	"""Test login with mobile user role restriction - success case"""
 	with use_current_db_transaction():
@@ -116,7 +116,7 @@ def test_scan_to_login_mobile_users_only_success(page):
 	logout(page)
 
 
-@pytest.mark.order(10)
+@pytest.mark.order(4)
 def test_scan_to_login_mobile_users_only_reject(page):
 	"""Test rejection when user lacks BEAM Mobile User role"""
 	with use_current_db_transaction():
@@ -139,7 +139,7 @@ def test_scan_to_login_mobile_users_only_reject(page):
 	expect(page).to_have_url(frappe.utils.get_url() + "/login#login")
 
 
-@pytest.mark.order(11)
+@pytest.mark.order(5)
 def test_scan_to_login_disabled(page):
 	"""Test login when scanning is disabled"""
 	mobile_user_barcode = get_user_barcode(MOBILE_USER_EMAIL)
@@ -162,7 +162,7 @@ def test_scan_to_login_disabled(page):
 	expect(page).to_have_url(frappe.utils.get_url() + "/login#login")
 
 
-@pytest.mark.order(12)
+@pytest.mark.order(6)
 def test_scan_to_login_ip_restriction_allowed(page):
 	"""Test IP restriction - allowed IP"""
 	with use_current_db_transaction():
@@ -193,7 +193,7 @@ def test_scan_to_login_ip_restriction_allowed(page):
 		set_beam_setting("restrict_ip", "")  # Clear IP restriction
 
 
-@pytest.mark.order(13)
+@pytest.mark.order(7)
 def test_scan_to_login_ip_restriction_blocked(page):
 	"""Test IP restriction - blocked IP"""
 	with use_current_db_transaction():
@@ -224,7 +224,7 @@ def test_scan_to_login_ip_restriction_blocked(page):
 		set_beam_setting("restrict_ip", "")
 
 
-@pytest.mark.order(14)
+@pytest.mark.order(8)
 def test_scan_to_login_disabled_user(page):
 	"""Test rejection when user account is disabled"""
 	with use_current_db_transaction():
