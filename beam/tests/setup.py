@@ -201,6 +201,7 @@ def setup_beam_settings(settings):
 	beams.enable_handling_units = True
 	beams.receiving_workstation = "Receiving"
 	beams.shipping_workstation = "Shipping"
+	beams.auto_barcode_doctypes = '["Item", "User", "Warehouse"]'
 	beams.set("warehouse_types", [{"warehouse_type": "Quarantine"}])
 	beams.set(
 		"routes",
