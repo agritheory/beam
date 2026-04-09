@@ -83,6 +83,7 @@ jobs:
       - name: Run Tests
         working-directory: /home/runner/frappe-bench
         run: |
+          set -o pipefail
           source env/bin/activate
           cd apps/beam
           poetry install
