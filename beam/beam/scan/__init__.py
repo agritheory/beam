@@ -279,9 +279,7 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 		elif has_frm_override:
 			# A beam_frm override handles this form — skip get_item_details() which would
 			# fail for forms without a standard "{doctype} Item" child table.
-			item_defaults = frappe.db.get_value(
-				"Item", barcode_doc.doc.name, ["stock_uom"], as_dict=True
-			)
+			item_defaults = frappe.db.get_value("Item", barcode_doc.doc.name, ["stock_uom"], as_dict=True)
 			target = frappe._dict(
 				{
 					"doctype": context.frm,
