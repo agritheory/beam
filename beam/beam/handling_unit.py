@@ -4,6 +4,7 @@
 
 import frappe
 from erpnext.stock.stock_ledger import NegativeStockError
+from frappe.utils import flt
 
 from beam.beam.doctype.beam_settings.beam_settings import create_beam_settings
 from beam.beam.scan import get_handling_unit
@@ -44,9 +45,16 @@ def generate_handling_units(doc, method=None):
 			in ("Material Transfer", "Send to Subcontractor", "Material Transfer for Manufacture")
 			and row.handling_unit
 		):
-			handling_unit = frappe.new_doc("Handling Unit")
-			handling_unit.save()
-			row.to_handling_unit = handling_unit.name
+			if not row.to_handling_unit:
+				handling_unit = frappe.new_doc("Handling Unit")
+				handling_unit.save()
+				row.to_handling_unit = handling_unit.name
+			elif row.to_handling_unit == row.handling_unit:
+				hu = get_handling_unit(row.handling_unit)
+				if hu and flt(hu.stock_qty) != flt(row.transfer_qty):
+					handling_unit = frappe.new_doc("Handling Unit")
+					handling_unit.save()
+					row.to_handling_unit = handling_unit.name
 			continue
 
 		if doc.doctype == "Subcontracting Receipt" and not row.handling_unit:

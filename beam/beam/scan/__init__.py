@@ -13,6 +13,30 @@ from frappe.query_builder.custom import ConstantColumn
 from frappe.query_builder.functions import Coalesce
 
 
+_INV_DIM_CACHE_KEY = "beam:inv_dim_source_fieldnames"
+
+
+def get_inv_dim_source_fieldnames() -> list[str]:
+	"""Cached list of Inventory Dimension source_fieldnames (excluding Handling Unit). Cleared
+	whenever an Inventory Dimension is updated or deleted via `clear_inv_dim_cache` hook."""
+
+	def _fetch():
+		return frappe.get_all(
+			"Inventory Dimension",
+			filters={"name": ["!=", "Handling Unit"]},
+			pluck="source_fieldname",
+		)
+
+	return frappe.cache().get_value(_INV_DIM_CACHE_KEY, generator=_fetch)
+
+
+def clear_inv_dim_cache(doc=None, method=None) -> None:
+	from beam.beam.inventory_dimension import _CARRY_FORWARD_CACHE_KEY
+
+	frappe.cache().delete_value(_INV_DIM_CACHE_KEY)
+	frappe.cache().delete_value(_CARRY_FORWARD_CACHE_KEY)
+
+
 @frappe.whitelist()
 def scan(
 	barcode: str,
@@ -93,13 +117,15 @@ def get_barcode_context(barcode: str) -> frappe._dict | None:
 	return None
 
 
-def get_handling_unit(handling_unit: str, parent_doctype: str | None = None) -> frappe._dict:
+def get_handling_unit(
+	handling_unit: str, parent_doctype: str | None = None, inv_dims: list = None
+) -> frappe._dict:
 	sl_entries = frappe.get_all(
 		"Stock Ledger Entry",
 		filters={"handling_unit": handling_unit, "is_cancelled": 0},
 		fields=[
 			"item_code",
-			"SUM(actual_qty) AS stock_qty",
+			{"SUM": "actual_qty", "as": "stock_qty"},
 			"company",
 			"handling_unit",
 			"voucher_no",
@@ -109,7 +135,8 @@ def get_handling_unit(handling_unit: str, parent_doctype: str | None = None) -> 
 			"voucher_type",
 			"voucher_detail_no",
 			"warehouse",
-		],
+		]
+		+ (inv_dims if inv_dims else []),
 		group_by="handling_unit",
 		order_by="posting_date DESC",
 		limit=1,
@@ -166,7 +193,7 @@ def get_stock_entry_item_details(doc: dict, item_code: str) -> frappe._dict:
 	if not stock_entry.stock_entry_type:
 		stock_entry.purpose = "Material Transfer"
 		stock_entry.set_stock_entry_type()
-	target = stock_entry.get_item_details({"item_code": item_code})
+	target = stock_entry.get_item_details(frappe._dict(item_code=item_code))
 	target.item_code = item_code
 	target.qty = 1  # only required for first scan, since quantity by default is zero
 	return target
@@ -225,7 +252,8 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 	)
 
 	if barcode_doc.doc.doctype == "Handling Unit":
-		hu_details = get_handling_unit(barcode_doc.doc.name, context.frm)
+		inv_dims = get_inv_dim_source_fieldnames()
+		hu_details = get_handling_unit(barcode_doc.doc.name, context.frm, inv_dims)
 		if context.frm == "Stock Entry":
 			target = get_stock_entry_item_details(context.doc, hu_details.item_code)
 			target.warehouse = hu_details.warehouse
@@ -265,6 +293,7 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 				"posting_datetime": hu_details.posting_datetime,
 				"dn_detail": hu_details.dn_detail,
 			}
+			| {i: hu_details[i] for i in inv_dims}
 		)
 	elif barcode_doc.doc.doctype == "Item":
 		if context.frm == "Stock Entry":

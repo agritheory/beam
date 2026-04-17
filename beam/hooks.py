@@ -127,6 +127,10 @@ override_doctype_class = {
 # Hook on document methods and events
 
 doc_events = {
+	"Inventory Dimension": {
+		"on_update": "beam.beam.scan.clear_inv_dim_cache",
+		"on_trash": "beam.beam.scan.clear_inv_dim_cache",
+	},
 	"Item": {
 		"validate": [
 			"beam.beam.barcodes.create_beam_barcode",
@@ -155,6 +159,7 @@ doc_events = {
 			# "beam.beam.handling_unit.validate_handling_unit_overconsumption",
 		],
 		"before_submit": [
+			"beam.beam.inventory_dimension.propagate_inventory_dimensions",
 			"beam.beam.handling_unit.generate_handling_units",
 			"beam.beam.overrides.stock_entry.validate_items_with_handling_unit",
 		],
