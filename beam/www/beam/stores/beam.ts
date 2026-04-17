@@ -35,6 +35,9 @@ const PURCHASE_DEMAND_URL = '/api/method/beam.beam.demand.receiving.get_receivin
 const SALES_DEMAND_URL = '/api/method/beam.beam.demand.demand.get_demand'
 const SCAN_CONFIG_URL = '/api/method/beam.beam.scan.config.get_scan_doctypes'
 const SCAN_URL = 'beam.beam.scan.scan' // frappe.xcall doesn't require prefix
+const START_JOB_CARD_URL = 'beam.beam.api.job_card.start_job_card'
+const PAUSE_JOB_CARD_URL = 'beam.beam.api.job_card.pause_job_card'
+const FINISH_JOB_CARD_URL = 'beam.beam.api.job_card.finish_job_card'
 
 export const useBeamStore = defineStore('beam', () => {
 	const toast = useBeamToast()
@@ -124,8 +127,10 @@ export const useBeamStore = defineStore('beam', () => {
 
 	const getOne = async <T>(doctype: string, name: string) => {
 		const url = `/api/resource/${doctype}/${name}`
+		console.log('url', url)
 		const response = await httpStore.get(url)
 		const { data }: { data: T } = await response.json()
+		console.log({data})
 		return data
 	}
 
@@ -182,6 +187,46 @@ export const useBeamStore = defineStore('beam', () => {
 		}
 
 		return []
+	}
+
+	const startJobCard = async (jobCardId: string) => {
+		try {
+			const response = await frappe.xcall(START_JOB_CARD_URL, {
+				job_card_id: jobCardId,
+			})
+			toast.success('Job started')
+			return response
+		} catch (error) {
+			console.error(error)
+			throw error
+		}
+	}
+
+	const pauseJobCard = async (jobCardId: string) => {
+		try {
+			const response = await frappe.xcall(PAUSE_JOB_CARD_URL, {
+				job_card_id: jobCardId,
+			})
+			toast.success('Job paused')
+			return response
+		} catch (error) {
+			console.error(error)
+			throw error
+		}
+	}
+
+	const finishJobCard = async (jobCardId: string, completedQty: number) => {
+		try {
+			const response = await frappe.xcall(FINISH_JOB_CARD_URL, {
+				job_card_id: jobCardId,
+				completed_qty: completedQty,
+			})
+			toast.success('Job finished')
+			return response
+		} catch (error) {
+			console.error(error)
+			throw error
+		}
 	}
 
 	const insert = async <T extends Record<string, any>>(doctype: string, body: T) => {
@@ -327,6 +372,9 @@ export const useBeamStore = defineStore('beam', () => {
 		getOne,
 		getReceiving,
 		getStockEntryItems,
+		startJobCard,
+		pauseJobCard,
+		finishJobCard,
 		logout,
 		makeNewDoc,
 		scan,
