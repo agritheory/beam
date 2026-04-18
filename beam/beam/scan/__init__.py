@@ -118,7 +118,7 @@ def get_barcode_context(barcode: str) -> frappe._dict | None:
 
 
 def get_handling_unit(
-	handling_unit: str, parent_doctype: str | None = None, inv_dims: list = None
+	handling_unit: str, parent_doctype: str | None = None, inv_dims: list | None = None
 ) -> frappe._dict:
 	sl_entries = frappe.get_all(
 		"Stock Ledger Entry",
