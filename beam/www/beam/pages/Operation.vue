@@ -23,7 +23,11 @@
 			</p>
 			<p v-if="actionError" class="action-error">{{ actionError }}</p>
 			<div class="actions">
-				<button :disabled="actionsDisabled || isCompleted || Boolean(sequenceBlockedBy) || hasActiveConflict || !canToggle" @click="toggleOperation">{{ toggleLabel }}</button>
+				<button
+					:disabled="actionsDisabled || isCompleted || Boolean(sequenceBlockedBy) || hasActiveConflict || !canToggle"
+					@click="toggleOperation">
+					{{ toggleLabel }}
+				</button>
 				<button :disabled="actionsDisabled || !isQtyCompleted" @click="finishOperation">Finish</button>
 			</div>
 		</div>
@@ -108,13 +112,14 @@ const isQtyCompleted = computed((): boolean => {
 	return completed >= required && required > 0
 })
 
-const actionsDisabled = computed((): boolean => isBusy.value || hasLoadError.value || !jobCardName.value || isSubmitted.value)
+const actionsDisabled = computed(
+	(): boolean => isBusy.value || hasLoadError.value || !jobCardName.value || isSubmitted.value
+)
 const toggleLabel = computed((): string => (isRunning.value ? 'Pause' : 'Start'))
 const canToggle = computed((): boolean => !isQtyCompleted.value)
-const remainingQty = computed((): number => Math.max(
-	0,
-	Number(jobCard.value.for_quantity || 0) - Number(jobCard.value.total_completed_qty || 0),
-))
+const remainingQty = computed((): number =>
+	Math.max(0, Number(jobCard.value.for_quantity || 0) - Number(jobCard.value.total_completed_qty || 0))
+)
 
 const startTicking = (): void => {
 	if (timerHandle) return
@@ -155,11 +160,11 @@ const applyJobCard = (card: Partial<JobCard> | null | undefined): void => {
 		elapsedSeconds.value = Math.max(0, Math.floor(totalMins * 60))
 		startTicking()
 	} else {
-		const totalMins = (jobCard.value.time_logs || [])
-		.reduce((sum: number, log: TimeLog) => sum + (log.time_in_mins || 0), 0)
-		elapsedSeconds.value = hasActiveConflict.value
-			? 0
-			: Math.max(0, Math.floor(totalMins * 60))
+		const totalMins = (jobCard.value.time_logs || []).reduce(
+			(sum: number, log: TimeLog) => sum + (log.time_in_mins || 0),
+			0
+		)
+		elapsedSeconds.value = hasActiveConflict.value ? 0 : Math.max(0, Math.floor(totalMins * 60))
 		stopTicking()
 	}
 }
@@ -249,7 +254,8 @@ const syncFromBackendOnReturn = async (): Promise<void> => {
 }
 
 onMounted(async (): Promise<void> => {
-	operation.value = workOrder.value.operations?.find((op: Partial<WorkOrderOperation>) => op.name === operationId.value) || {}
+	operation.value =
+		workOrder.value.operations?.find((op: Partial<WorkOrderOperation>) => op.name === operationId.value) || {}
 	await refreshJobCard()
 	document.addEventListener('visibilitychange', syncFromBackendOnReturn)
 	window.addEventListener('focus', syncFromBackendOnReturn)
@@ -273,7 +279,7 @@ const toggleOperation = async (): Promise<void> => {
 		if (isRunning.value) {
 			const remainingQty: number = Math.max(
 				0,
-				Number(jobCard.value.for_quantity || 0) - Number(jobCard.value.total_completed_qty || 0),
+				Number(jobCard.value.for_quantity || 0) - Number(jobCard.value.total_completed_qty || 0)
 			)
 			const defaultQty: string = String(remainingQty)
 			const input: string | null = window.prompt('Completed quantity in this session', defaultQty)

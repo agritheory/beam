@@ -17,7 +17,7 @@ def open_first_operation_from_manufacture(page) -> tuple[str, str]:
 	"""Navigate Home -> Manufacture -> Work Order -> first Operation.
 
 	Returns:
-		tuple[str, str]: work_order_id, operation_id
+	        tuple[str, str]: work_order_id, operation_id
 	"""
 	page.get_by_text("Manufacture").click()
 	expect(page).to_have_url(re.compile(r"#/manufacture"), timeout=15000)
@@ -36,7 +36,7 @@ def open_first_operation_from_manufacture(page) -> tuple[str, str]:
 
 
 def hms_to_seconds(value: str) -> int:
-	hours, minutes, seconds = [int(part) for part in value.split(":")]
+	hours, minutes, seconds = (int(part) for part in value.split(":"))
 	return (hours * 3600) + (minutes * 60) + seconds
 
 
@@ -66,7 +66,9 @@ def test_operation_description_is_displayed(page):
 		expect(description_box).to_contain_text(operation.description)
 	else:
 		# Some fixtures may not set description text; ensure the description area still renders.
-		expect(page).to_have_url(re.compile(rf"#/work_order/{re.escape(work_order_id)}/operation/{re.escape(operation_id)}"))
+		expect(page).to_have_url(
+			re.compile(rf"#/work_order/{re.escape(work_order_id)}/operation/{re.escape(operation_id)}")
+		)
 
 
 @pytest.mark.order(15)
