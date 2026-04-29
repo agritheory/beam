@@ -13,6 +13,7 @@ import type {
 	DeliveryNoteItem,
 	Demand,
 	FormContext,
+	JobCard,
 	FrappeResponse,
 	ListContext,
 	ParentDoctypes,
@@ -35,9 +36,7 @@ const PURCHASE_DEMAND_URL = '/api/method/beam.beam.demand.receiving.get_receivin
 const SALES_DEMAND_URL = '/api/method/beam.beam.demand.demand.get_demand'
 const SCAN_CONFIG_URL = '/api/method/beam.beam.scan.config.get_scan_doctypes'
 const SCAN_URL = 'beam.beam.scan.scan' // frappe.xcall doesn't require prefix
-const START_JOB_CARD_URL = 'beam.beam.api.job_card.start_job_card'
-const PAUSE_JOB_CARD_URL = 'beam.beam.api.job_card.pause_job_card'
-const FINISH_JOB_CARD_URL = 'beam.beam.api.job_card.finish_job_card'
+const JOB_CARD_TIME_LOG_URL = 'erpnext.manufacturing.doctype.job_card.job_card.make_time_log'
 
 export const useBeamStore = defineStore('beam', () => {
 	const toast = useBeamToast()
@@ -47,6 +46,7 @@ export const useBeamStore = defineStore('beam', () => {
 	const cache = ref<BeamCache>({ mappers: {} })
 	const form = ref<Partial<ParentDoctypes>>({})
 	const warehouseList = ref()
+	const currentEmployee = ref<string | null>(null)
 	const scanner = reactive({
 		config: {} as ScanConfig,
 		context: {} as ScanContext,
@@ -125,12 +125,31 @@ export const useBeamStore = defineStore('beam', () => {
 		})
 	}
 
+	const setCurrentEmployee = async () => {
+		try {
+			if (currentEmployee.value) return
+			const currentUser = frappe?.session?.user
+			const employees = await getAll<{ name: string }>('Employee', {
+				filters: JSON.stringify([
+					['user_id', '=', currentUser],
+					['status', '=', 'Active'],
+				]),
+				fields: JSON.stringify(['name']),
+				limit_page_length: 1,
+			})
+
+			const employee = employees?.[0]?.name
+			currentEmployee.value = employee
+		} catch (error) {
+			console.error('Failed to resolve current employee:', error)
+			throw error
+		}
+	}
+
 	const getOne = async <T>(doctype: string, name: string) => {
 		const url = `/api/resource/${doctype}/${name}`
-		console.log('url', url)
 		const response = await httpStore.get(url)
 		const { data }: { data: T } = await response.json()
-		console.log({data})
 		return data
 	}
 
@@ -189,11 +208,30 @@ export const useBeamStore = defineStore('beam', () => {
 		return []
 	}
 
+	const getJobCard = async (jobCardId: string): Promise<JobCard> => {
+		try {
+			return await getOne<JobCard>('Job Card', jobCardId)
+		} catch (error) {
+			console.error(error)
+			throw error
+		}
+	}
+
 	const startJobCard = async (jobCardId: string) => {
 		try {
-			const response = await frappe.xcall(START_JOB_CARD_URL, {
-				job_card_id: jobCardId,
+			if (!currentEmployee.value) {
+				throw new Error('No current employee in session')
+			}
+
+			await frappe.xcall(JOB_CARD_TIME_LOG_URL, {
+				args: {
+					job_card_id: jobCardId,
+					start_time: frappe.datetime.now_datetime(),
+					status: 'Work In Progress',
+					employees: [{ employee: currentEmployee.value }],
+				},
 			})
+			const response = await getOne<JobCard>('Job Card', jobCardId)
 			toast.success('Job started')
 			return response
 		} catch (error) {
@@ -202,11 +240,26 @@ export const useBeamStore = defineStore('beam', () => {
 		}
 	}
 
-	const pauseJobCard = async (jobCardId: string) => {
+	const pauseJobCard = async (jobCardId: string, completedQty?: number) => {
 		try {
-			const response = await frappe.xcall(PAUSE_JOB_CARD_URL, {
-				job_card_id: jobCardId,
+			await frappe.xcall(JOB_CARD_TIME_LOG_URL, {
+				args: {
+					job_card_id: jobCardId,
+					complete_time: frappe.datetime.now_datetime(),
+					status: 'On Hold',
+					completed_qty: completedQty || 0,
+				},
 			})
+
+			let response = await getOne<JobCard>('Job Card', jobCardId)
+
+			if (completedQty !== undefined && completedQty > 0) {
+				await update<JobCard>('Job Card', jobCardId, {
+					total_completed_qty: completedQty,
+				})
+				response = await getOne<JobCard>('Job Card', jobCardId)
+			}
+
 			toast.success('Job paused')
 			return response
 		} catch (error) {
@@ -217,10 +270,23 @@ export const useBeamStore = defineStore('beam', () => {
 
 	const finishJobCard = async (jobCardId: string, completedQty: number) => {
 		try {
-			const response = await frappe.xcall(FINISH_JOB_CARD_URL, {
-				job_card_id: jobCardId,
-				completed_qty: completedQty,
+			await frappe.xcall(JOB_CARD_TIME_LOG_URL, {
+				args: {
+					job_card_id: jobCardId,
+					complete_time: frappe.datetime.now_datetime(),
+					status: 'Complete',
+					completed_qty: completedQty,
+				},
 			})
+
+			let response = await getOne<JobCard>('Job Card', jobCardId)
+			if (response?.docstatus === 0) {
+				const submitted = await submit<JobCard>('Job Card', jobCardId)
+				if (submitted.data) {
+					response = submitted.data
+				}
+			}
+
 			toast.success('Job finished')
 			return response
 		} catch (error) {
@@ -350,12 +416,14 @@ export const useBeamStore = defineStore('beam', () => {
 		form,
 		scanner,
 		warehouseList,
+		currentEmployee,
 		// store context actions
 		getScanDoctypes,
 		setForm,
 		setMappedDoc,
 		setScanContext,
 		setWarehouses,
+		setCurrentEmployee,
 
 		// document workflow actions
 		cancel,
@@ -372,6 +440,7 @@ export const useBeamStore = defineStore('beam', () => {
 		getOne,
 		getReceiving,
 		getStockEntryItems,
+		getJobCard,
 		startJobCard,
 		pauseJobCard,
 		finishJobCard,
