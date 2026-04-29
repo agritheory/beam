@@ -867,4 +867,21 @@ employees = [
 		# "department": "Operations",
 		"designation": "Baker",
 	},
+	{
+		"name": "Jordan Mills",
+		"gender": "Male",
+		"date_of_birth": "1996-04-15",
+		"date_of_joining": "2024-09-01",
+		"address": {
+			"address_line1": "440 Orchard Lane",
+			"city": "Nashua",
+			"state": "NH",
+			"postal_code": "03060",
+		},
+		"phone": "(603) 555-0134",
+		"roles": ["BEAM Mobile User", "Employee", "Manufacturing User"],
+		"reports_to": "Tristan Hawkins",
+		# "department": "Operations",
+		"designation": "Baker",
+	},
 ]
