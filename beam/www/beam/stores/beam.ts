@@ -219,17 +219,17 @@ export const useBeamStore = defineStore('beam', () => {
 
 	const startJobCard = async (jobCardId: string) => {
 		try {
-			if (!currentEmployee.value) {
-				throw new Error('No current employee in session')
+			const args: Record<string, any> = {
+				job_card_id: jobCardId,
+				start_time: frappe.datetime.now_datetime(),
+				status: 'Work In Progress',
+			}
+			if (currentEmployee.value) {
+				args.employees = [{ employee: currentEmployee.value }]
 			}
 
 			await frappe.xcall(JOB_CARD_TIME_LOG_URL, {
-				args: {
-					job_card_id: jobCardId,
-					start_time: frappe.datetime.now_datetime(),
-					status: 'Work In Progress',
-					employees: [{ employee: currentEmployee.value }],
-				},
+				args,
 			})
 			const response = await getOne<JobCard>('Job Card', jobCardId)
 			toast.success('Job started')
