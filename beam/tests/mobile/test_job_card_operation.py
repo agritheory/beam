@@ -37,7 +37,7 @@ def open_first_operation_id_from_manufacture(page) -> str:
 	"""Navigate Home -> Manufacture -> Work Order -> first Operation.
 
 	Returns:
-		str: operation_id
+	        str: operation_id
 	"""
 	page.get_by_text("Manufacture").click()
 	expect(page).to_have_url(re.compile(r"#/manufacture"), timeout=1000)
@@ -112,7 +112,9 @@ def test_start_operation_starts_timer_and_toggles_buttons(page):
 			as_dict=True,
 		)
 
-	assert job_card and job_card.get("name"), f"Expected a Job Card linked to operation {operation_id}"
+	assert job_card and job_card.get(
+		"name"
+	), f"Expected a Job Card linked to operation {operation_id}"
 
 	# Determine expected initial label from Job Card status and latest time log
 	expected_label = "Start"
@@ -217,7 +219,9 @@ def test_stop_operation_stops_timer_and_records_time_log(page):
 
 	start_sec = hms_to_seconds(timer_after_start)
 	stop_sec = hms_to_seconds(timer_after_stop)
-	assert stop_sec >= start_sec - 1, f"Timer decreased unexpectedly: {timer_after_start} -> {timer_after_stop}"
+	assert (
+		stop_sec >= start_sec - 1
+	), f"Timer decreased unexpectedly: {timer_after_start} -> {timer_after_stop}"
 
 	with use_current_db_transaction():
 		final_logs = frappe.get_all(
@@ -228,4 +232,6 @@ def test_stop_operation_stops_timer_and_records_time_log(page):
 
 	final_closed_logs = len([log for log in final_logs if log.to_time])
 	assert final_closed_logs >= initial_closed_logs + 1
-	assert any(log.to_time for log in final_logs), "Expected the stopped job card to have a closed time log"
+	assert any(
+		log.to_time for log in final_logs
+	), "Expected the stopped job card to have a closed time log"
