@@ -50,7 +50,9 @@ def test_complete_partial_stock_entry(page):
 
 	# navigate in the following order: Home -> Manufacture -> Work Order
 	page.get_by_text("Manufacture").click()
-	page.locator("css=.beam_list-item").first.click()
+	work_order_item = page.locator("css=.beam_list-item").first
+	expect(work_order_item).to_be_visible(timeout=15000)
+	work_order_item.click()
 
 	# get the selected Work Order
 	order_id = page.url.split("/")[-1]
@@ -65,9 +67,10 @@ def test_complete_partial_stock_entry(page):
 
 	# find the first item in the list
 	item = page.locator("css=.box .beam_list-item").first
+	expect(item).to_be_visible(timeout=15000)
 	item_code, *others = item.inner_text().split("\n")
 	item_count = page.locator("css=.box .beam_item-count").first
-	expect(item_count).to_have_text(re.compile("0/"))
+	expect(item_count).to_have_text(re.compile("0/"), timeout=15000)
 
 	assert item_code == "Butter"
 
@@ -82,7 +85,7 @@ def test_complete_partial_stock_entry(page):
 		lambda request: request.headers.get("x-frappe-cmd") == "beam.beam.scan.scan"
 	):
 		page.evaluate("barcode => scanner.simulate(window, barcode)", barcodes[0])
-		expect(item_count).to_have_text(re.compile("1/"))
+		expect(item_count).to_have_text(re.compile("1/"), timeout=15000)
 
 	# check that a draft Stock Entry is created
 	page.get_by_text("SAVE", exact=True).click()

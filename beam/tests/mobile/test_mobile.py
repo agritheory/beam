@@ -21,13 +21,16 @@ from playwright.sync_api import expect
 def test_scan_item_barcode(page, route):
 	# navigate in the following order: Home -> List -> Form
 	page.get_by_text(route).click()
-	page.locator("css=.beam_list-item").first.click()
+	list_item = page.locator("css=.beam_list-item").first
+	expect(list_item).to_be_visible(timeout=15000)
+	list_item.click()
 
 	# find the first item in the list
 	item = page.locator("css=.box .beam_list-item").first
+	expect(item).to_be_visible(timeout=15000)
 	item_name, *others = item.inner_text().split("\n")
 	item_count = page.locator("css=.box .beam_item-count").first
-	expect(item_count).to_have_text(re.compile("0/"))
+	expect(item_count).to_have_text(re.compile("0/"), timeout=15000)
 
 	# ensure that the item has barcodes
 	barcodes = frappe.get_all(
@@ -40,4 +43,4 @@ def test_scan_item_barcode(page, route):
 		lambda request: request.headers.get("x-frappe-cmd") == "beam.beam.scan.scan"
 	):
 		page.evaluate("barcode => scanner.simulate(window, barcode)", barcodes[0])
-		expect(item_count).to_have_text(re.compile("1/"))
+		expect(item_count).to_have_text(re.compile("1/"), timeout=15000)

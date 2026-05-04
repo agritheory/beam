@@ -22,7 +22,9 @@ from beam.tests.test_utils import use_current_db_transaction
 @pytest.mark.order(2)
 def test_scan_invalid_barcode(page):
 	page.get_by_text("Receive").click()
-	page.locator("css=.beam_list-item").first.click()
+	receive_item = page.locator("css=.beam_list-item").first
+	expect(receive_item).to_be_visible(timeout=15000)
+	receive_item.click()
 
 	# get the selected Purchase Order
 	parsed_url = urlparse(page.url.replace("#", ""))
@@ -32,6 +34,7 @@ def test_scan_invalid_barcode(page):
 
 	# find all items in the list
 	all_item_counts = page.locator("css=.box .beam_item-count")
+	expect(all_item_counts.first).to_be_visible(timeout=15000)
 
 	# get all item counts before scanning invalid barcode
 	initial_counts = []
@@ -83,7 +86,9 @@ def test_receive_without_scanning(page):
 	"""Test trying to receive without scanning any items"""
 	# navigate to a Purchase Order
 	page.get_by_text("Receive").click()
-	page.locator("css=.beam_list-item").first.click()
+	po_item = page.locator("css=.beam_list-item").first
+	expect(po_item).to_be_visible(timeout=15000)
+	po_item.click()
 
 	# get the selected Purchase Order
 	parsed_url = urlparse(page.url.replace("#", ""))
@@ -92,6 +97,7 @@ def test_receive_without_scanning(page):
 	assert order_id
 
 	item = page.locator("css=.box .beam_list-item").first
+	expect(item).to_be_visible(timeout=15000)
 	item_code, *others = item.inner_text().split("\n")
 
 	# find all items in the list
@@ -136,7 +142,9 @@ def test_receive_without_scanning(page):
 def test_complete_partial_receipt(page):
 	# navigate in the following order: Home -> Receive -> Purchase Order
 	page.get_by_text("Receive").click()
-	page.locator("css=.beam_list-item").first.click()
+	po_item = page.locator("css=.beam_list-item").first
+	expect(po_item).to_be_visible(timeout=15000)
+	po_item.click()
 
 	# get the selected Purchase Order
 	# NOTE: URL format changed: the id lives in the path after the hash (e.g. #/purchase-receipt/PUR-ORD-...)
@@ -150,9 +158,10 @@ def test_complete_partial_receipt(page):
 
 	# find the first item in the list
 	item = page.locator("css=.box .beam_list-item").first
+	expect(item).to_be_visible(timeout=15000)
 	item_code, *others = item.inner_text().split("\n")
 	item_count = page.locator("css=.box .beam_item-count").first
-	expect(item_count).to_have_text(re.compile("0/"))
+	expect(item_count).to_have_text(re.compile("0/"), timeout=15000)
 
 	assert item_code == "Cloudberry"
 
@@ -218,7 +227,9 @@ def test_rapid_barcode_scanning(page):
 	"""Test scanning multiple barcodes quickly"""
 	# navigate to a Purchase Order
 	page.get_by_text("Receive").click()
-	page.locator("css=.beam_list-item").first.click()
+	po_item = page.locator("css=.beam_list-item").first
+	expect(po_item).to_be_visible(timeout=15000)
+	po_item.click()
 
 	# get the selected Purchase Order
 	parsed_url = urlparse(page.url.replace("#", ""))
@@ -228,9 +239,10 @@ def test_rapid_barcode_scanning(page):
 
 	# find the first item in the list
 	item = page.locator("css=.box .beam_list-item").first
+	expect(item).to_be_visible(timeout=15000)
 	item_code, *others = item.inner_text().split("\n")
 	item_count = page.locator("css=.box .beam_item-count").first
-	expect(item_count).to_have_text(re.compile("0/"))
+	expect(item_count).to_have_text(re.compile("0/"), timeout=15000)
 
 	# get barcode for the item
 	with use_current_db_transaction():
