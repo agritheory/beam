@@ -17,7 +17,9 @@
 				<p class="operation-station">{{ operation.workstation || 'Workstation not set' }}</p>
 				<p class="operation-description">{{ operation.description || 'No operation description.' }}</p>
 			</div>
-			<p v-if="sequenceBlockedBy" class="sequence-warning">Complete {{ sequenceBlockedBy }} before finishing.</p>
+			<p v-if="sequenceBlockedBy" class="sequence-warning">
+				Complete more of {{ sequenceBlockedBy }} before continuing.
+			</p>
 		</div>
 		<div class="box timer-box">
 			<b class="timer-value">{{ elapsedTime }}</b>
@@ -106,10 +108,13 @@ const sequenceBlockedBy = computed((): string => {
 	const current = operations.find((op: Partial<WorkOrderOperation>) => op.name === operationId.value)
 	if (!current || !current.idx) return ''
 
-	const totalQty: number = workOrder.value.qty || 0
 	const previous = operations
 		.filter((op: Partial<WorkOrderOperation>) => Number(op.idx || 0) < Number(current.idx || 0))
-		.find((op: Partial<WorkOrderOperation>) => (op.completed_qty || 0) < totalQty)
+		.find(
+			(op: Partial<WorkOrderOperation>) =>
+				Number(op.completed_qty || 0) <=
+				Math.max(Number(current.completed_qty || 0), Number(jobCard.value.total_completed_qty || 0))
+		)
 
 	return previous?.operation || ''
 })
@@ -139,6 +144,25 @@ const canToggle = computed((): boolean => !isQtyCompleted.value)
 const remainingQty = computed((): number =>
 	Math.max(0, Number(jobCard.value.for_quantity || 0) - Number(jobCard.value.total_completed_qty || 0))
 )
+const availableQty = computed((): number => {
+	const operations: Partial<WorkOrderOperation>[] = workOrder.value.operations || []
+	const current = operations.find((op: Partial<WorkOrderOperation>) => op.name === operationId.value)
+	if (!current || !current.idx) return remainingQty.value
+
+	const currentCompleted = Math.max(
+		Number(current.completed_qty || 0),
+		Number(jobCard.value.total_completed_qty || 0)
+	)
+	const previousOperations = operations.filter(
+		(op: Partial<WorkOrderOperation>) => Number(op.idx || 0) < Number(current.idx || 0)
+	)
+	if (!previousOperations.length) return remainingQty.value
+
+	const previousCompletedQty = Math.min(
+		...previousOperations.map((op: Partial<WorkOrderOperation>) => Number(op.completed_qty || 0))
+	)
+	return Math.max(0, Math.min(remainingQty.value, previousCompletedQty - currentCompleted))
+})
 
 const startTicking = (): void => {
 	if (timerHandle) return
@@ -292,10 +316,7 @@ const toggleOperation = async (): Promise<void> => {
 	actionError.value = ''
 
 	if (isRunning.value) {
-		pendingQty.value = Math.max(
-			0,
-			Number(jobCard.value.for_quantity || 0) - Number(jobCard.value.total_completed_qty || 0)
-		)
+		pendingQty.value = availableQty.value
 		showQtyInput.value = true
 		return
 	}
@@ -319,6 +340,11 @@ const confirmPause = async (): Promise<void> => {
 	if (!Number.isFinite(pendingQty.value) || pendingQty.value < 0) {
 		actionError.value = 'Invalid quantity'
 		toast.error('Invalid quantity')
+		return
+	}
+	if (pendingQty.value > availableQty.value) {
+		actionError.value = `Quantity cannot exceed ${availableQty.value}`
+		toast.error(actionError.value)
 		return
 	}
 
