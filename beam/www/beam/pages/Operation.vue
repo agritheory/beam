@@ -28,9 +28,7 @@
 			<p v-if="hasActiveConflict" class="sequence-warning">
 				You already have an active job: {{ activeJobCardForEmployee }}
 			</p>
-			<p v-if="lockedByEmployee" class="sequence-warning">
-				In progress by: {{ lockedByEmployee }}
-			</p>
+			<p v-if="lockedByEmployee" class="sequence-warning">In progress by: {{ lockedByEmployee }}</p>
 			<p v-if="actionError" class="action-error">{{ actionError }}</p>
 			<div v-if="showQtyInput" class="qty-input-row">
 				<ANumericInput label="Qty completed this session" v-model="pendingQty" />
@@ -41,7 +39,14 @@
 			</div>
 			<div v-else class="actions">
 				<button
-					:disabled="actionsDisabled || isCompleted || Boolean(sequenceBlockedBy) || hasActiveConflict || Boolean(lockedByEmployee) || !canToggle"
+					:disabled="
+						actionsDisabled ||
+						isCompleted ||
+						Boolean(sequenceBlockedBy) ||
+						hasActiveConflict ||
+						Boolean(lockedByEmployee) ||
+						!canToggle
+					"
 					@click="toggleOperation">
 					{{ toggleLabel }}
 				</button>
@@ -149,10 +154,7 @@ const availableQty = computed((): number => {
 	const current = operations.find((op: Partial<WorkOrderOperation>) => op.name === operationId.value)
 	if (!current || !current.idx) return remainingQty.value
 
-	const currentCompleted = Math.max(
-		Number(current.completed_qty || 0),
-		Number(jobCard.value.total_completed_qty || 0)
-	)
+	const currentCompleted = Math.max(Number(current.completed_qty || 0), Number(jobCard.value.total_completed_qty || 0))
 	const previousOperations = operations.filter(
 		(op: Partial<WorkOrderOperation>) => Number(op.idx || 0) < Number(current.idx || 0)
 	)
