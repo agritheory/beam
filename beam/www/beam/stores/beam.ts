@@ -36,7 +36,10 @@ const PURCHASE_DEMAND_URL = '/api/method/beam.beam.demand.receiving.get_receivin
 const SALES_DEMAND_URL = '/api/method/beam.beam.demand.demand.get_demand'
 const SCAN_CONFIG_URL = '/api/method/beam.beam.scan.config.get_scan_doctypes'
 const SCAN_URL = 'beam.beam.scan.scan' // frappe.xcall doesn't require prefix
-const JOB_CARD_TIME_LOG_URL = 'erpnext.manufacturing.doctype.job_card.job_card.make_time_log'
+const JOB_CARD_URL = '/api/method/beam.beam.manufacturing.get_job_card'
+const JOB_CARD_START_URL = '/api/method/beam.beam.manufacturing.start_job_card'
+const JOB_CARD_PAUSE_URL = '/api/method/beam.beam.manufacturing.pause_job_card'
+const JOB_CARD_FINISH_URL = '/api/method/beam.beam.manufacturing.finish_job_card'
 
 export const useBeamStore = defineStore('beam', () => {
 	const toast = useBeamToast()
@@ -209,90 +212,52 @@ export const useBeamStore = defineStore('beam', () => {
 	}
 
 	const getJobCard = async (jobCardId: string): Promise<JobCard> => {
-		try {
-			return await getOne<JobCard>('Job Card', jobCardId)
-		} catch (error) {
-			console.error(error)
-			throw error
+		const response = await httpStore.get(JOB_CARD_URL, { job_card_id: jobCardId })
+		if (!response.ok) {
+			await handleErrors(response)
+			throw new Error('Failed to fetch job card')
 		}
+		const { message }: { message: JobCard } = await response.json()
+		return message
 	}
 
-	const startJobCard = async (jobCardId: string) => {
-		try {
-			const args: Record<string, any> = {
-				job_card_id: jobCardId,
-				start_time: frappe.datetime.now_datetime(),
-				status: 'Work In Progress',
-			}
-			if (currentEmployee.value) {
-				args.employees = [{ employee: currentEmployee.value }]
-			}
-
-			await frappe.xcall(JOB_CARD_TIME_LOG_URL, {
-				args,
-			})
-			const response = await getOne<JobCard>('Job Card', jobCardId)
-			toast.success('Job started')
-			return response
-		} catch (error) {
-			console.error(error)
-			throw error
+	const startJobCard = async (jobCardId: string): Promise<JobCard> => {
+		const response = await httpStore.post(JOB_CARD_START_URL, { job_card_id: jobCardId })
+		if (!response.ok) {
+			await handleErrors(response)
+			throw new Error('Failed to start job card')
 		}
+		const { message }: { message: JobCard } = await response.json()
+		toast.success('Job started')
+		return message
 	}
 
-	const pauseJobCard = async (jobCardId: string, completedQty?: number) => {
-		try {
-			await frappe.xcall(JOB_CARD_TIME_LOG_URL, {
-				args: {
-					job_card_id: jobCardId,
-					complete_time: frappe.datetime.now_datetime(),
-					status: 'On Hold',
-					completed_qty: completedQty || 0,
-				},
-			})
-
-			let response = await getOne<JobCard>('Job Card', jobCardId)
-
-			if (completedQty !== undefined && completedQty > 0) {
-				await update<JobCard>('Job Card', jobCardId, {
-					total_completed_qty: completedQty,
-				})
-				response = await getOne<JobCard>('Job Card', jobCardId)
-			}
-
-			toast.success('Job paused')
-			return response
-		} catch (error) {
-			console.error(error)
-			throw error
+	const pauseJobCard = async (jobCardId: string, completedQty: number = 0): Promise<JobCard> => {
+		const response = await httpStore.post(JOB_CARD_PAUSE_URL, {
+			job_card_id: jobCardId,
+			completed_qty: completedQty,
+		})
+		if (!response.ok) {
+			await handleErrors(response)
+			throw new Error('Failed to pause job card')
 		}
+		const { message }: { message: JobCard } = await response.json()
+		toast.success('Job paused')
+		return message
 	}
 
-	const finishJobCard = async (jobCardId: string, completedQty: number) => {
-		try {
-			await frappe.xcall(JOB_CARD_TIME_LOG_URL, {
-				args: {
-					job_card_id: jobCardId,
-					complete_time: frappe.datetime.now_datetime(),
-					status: 'Complete',
-					completed_qty: completedQty,
-				},
-			})
-
-			let response = await getOne<JobCard>('Job Card', jobCardId)
-			if (response?.docstatus === 0) {
-				const submitted = await submit<JobCard>('Job Card', jobCardId)
-				if (submitted.data) {
-					response = submitted.data
-				}
-			}
-
-			toast.success('Job finished')
-			return response
-		} catch (error) {
-			console.error(error)
-			throw error
+	const finishJobCard = async (jobCardId: string, completedQty: number): Promise<JobCard> => {
+		const response = await httpStore.post(JOB_CARD_FINISH_URL, {
+			job_card_id: jobCardId,
+			completed_qty: completedQty,
+		})
+		if (!response.ok) {
+			await handleErrors(response)
+			throw new Error('Failed to finish job card')
 		}
+		const { message }: { message: JobCard } = await response.json()
+		toast.success('Job finished')
+		return message
 	}
 
 	const insert = async <T extends Record<string, any>>(doctype: string, body: T) => {
