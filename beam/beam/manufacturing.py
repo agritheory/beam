@@ -98,13 +98,18 @@ def start_job_card(job_card_id: str) -> dict:
 	_check_manufacturing_permission()
 
 	current_employee = _get_current_employee()
+	if not current_employee:
+		frappe.throw(
+			frappe._("No active Employee is linked to the current user."),
+			frappe.PermissionError,
+		)
+
 	args = frappe._dict(
 		job_card_id=job_card_id,
 		start_time=frappe.utils.now_datetime(),
 		status="Work In Progress",
 	)
-	if current_employee:
-		args.employees = [{"employee": current_employee}]
+	args.employees = [{"employee": current_employee}]
 
 	_make_time_log(args)
 	return get_job_card(job_card_id)
