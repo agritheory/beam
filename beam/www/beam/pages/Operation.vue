@@ -1,7 +1,7 @@
 <template>
 	<Navbar>
 		<template #title>
-			<h1>{{ operation.operation || 'Operation' }}</h1>
+			<h1>Operation</h1>
 		</template>
 		<template #navbaraction>
 			<RouterLink :to="{ name: 'work_order', params: { id: workOrderId } }">Back</RouterLink>
@@ -9,9 +9,14 @@
 	</Navbar>
 	<div class="container">
 		<div class="box metadata-box">
-			<p class="operation-title">{{ operation.operation || 'Operation' }}</p>
-			<p class="operation-station">{{ operation.workstation || 'Workstation not set' }}</p>
-			<p class="operation-description">{{ operation.description || 'No operation description.' }}</p>
+			<div class="metadata-header" @click="descriptionExpanded = !descriptionExpanded">
+				<p class="operation-title">{{ operation.operation || 'Operation' }}</p>
+				<ToggleArrow :open="descriptionExpanded" />
+			</div>
+			<div v-show="descriptionExpanded" class="metadata-details">
+				<p class="operation-station">{{ operation.workstation || 'Workstation not set' }}</p>
+				<p class="operation-description">{{ operation.description || 'No operation description.' }}</p>
+			</div>
 			<p v-if="sequenceBlockedBy" class="sequence-warning">Complete {{ sequenceBlockedBy }} before finishing.</p>
 		</div>
 		<div class="box timer-box">
@@ -22,7 +27,14 @@
 				You already have an active job: {{ activeJobCardForEmployee }}
 			</p>
 			<p v-if="actionError" class="action-error">{{ actionError }}</p>
-			<div class="actions">
+			<div v-if="showQtyInput" class="qty-input-row">
+				<ANumericInput label="Qty completed this session" v-model="pendingQty" />
+				<div class="qty-input-actions">
+					<button @click="confirmPause">Confirm</button>
+					<button @click="cancelPause">Cancel</button>
+				</div>
+			</div>
+			<div v-else class="actions">
 				<button
 					:disabled="actionsDisabled || isCompleted || Boolean(sequenceBlockedBy) || hasActiveConflict || !canToggle"
 					@click="toggleOperation">
@@ -66,6 +78,9 @@ const isBusy = ref<boolean>(false)
 const isRefreshing = ref<boolean>(false)
 const actionError = ref<string>('')
 const hasLoadError = ref<boolean>(false)
+const descriptionExpanded = ref<boolean>(false)
+const showQtyInput = ref<boolean>(false)
+const pendingQty = ref<number>(0)
 let timerHandle: ReturnType<typeof setInterval> | null = null
 
 const isCompleted = computed((): boolean => (jobCard.value.status || '') === 'Completed')
@@ -270,38 +285,23 @@ onUnmounted((): void => {
 const toggleOperation = async (): Promise<void> => {
 	if (!jobCardName.value || isBusy.value || isCompleted.value) return
 
-	isBusy.value = true
 	actionError.value = ''
+
+	if (isRunning.value) {
+		pendingQty.value = Math.max(
+			0,
+			Number(jobCard.value.for_quantity || 0) - Number(jobCard.value.total_completed_qty || 0)
+		)
+		showQtyInput.value = true
+		return
+	}
+
+	isBusy.value = true
 	try {
 		await refreshJobCard()
 		if (!jobCardName.value || isCompleted.value) return
-
-		if (isRunning.value) {
-			const remainingQty: number = Math.max(
-				0,
-				Number(jobCard.value.for_quantity || 0) - Number(jobCard.value.total_completed_qty || 0)
-			)
-			const defaultQty: string = String(remainingQty)
-			const input: string | null = window.prompt('Completed quantity in this session', defaultQty)
-			if (input === null) {
-				isBusy.value = false
-				return
-			}
-
-			const completedQty: number = Number(input)
-			if (!Number.isFinite(completedQty) || completedQty < 0) {
-				actionError.value = 'Invalid quantity'
-				toast.error('Invalid quantity')
-				isBusy.value = false
-				return
-			}
-
-			const card = await store.pauseJobCard(jobCardName.value, completedQty)
-			applyJobCard(card)
-		} else {
-			const card = await store.startJobCard(jobCardName.value)
-			applyJobCard(card)
-		}
+		const card = await store.startJobCard(jobCardName.value)
+		applyJobCard(card)
 	} catch (error) {
 		const message = (error as Error)?.message || 'Unknown error'
 		actionError.value = message
@@ -309,6 +309,35 @@ const toggleOperation = async (): Promise<void> => {
 	} finally {
 		isBusy.value = false
 	}
+}
+
+const confirmPause = async (): Promise<void> => {
+	if (!Number.isFinite(pendingQty.value) || pendingQty.value < 0) {
+		actionError.value = 'Invalid quantity'
+		toast.error('Invalid quantity')
+		return
+	}
+
+	showQtyInput.value = false
+	isBusy.value = true
+	actionError.value = ''
+	try {
+		await refreshJobCard()
+		if (!jobCardName.value || isCompleted.value) return
+		const card = await store.pauseJobCard(jobCardName.value, pendingQty.value)
+		applyJobCard(card)
+	} catch (error) {
+		const message = (error as Error)?.message || 'Unknown error'
+		actionError.value = message
+		toast.error(message)
+	} finally {
+		isBusy.value = false
+	}
+}
+
+const cancelPause = (): void => {
+	showQtyInput.value = false
+	pendingQty.value = 0
 }
 
 const finishOperation = async (): Promise<void> => {
@@ -353,6 +382,30 @@ const finishOperation = async (): Promise<void> => {
 .metadata-box {
 	display: grid;
 	gap: 0.5rem;
+}
+
+.metadata-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	cursor: pointer;
+	user-select: none;
+}
+
+.metadata-details {
+	display: grid;
+	gap: 0.5rem;
+}
+
+.qty-input-row {
+	display: grid;
+	gap: 0.4rem;
+}
+
+.qty-input-actions {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 0.4rem;
 }
 
 .operation-title {
