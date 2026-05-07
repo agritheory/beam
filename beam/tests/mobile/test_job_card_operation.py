@@ -70,6 +70,33 @@ def get_operation_elements(page):
 	return description_box, timer_text, toggle_button, finish_button
 
 
+def confirm_pause_with_qty(page, qty: str = "0"):
+	qty_input = page.locator(".qty-input-row input").first
+	expect(qty_input).to_be_visible(timeout=10000)
+	qty_input.fill(qty)
+	page.get_by_role("button", name="Confirm").click()
+
+
+def pause_form_is_visible(page) -> bool:
+	return page.locator(".qty-input-row input").first.is_visible()
+
+
+def ensure_operation_running(page, toggle_button):
+	current_label = toggle_button.inner_text().strip()
+	if current_label == "Pause":
+		return
+	if current_label != "Start":
+		pytest.fail(f"Unexpected toggle label before start: {current_label}")
+
+	toggle_button.click()
+	if pause_form_is_visible(page):
+		confirm_pause_with_qty(page)
+		expect(toggle_button).to_contain_text("Start", timeout=10000)
+		toggle_button.click()
+
+	expect(toggle_button).to_contain_text("Pause", timeout=10000)
+
+
 @pytest.mark.order(1)
 def test_operation_details_are_visible(page):
 	operation_id = open_first_operation_id_from_manufacture(page)
@@ -156,8 +183,8 @@ def test_start_operation_starts_timer_and_toggles_buttons(page):
 	expect(toggle_button).to_contain_text(expected_label, timeout=1000)
 
 	if label == "Pause":
-		page.once("dialog", lambda dialog: dialog.accept("0"))
 		toggle_button.click()
+		confirm_pause_with_qty(page)
 		expect(toggle_button).to_contain_text("Start", timeout=10000)
 	elif label != "Start":
 		pytest.fail(f"Unexpected toggle label before start: {label}")
@@ -196,18 +223,13 @@ def test_stop_operation_stops_timer_and_records_time_log(page):
 	assert job_card_name, f"Expected a Job Card linked to operation {operation_id}"
 	initial_closed_logs = len([log for log in initial_logs if log.to_time])
 
-	current_label = toggle_button.inner_text().strip()
-	if current_label == "Start":
-		toggle_button.click()
-		expect(toggle_button).to_contain_text("Pause", timeout=10000)
-	elif current_label != "Pause":
-		pytest.fail(f"Unexpected toggle label before stop: {current_label}")
+	ensure_operation_running(page, toggle_button)
 
 	page.wait_for_timeout(1200)
 	timer_after_start = timer_text.inner_text().strip()
 
-	page.once("dialog", lambda dialog: dialog.accept("0"))
 	toggle_button.click()
+	confirm_pause_with_qty(page)
 	expect(toggle_button).to_contain_text("Start", timeout=10000)
 
 	page.wait_for_timeout(1500)
