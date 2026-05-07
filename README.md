@@ -85,7 +85,7 @@ To run backend tests
 
 ```shell
 source env/bin/activate
-pytest ./apps/beam/beam/tests --ignore=./beam/tests/mobile --disable-warnings -s --tracing=retain-on-failure
+pytest ./apps/beam/beam/tests --ignore=./apps/beam/beam/tests/mobile/ --disable-warnings -s --tracing=retain-on-failure
 ```
 
 To run frontend tests
@@ -94,7 +94,7 @@ Start bench in a separate terminal, then run:
 
 ```shell
 source env/bin/activate
-pytest ./beam/tests/mobile --browser chromium --disable-warnings
+pytest ./apps/beam/beam/tests/mobile --browser chromium --disable-warnings
 ```
 
 ### Beam Portal setup
