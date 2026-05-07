@@ -884,4 +884,21 @@ employees = [
 		"department": "Management - APC",
 		"designation": "Baker",
 	},
+	{
+		"name": "Cassidy Reyes",
+		"gender": "Female",
+		"date_of_birth": "1993-11-28",
+		"date_of_joining": "2023-03-15",
+		"address": {
+			"address_line1": "217 Maple Street",
+			"city": "Concord",
+			"state": "NH",
+			"postal_code": "03301",
+		},
+		"phone": "(603) 555-0271",
+		"roles": ["BEAM Mobile User", "Employee", "Manufacturing User"],
+		"reports_to": "Tristan Hawkins",
+		"department": "Management - APC",
+		"designation": "Baker",
+	},
 ]
