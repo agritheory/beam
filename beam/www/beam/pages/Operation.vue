@@ -26,6 +26,9 @@
 			<p v-if="hasActiveConflict" class="sequence-warning">
 				You already have an active job: {{ activeJobCardForEmployee }}
 			</p>
+			<p v-if="lockedByEmployee" class="sequence-warning">
+				In progress by: {{ lockedByEmployee }}
+			</p>
 			<p v-if="actionError" class="action-error">{{ actionError }}</p>
 			<div v-if="showQtyInput" class="qty-input-row">
 				<ANumericInput label="Qty completed this session" v-model="pendingQty" />
@@ -36,7 +39,7 @@
 			</div>
 			<div v-else class="actions">
 				<button
-					:disabled="actionsDisabled || isCompleted || Boolean(sequenceBlockedBy) || hasActiveConflict || !canToggle"
+					:disabled="actionsDisabled || isCompleted || Boolean(sequenceBlockedBy) || hasActiveConflict || Boolean(lockedByEmployee) || !canToggle"
 					@click="toggleOperation">
 					{{ toggleLabel }}
 				</button>
@@ -120,6 +123,7 @@ const elapsedTime = computed((): string => {
 const statusLabel = computed((): string => jobCard.value.status || '')
 const activeJobCardForEmployee = computed((): string => jobCard.value.active_job_card_for_employee || '')
 const hasActiveConflict = computed((): boolean => Boolean(jobCard.value.active_job_card_for_employee))
+const lockedByEmployee = computed((): string => jobCard.value.locked_by_employee || '')
 const isSubmitted = computed((): boolean => jobCard.value.docstatus !== 0)
 const isQtyCompleted = computed((): boolean => {
 	const completed = Number(jobCard.value.total_completed_qty || 0)
