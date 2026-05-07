@@ -72,6 +72,7 @@ export type JobCard = ParentDoctype & {
 	status?: 'Open' | 'Work In Progress' | 'Material Transferred' | 'On Hold' | 'Submitted' | 'Cancelled' | 'Complete' | 'Completed'
 	total_completed_qty?: number
 	active_job_card_for_employee?: string | null
+	locked_by_employee?: string | null
 	items?: JobCardItem[]
 	time_logs?: JobCardTimeLog[]
 }
