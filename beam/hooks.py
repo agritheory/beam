@@ -29,14 +29,18 @@ app_include_js = ["beam.bundle.js"]
 # webform_include_css = {"doctype": "public/css/doctype.css"}
 
 # include js in page
-# page_js = {"page" : "public/js/file.js"}
+page_js = {
+	"printer-queue": "beam/page/printer_queue/printer_queue.js",
+}
 
 # include js in doctype views
 doctype_js = {
 	"Network Printer Settings": "public/js/network_printer_settings_custom.js",
 	"Stock Entry": "public/js/stock_entry_custom.js",
 }
-# doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
+doctype_list_js = {
+	"Network Printer Settings": "public/js/network_printer_settings_list.js",
+}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
 
@@ -142,7 +146,7 @@ doc_events = {
 			"beam.beam.handling_unit.generate_handling_units",
 		],
 		"validate": [
-			# "beam.beam.handling_unit.validate_handling_unit_overconsumption",
+			"beam.beam.handling_unit.validate_handling_unit_overconsumption",
 		],
 	},
 	"Purchase Invoice": {
@@ -152,7 +156,7 @@ doc_events = {
 	},
 	"Stock Entry": {
 		"validate": [
-			# "beam.beam.handling_unit.validate_handling_unit_overconsumption",
+			"beam.beam.handling_unit.validate_handling_unit_overconsumption",
 		],
 		"before_submit": [
 			"beam.beam.handling_unit.generate_handling_units",
@@ -161,12 +165,12 @@ doc_events = {
 	},
 	"Sales Invoice": {
 		"validate": [
-			# "beam.beam.handling_unit.validate_handling_unit_overconsumption",
+			"beam.beam.handling_unit.validate_handling_unit_overconsumption",
 		],
 	},
 	"Delivery Note": {
 		"validate": [
-			# "beam.beam.handling_unit.validate_handling_unit_overconsumption",
+			"beam.beam.handling_unit.validate_handling_unit_overconsumption",
 		],
 	},
 	"Subcontracting Receipt": {

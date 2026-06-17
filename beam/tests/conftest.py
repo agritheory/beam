@@ -2,12 +2,17 @@
 # For license information, please see license.txt
 
 import json
+import sys
 from pathlib import Path
 from unittest.mock import MagicMock
 
 import frappe
 import pytest
 from frappe.utils import get_bench_path
+
+TESTS_DIR = Path(__file__).resolve().parent
+if str(TESTS_DIR) not in sys.path:
+	sys.path.insert(0, str(TESTS_DIR))
 
 
 def _get_logger(*args, **kwargs):

@@ -6,6 +6,7 @@ import pytest
 from beam.beam.barcodes import barcode128
 
 
+@pytest.mark.order(28)
 @pytest.mark.parametrize("barcode_text", ["123456789012", "ITEM-00001", "987654321098"])
 def test_item_barcode_print_format(barcode_text):
 	# Generate barcode image in print format

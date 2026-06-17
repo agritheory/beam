@@ -8,6 +8,7 @@ from beam.beam.barcodes import create_beam_barcode
 from beam.beam.doctype.beam_settings.beam_settings import get_doctypes_with_item_barcodes
 
 
+@pytest.mark.order(20)
 def test_get_doctypes_with_item_barcodes():
 	doctypes = get_doctypes_with_item_barcodes()
 	assert isinstance(doctypes, list)
@@ -42,6 +43,7 @@ def beam_settings():
 	settings.save()
 
 
+@pytest.mark.order(22)
 def test_barcode_generated_when_doctype_allowed(beam_settings):
 	beam_settings.auto_barcode_doctypes = '["Item", "Warehouse"]'
 	beam_settings.save()
@@ -52,6 +54,7 @@ def test_barcode_generated_when_doctype_allowed(beam_settings):
 	assert any(b.barcode_type == "Code128" for b in item.barcodes)
 
 
+@pytest.mark.order(24)
 def test_barcode_not_generated_when_doctype_not_allowed(beam_settings):
 	beam_settings.auto_barcode_doctypes = '["Warehouse"]'
 	beam_settings.save()
@@ -62,6 +65,7 @@ def test_barcode_not_generated_when_doctype_not_allowed(beam_settings):
 	assert not any(b.barcode_type == "Code128" for b in item.barcodes)
 
 
+@pytest.mark.order(26)
 def test_barcode_not_duplicated_when_code128_exists(beam_settings):
 	beam_settings.auto_barcode_doctypes = '["Item", "Warehouse"]'
 	beam_settings.save()
