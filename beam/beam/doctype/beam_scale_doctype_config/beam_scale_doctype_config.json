@@ -1,0 +1,58 @@
+{
+	"actions": [],
+	"creation": "2026-06-17 16:07:30.123456",
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": [
+		"doctype_name",
+		"qty_field",
+		"items_table_field",
+		"zero_threshold",
+		"autoadvance_on_zero"
+	],
+	"fields": [
+		{
+			"fieldname": "doctype_name",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"label": "Doctype Name",
+			"reqd": 1
+		},
+		{
+			"fieldname": "qty_field",
+			"fieldtype": "Data",
+			"label": "Qty Field",
+			"default": "qty"
+		},
+		{
+			"fieldname": "items_table_field",
+			"fieldtype": "Data",
+			"label": "Items Table Field",
+			"default": "items"
+		},
+		{
+			"fieldname": "zero_threshold",
+			"fieldtype": "Float",
+			"label": "Zero Threshold (oz)",
+			"default": "0.1"
+		},
+		{
+			"fieldname": "autoadvance_on_zero",
+			"fieldtype": "Check",
+			"label": "Auto Advance on Zero",
+			"default": "1"
+		}
+	],
+	"istable": 1,
+	"links": [],
+	"modified": "2026-06-17 16:07:30.123456",
+	"modified_by": "Administrator",
+	"module": "BEAM",
+	"name": "BEAM Scale Doctype Config",
+	"owner": "Administrator",
+	"permissions": [],
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"track_changes": 1
+}

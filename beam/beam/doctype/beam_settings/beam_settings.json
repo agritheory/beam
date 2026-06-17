@@ -16,7 +16,9 @@
 		"barcode_generation_section",
 		"barcode_exclusions_html",
 		"column_break_barcode",
-		"auto_barcode_doctypes"
+		"auto_barcode_doctypes",
+		"scale_tab",
+		"scale_doctype_configs"
 	],
 	"fields": [
 		{
@@ -89,6 +91,17 @@
 			"fieldtype": "JSON",
 			"hidden": 1,
 			"label": "Auto Barcode Doctypes"
+		},
+		{
+			"fieldname": "scale_tab",
+			"fieldtype": "Tab Break",
+			"label": "Scale"
+		},
+		{
+			"fieldname": "scale_doctype_configs",
+			"fieldtype": "Table",
+			"label": "Scale Doctype Configs",
+			"options": "BEAM Scale Doctype Config"
 		}
 	],
 	"links": [],
