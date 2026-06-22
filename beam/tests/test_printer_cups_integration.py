@@ -3,11 +3,16 @@
 
 import frappe
 import pytest
+from test_utils.printers import ipp_printer_sync, raw_printer_sync
 
 from beam.beam.overrides import network_printer_settings as nps
 from beam.beam.report.printer_fleet_status.printer_fleet_status import execute
-from cups_test_utils import delete_nps_if_exists, require_local_cups, temporary_cups_queue
-from fake_raw_printer import fake_raw_printer
+from cups_test_utils import (
+	delete_nps_if_exists,
+	require_local_cups,
+	submit_ipp_print_job,
+	temporary_cups_queue,
+)
 
 
 @pytest.mark.order(170)
@@ -18,7 +23,7 @@ def test_create_queue_prints_zpl_test_label_to_fake_printer():
 	queue_name = "BEAM_TEST_ZD621"
 	delete_nps_if_exists(nps_name)
 
-	with fake_raw_printer() as printer:
+	with raw_printer_sync() as printer:
 		with temporary_cups_queue(queue_name, printer.uri) as conn:
 			assert queue_name in conn.getPrinters()
 			doc = frappe.get_doc(
@@ -51,7 +56,7 @@ def test_configure_printer_updates_device_uri_on_cups():
 	queue_name = "BEAM_TEST_CONFIGURE"
 	delete_nps_if_exists(nps_name)
 
-	with fake_raw_printer() as first_printer, fake_raw_printer() as second_printer:
+	with raw_printer_sync() as first_printer, raw_printer_sync() as second_printer:
 		with temporary_cups_queue(queue_name, first_printer.uri):
 			doc = frappe.get_doc(
 				{
@@ -83,7 +88,7 @@ def test_configure_printer_reject_jobs():
 	queue_name = "BEAM_TEST_REJECT"
 	delete_nps_if_exists(nps_name)
 
-	with fake_raw_printer() as printer:
+	with raw_printer_sync() as printer:
 		with temporary_cups_queue(queue_name, printer.uri):
 			doc = frappe.get_doc(
 				{
@@ -110,7 +115,7 @@ def test_fleet_report_lists_orphan_vraw_queue():
 	require_local_cups()
 	queue_name = "BEAM_TEST_ORPHAN_VRAW"
 
-	with fake_raw_printer() as printer:
+	with raw_printer_sync() as printer:
 		with temporary_cups_queue(queue_name, printer.uri):
 			columns, rows = execute({"server_ip": "localhost"})
 			orphan_rows = [row for row in rows if row.get("cups_queue") == queue_name]
@@ -143,3 +148,42 @@ def test_create_queue_fails_when_device_unreachable():
 	assert nps_name not in created
 	conn = nps.cups_connection("localhost", 631)
 	assert queue_name not in conn.getPrinters()
+
+
+@pytest.mark.order(179)
+def test_create_queue_registers_ipp_device_and_delivers_print_job(tmp_path):
+	"""Office PDF queue registers mock IPP on CUPS; Print-Job at that URI lands in save_dir."""
+	require_local_cups()
+	nps_name = "Office PDF Mock IPP Integration"
+	queue_name = "BEAM_TEST_IPP"
+	delete_nps_if_exists(nps_name)
+
+	with ipp_printer_sync(save_dir=tmp_path, name="PDF") as printer:
+		with temporary_cups_queue(queue_name, printer.uri, ppdname="everywhere") as conn:
+			assert conn.getPrinters()[queue_name]["device-uri"] == printer.uri
+
+			doc = frappe.get_doc(
+				{
+					"doctype": "Network Printer Settings",
+					"name": nps_name,
+					"server_ip": "localhost",
+					"port": 631,
+					"printer_name": queue_name,
+					"printer_type": "General Purpose",
+					"device_uri": printer.uri,
+				}
+			).insert()
+
+			result = doc.print_test_page()
+			assert result["test_type"] in ("testpage", "text")
+			assert result["job_id"]
+
+			submit_ipp_print_job(
+				printer,
+				b"Office PDF integration test\n",
+				job_name=queue_name,
+			)
+			assert printer.job_count >= 1
+			assert list(tmp_path.glob("job_*"))
+
+		delete_nps_if_exists(nps_name)

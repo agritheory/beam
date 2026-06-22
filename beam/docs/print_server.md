@@ -4,7 +4,7 @@ For license information, please see license.txt-->
 # Print Server
 
 <div class="byline">
-  Tyler Matteson 2026-02-28
+  Rohan Bansal, Heather Kusmierz, and Tyler Matteson 2026-06-17
 </div>
 
 
@@ -48,7 +48,7 @@ pytest beam/beam/tests/test_printer_logic.py
 pytest beam/beam/tests/test_printer_cups_integration.py
 ```
 
-Pure logic tests run without CUPS. Integration tests use an in-process fake raw printer (TCP listener) plus real pycups/CUPS queue creation.
+Pure logic tests run without CUPS. Integration tests use `test_utils.printers` mock servers (TCP raw + IPP) plus real pycups/CUPS queue creation.
 
 ---
 
