@@ -1,6 +1,7 @@
 # Copyright (c) 2025, AgriTheory and contributors
 # For license information, please see license.txt
 
+import time
 from unittest.mock import Mock, patch
 
 import frappe
@@ -12,19 +13,9 @@ from beam.beam import printer_queue as pq
 TEST_PRINT_SERVER = {"server_ip": "localhost", "port": 631}
 
 
-def mock_cups_connection(
-	get_jobs=None,
-	create_subscription=None,
-	get_notifications=None,
-	cancel_subscription=None,
-):
+def mock_cups_connection(get_jobs=None):
 	mock_conn = Mock()
 	mock_conn.getJobs.return_value = get_jobs or {}
-	mock_conn.createSubscription.return_value = (
-		create_subscription if create_subscription is not None else 1
-	)
-	mock_conn.getNotifications.return_value = get_notifications or []
-	mock_conn.cancelSubscription = cancel_subscription or Mock()
 	mock_conn.cancelJob = Mock()
 	return mock_conn
 
@@ -187,7 +178,7 @@ def test_session_tracks_jobs_that_finish_between_polls():
 	frappe.cache.set_value(
 		pq.watcher_cache_key(task_id),
 		state,
-		expires_in_sec=pq.WATCHER_LEASE_SECONDS,
+		expires_in_sec=pq.SESSION_LEASE_SECONDS,
 	)
 
 	active_row = {
@@ -229,29 +220,20 @@ def test_session_tracks_jobs_that_finish_between_polls():
 
 
 @pytest.mark.order(186)
-def test_start_and_stop_printer_queue_watcher_lease():
-	task_id = "testwatcher01"
-	pq.set_watcher_lease(task_id, frappe.session.user)
-	assert pq.watcher_lease_active(task_id)
+def test_start_printer_queue_session_does_not_enqueue():
+	with patch("frappe.enqueue") as mock_enqueue:
+		result = pq.start_printer_queue_watcher()
 
-	pq.stop_printer_queue_watcher(task_id)
-	assert not pq.watcher_lease_active(task_id)
-
-
-@pytest.mark.order(132)
-def test_notification_job_ids_reads_cups_event_dict():
-	notifications = {
-		"notify-get-interval": 60,
-		"events": [{"notification-attributes": {"job-id": 99, "job-state": 9}}],
-	}
-	assert pq.notification_job_ids(notifications) == {99}
+	assert result["task_id"]
+	mock_enqueue.assert_not_called()
+	pq.stop_printer_queue_watcher(result["task_id"])
 
 
 @pytest.mark.order(188)
-def test_watch_printer_queues_publishes_updates():
-	task_id = "testwatcher02"
-	user = frappe.session.user
-	pq.set_watcher_lease(task_id, user)
+def test_poll_printer_queue_refreshes_session():
+	task_id = "testpoll01"
+	pq.set_session_lease(task_id, frappe.session.user, session_started_at=int(time.time()))
+	assert pq.session_lease_active(task_id)
 
 	mock_conn = mock_cups_connection(
 		get_jobs={
@@ -263,36 +245,28 @@ def test_watch_printer_queues_publishes_updates():
 				"job-printer-uri": "ipp://localhost/printers/ZD621",
 				"time-at-creation": 1_700_000_100,
 			}
-		},
-		get_notifications={"events": [{"notification-attributes": {"job-id": 7, "job-state": 5}}]},
+		}
 	)
-	mock_conn.getJobs.side_effect = lambda which_jobs="not-completed", **kwargs: (
-		mock_conn.getJobs.return_value if which_jobs == "not-completed" else {}
-	)
-
-	published = []
-
-	def capture_publish(event, message=None, **kwargs):
-		if event == "printer_queue_update":
-			published.append(message)
-
 	with (
 		patch.object(pq, "cups_connection", return_value=mock_conn),
 		patch.object(pq, "list_print_servers", return_value=[TEST_PRINT_SERVER]),
-		patch.object(pq, "watcher_lease_active", side_effect=[True, True, False]),
-		patch("frappe.publish_realtime", side_effect=capture_publish),
-		patch.object(pq, "time") as mock_time,
 	):
-		mock_time.sleep = Mock()
-		pq.watch_printer_queues(task_id, user)
+		result = pq.poll_printer_queue(task_id)
 
-	assert published
-	assert published[0]["task_id"] == task_id
-	assert published[0]["jobs"][0]["job_id"] == 7
-	mock_conn.cancelSubscription.assert_called_once_with(1)
+	assert result["expired"] is False
+	assert result["task_id"] == task_id
+	assert result["jobs"][0]["job_id"] == 7
+	assert pq.session_lease_active(task_id)
+	pq.stop_printer_queue_watcher(task_id)
 
 
 @pytest.mark.order(190)
+def test_poll_printer_queue_expired_session():
+	result = pq.poll_printer_queue("missing-session")
+	assert result["expired"] is True
+
+
+@pytest.mark.order(192)
 def test_cancel_printer_job():
 	mock_conn = mock_cups_connection()
 	with patch.object(pq, "cups_connection", return_value=mock_conn):
@@ -303,6 +277,16 @@ def test_cancel_printer_job():
 
 
 @pytest.mark.order(194)
+def test_start_and_stop_printer_queue_session_lease():
+	task_id = "testsession01"
+	pq.set_session_lease(task_id, frappe.session.user)
+	assert pq.session_lease_active(task_id)
+
+	pq.stop_printer_queue_watcher(task_id)
+	assert not pq.session_lease_active(task_id)
+
+
+@pytest.mark.order(196)
 def test_apply_session_state_keeps_still_active_job_in_seen_active():
 	"""A job still processing on CUPS stays in seen_active instead of session history."""
 	task_id = "testsnapshot03"
@@ -348,7 +332,7 @@ def test_apply_session_state_keeps_still_active_job_in_seen_active():
 	pq.stop_printer_queue_watcher(task_id)
 
 
-@pytest.mark.order(196)
+@pytest.mark.order(198)
 def test_job_in_session_window_treats_epoch_timestamp_as_recent():
 	row = {
 		"job_state": "completed",
@@ -358,38 +342,7 @@ def test_job_in_session_window_treats_epoch_timestamp_as_recent():
 	assert pq.job_in_session_window(row, completed_since=0) is True
 
 
-@pytest.mark.order(198)
-def test_watch_printer_queues_recreates_subscription_after_failures():
-	task_id = "testwatcher03"
-	user = frappe.session.user
-	pq.set_watcher_lease(task_id, user)
-
-	mock_conn = mock_cups_connection(get_jobs={})
-	mock_conn.getNotifications.side_effect = RuntimeError("subscription expired")
-	mock_conn.createSubscription.side_effect = [1, 2]
-
-	with (
-		patch.object(pq, "cups_connection", return_value=mock_conn),
-		patch.object(pq, "list_print_servers", return_value=[TEST_PRINT_SERVER]),
-		patch.object(
-			pq,
-			"watcher_lease_active",
-			side_effect=[True] * (2 + pq.SUBSCRIPTION_FAILURE_THRESHOLD) + [False],
-		),
-		patch.object(pq, "collect_printer_jobs_snapshot", return_value={"jobs": [], "errors": []}),
-		patch("frappe.publish_realtime"),
-		patch.object(pq, "time") as mock_time,
-	):
-		mock_time.sleep = Mock()
-		pq.watch_printer_queues(task_id, user)
-
-	assert mock_conn.createSubscription.call_count == 2
-	mock_conn.cancelSubscription.assert_any_call(1)
-	mock_conn.cancelSubscription.assert_any_call(2)
-	pq.stop_printer_queue_watcher(task_id)
-
-
-@pytest.mark.order(192)
+@pytest.mark.order(200)
 def test_printer_queue_read_permission_required():
 	with pytest.raises(frappe.exceptions.PermissionError):
 		frappe.set_user("Guest")

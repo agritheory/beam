@@ -15,6 +15,8 @@ from frappe.printing.doctype.network_printer_settings.network_printer_settings i
 	NetworkPrinterSettings,
 )
 
+NPS_DOCTYPE = "Network Printer Settings"
+
 RAW_QUEUE_PPD = "raw"
 GENERAL_PDF_PPD = "everywhere"
 PRINTER_STATE_IDLE = 3
@@ -30,6 +32,18 @@ COMMON_PRINTER_OPTIONS = (
 	"print-quality",
 	"PrintQuality",
 )
+
+
+def check_network_printer_settings_read_permission():
+	frappe.has_permission(NPS_DOCTYPE, "read", throw=True)
+
+
+def check_network_printer_settings_write_permission():
+	frappe.has_permission(NPS_DOCTYPE, "write", throw=True)
+
+
+def check_network_printer_settings_create_permission():
+	frappe.has_permission(NPS_DOCTYPE, "create", throw=True)
 
 
 def require_cups():
@@ -216,6 +230,7 @@ def enforce_device_uri_reachable(device_uri):
 
 @frappe.whitelist()
 def test_device_uri(device_uri):
+	check_network_printer_settings_read_permission()
 	reject_usb_uri(device_uri)
 	return validate_device_uri(device_uri)
 
@@ -473,6 +488,7 @@ def safe_get_devices(conn):
 
 @frappe.whitelist()
 def get_wizard_devices(server_ip, port):
+	check_network_printer_settings_read_permission()
 	conn = cups_connection(server_ip, port)
 	nps_lookup = get_nps_by_printer_name(server_ip, port)
 	entries = []
@@ -532,6 +548,7 @@ def safe_get_ppds(conn, kwargs=None):
 
 @frappe.whitelist()
 def get_ppds(server_ip, port, make=None, query=None):
+	check_network_printer_settings_read_permission()
 	conn = cups_connection(server_ip, port)
 	kwargs = {}
 	if make:
@@ -578,6 +595,7 @@ def validate_wizard_selection(
 	device_uri=None,
 	kind=None,
 ):
+	check_network_printer_settings_read_permission()
 	reject_usb_uri(device_uri)
 	nps_lookup = get_nps_by_printer_name(server_ip, port)
 	conn = cups_connection(server_ip, port)
@@ -648,6 +666,7 @@ def create_printer_queue(
 	printer_location="",
 	printer_type="",
 ):
+	check_network_printer_settings_create_permission()
 	reject_usb_uri(device_uri)
 	validation = validate_wizard_selection(
 		server_ip, port, "create", printer_name=printer_name, device_uri=device_uri, kind="device"
@@ -712,6 +731,7 @@ def link_existing_printer(
 	printer_location="",
 	printer_type="",
 ):
+	check_network_printer_settings_create_permission()
 	validation = validate_wizard_selection(
 		server_ip, port, "link", printer_name=printer_name, kind="queue"
 	)
@@ -740,6 +760,7 @@ def link_existing_printer(
 
 @frappe.whitelist()
 def get_fleet_status(server_ip=None):
+	check_network_printer_settings_read_permission()
 	servers = frappe.get_all(
 		"Network Printer Settings",
 		fields=["server_ip", "port"],
@@ -826,10 +847,12 @@ def get_fleet_status(server_ip=None):
 
 class BEAMNetworkPrinterSettings(NetworkPrinterSettings):
 	@frappe.whitelist()
-	def get_printers_list(self, ip="127.0.0.1", port=631):
+	def get_printers_list(self, ip=None, port=None):
+		server_ip = ip if ip is not None else self.server_ip
+		server_port = int(port if port is not None else (self.port or 631))
 		printer_list = []
 		try:
-			conn = cups_connection(self.server_ip, self.port)
+			conn = cups_connection(server_ip, server_port)
 			printers = conn.getPrinters()
 			for printer_id, printer in printers.items():
 				make_model = printer["printer-make-and-model"]

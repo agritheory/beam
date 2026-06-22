@@ -217,6 +217,13 @@ def get_list_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 	return actions
 
 
+def set_item_stock_uom(target: frappe._dict, item_code: str) -> None:
+	stock_uom = frappe.get_cached_value("Item", item_code, "stock_uom")
+	if stock_uom:
+		target.uom = stock_uom
+		target.stock_uom = stock_uom
+
+
 def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[dict[str, Any]]:
 	target = None
 	beam_override = frappe.get_hooks("beam_frm")
@@ -245,10 +252,7 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 					"item_code": hu_details.item_code,
 				}
 			)
-			stock_uom = frappe.get_cached_value("Item", hu_details.item_code, "stock_uom")
-			if stock_uom:
-				target.uom = stock_uom
-				target.stock_uom = stock_uom
+			set_item_stock_uom(target, hu_details.item_code)
 		else:
 			target = get_item_details(
 				{
@@ -289,10 +293,7 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 					"item_code": barcode_doc.doc.name,
 				}
 			)
-			stock_uom = frappe.get_cached_value("Item", barcode_doc.doc.name, "stock_uom")
-			if stock_uom:
-				target.uom = stock_uom
-				target.stock_uom = stock_uom
+			set_item_stock_uom(target, barcode_doc.doc.name)
 		else:
 			target = get_item_details(
 				{

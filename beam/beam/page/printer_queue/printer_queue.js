@@ -11,6 +11,8 @@ frappe.pages['printer-queue'].refresh = function (wrapper) {
 
 frappe.provide('beam')
 
+beam.PRINTER_QUEUE_POLL_INTERVAL_MS = 4000
+
 beam.PrinterQueueController = class PrinterQueueController {
 	constructor(wrapper) {
 		this.wrapper = wrapper
@@ -23,9 +25,9 @@ beam.PrinterQueueController = class PrinterQueueController {
 		this.jobs = []
 		this.errors = []
 		this.completed_since = null
-		this.heartbeat_timer = null
-		this.realtime_handler = null
-		this.starting_watcher = false
+		this.poll_timer = null
+		this.starting_session = false
+		this.polling = false
 		this.can_cancel = frappe.model.can_write('Network Printer Settings')
 		this.make_toolbar()
 		this.make_table()
@@ -65,15 +67,15 @@ beam.PrinterQueueController = class PrinterQueueController {
 		beam.printer_queue_route_bound = true
 		frappe.router.on('change', () => {
 			if (!beam.is_printer_queue_route()) {
-				beam.PrinterQueueController.stop_active_watcher()
+				beam.PrinterQueueController.stop_active_session()
 			}
 		})
 	}
 
 	static active_controller = null
 
-	static stop_active_watcher() {
-		beam.PrinterQueueController.active_controller?.stop_watcher()
+	static stop_active_session() {
+		beam.PrinterQueueController.active_controller?.stop_session()
 	}
 
 	on_page_show() {
@@ -81,45 +83,39 @@ beam.PrinterQueueController = class PrinterQueueController {
 			return
 		}
 		beam.PrinterQueueController.active_controller = this
-		this.start_watcher()
+		this.start_session()
 	}
 
-	start_watcher() {
-		if (this.task_id || this.starting_watcher) {
+	start_session() {
+		if (this.task_id || this.starting_session) {
 			return
 		}
-		this.starting_watcher = true
+		this.starting_session = true
 		frappe.call({
 			method: 'beam.beam.printer_queue.start_printer_queue_watcher',
 			freeze: true,
 			freeze_message: __('Connecting to print server...'),
 			callback: ({ message }) => {
-				this.starting_watcher = false
+				this.starting_session = false
 				if (!message?.task_id) {
 					return
 				}
 				this.task_id = message.task_id
 				this.apply_snapshot(message)
-				this.bind_realtime()
-				this.start_heartbeat()
+				this.start_polling()
 			},
 			error: () => {
-				this.starting_watcher = false
+				this.starting_session = false
 			},
 		})
 	}
 
-	stop_watcher() {
-		if (this.heartbeat_timer) {
-			clearInterval(this.heartbeat_timer)
-			this.heartbeat_timer = null
-		}
-		if (this.realtime_handler) {
-			frappe.realtime.off('printer_queue_update', this.realtime_handler)
-			this.realtime_handler = null
+	stop_session() {
+		if (this.poll_timer) {
+			clearInterval(this.poll_timer)
+			this.poll_timer = null
 		}
 		if (this.task_id) {
-			frappe.realtime.task_unsubscribe(this.task_id)
 			const task_id = this.task_id
 			this.task_id = null
 			this.completed_since = null
@@ -133,40 +129,39 @@ beam.PrinterQueueController = class PrinterQueueController {
 		}
 	}
 
-	start_heartbeat() {
-		if (this.heartbeat_timer) {
-			clearInterval(this.heartbeat_timer)
+	start_polling() {
+		if (this.poll_timer) {
+			clearInterval(this.poll_timer)
 		}
-		this.heartbeat_timer = setInterval(() => {
-			if (!this.task_id) {
-				return
-			}
-			frappe.call({
-				method: 'beam.beam.printer_queue.renew_printer_queue_watcher',
-				args: { task_id: this.task_id },
-				callback: ({ message }) => {
-					if (!message?.renewed) {
-						this.stop_watcher()
-						this.start_watcher()
-					}
-				},
-			})
-		}, 30000)
+		this.poll_timer = setInterval(() => {
+			this.poll_queue()
+		}, beam.PRINTER_QUEUE_POLL_INTERVAL_MS)
 	}
 
-	bind_realtime() {
-		if (this.realtime_handler) {
-			frappe.realtime.off('printer_queue_update', this.realtime_handler)
+	poll_queue() {
+		if (!this.task_id || this.polling) {
+			return
 		}
-		this.realtime_handler = data => {
-			if (!data || data.task_id !== this.task_id) {
-				return
-			}
-			this.apply_snapshot(data)
-		}
-		frappe.realtime.connect()
-		frappe.realtime.on('printer_queue_update', this.realtime_handler)
-		frappe.realtime.task_subscribe(this.task_id)
+		this.polling = true
+		frappe.call({
+			method: 'beam.beam.printer_queue.poll_printer_queue',
+			args: { task_id: this.task_id },
+			callback: ({ message }) => {
+				this.polling = false
+				if (!message) {
+					return
+				}
+				if (message.expired) {
+					this.stop_session()
+					this.start_session()
+					return
+				}
+				this.apply_snapshot(message)
+			},
+			error: () => {
+				this.polling = false
+			},
+		})
 	}
 
 	apply_snapshot(data) {
@@ -377,6 +372,7 @@ beam.PrinterQueueController = class PrinterQueueController {
 						message: __('Print job cancelled'),
 						indicator: 'green',
 					})
+					this.poll_queue()
 				},
 			})
 		})

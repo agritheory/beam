@@ -471,3 +471,35 @@ def test_push_location_to_cups_logs_sync_failure():
 	mock_log_error.assert_called_once()
 	assert "CUPS location sync failed" in mock_log_error.call_args.kwargs["title"]
 	frappe.delete_doc("Network Printer Settings", doc_name)
+
+
+@pytest.mark.order(166)
+def test_wizard_read_permission_required():
+	with pytest.raises(frappe.exceptions.PermissionError):
+		frappe.set_user("Guest")
+		try:
+			nps.get_wizard_devices("localhost", 631)
+		finally:
+			frappe.set_user("Administrator")
+
+
+@pytest.mark.order(168)
+def test_wizard_create_permission_required():
+	mock_conn = mock_cups_connection()
+	with (
+		patch.object(nps, "cups_connection", return_value=mock_conn),
+		pytest.raises(frappe.exceptions.PermissionError),
+	):
+		frappe.set_user("Guest")
+		try:
+			nps.create_printer_queue(
+				"Guest Printer",
+				"localhost",
+				631,
+				"GuestQueue",
+				"socket://192.168.1.50:9100",
+			)
+		finally:
+			frappe.set_user("Administrator")
+
+	assert mock_conn.addPrinter.call_count == 0

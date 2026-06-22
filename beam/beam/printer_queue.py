@@ -7,19 +7,17 @@ import frappe
 from frappe import _
 
 from beam.beam.overrides.network_printer_settings import (
+	check_network_printer_settings_read_permission,
+	check_network_printer_settings_write_permission,
 	cups_connection,
 	is_local_cups_server,
 	require_cups,
 )
 
-WATCHER_CACHE_PREFIX = "printer_queue_watcher:"
-WATCHER_LEASE_SECONDS = 45
-WATCHER_POLL_INTERVAL = 1.0
-SUBSCRIPTION_LEASE_SECONDS = 3600
-SUBSCRIPTION_FAILURE_THRESHOLD = 3
+SESSION_CACHE_PREFIX = "printer_queue_session:"
+SESSION_LEASE_SECONDS = 120
 SESSION_LOOKBACK_SECONDS = 120
 COMPLETED_JOBS_FETCH_LIMIT = 100
-COMPLETED_JOBS_RECENT_LIMIT = 15
 
 TERMINAL_JOB_STATES = {"completed", "cancelled", "aborted"}
 ACTIVE_JOB_STATES = {"pending", "held", "processing", "stopped"}
@@ -48,25 +46,21 @@ JOB_ATTRIBUTES = [
 	"job-media-sheets-completed",
 ]
 
-SUBSCRIPTION_EVENTS = [
-	"job-created",
-	"job-completed",
-	"job-state-changed",
-	"job-stopped",
-	"job-config-changed",
-]
-
 
 def check_printer_queue_read_permission():
-	frappe.has_permission("Network Printer Settings", "read", throw=True)
+	check_network_printer_settings_read_permission()
 
 
 def check_printer_queue_write_permission():
-	frappe.has_permission("Network Printer Settings", "write", throw=True)
+	check_network_printer_settings_write_permission()
+
+
+def session_cache_key(task_id):
+	return f"{SESSION_CACHE_PREFIX}{task_id}"
 
 
 def watcher_cache_key(task_id):
-	return f"{WATCHER_CACHE_PREFIX}{task_id}"
+	return session_cache_key(task_id)
 
 
 def list_print_servers():
@@ -245,47 +239,15 @@ def fetch_jobs_for_server(
 	return sort_job_rows(merge_job_rows(rows))
 
 
-def extract_notification_events(notifications):
-	if not notifications:
-		return []
-	if isinstance(notifications, dict):
-		events = notifications.get("events") or []
-		if isinstance(events, dict):
-			return list(events.values())
-		return list(events)
-	if isinstance(notifications, list):
-		return notifications
-	return []
-
-
-def notification_attrs(note):
-	if not isinstance(note, dict):
-		return {}
-	attrs = note.get("notification-attributes")
-	if isinstance(attrs, dict):
-		return attrs
-	return note
-
-
-def notification_job_ids(notifications):
-	job_ids = set()
-	for note in extract_notification_events(notifications):
-		attrs = notification_attrs(note)
-		job_id = attrs.get("job-id")
-		if job_id is None:
-			continue
-		try:
-			job_ids.add(int(job_id))
-		except (TypeError, ValueError):
-			continue
-	return job_ids
+def get_session_state(task_id):
+	return frappe.cache.get_value(session_cache_key(task_id), expires=True) or {}
 
 
 def get_watcher_state(task_id):
-	return frappe.cache.get_value(watcher_cache_key(task_id), expires=True) or {}
+	return get_session_state(task_id)
 
 
-def merge_session_jobs(jobs, session_jobs, completed_since):
+def merge_session_jobs(jobs, session_jobs):
 	if not session_jobs:
 		return jobs
 	merged = {(row["server_ip"], row["port"], row["job_id"]): row for row in jobs}
@@ -298,7 +260,7 @@ def merge_session_jobs(jobs, session_jobs, completed_since):
 
 
 def apply_session_state(task_id, current_jobs):
-	state = get_watcher_state(task_id)
+	state = get_session_state(task_id)
 	if not state:
 		return current_jobs
 
@@ -350,28 +312,20 @@ def apply_session_state(task_id, current_jobs):
 	state["session_jobs"] = session_jobs
 	state["seen_active"] = seen_active
 	frappe.cache.set_value(
-		watcher_cache_key(task_id),
+		session_cache_key(task_id),
 		state,
-		expires_in_sec=WATCHER_LEASE_SECONDS,
+		expires_in_sec=SESSION_LEASE_SECONDS,
 	)
-	return merge_session_jobs(current_jobs, session_jobs, completed_since)
+	return merge_session_jobs(current_jobs, session_jobs)
 
 
-def collect_printer_jobs_snapshot(
-	task_id=None,
-	include_recent_completed=False,
-	notified_jobs=None,
-):
+def collect_printer_jobs_snapshot(task_id=None):
 	completed_since = None
 	include_completed = False
-	completed_limit = COMPLETED_JOBS_FETCH_LIMIT
 	if task_id:
-		state = get_watcher_state(task_id)
+		state = get_session_state(task_id)
 		completed_since = state.get("completed_since")
 		include_completed = bool(state.get("fetch_completed_once"))
-		if include_recent_completed and not include_completed:
-			include_completed = True
-			completed_limit = COMPLETED_JOBS_RECENT_LIMIT
 
 	jobs = []
 	errors = []
@@ -383,7 +337,6 @@ def collect_printer_jobs_snapshot(
 					server["port"],
 					completed_since,
 					include_completed=include_completed,
-					completed_limit=completed_limit,
 				)
 			)
 		except Exception as exc:
@@ -396,25 +349,16 @@ def collect_printer_jobs_snapshot(
 				}
 			)
 
-	if notified_jobs:
-		for server_ip, port, job_id in notified_jobs:
-			try:
-				row = fetch_job_row(server_ip, port, job_id)
-				if row:
-					jobs.append(row)
-			except Exception:
-				pass
-
 	result_jobs = sort_job_rows(merge_job_rows(jobs))
 	if task_id:
-		if include_completed and completed_limit == COMPLETED_JOBS_FETCH_LIMIT:
-			state = get_watcher_state(task_id)
+		if include_completed:
+			state = get_session_state(task_id)
 			if state and state.get("fetch_completed_once"):
 				state["fetch_completed_once"] = False
 				frappe.cache.set_value(
-					watcher_cache_key(task_id),
+					session_cache_key(task_id),
 					state,
-					expires_in_sec=WATCHER_LEASE_SECONDS,
+					expires_in_sec=SESSION_LEASE_SECONDS,
 				)
 		result_jobs = apply_session_state(task_id, result_jobs)
 	return {
@@ -429,8 +373,8 @@ def get_printer_jobs_snapshot():
 	return collect_printer_jobs_snapshot()
 
 
-def set_watcher_lease(task_id, user, session_started_at=None, completed_since=None):
-	existing = get_watcher_state(task_id)
+def set_session_lease(task_id, user, session_started_at=None, completed_since=None):
+	existing = get_session_state(task_id)
 	state = {
 		"user": user,
 		"task_id": task_id,
@@ -445,53 +389,23 @@ def set_watcher_lease(task_id, user, session_started_at=None, completed_since=No
 		"seen_active": existing.get("seen_active") or {},
 	}
 	frappe.cache.set_value(
-		watcher_cache_key(task_id),
+		session_cache_key(task_id),
 		state,
-		expires_in_sec=WATCHER_LEASE_SECONDS,
+		expires_in_sec=SESSION_LEASE_SECONDS,
 	)
 	return state
 
 
+def set_watcher_lease(task_id, user, session_started_at=None, completed_since=None):
+	return set_session_lease(task_id, user, session_started_at, completed_since)
+
+
+def session_lease_active(task_id):
+	return bool(frappe.cache.get_value(session_cache_key(task_id), expires=True))
+
+
 def watcher_lease_active(task_id):
-	return bool(frappe.cache.get_value(watcher_cache_key(task_id), expires=True))
-
-
-def print_server_uri(server_ip, port):
-	if is_local_cups_server(server_ip, port):
-		return "ipp://localhost/"
-	return f"ipp://{server_ip}:{int(port)}/"
-
-
-def create_server_subscription(conn, server_ip, port):
-	return conn.createSubscription(
-		print_server_uri(server_ip, port),
-		events=SUBSCRIPTION_EVENTS,
-		lease_duration=SUBSCRIPTION_LEASE_SECONDS,
-	)
-
-
-def recreate_server_subscription(entry):
-	try:
-		entry["conn"].cancelSubscription(entry["subscription_id"])
-	except Exception:
-		pass
-	entry["subscription_id"] = create_server_subscription(
-		entry["conn"], entry["server_ip"], entry["port"]
-	)
-	entry["notification_failures"] = 0
-
-
-def publish_queue_update(user, task_id, jobs, errors=None, completed_since=None):
-	frappe.publish_realtime(
-		"printer_queue_update",
-		{
-			"jobs": jobs,
-			"errors": errors or [],
-			"task_id": task_id,
-			"completed_since": completed_since,
-		},
-		user=user,
-	)
+	return session_lease_active(task_id)
 
 
 @frappe.whitelist()
@@ -501,22 +415,24 @@ def start_printer_queue_watcher():
 	user = frappe.session.user
 	session_started_at = int(time.time())
 	completed_since = session_started_at - SESSION_LOOKBACK_SECONDS
-	set_watcher_lease(
+	set_session_lease(
 		task_id,
 		user,
 		session_started_at=session_started_at,
 		completed_since=completed_since,
 	)
 	snapshot = collect_printer_jobs_snapshot(task_id=task_id)
-	frappe.enqueue(
-		"beam.beam.printer_queue.watch_printer_queues",
-		queue="short",
-		job_id=f"printer_queue_watcher_{task_id}",
-		task_id=task_id,
-		user=user,
-		now=frappe.flags.in_test,
-	)
 	return {"task_id": task_id, **snapshot}
+
+
+@frappe.whitelist()
+def poll_printer_queue(task_id):
+	check_printer_queue_read_permission()
+	if not task_id or not session_lease_active(task_id):
+		return {"expired": True, "task_id": task_id}
+	set_session_lease(task_id, frappe.session.user)
+	snapshot = collect_printer_jobs_snapshot(task_id=task_id)
+	return {"expired": False, "task_id": task_id, **snapshot}
 
 
 @frappe.whitelist()
@@ -524,18 +440,8 @@ def stop_printer_queue_watcher(task_id):
 	check_printer_queue_read_permission()
 	if not task_id:
 		return {"stopped": False}
-	frappe.cache.delete_value(watcher_cache_key(task_id))
+	frappe.cache.delete_value(session_cache_key(task_id))
 	return {"stopped": True, "task_id": task_id}
-
-
-@frappe.whitelist()
-def renew_printer_queue_watcher(task_id):
-	check_printer_queue_read_permission()
-	state = get_watcher_state(task_id)
-	if not task_id or not state:
-		return {"renewed": False, "task_id": task_id}
-	set_watcher_lease(task_id, frappe.session.user)
-	return {"renewed": True, "task_id": task_id}
 
 
 @frappe.whitelist()
@@ -550,82 +456,3 @@ def cancel_printer_job(server_ip, port, job_id):
 	except Exception as exc:
 		frappe.throw(_("Could not cancel print job: {0}").format(exc))
 	return {"cancelled": True, "job_id": int(job_id)}
-
-
-def watch_printer_queues(task_id, user):
-	if not watcher_lease_active(task_id):
-		return
-
-	servers = list_print_servers()
-	if not servers:
-		publish_queue_update(user, task_id, [], [])
-		return
-
-	subscriptions = []
-	connections = []
-	try:
-		for server in servers:
-			conn = cups_connection(server["server_ip"], server["port"])
-			connections.append(conn)
-			subscriptions.append(
-				{
-					"server_ip": server["server_ip"],
-					"port": server["port"],
-					"conn": conn,
-					"subscription_id": create_server_subscription(conn, server["server_ip"], server["port"]),
-					"notification_failures": 0,
-				}
-			)
-
-		last_signature = None
-		while watcher_lease_active(task_id):
-			set_watcher_lease(task_id, user)
-			changed = False
-			notified_jobs = []
-			for entry in subscriptions:
-				try:
-					notifications = entry["conn"].getNotifications([entry["subscription_id"]]) or []
-					entry["notification_failures"] = 0
-				except Exception as exc:
-					entry["notification_failures"] = entry.get("notification_failures", 0) + 1
-					notifications = []
-					if entry["notification_failures"] >= SUBSCRIPTION_FAILURE_THRESHOLD:
-						try:
-							recreate_server_subscription(entry)
-						except Exception as recreate_exc:
-							frappe.log_error(
-								title="Printer queue subscription recovery failed",
-								message=(
-									f"{entry['server_ip']}:{entry['port']} "
-									f"(subscription {entry['subscription_id']}): {recreate_exc}"
-								),
-							)
-				events = extract_notification_events(notifications)
-				if events:
-					changed = True
-					for job_id in notification_job_ids(notifications):
-						notified_jobs.append((entry["server_ip"], entry["port"], job_id))
-
-			snapshot = collect_printer_jobs_snapshot(
-				task_id=task_id,
-				include_recent_completed=changed,
-				notified_jobs=notified_jobs,
-			)
-			signature = frappe.as_json(snapshot.get("jobs") or [])
-			if changed or signature != last_signature:
-				publish_queue_update(
-					user,
-					task_id,
-					snapshot.get("jobs") or [],
-					snapshot.get("errors") or [],
-					completed_since=snapshot.get("completed_since"),
-				)
-				last_signature = signature
-
-			time.sleep(WATCHER_POLL_INTERVAL)
-	finally:
-		for entry in subscriptions:
-			try:
-				entry["conn"].cancelSubscription(entry["subscription_id"])
-			except Exception:
-				pass
