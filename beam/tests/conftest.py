@@ -72,6 +72,7 @@
 import json
 import os
 import sys
+import threading
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -141,15 +142,24 @@ def start_cups_container(image_ref):
 	return container
 
 
+def stop_container_nowait(container, timeout=15):
+	"""Stop a testcontainers DockerContainer without blocking pytest.
+
+	On some CI runners (GHA Ubuntu + iptables-nft), Docker's container.remove()
+	can stall for several minutes waiting on a kernel iptables lock held by a
+	concurrent service container cleanup.  Running the stop in a daemon thread
+	lets pytest proceed; the thread is killed when the process exits and Docker's
+	own resource manager handles any leftover state.  Each GHA job runs in a
+	fresh VM, so orphaned containers are harmless.
+	"""
+	t = threading.Thread(target=container.stop, daemon=True)
+	t.start()
+	t.join(timeout)
+
+
 @pytest.fixture(scope="module")
 def cups_server():
-	"""Start a CUPS container for the test module and tear it down immediately afterward.
-
-	Scoped to module (not session) so the container is stopped as soon as
-	test_printer_cups_integration.py finishes.  This avoids the Ryuk reconnection
-	timeout that fires when the container outlives the test module in CI environments
-	where TESTCONTAINERS_RYUK_DISABLED is not set.
-	"""
+	"""Start a CUPS container for the test module and tear it down after the module."""
 	image_ref = os.environ.get("BEAM_CUPS_IMAGE")
 	buildargs = {
 		"CUPS_ADMIN_USER": DEFAULT_CUPS_ADMIN_USER,
@@ -171,7 +181,7 @@ def cups_server():
 				configure_pycups_credentials(server)
 				yield server
 			finally:
-				container.stop()
+				stop_container_nowait(container)
 		else:
 			docker_image = DockerImage(
 				path=CUPS_CONTAINER_CONTEXT,
@@ -188,7 +198,7 @@ def cups_server():
 					configure_pycups_credentials(server)
 					yield server
 				finally:
-					container.stop()
+					stop_container_nowait(container)
 			finally:
 				docker_image.remove()
 	except Exception as exc:
