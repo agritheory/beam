@@ -27,7 +27,7 @@ pytest-order = "^1.2.1"
 pytest-cov = "^5.0.0"
 pycups = "^2.0.4"
 testcontainers = "^4.9.0"
-test_utils = {path = "../../../test_utils", develop = true}
+test_utils = {git = "https://github.com/agritheory/test_utils.git", tag = "v1.28.0"}
 
 [build-system]
 requires = ["poetry-core"]

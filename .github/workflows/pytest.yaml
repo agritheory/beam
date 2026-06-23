@@ -132,6 +132,8 @@ jobs:
 
       - name: Run Tests
         working-directory: /home/runner/frappe-bench
+        env:
+          POETRY_VIRTUALENVS_CREATE: "false"
         run: |
           source env/bin/activate
           cd apps/beam

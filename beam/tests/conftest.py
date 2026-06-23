@@ -36,7 +36,7 @@
 #   queue name PDF, PPD "everywhere". Use Print Test or print_by_server from a document.
 #
 # Label / RAW testing without hardware (mock-printer CLI or sync wrapper):
-#   pip install "git+https://github.com/agritheory/test_utils.git@v1.26.0"
+#   pip install "git+https://github.com/agritheory/test_utils.git@v1.28.0"
 #   mock-printer raw --save-dir /tmp/prints
 #   mock-printer ipp --save-dir /tmp/prints
 #   mock-printer both --save-dir /tmp/prints

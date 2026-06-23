@@ -1718,7 +1718,7 @@ optional = false
 python-versions = ">=3.10,<3.15"
 groups = ["dev"]
 files = []
-develop = true
+develop = false
 
 [package.dependencies]
 anthropic = "^0.99.0"
@@ -1737,8 +1737,10 @@ tree-sitter-typescript = "^0.23.2"
 vulture = ">=2.0"
 
 [package.source]
-type = "directory"
-url = "../../../test_utils"
+type = "git"
+url = "https://github.com/agritheory/test_utils.git"
+reference = "v1.28.0"
+resolved_reference = "e412232b6896637cb26645b96c24afa6b8472911"
 
 [[package]]
 name = "testcontainers"
@@ -2116,4 +2118,4 @@ resolved_reference = "45ffc60638814df575d9fe11c7504b1a533e4ecb"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<3.15"
-content-hash = "92b102dd2feb3bec76a9b145a5a8885679f508627eb826e5748f865197a638b2"
+content-hash = "fac2a6d014c84a48898429f8caa3577d793395f22f269c0d13f4a4a08ea0380b"
