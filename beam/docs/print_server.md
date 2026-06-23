@@ -4,7 +4,7 @@ For license information, please see license.txt-->
 # Print Server
 
 <div class="byline">
-  Rohan Bansal, Heather Kusmierz, and Tyler Matteson 2026-06-17
+  Rohan Bansal, Heather Kusmierz, and Tyler Matteson 2026-06-22
 </div>
 
 
@@ -39,16 +39,18 @@ On a saved record, **Administrator** can use:
 
 Use the **Printer Fleet Status** report to compare CUPS queues against ERPNext records (synced, orphan, missing, mismatch) across print servers.
 
-## Testing (local CUPS)
+## Testing (CUPS container)
 
-Integration tests require local CUPS on `localhost:631` and the bench user in `lpadmin`:
+Integration tests start the published CUPS container via testcontainers (Docker required):
 
 ```bash
 pytest beam/beam/tests/test_printer_logic.py
 pytest beam/beam/tests/test_printer_cups_integration.py
 ```
 
-Pure logic tests run without CUPS. Integration tests use `test_utils.printers` mock servers (TCP raw + IPP) plus real pycups/CUPS queue creation.
+Locally the fixture builds from [`cups/cups/Containerfile`](../../cups/cups/Containerfile). In CI, set `BEAM_CUPS_IMAGE` to the GHCR tag built in the same pipeline (for example `ghcr.io/agritheory/beam-cups:sha-<git-sha>`). Optional env vars: `CUPS_ADMIN_USER`, `CUPS_ADMIN_PASSWORD` (defaults match `cups/.env.example`).
+
+Pure logic tests run without CUPS. Integration tests use `test_utils.printers` mock servers (TCP raw + IPP) plus real pycups/CUPS queue creation against the container on a mapped HTTP port.
 
 ---
 

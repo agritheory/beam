@@ -31,7 +31,10 @@ function render_cups_status_dashboard(frm, status) {
 	const make_model = frappe.utils.escape_html(status.make_model || '')
 	const description = frappe.utils.escape_html(status.description || '')
 	const accepting = status.is_accepting_jobs ? __('Accepting jobs') : __('Rejecting jobs')
-	const reasons = status.state_reasons_display ? frappe.utils.escape_html(status.state_reasons_display) : ''
+	const reasons =
+		status.state_reasons_display && status.state_reasons_display !== 'none'
+			? frappe.utils.escape_html(status.state_reasons_display)
+			: ''
 
 	const lines = [`<span class="indicator ${color}"></span> ${label}`, make_model, description, accepting]
 	if (reasons) {
@@ -40,10 +43,10 @@ function render_cups_status_dashboard(frm, status) {
 
 	const html = `<div class="text-muted small">${lines.filter(Boolean).join('<br>')}</div>`
 
-	if (!frm.cups_status_wrapper) {
-		frm.cups_status_wrapper = $(`<div class="cups-status-dashboard"></div>`).insertAfter(
-			frm.layout.wrapper.find('.form-layout').first()
-		)
+	if (!frm.cups_status_wrapper || !$.contains(document, frm.cups_status_wrapper[0])) {
+		frm.cups_status_wrapper = $(
+			`<div class="cups-status-dashboard" style="padding: 8px 15px; border-top: 1px solid var(--border-color);"></div>`
+		).appendTo(frm.layout.wrapper.find('.form-page'))
 	}
 	frm.cups_status_wrapper.html(html)
 }

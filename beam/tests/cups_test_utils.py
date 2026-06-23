@@ -1,41 +1,71 @@
 # Copyright (c) 2025, AgriTheory and contributors
 # For license information, please see license.txt
 
+import time
 from contextlib import contextmanager
+from urllib.parse import urlparse, urlunparse
 
 import frappe
 import httpx
 from test_utils.printers.ipp.codec import IppEncoder, IppOperation, IppTag
 
 from beam.beam.overrides.network_printer_settings import (
-	cups_connection,
 	default_ppd_for_type,
 	require_cups,
 	run_cups_admin,
 )
 
+CUPS_HOST_FROM_CONTAINER = "host.docker.internal"
+# Mock printers must listen on all interfaces so the CUPS container can reach them
+# via host.docker.internal / host-gateway (127.0.0.1-only listeners reject those connections).
+MOCK_PRINTER_BIND_HOST = "0.0.0.0"
 
-def cups_available(server_ip="localhost", port=631):
+
+def cups_test_connection(server):
+	cups = require_cups()
+	password = server["password"]
+	cups.setServer(server["host"])
+	cups.setPort(int(server["port"]))
+	cups.setUser(server["user"])
+	cups.setPasswordCB(lambda prompt: password)
+	return cups.Connection()
+
+
+def cups_available(server):
 	try:
-		require_cups()
-		conn = cups_connection(server_ip, port)
+		conn = cups_test_connection(server)
 		conn.getPrinters()
 	except Exception:
 		return False
 	return True
 
 
-def require_local_cups(server_ip="localhost", port=631):
-	if not cups_available(server_ip, port):
-		raise RuntimeError(
-			"Local CUPS is required for integration tests (localhost:631, bench user in lpadmin)."
-		)
+def device_uri_for_cups(printer, server):
+	uri = printer.uri
+	replacement_host = server.get("cups_host_from_container", CUPS_HOST_FROM_CONTAINER)
+	parsed = urlparse(uri)
+	if parsed.hostname not in ("127.0.0.1", "localhost", "::1", "0.0.0.0"):
+		return uri
+
+	hostname = replacement_host
+	if parsed.hostname == "::1":
+		hostname = f"[{replacement_host}]"
+
+	netloc = hostname
+	if parsed.port:
+		netloc = f"{hostname}:{parsed.port}"
+	if parsed.username:
+		userinfo = parsed.username
+		if parsed.password:
+			userinfo = f"{userinfo}:{parsed.password}"
+		netloc = f"{userinfo}@{netloc}"
+
+	return urlunparse(parsed._replace(netloc=netloc))
 
 
 @contextmanager
-def temporary_cups_queue(queue_name, device_uri, server_ip="localhost", port=631, ppdname=None):
-	require_local_cups(server_ip, port)
-	conn = cups_connection(server_ip, port)
+def temporary_cups_queue(queue_name, device_uri, server, ppdname=None):
+	conn = cups_test_connection(server)
 	ppdname = ppdname or default_ppd_for_type("Label / RAW")
 
 	def create_queue():
@@ -80,3 +110,25 @@ def submit_ipp_print_job(printer, document: bytes, job_name: str, mime_type: str
 	)
 	response.raise_for_status()
 	return response
+
+
+def configure_pycups_credentials(server):
+	cups = require_cups()
+	password = server["password"]
+	cups.setUser(server["user"])
+	cups.setPasswordCB(lambda prompt: password)
+
+
+def wait_for_cups_http(server, timeout=120.0):
+	url = f"http://{server['host']}:{server['port']}/"
+	auth = (server["user"], server["password"])
+	with httpx.Client(timeout=5.0) as client:
+		for _ in range(int(timeout / 2)):
+			try:
+				response = client.get(url, auth=auth)
+				if response.status_code < 500:
+					return
+			except httpx.HTTPError:
+				pass
+			time.sleep(2)
+	raise RuntimeError(f"CUPS did not become ready at {url} within {timeout}s")

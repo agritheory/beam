@@ -15,7 +15,7 @@
 # 110–132 | Print server logic — URI, CUPS state, fleet rows, ZPL, notifications
 # 140–162 | Printer setup — wizard, configure, test print, decommission
 # 166–168 | Printer setup — wizard API permissions
-# 170–179 | Live CUPS — ZD621 at Chelsea dock (requires local CUPS + lpadmin)
+# 170–179 | Live CUPS — ZD621 at Chelsea dock (Docker + published CUPS container)
 # 180–200 | Print queue panel — job snapshots, client polling, permissions
 #
 # Manual testing helpers
@@ -66,10 +66,11 @@
 #   pytest apps/beam/beam/tests/test_printer_logic.py -v          # no CUPS required
 #   pytest apps/beam/beam/tests/test_printer_wizard.py -v       # mocked CUPS
 #   pytest apps/beam/beam/tests/test_printer_queue.py -v         # mocked CUPS
-#   pytest apps/beam/beam/tests/test_printer_cups_integration.py -v   # local CUPS + lpadmin
+#   pytest apps/beam/beam/tests/test_printer_cups_integration.py -v   # Docker + CUPS container
 #   bench --site pinyon set-config allow_tests true             # if bench run-tests is used
 
 import json
+import os
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -77,10 +78,22 @@ from unittest.mock import MagicMock
 import frappe
 import pytest
 from frappe.utils import get_bench_path
+from testcontainers.core.container import DockerContainer
+from testcontainers.core.image import DockerImage
+
+from cups_test_utils import (
+	CUPS_HOST_FROM_CONTAINER,
+	configure_pycups_credentials,
+	wait_for_cups_http,
+)
 
 TESTS_DIR = Path(__file__).resolve().parent
 if str(TESTS_DIR) not in sys.path:
 	sys.path.insert(0, str(TESTS_DIR))
+
+CUPS_CONTAINER_CONTEXT = TESTS_DIR.parents[1] / "cups" / "cups"
+DEFAULT_CUPS_ADMIN_USER = os.environ.get("CUPS_ADMIN_USER", "admin")
+DEFAULT_CUPS_ADMIN_PASSWORD = os.environ.get("CUPS_ADMIN_PASSWORD", "root")
 
 
 def _get_logger(*args, **kwargs):
@@ -116,3 +129,64 @@ def db_instance():
 	frappe.connect()
 	frappe.db.commit = MagicMock()
 	yield frappe.db
+
+
+def start_cups_container(image_ref):
+	container = (
+		DockerContainer(image_ref)
+		.with_exposed_ports(631)
+		.with_kwargs(extra_hosts={"host.docker.internal": "host-gateway"})
+	)
+	container.start()
+	return container
+
+
+@pytest.fixture(scope="session")
+def cups_server():
+	image_ref = os.environ.get("BEAM_CUPS_IMAGE")
+	buildargs = {
+		"CUPS_ADMIN_USER": DEFAULT_CUPS_ADMIN_USER,
+		"CUPS_ADMIN_PASSWORD": DEFAULT_CUPS_ADMIN_PASSWORD,
+	}
+	server = {
+		"user": DEFAULT_CUPS_ADMIN_USER,
+		"password": DEFAULT_CUPS_ADMIN_PASSWORD,
+		"cups_host_from_container": CUPS_HOST_FROM_CONTAINER,
+	}
+
+	try:
+		if image_ref:
+			container = start_cups_container(image_ref)
+			try:
+				server["host"] = container.get_container_host_ip()
+				server["port"] = int(container.get_exposed_port(631))
+				wait_for_cups_http(server)
+				configure_pycups_credentials(server)
+				yield server
+			finally:
+				container.stop()
+		else:
+			docker_image = DockerImage(
+				path=CUPS_CONTAINER_CONTEXT,
+				dockerfile_path="Containerfile",
+				tag="beam-cups-test:local",
+			)
+			try:
+				docker_image.build(buildargs=buildargs)
+				container = start_cups_container(str(docker_image))
+				try:
+					server["host"] = container.get_container_host_ip()
+					server["port"] = int(container.get_exposed_port(631))
+					wait_for_cups_http(server)
+					configure_pycups_credentials(server)
+					yield server
+				finally:
+					container.stop()
+			finally:
+				docker_image.remove()
+	except Exception as exc:
+		raise RuntimeError(
+			"CUPS integration tests require Docker. Start Docker, or set BEAM_CUPS_IMAGE "
+			"to a pre-built image such as ghcr.io/agritheory/beam-cups:latest. "
+			f"Original error: {exc}"
+		) from exc

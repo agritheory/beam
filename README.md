@@ -85,6 +85,8 @@ mypy ./apps/beam/beam --ignore-missing-imports
 pytest ./apps/beam/beam/tests -s --disable-warnings
 ```
 
+CUPS integration tests (`test_printer_cups_integration.py`) require Docker. The session fixture builds [`cups/cups/Containerfile`](./cups/cups/Containerfile) locally or pulls `ghcr.io/agritheory/beam-cups` when `BEAM_CUPS_IMAGE` is set.
+
 ### Printer Server setup
 ```shell
 sudo apt-get install gcc cups python3-dev libcups2-dev -y

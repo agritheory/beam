@@ -143,8 +143,6 @@ def parse_device_uri_host(device_uri):
 	if not match:
 		return None
 	host = match.group(1)
-	if host.endswith(".local"):
-		return host
 	return host
 
 
@@ -183,6 +181,14 @@ def check_socket_reachable(host, port, timeout=3):
 		return False
 
 
+def host_for_reachability_check(host):
+	"""Map Docker bridge hostnames to localhost for checks run on the bench host."""
+	normalized = (host or "").strip().lower()
+	if normalized == "host.docker.internal":
+		return "127.0.0.1"
+	return host
+
+
 def validate_device_uri(device_uri):
 	warnings = []
 	host = parse_device_uri_host(device_uri)
@@ -195,7 +201,7 @@ def validate_device_uri(device_uri):
 
 	socket_reachable = None
 	if device_uri and scheme_needs_socket_check(device_uri) and host and port:
-		socket_reachable = check_socket_reachable(host, port)
+		socket_reachable = check_socket_reachable(host_for_reachability_check(host), port)
 
 	if device_uri and device_uri.startswith("socket://") and port and port != 9100:
 		warnings.append(_("Port {0} is unusual for raw socket printing; expected 9100.").format(port))
@@ -714,7 +720,10 @@ def create_printer_queue(
 		try:
 			conn.deletePrinter(printer_name)
 		except Exception:
-			pass
+			frappe.log_error(
+				title="CUPS rollback failed",
+				message=f"Could not delete orphaned queue {printer_name} after NPS insert failure",
+			)
 		frappe.throw(
 			_("Printer was created on the print server but ERPNext record failed: {0}").format(exc)
 		)

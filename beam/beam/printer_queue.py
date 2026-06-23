@@ -11,7 +11,6 @@ from beam.beam.overrides.network_printer_settings import (
 	check_network_printer_settings_write_permission,
 	cups_connection,
 	is_local_cups_server,
-	require_cups,
 )
 
 SESSION_CACHE_PREFIX = "printer_queue_session:"
@@ -448,11 +447,8 @@ def stop_printer_queue_watcher(task_id):
 def cancel_printer_job(server_ip, port, job_id):
 	check_printer_queue_write_permission()
 	conn = cups_connection(server_ip, int(port))
-	cups = require_cups()
 	try:
 		conn.cancelJob(int(job_id))
-	except cups.IPPError as exc:
-		frappe.throw(_("Could not cancel print job: {0}").format(exc))
 	except Exception as exc:
 		frappe.throw(_("Could not cancel print job: {0}").format(exc))
 	return {"cancelled": True, "job_id": int(job_id)}

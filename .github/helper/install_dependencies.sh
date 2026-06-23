@@ -7,4 +7,4 @@ if grep -lr --exclude-dir=node_modules "^<<<<<<< " $GITHUB_WORKSPACE
     exit 1
 fi
 
-sudo apt update -y && sudo apt install redis-server libcups2-dev mariadb-client -y
+sudo apt update -y && sudo apt install redis-server cups libcups2-dev mariadb-client -y
