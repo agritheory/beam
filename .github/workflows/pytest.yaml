@@ -147,6 +147,7 @@ jobs:
         working-directory: /home/runner/frappe-bench
         env:
           POETRY_VIRTUALENVS_CREATE: "false"
+          TESTCONTAINERS_RYUK_DISABLED: "true"
         run: |
           source env/bin/activate
           cd apps/beam
