@@ -65,6 +65,9 @@ jobs:
   tests:
     needs: build-cups
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      packages: read
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -83,7 +86,7 @@ jobs:
           MYSQL_ROOT_PASSWORD: 'admin'
         ports:
           - 3306:3306
-        options: --health-cmd="mysqladmin ping" --health-interval=5s --health-timeout=2s --health-retries=3
+        options: --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -padmin" --health-interval=5s --health-timeout=2s --health-retries=3
 
     steps:
       - name: Clone
@@ -129,6 +132,16 @@ jobs:
           BRANCH_NAME: ${{ env.BRANCH_NAME}}
         run: |
           bash ${{ github.workspace }}/.github/helper/install.sh
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull CUPS test image
+        run: docker pull "$BEAM_CUPS_IMAGE"
 
       - name: Run Tests
         working-directory: /home/runner/frappe-bench

@@ -72,6 +72,7 @@
 import json
 import os
 import sys
+import time
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -141,6 +142,23 @@ def start_cups_container(image_ref):
 	return container
 
 
+def resolve_cups_host_port(container, port=631):
+	"""Resolve the mapped CUPS HTTP endpoint without testcontainers' 120s port wait loop."""
+	client = container.get_docker_client().client
+	host = container.get_container_host_ip()
+	deadline = time.time() + 30
+	last_error = None
+	while time.time() < deadline:
+		try:
+			mappings = client.api.port(container._container.id, port)
+			if mappings:
+				return host, int(mappings[0]["HostPort"])
+		except Exception as exc:
+			last_error = exc
+		time.sleep(1)
+	raise RuntimeError(f"CUPS container did not publish port {port} within 30s: {last_error}")
+
+
 @pytest.fixture(scope="session")
 def cups_server():
 	image_ref = os.environ.get("BEAM_CUPS_IMAGE")
@@ -158,8 +176,7 @@ def cups_server():
 		if image_ref:
 			container = start_cups_container(image_ref)
 			try:
-				server["host"] = container.get_container_host_ip()
-				server["port"] = int(container.get_exposed_port(631))
+				server["host"], server["port"] = resolve_cups_host_port(container)
 				wait_for_cups_http(server)
 				configure_pycups_credentials(server)
 				yield server
@@ -175,8 +192,7 @@ def cups_server():
 				docker_image.build(buildargs=buildargs)
 				container = start_cups_container(str(docker_image))
 				try:
-					server["host"] = container.get_container_host_ip()
-					server["port"] = int(container.get_exposed_port(631))
+					server["host"], server["port"] = resolve_cups_host_port(container)
 					wait_for_cups_http(server)
 					configure_pycups_credentials(server)
 					yield server
