@@ -15,8 +15,8 @@
 # 110–132 | Print server logic — URI, CUPS state, fleet rows, ZPL, notifications
 # 140–162 | Printer setup — wizard, configure, test print, decommission
 # 166–168 | Printer setup — wizard API permissions
-# 170–179 | Live CUPS — ZD621 at Chelsea dock (Docker + published CUPS container)
-# 180–200 | Print queue panel — job snapshots, client polling, permissions
+# 170–200 | Print queue panel — job snapshots, client polling, permissions
+# 210–220 | Live CUPS — ZD621 at Chelsea dock (workflow CUPS service container)
 #
 # Manual testing helpers
 # ----------------------
@@ -66,33 +66,32 @@
 #   pytest apps/beam/beam/tests/test_printer_logic.py -v          # no CUPS required
 #   pytest apps/beam/beam/tests/test_printer_wizard.py -v       # mocked CUPS
 #   pytest apps/beam/beam/tests/test_printer_queue.py -v         # mocked CUPS
-#   pytest apps/beam/beam/tests/test_printer_cups_integration.py -v   # Docker + CUPS container
+#   pytest apps/beam/beam/tests/test_printer_cups_integration.py -v   # CUPS workflow service
 #   bench --site pinyon set-config allow_tests true             # if bench run-tests is used
 
 import json
 import os
 import sys
-import threading
 from pathlib import Path
 from unittest.mock import MagicMock
 
 import frappe
 import pytest
 from frappe.utils import get_bench_path
-from testcontainers.core.container import DockerContainer
-from testcontainers.core.image import DockerImage
 
 from cups_test_utils import (
-	CUPS_HOST_FROM_CONTAINER,
 	configure_pycups_credentials,
+	mock_host_for_cups_container,
 	wait_for_cups_http,
 )
+from test_telemetry import emit as telemetry
+
+pytest_plugins = ["test_telemetry"]
 
 TESTS_DIR = Path(__file__).resolve().parent
 if str(TESTS_DIR) not in sys.path:
 	sys.path.insert(0, str(TESTS_DIR))
 
-CUPS_CONTAINER_CONTEXT = TESTS_DIR.parents[1] / "cups" / "cups"
 DEFAULT_CUPS_ADMIN_USER = os.environ.get("CUPS_ADMIN_USER", "admin")
 DEFAULT_CUPS_ADMIN_PASSWORD = os.environ.get("CUPS_ADMIN_PASSWORD", "root")
 
@@ -132,78 +131,34 @@ def db_instance():
 	yield frappe.db
 
 
-def start_cups_container(image_ref):
-	container = (
-		DockerContainer(image_ref)
-		.with_exposed_ports(631)
-		.with_kwargs(extra_hosts={"host.docker.internal": "host-gateway"})
-	)
-	container.start()
-	return container
-
-
-def stop_container_nowait(container, timeout=15):
-	"""Stop a testcontainers DockerContainer without blocking pytest.
-
-	On some CI runners (GHA Ubuntu + iptables-nft), Docker's container.remove()
-	can stall for several minutes waiting on a kernel iptables lock held by a
-	concurrent service container cleanup.  Running the stop in a daemon thread
-	lets pytest proceed; the thread is killed when the process exits and Docker's
-	own resource manager handles any leftover state.  Each GHA job runs in a
-	fresh VM, so orphaned containers are harmless.
-	"""
-	t = threading.Thread(target=container.stop, daemon=True)
-	t.start()
-	t.join(timeout)
-
-
 @pytest.fixture(scope="module")
 def cups_server():
-	"""Start a CUPS container for the test module and tear it down after the module."""
-	image_ref = os.environ.get("BEAM_CUPS_IMAGE")
-	buildargs = {
-		"CUPS_ADMIN_USER": DEFAULT_CUPS_ADMIN_USER,
-		"CUPS_ADMIN_PASSWORD": DEFAULT_CUPS_ADMIN_PASSWORD,
-	}
+	"""Connect to the CUPS service container started by the pytest workflow."""
+	host = os.environ.get("BEAM_CUPS_HOST", "127.0.0.1")
+	port = int(os.environ.get("BEAM_CUPS_PORT", "631"))
 	server = {
+		"host": host,
+		"port": port,
 		"user": DEFAULT_CUPS_ADMIN_USER,
 		"password": DEFAULT_CUPS_ADMIN_PASSWORD,
-		"cups_host_from_container": CUPS_HOST_FROM_CONTAINER,
+		"cups_host_from_container": mock_host_for_cups_container(),
 	}
 
+	telemetry(
+		f"cups_server connect host={host} port={port} " f"mock_host={server['cups_host_from_container']}"
+	)
 	try:
-		if image_ref:
-			container = start_cups_container(image_ref)
-			try:
-				server["host"] = container.get_container_host_ip()
-				server["port"] = int(container.get_exposed_port(631))
-				wait_for_cups_http(server)
-				configure_pycups_credentials(server)
-				yield server
-			finally:
-				stop_container_nowait(container)
-		else:
-			docker_image = DockerImage(
-				path=CUPS_CONTAINER_CONTEXT,
-				dockerfile_path="Containerfile",
-				tag="beam-cups-test:local",
-			)
-			try:
-				docker_image.build(buildargs=buildargs)
-				container = start_cups_container(str(docker_image))
-				try:
-					server["host"] = container.get_container_host_ip()
-					server["port"] = int(container.get_exposed_port(631))
-					wait_for_cups_http(server)
-					configure_pycups_credentials(server)
-					yield server
-				finally:
-					stop_container_nowait(container)
-			finally:
-				docker_image.remove()
+		wait_for_cups_http(server)
+		configure_pycups_credentials(server)
 	except Exception as exc:
+		telemetry(f"cups_server failed: {exc}")
 		raise RuntimeError(
-			"CUPS integration tests require Docker. Start Docker, or set BEAM_CUPS_IMAGE "
-			"to a pre-built image such as ghcr.io/agritheory/beam-cups:latest. "
+			"CUPS integration tests require the CUPS workflow service on "
+			f"{host}:{port}. In CI this is provided by the pytest workflow; locally run "
+			"the beam-cups image with port 631 published and set BEAM_CUPS_HOST/PORT. "
 			f"Original error: {exc}"
 		) from exc
+
+	telemetry("cups_server ready")
+	yield server
+	telemetry("cups_server module complete")

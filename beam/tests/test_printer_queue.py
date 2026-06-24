@@ -221,7 +221,12 @@ def test_session_tracks_jobs_that_finish_between_polls():
 
 @pytest.mark.order(186)
 def test_start_printer_queue_session_does_not_enqueue():
-	with patch("frappe.enqueue") as mock_enqueue:
+	mock_conn = mock_cups_connection()
+	with (
+		patch("frappe.enqueue") as mock_enqueue,
+		patch.object(pq, "cups_connection", return_value=mock_conn),
+		patch.object(pq, "list_print_servers", return_value=[TEST_PRINT_SERVER]),
+	):
 		result = pq.start_printer_queue_watcher()
 
 	assert result["task_id"]

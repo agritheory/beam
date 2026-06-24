@@ -74,9 +74,11 @@ jobs:
       fail-fast: false
     name: Server
     env:
-      BEAM_CUPS_IMAGE: ${{ needs.build-cups.outputs.image }}
       CUPS_ADMIN_USER: ${{ needs.build-cups.outputs.cups_admin_user }}
       CUPS_ADMIN_PASSWORD: ${{ needs.build-cups.outputs.cups_admin_password }}
+      BEAM_CUPS_HOST: cups
+      BEAM_CUPS_PORT: "631"
+      BENCH_ROOT: /home/runner/frappe-bench
 
     services:
       mariadb:
@@ -87,6 +89,24 @@ jobs:
         ports:
           - 3306:3306
         options: --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -padmin" --health-interval=5s --health-timeout=2s --health-retries=3
+
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: --health-cmd="redis-cli ping" --health-interval=5s --health-timeout=2s --health-retries=3
+
+      cups:
+        image: ${{ needs.build-cups.outputs.image }}
+        credentials:
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+        options: >-
+          --add-host=host.docker.internal:host-gateway
+          --health-cmd="bash -c 'echo > /dev/tcp/127.0.0.1/631'"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=12
 
     steps:
       - name: Clone
@@ -105,6 +125,7 @@ jobs:
           cache: 'yarn'  # Replaces `Get yarn cache directory path` and `yarn-cache` steps
 
       - name: Add to Hosts
+        if: ${{ !env.ACT }}
         run: echo "127.0.0.1 test_site" | sudo tee -a /etc/hosts
 
       - name: Cache pip
@@ -133,21 +154,12 @@ jobs:
         run: |
           bash ${{ github.workspace }}/.github/helper/install.sh
 
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Pull CUPS test image
-        run: docker pull "$BEAM_CUPS_IMAGE"
-
       - name: Run Tests
-        working-directory: /home/runner/frappe-bench
+        working-directory: ${{ env.BENCH_ROOT }}
         env:
           POETRY_VIRTUALENVS_CREATE: "false"
-          TESTCONTAINERS_RYUK_DISABLED: "true"
+          BEAM_TEST_TELEMETRY: "true"
+          BEAM_TEST_STACK_DUMP_SECONDS: "60"
         run: |
           source env/bin/activate
           cd apps/beam
@@ -155,7 +167,8 @@ jobs:
           pytest --cov=beam --cov-report=xml --disable-warnings -s | tee pytest-coverage.txt
 
       - name: Pytest coverage comment
+        if: ${{ !env.ACT }}
         uses: MishaKav/pytest-coverage-comment@main
         with:
-          pytest-coverage-path: /home/runner/frappe-bench/apps/beam/pytest-coverage.txt
-          pytest-xml-coverage-path: /home/runner/frappe-bench/apps/beam/coverage.xml
+          pytest-coverage-path: ${{ env.BENCH_ROOT }}/apps/beam/pytest-coverage.txt
+          pytest-xml-coverage-path: ${{ env.BENCH_ROOT }}/apps/beam/coverage.xml

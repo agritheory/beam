@@ -17,7 +17,7 @@ from cups_test_utils import (
 )
 
 
-@pytest.mark.order(170)
+@pytest.mark.order(210)
 def test_create_queue_prints_zpl_test_label_to_fake_printer(cups_server):
 	"""Chelsea Receiving Labels sends a ZPL test label to the fake ZD621 raw printer."""
 	nps_name = "Chelsea Receiving Labels Integration"
@@ -50,7 +50,7 @@ def test_create_queue_prints_zpl_test_label_to_fake_printer(cups_server):
 		delete_nps_if_exists(nps_name)
 
 
-@pytest.mark.order(172)
+@pytest.mark.order(212)
 def test_configure_printer_updates_device_uri_on_cups(cups_server):
 	"""Administrator retargets Chelsea Receiving Labels to a new fake printer URI."""
 	nps_name = "Chelsea Receiving Labels Configure Integration"
@@ -86,7 +86,7 @@ def test_configure_printer_updates_device_uri_on_cups(cups_server):
 		delete_nps_if_exists(nps_name)
 
 
-@pytest.mark.order(174)
+@pytest.mark.order(214)
 def test_configure_printer_reject_jobs(cups_server):
 	"""Chelsea dock ZD621 stops accepting jobs without deleting the queue."""
 	nps_name = "Chelsea Receiving Labels Reject Integration"
@@ -115,7 +115,7 @@ def test_configure_printer_reject_jobs(cups_server):
 		delete_nps_if_exists(nps_name)
 
 
-@pytest.mark.order(176)
+@pytest.mark.order(216)
 def test_fleet_report_lists_orphan_vraw_queue(cups_server):
 	"""Legacy vRAW on CUPS appears as an orphan queue in the fleet report."""
 	queue_name = "BEAM_TEST_ORPHAN_VRAW"
@@ -144,7 +144,7 @@ def test_fleet_report_lists_orphan_vraw_queue(cups_server):
 	delete_nps_if_exists(probe_name)
 
 
-@pytest.mark.order(178)
+@pytest.mark.order(218)
 def test_create_queue_fails_when_device_unreachable(cups_server):
 	"""Stock Manager cannot create Chelsea Receiving Labels against a dead socket URI."""
 	nps_name = "Chelsea Receiving Labels Dead Socket"
@@ -170,7 +170,7 @@ def test_create_queue_fails_when_device_unreachable(cups_server):
 	assert queue_name not in conn.getPrinters()
 
 
-@pytest.mark.order(179)
+@pytest.mark.order(220)
 def test_create_queue_registers_ipp_device_and_delivers_print_job(cups_server, tmp_path):
 	"""Office PDF queue registers mock IPP on CUPS; Print-Job at that URI lands in save_dir."""
 	nps_name = "Office PDF Mock IPP Integration"

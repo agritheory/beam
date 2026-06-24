@@ -1,6 +1,7 @@
 # Copyright (c) 2025, AgriTheory and contributors
 # For license information, please see license.txt
 
+import os
 import time
 from contextlib import contextmanager
 from urllib.parse import urlparse, urlunparse
@@ -19,6 +20,23 @@ CUPS_HOST_FROM_CONTAINER = "host.docker.internal"
 # Mock printers must listen on all interfaces so the CUPS container can reach them
 # via host.docker.internal / host-gateway (127.0.0.1-only listeners reject those connections).
 MOCK_PRINTER_BIND_HOST = "0.0.0.0"
+
+
+def mock_host_for_cups_container():
+	"""Host that the CUPS service container uses to reach mock printers in the test runner."""
+	explicit = os.environ.get("BEAM_CUPS_MOCK_HOST", "").strip()
+	if explicit:
+		return explicit
+	if os.environ.get("CI") == "true" or os.environ.get("ACT") == "true":
+		import subprocess
+
+		try:
+			ip = subprocess.check_output(["hostname", "-I"], text=True).split()[0]
+			if ip:
+				return ip
+		except (IndexError, subprocess.CalledProcessError, FileNotFoundError):
+			pass
+	return CUPS_HOST_FROM_CONTAINER
 
 
 def cups_test_connection(server):
