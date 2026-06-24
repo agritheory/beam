@@ -83,6 +83,8 @@ def create_test_data():
 	create_suppliers(settings)
 	create_customers(settings)
 	create_items(settings)
+	create_mass_uom_conversions()
+	create_scale_doctype_configs(settings)
 	create_boms(settings)
 	prod_plan_from_doc = "Sales Order"
 	if prod_plan_from_doc == "Sales Order":
@@ -606,6 +608,59 @@ def create_purchase_receipt_for_received_qty_test(settings):
 		},
 	)
 	pr.save()
+
+
+def create_mass_uom_conversions():
+	"""Create UOM Conversion Factor records for mass units with category='Mass'."""
+	mass_conversions = [
+		("Pound", "Ounce", 16.0),
+		("Gram", "Ounce", 0.035274),
+		("Kg", "Gram", 1000.0),
+	]
+	for from_uom, to_uom, value in mass_conversions:
+		if not frappe.db.exists("UOM", from_uom) or not frappe.db.exists("UOM", to_uom):
+			continue
+		if not frappe.db.exists("UOM Conversion Factor", {"from_uom": from_uom, "to_uom": to_uom}):
+			frappe.get_doc(
+				{
+					"doctype": "UOM Conversion Factor",
+					"from_uom": from_uom,
+					"to_uom": to_uom,
+					"value": value,
+					"category": "Mass",
+				}
+			).insert()
+
+
+def create_scale_doctype_configs(settings):
+	"""Create BEAM Scale Doctype Config for Purchase Receipt."""
+	company = settings.company
+
+	try:
+		if not frappe.db.exists("BEAM Settings", company):
+			beam_settings = frappe.new_doc("BEAM Settings")
+			beam_settings.name = company
+			beam_settings.company = company
+			beam_settings.save()
+
+		beam_settings = frappe.get_doc("BEAM Settings", company)
+
+		existing_configs = [row.doctype_name for row in beam_settings.scale_doctype_configs or []]
+
+		if "Purchase Receipt" not in existing_configs:
+			beam_settings.append(
+				"scale_doctype_configs",
+				{
+					"doctype_name": "Purchase Receipt",
+					"qty_field": "qty",
+					"items_table_field": "items",
+					"zero_threshold": 0.1,
+					"autoadvance_on_zero": 1,
+				},
+			)
+			beam_settings.save()
+	except Exception:
+		pass
 
 
 def create_network_printer_settings(settings):

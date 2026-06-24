@@ -36,12 +36,12 @@ repos:
         files: '\.md$'
 
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.19.1
+    rev: v2.34.0
     hooks:
       - id: pyupgrade
-        args: ['--py310-plus']
+        args: ['--py38-plus']
 
-  - repo: https://github.com/agritheory/black
+  - repo: https://github.com/frappe/black
     rev: 951ccf4d5bb0d692b457a5ebc4215d755618eb68
     hooks:
       - id: black
@@ -53,7 +53,7 @@ repos:
         additional_dependencies: ['flake8-bugbear']
 
   - repo: https://github.com/agritheory/test_utils
-    rev: v1.20.2
+    rev: v1.28.0
     hooks:
       - id: update_pre_commit_config
       - id: validate_frappe_project
