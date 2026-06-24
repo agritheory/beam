@@ -3,8 +3,12 @@
 
 import onScan from 'onscan.js'
 
+const isLoginPath = window.location.pathname === '/login'
+
 function waitForElement(selector) {
 	return new Promise(resolve => {
+		if (isLoginPath) return resolve(document.body)
+
 		if (document.querySelector(selector)) {
 			return resolve(document.querySelector(selector))
 		}
@@ -21,9 +25,16 @@ function waitForElement(selector) {
 	})
 }
 
+function initScanHandler() {
+	if (typeof ScanHandler === 'undefined') return
+	new ScanHandler()
+}
+
 waitForElement('[data-route]').then(element => {
+	initScanHandler()
+
 	let observer = new MutationObserver(() => {
-		new ScanHandler()
+		initScanHandler()
 	})
 	const config = { attributes: true, childList: false, characterData: true }
 	observer.observe(element, config)
@@ -66,18 +77,36 @@ class ScanHandler {
 	}
 	async get_scanned_context(sCode, iQty) {
 		return new Promise(resolve => {
-			const context = this.reduceContext()
-			frappe.xcall('beam.beam.scan.scan', { barcode: sCode, context: context, current_qty: iQty }).then(r => {
-				if (r && r.length) {
-					if (Object.keys(frappe.boot.beam.client).includes(r[0].action)) {
-						let path = frappe.boot.beam.client[r[0].action][0]
-						resolve(path.split('.').reduce((o, i) => o[i], window)(r)) // calls (first) custom built callback registered in hooks
-					} else {
-						resolve(this[String(r[0].action)](r)) // TODO: this only calls the first function
-					}
+			if (isLoginPath) {
+				if (typeof frappe === 'undefined' || typeof frappe.call !== 'function') {
+					return
 				}
-				// TODO: else error
-			})
+				frappe.call({
+					method: 'beam.beam.scan.user_login.scan_login',
+					args: { barcode: sCode },
+					callback: function (r) {
+						if (r?.exc_type || !r?.message?.success) return
+						const redirect =
+							frappe.utils.sanitise_redirect(frappe.utils.get_url_arg('redirect-to')) ||
+							r.message.redirect_to ||
+							r.message.home_page
+						window.location.href = redirect
+					},
+				})
+			} else {
+				const context = this.reduceContext()
+				frappe.xcall('beam.beam.scan.scan', { barcode: sCode, context: context, current_qty: iQty }).then(r => {
+					if (r && r.length) {
+						if (Object.keys(frappe.boot.beam.client).includes(r[0].action)) {
+							let path = frappe.boot.beam.client[r[0].action][0]
+							resolve(path.split('.').reduce((o, i) => o[i], window)(r)) // calls (first) custom built callback registered in hooks
+						} else {
+							resolve(this[String(r[0].action)](r)) // TODO: this only calls the first function
+						}
+					}
+					// TODO: else error
+				})
+			}
 		})
 	}
 	route(barcode_context) {
