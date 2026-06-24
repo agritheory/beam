@@ -5,12 +5,43 @@ frappe.ui.form.on('Purchase Receipt', {
 	async refresh(frm) {
 		await setup_scale(frm)
 	},
+	items_add(frm, cdt, cdn) {
+		if (!scaleState.connected) return
+
+		const itemsTableField = (scaleState.config && scaleState.config.items_table_field) || 'items'
+		const items = frm.doc[itemsTableField] || []
+		const newRowIdx = items.findIndex(r => r.name === cdn)
+		if (newRowIdx < 0) return
+
+		focusScaleRow(newRowIdx)
+	},
 })
+
+function resetScaleIterator() {
+	scaleState.activeRowIdx = 0
+	scaleState.workflowState = 'WAITING'
+	scaleState.stableReadingCount = 0
+	scaleState.qtyFilled = false
+	scaleState.lastStatusText = 'Place item on scale'
+	scaleState.lastReadingKey = null
+}
+
+function focusScaleRow(rowIdx) {
+	scaleState.activeRowIdx = rowIdx
+	scaleState.workflowState = 'WAITING'
+	scaleState.stableReadingCount = 0
+	scaleState.qtyFilled = false
+	scaleState.lastStatusText = 'Place item on scale'
+	scaleState.lastReadingKey = null
+	updatePopover()
+	updateRowHighlight()
+}
 
 // Global scale state
 const scaleState = {
 	device: null,
 	frm: null,
+	lastDocKey: null,
 	connected: false,
 	config: null,
 	activeRowIdx: null,
@@ -24,6 +55,9 @@ const scaleState = {
 	overlay: null,
 	sidebarWidget: null,
 	handlersBound: false,
+	rowFocusFrm: null,
+	positionListenersBound: false,
+	popoverResizeObserver: null,
 	lastReadingKey: null,
 	stableReadingCount: 0,
 	qtyFilled: false,
@@ -33,22 +67,67 @@ const scaleState = {
 async function setup_scale(frm) {
 	if (frm.doc.docstatus) return
 
+	const docKey = `${frm.doctype}:${frm.doc.name}`
+	const docChanged = scaleState.lastDocKey !== null && scaleState.lastDocKey !== docKey
+
 	// Always update frm reference so the active form is current
 	scaleState.frm = frm
+	scaleState.lastDocKey = docKey
 	scaleState.massUoms = frappe.boot.beam.mass_uoms || []
 	scaleState.config = (frappe.boot.beam.scale_configs || {})[frm.doctype]
 
 	if (!scaleState.config) return
 
+	if (docChanged && scaleState.connected) {
+		resetScaleIterator()
+		loadConversionFactors(frm)
+	}
+
 	ensureSidebarWidget(frm)
 	ensureScalePopover()
+	bindScaleRowFocus(frm)
 
 	// If already connected, restore visible state without re-opening device
 	if (scaleState.connected) {
 		updateConnectionStatus()
 		scaleState.overlay.style.display = 'block'
+		updatePopover()
 		updateRowHighlight()
 	}
+}
+
+function bindScaleRowFocus(frm) {
+	if (scaleState.rowFocusFrm === frm) return
+
+	if (scaleState.rowFocusFrm) {
+		$(scaleState.rowFocusFrm.wrapper).off('.scale')
+	}
+	scaleState.rowFocusFrm = frm
+
+	$(frm.wrapper).on('focusin.scale click.scale', function (e) {
+		if (!scaleState.connected || !scaleState.config) return
+		if (scaleState.frm !== frm) return
+
+		const itemsTableField = scaleState.config.items_table_field || 'items'
+		const field = frm.get_field(itemsTableField)
+		if (!field || !field.grid) return
+
+		const $target = $(e.target)
+		if (!$target.closest(field.grid.wrapper).length) return
+		if ($target.hasClass('grid-row-check')) return
+
+		const $gridRow = $target.closest('.grid-row')
+		if (!$gridRow.length) return
+
+		const gridRow = $gridRow.data('grid_row')
+		if (!gridRow || !gridRow.doc) return
+
+		const items = frm.doc[itemsTableField] || []
+		const rowIdx = items.findIndex(r => r.name === gridRow.doc.name)
+		if (rowIdx < 0 || rowIdx === scaleState.activeRowIdx) return
+
+		focusScaleRow(rowIdx)
+	})
 }
 
 function ensureSidebarWidget(frm) {
@@ -83,44 +162,157 @@ function ensureSidebarWidget(frm) {
 }
 
 function ensureScalePopover() {
-	// Reuse existing popover across form navigations
 	const existing = document.getElementById('scale-row-popover')
-	if (existing) {
+	if (existing && existing.querySelector('.scale-popover-caret') && existing.querySelector('.scale-popover-bridge')) {
 		scaleState.overlay = existing
+		bindScalePopoverPositionListeners()
 		return
+	}
+	if (existing) {
+		existing.remove()
 	}
 
 	const popover = document.createElement('div')
 	popover.id = 'scale-row-popover'
-	popover.style.cssText = `
-		position: fixed;
-		right: 24px;
-		top: 100px;
-		width: 240px;
-		background: var(--card-bg);
-		border: 1px solid var(--border-color);
-		border-left: 4px solid var(--primary-color);
-		border-radius: 6px;
-		padding: 16px;
-		box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-		z-index: 2000;
-		transition: top 200ms ease;
-		display: none;
-		font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-	`
+	popover.className = 'scale-popover scale-popover--caret-right'
+	popover.style.display = 'none'
 	popover.innerHTML = `
-		<div id="scale-popover-header" style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-			<span id="scale-item-name">—</span> <span id="scale-row-progress">[—]</span>
+		<div class="scale-popover-bridge"></div>
+		<div class="scale-popover-caret"></div>
+		<div class="scale-popover-content">
+			<div id="scale-popover-header" class="scale-popover-header">
+				<span id="scale-item-name">—</span> <span id="scale-row-progress">[—]</span>
+			</div>
+			<div class="scale-popover-readout">
+				<span id="scale-readout-value" class="scale-readout-value">—</span>
+				<span id="scale-readout-unit" class="scale-readout-unit"></span>
+			</div>
+			<div id="scale-readout-converted" class="scale-readout-converted">—</div>
+			<div id="scale-status-text" class="scale-status-text">—</div>
 		</div>
-		<div style="text-align: center; margin-bottom: 8px; line-height: 1;">
-			<span id="scale-readout-value" style="font-size: 72px; font-weight: bold; color: var(--text-color); font-family: 'Monaco', 'Courier', monospace; white-space: nowrap;">—</span>
-			<span id="scale-readout-unit" style="font-size: 36px; font-weight: bold; color: var(--text-muted); font-family: 'Monaco', 'Courier', monospace; margin-left: 4px;"></span>
-		</div>
-		<div id="scale-readout-converted" style="font-size: 36px; font-weight: 600; text-align: center; margin-bottom: 12px; color: var(--primary-color); font-family: 'Monaco', 'Courier', monospace; min-height: 1.2em;">—</div>
-		<div id="scale-status-text" style="font-size: 12px; color: var(--text-muted); text-align: center;">—</div>
 	`
 	document.body.appendChild(popover)
 	scaleState.overlay = popover
+	bindScalePopoverPositionListeners()
+}
+
+function bindScalePopoverPositionListeners() {
+	if (scaleState.positionListenersBound) return
+	scaleState.positionListenersBound = true
+
+	const reposition = () => {
+		if (scaleState.connected && scaleState.overlay && scaleState.overlay.style.display !== 'none') {
+			positionScalePopover()
+		}
+	}
+
+	window.addEventListener('scroll', reposition, true)
+	window.addEventListener('resize', reposition)
+
+	if (typeof ResizeObserver !== 'undefined' && scaleState.overlay) {
+		scaleState.popoverResizeObserver = new ResizeObserver(reposition)
+		scaleState.popoverResizeObserver.observe(scaleState.overlay)
+	}
+}
+
+function positionScalePopover() {
+	if (!scaleState.overlay || !scaleState.frm || scaleState.activeRowIdx === null || !scaleState.config) {
+		return
+	}
+
+	const itemsTableField = scaleState.config.items_table_field || 'items'
+	const field = scaleState.frm.get_field(itemsTableField)
+	if (!field || !field.grid) return
+
+	const gridRows = field.grid.grid_rows || []
+	const gridRow = gridRows[scaleState.activeRowIdx]
+	if (!gridRow || !gridRow.wrapper || !gridRow.wrapper.length) return
+
+	const rowRect = gridRow.wrapper[0].getBoundingClientRect()
+	const popover = scaleState.overlay
+	const popoverH = popover.offsetHeight
+	const popoverW = popover.offsetWidth || 240
+	const caretSize = 20
+	const gap = 8
+	const pad = 8
+	const caretHeight = 40
+
+	const rowCenterY = rowRect.top + rowRect.height / 2
+	let top = rowCenterY - popoverH / 2
+	top = Math.max(pad, Math.min(top, window.innerHeight - popoverH - pad))
+
+	const gridRect = field.grid.wrapper[0].getBoundingClientRect()
+	const spaceLeft = gridRect.left - pad
+	const spaceRight = window.innerWidth - gridRect.right - pad
+	const caret = popover.querySelector('.scale-popover-caret')
+	const bridge = popover.querySelector('.scale-popover-bridge')
+
+	let left
+	let caretOnRight = true
+	if (spaceLeft >= popoverW + gap + caretSize) {
+		left = gridRect.left - popoverW - gap - caretSize
+		popover.classList.remove('scale-popover--caret-left')
+		popover.classList.add('scale-popover--caret-right')
+		caretOnRight = true
+	} else if (spaceRight >= popoverW + gap + caretSize) {
+		left = gridRect.right + gap + caretSize
+		popover.classList.remove('scale-popover--caret-right')
+		popover.classList.add('scale-popover--caret-left')
+		caretOnRight = false
+	} else {
+		left = pad
+		popover.classList.remove('scale-popover--caret-left')
+		popover.classList.add('scale-popover--caret-right')
+		caretOnRight = true
+	}
+
+	popover.style.top = `${top}px`
+	popover.style.left = `${left}px`
+	popover.style.right = 'auto'
+
+	if (caret) {
+		let caretTop = rowCenterY - top - caretHeight / 2
+		caretTop = Math.max(8, Math.min(caretTop, popoverH - caretHeight - 8))
+		caret.style.top = `${caretTop}px`
+	}
+
+	if (bridge) {
+		const bridgeHeight = Math.min(Math.max(rowRect.height - 4, 12), 32)
+		const bridgeTop = rowCenterY - top - bridgeHeight / 2
+		let bridgeLeft
+		let bridgeWidth
+
+		if (caretOnRight) {
+			bridgeLeft = popoverW
+			bridgeWidth = Math.max(0, gridRect.left - left - popoverW)
+		} else {
+			bridgeLeft = gridRect.right - left
+			bridgeWidth = Math.max(0, left - gridRect.right)
+		}
+
+		bridge.style.top = `${bridgeTop}px`
+		bridge.style.left = `${bridgeLeft}px`
+		bridge.style.width = `${bridgeWidth}px`
+		bridge.style.height = `${bridgeHeight}px`
+		bridge.style.display = bridgeWidth > 2 ? 'block' : 'none'
+	}
+
+	ensureScaleReadoutInView(gridRow.wrapper[0], popover)
+}
+
+function ensureScaleReadoutInView(activeRowEl, popover) {
+	const pad = 16
+	const rowRect = activeRowEl.getBoundingClientRect()
+	const popoverRect = popover.getBoundingClientRect()
+
+	const minTop = Math.min(rowRect.top, popoverRect.top)
+	const maxBottom = Math.max(rowRect.bottom, popoverRect.bottom)
+
+	if (minTop < pad) {
+		window.scrollBy({ top: minTop - pad, behavior: 'smooth' })
+	} else if (maxBottom > window.innerHeight - pad) {
+		window.scrollBy({ top: maxBottom - window.innerHeight + pad, behavior: 'smooth' })
+	}
 }
 
 async function use_scale(frm) {
@@ -330,6 +522,11 @@ function convertWeight(value, fromUnit, toUom) {
 	return `${converted.toFixed(3)} ${toUom}`
 }
 
+function shouldAutoadvanceOnZero() {
+	const setting = scaleState.config && scaleState.config.autoadvance_on_zero
+	return setting !== 0 && setting !== false
+}
+
 function handleWorkflowState(parsed) {
 	const isStable = parsed.status === 4
 	const zeroThreshold = scaleState.config.zero_threshold || 0.1
@@ -387,20 +584,22 @@ function handleWorkflowState(parsed) {
 			break
 
 		case 'WAITING_FOR_ZERO':
-			if (isZero) {
-				scaleState.workflowState = 'ZERO_DETECTED'
-				scaleState.lastStatusText = 'Ready for next'
+			if (isZero && isStable) {
+				if (shouldAutoadvanceOnZero()) {
+					advanceToNextRow()
+				} else {
+					scaleState.workflowState = 'ZERO_DETECTED'
+					scaleState.lastStatusText = 'Ready for next'
+				}
+			} else if (isZero) {
+				scaleState.lastStatusText = 'Stabilizing…'
 			} else {
 				scaleState.lastStatusText = 'Remove item'
 			}
 			break
 
 		case 'ZERO_DETECTED':
-			if (scaleState.config.autoadvance_on_zero) {
-				advanceToNextRow()
-			} else {
-				scaleState.lastStatusText = 'Ready for next'
-			}
+			scaleState.lastStatusText = 'Ready for next'
 			break
 	}
 }
@@ -437,19 +636,26 @@ function advanceToNextRow() {
 	const itemsTableField = scaleState.config.items_table_field || 'items'
 	const items = scaleState.frm.doc[itemsTableField]
 
-	if (!items) return
+	if (!items || items.length === 0) return
 
-	scaleState.activeRowIdx = (scaleState.activeRowIdx + 1) % items.length
-
-	if (scaleState.activeRowIdx === 0) {
-		scaleState.lastStatusText = 'All items done'
-	} else {
+	const lastIdx = items.length - 1
+	if (scaleState.activeRowIdx >= lastIdx) {
 		scaleState.workflowState = 'WAITING'
 		scaleState.stableReadingCount = 0
 		scaleState.qtyFilled = false
-		scaleState.lastStatusText = 'Place item on scale'
+		scaleState.lastStatusText = 'All items done — add a row for more'
+		updatePopover()
+		updateRowHighlight()
+		return
 	}
 
+	scaleState.activeRowIdx += 1
+	scaleState.workflowState = 'WAITING'
+	scaleState.stableReadingCount = 0
+	scaleState.qtyFilled = false
+	scaleState.lastStatusText = 'Place item on scale'
+
+	updatePopover()
 	updateRowHighlight()
 }
 
@@ -472,12 +678,7 @@ function updateRowHighlight() {
 	})
 
 	if (scaleState.overlay && scaleState.activeRowIdx !== null && gridRows[scaleState.activeRowIdx]) {
-		const activeWrapper = gridRows[scaleState.activeRowIdx].wrapper
-		if (activeWrapper && activeWrapper.length) {
-			// rect.top is already in viewport coordinates for position:fixed
-			const rect = activeWrapper[0].getBoundingClientRect()
-			scaleState.overlay.style.top = `${Math.max(8, rect.top)}px`
-		}
+		positionScalePopover()
 	}
 }
 
@@ -485,5 +686,141 @@ frappe.dom.set_style(`
 	.scale-row-active {
 		background: var(--yellow-highlight-color) !important;
 		outline: 2px solid var(--yellow-100) !important;
+	}
+
+	.scale-popover {
+		position: fixed;
+		width: 240px;
+		z-index: 2000;
+		transition: top 200ms ease, left 200ms ease;
+		font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+	}
+
+	.scale-popover-content {
+		background: var(--card-bg);
+		border: 1px solid var(--border-color);
+		border-radius: 6px;
+		padding: 16px;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+	}
+
+	.scale-popover--caret-right .scale-popover-content {
+		border-right: 3px solid var(--yellow-100);
+	}
+
+	.scale-popover--caret-left .scale-popover-content {
+		border-left: 3px solid var(--yellow-100);
+	}
+
+	.scale-popover-bridge {
+		position: absolute;
+		display: none;
+		background: var(--yellow-highlight-color);
+		border-top: 2px solid var(--yellow-100);
+		border-bottom: 2px solid var(--yellow-100);
+		pointer-events: none;
+		z-index: 1;
+	}
+
+	.scale-popover-caret {
+		position: absolute;
+		width: 20px;
+		height: 40px;
+		transition: top 200ms ease;
+		z-index: 2;
+	}
+
+	.scale-popover--caret-right .scale-popover-caret {
+		right: -20px;
+	}
+
+	.scale-popover--caret-right .scale-popover-caret::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		background: var(--yellow-100);
+		clip-path: polygon(0 0, 0 100%, 100% 50%);
+	}
+
+	.scale-popover--caret-right .scale-popover-caret::after {
+		content: '';
+		position: absolute;
+		top: 2px;
+		bottom: 2px;
+		left: 0;
+		width: 16px;
+		background: var(--yellow-highlight-color);
+		clip-path: polygon(0 0, 0 100%, 100% 50%);
+	}
+
+	.scale-popover--caret-left .scale-popover-caret {
+		left: -20px;
+	}
+
+	.scale-popover--caret-left .scale-popover-caret::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		background: var(--yellow-100);
+		clip-path: polygon(100% 0, 100% 100%, 0 50%);
+	}
+
+	.scale-popover--caret-left .scale-popover-caret::after {
+		content: '';
+		position: absolute;
+		top: 2px;
+		bottom: 2px;
+		right: 0;
+		width: 16px;
+		background: var(--yellow-highlight-color);
+		clip-path: polygon(100% 0, 100% 100%, 0 50%);
+	}
+
+	.scale-popover-header {
+		font-size: 13px;
+		color: var(--text-muted);
+		margin-bottom: 12px;
+		text-align: center;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.scale-popover-readout {
+		text-align: center;
+		margin-bottom: 8px;
+		line-height: 1;
+	}
+
+	.scale-readout-value {
+		font-size: 72px;
+		font-weight: bold;
+		color: var(--text-color);
+		font-family: Monaco, Courier, monospace;
+		white-space: nowrap;
+	}
+
+	.scale-readout-unit {
+		font-size: 36px;
+		font-weight: bold;
+		color: var(--text-muted);
+		font-family: Monaco, Courier, monospace;
+		margin-left: 4px;
+	}
+
+	.scale-readout-converted {
+		font-size: 36px;
+		font-weight: 600;
+		text-align: center;
+		margin-bottom: 12px;
+		color: var(--primary-color);
+		font-family: Monaco, Courier, monospace;
+		min-height: 1.2em;
+	}
+
+	.scale-status-text {
+		font-size: 12px;
+		color: var(--text-muted);
+		text-align: center;
 	}
 `)
