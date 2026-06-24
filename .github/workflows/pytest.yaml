@@ -77,8 +77,8 @@ jobs:
     env:
       CUPS_ADMIN_USER: ${{ needs.build-cups.outputs.cups_admin_user }}
       CUPS_ADMIN_PASSWORD: ${{ needs.build-cups.outputs.cups_admin_password }}
-      BEAM_CUPS_HOST: cups
-      BEAM_CUPS_PORT: "631"
+      BEAM_CUPS_HOST: 127.0.0.1
+      BEAM_CUPS_PORT: "1631"
       BENCH_ROOT: /home/runner/frappe-bench
 
     services:
@@ -102,6 +102,8 @@ jobs:
         credentials:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+        ports:
+          - 1631:631
         options: >-
           --add-host=host.docker.internal:host-gateway
           --health-cmd="bash -c 'echo > /dev/tcp/127.0.0.1/631'"

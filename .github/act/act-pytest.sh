@@ -37,6 +37,8 @@ if ! docker image inspect "${ACT_RUNNER_IMAGE}" >/dev/null 2>&1; then
 	ACT_PULL_ARGS=(--pull=true)
 fi
 
+# ACT job container shares the service Docker network; use the service hostname.
+# GHA runs steps on the VM host and uses 127.0.0.1:1631 from the workflow env instead.
 exec act pull_request \
 	-W .github/workflows/pytest.yaml \
 	-j tests \
