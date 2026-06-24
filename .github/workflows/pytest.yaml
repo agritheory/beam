@@ -68,6 +68,7 @@ jobs:
     permissions:
       contents: read
       packages: read
+      pull-requests: write
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -161,10 +162,11 @@ jobs:
           BEAM_TEST_TELEMETRY: "true"
           BEAM_TEST_STACK_DUMP_SECONDS: "60"
         run: |
+          set -o pipefail
           source env/bin/activate
           cd apps/beam
           poetry install
-          pytest --cov=beam --cov-report=xml --disable-warnings -s | tee pytest-coverage.txt
+          pytest --cov=beam --cov-report=xml --cov-report=term-missing:skip-covered --disable-warnings -s | tee pytest-coverage.txt
 
       - name: Pytest coverage comment
         if: ${{ !env.ACT }}
@@ -172,3 +174,6 @@ jobs:
         with:
           pytest-coverage-path: ${{ env.BENCH_ROOT }}/apps/beam/pytest-coverage.txt
           pytest-xml-coverage-path: ${{ env.BENCH_ROOT }}/apps/beam/coverage.xml
+          default-branch: version-15
+          report-only-changed-files: true
+          xml-skip-covered: true

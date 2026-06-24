@@ -86,8 +86,6 @@ from cups_test_utils import (
 )
 from test_telemetry import emit as telemetry
 
-pytest_plugins = ["test_telemetry"]
-
 TESTS_DIR = Path(__file__).resolve().parent
 if str(TESTS_DIR) not in sys.path:
 	sys.path.insert(0, str(TESTS_DIR))

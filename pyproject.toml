@@ -36,6 +36,8 @@ frappe = ">=15.0.0,<16.0.0"
 erpnext = ">=15.0.0,<16.0.0"
 
 [tool.pytest.ini_options]
+testpaths = ["beam/tests"]
+pythonpath = ["beam/tests"]
 addopts = "--cov=beam --cov-report term-missing"
 
 [tool.codespell]
