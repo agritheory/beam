@@ -4,8 +4,24 @@ export PIP_ROOT_USER_ACTION=ignore
 
 set -e
 
+# act runs workflow steps as root; bench refuses root. Re-run this script as ubuntu.
+if [[ "${ACT:-}" == "true" && "$(id -u)" -eq 0 ]]; then
+	mkdir -p /home/ubuntu
+	chown ubuntu:ubuntu /home/ubuntu
+	exec runuser -u ubuntu -- env \
+		HOME=/home/ubuntu \
+		ACT=true \
+		BRANCH_NAME="${BRANCH_NAME:-}" \
+		GITHUB_WORKSPACE="${GITHUB_WORKSPACE}" \
+		PIP_ROOT_USER_ACTION=ignore \
+		PATH="${PATH}" \
+		bash "$0"
+fi
+
 # Check for merge conflicts before proceeding
-python -m compileall -f "${GITHUB_WORKSPACE}"
+if [[ "${ACT:-}" != "true" ]]; then
+	python -m compileall -f "${GITHUB_WORKSPACE}"
+fi
 if grep -lr --exclude-dir=node_modules "^<<<<<<< " "${GITHUB_WORKSPACE}"
     then echo "Found merge conflicts"
     exit 1
@@ -30,6 +46,8 @@ echo BRANCH_NAME: "${BRANCH_NAME}"
 git clone https://github.com/frappe/frappe --branch ${BRANCH_NAME}
 bench init frappe-bench --frappe-path ~/frappe --python "$(which python)" --skip-assets --ignore-exist
 
+cp "${GITHUB_WORKSPACE}/.github/helper/common_site_config.json" ~/frappe-bench/sites/common_site_config.json
+
 mkdir ~/frappe-bench/sites/test_site
 cp -r "${GITHUB_WORKSPACE}/.github/helper/site_config.json" ~/frappe-bench/sites/test_site/
 
@@ -39,6 +57,20 @@ sed -i 's/watch:/# watch:/g' Procfile
 sed -i 's/schedule:/# schedule:/g' Procfile
 sed -i 's/socketio:/# socketio:/g' Procfile
 sed -i 's/redis_socketio:/# redis_socketio:/g' Procfile
+sed -i 's/^redis_cache:/# redis_cache:/g' Procfile
+sed -i 's/^redis_queue:/# redis_queue:/g' Procfile
+
+wait_for_redis() {
+	local port="${REDIS_PORT:-6379}"
+	for _ in $(seq 1 60); do
+		if (echo > /dev/tcp/127.0.0.1/"$port") 2>/dev/null; then
+			return 0
+		fi
+		sleep 1
+	done
+	echo "Redis service did not become reachable on port ${port}" >&2
+	return 1
+}
 
 bench get-app erpnext https://github.com/frappe/erpnext --branch ${BRANCH_NAME} --resolve-deps --skip-assets
 bench get-app beam "${GITHUB_WORKSPACE}" --skip-assets
@@ -47,8 +79,7 @@ printf '%s\n' 'frappe' 'erpnext' 'beam' > ~/frappe-bench/sites/apps.txt
 bench setup requirements --python
 bench use test_site
 
-bench start &> bench_run_logs.txt &
-CI=Yes &
+wait_for_redis
 bench --site test_site reinstall --yes --admin-password admin
 
 bench setup requirements --dev
@@ -58,6 +89,5 @@ bench version
 echo "SITE LIST-APPS:"
 bench list-apps
 
-bench start &> bench_run_logs.txt &
-CI=Yes &
+wait_for_redis
 bench execute 'beam.tests.setup.before_test'
