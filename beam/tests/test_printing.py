@@ -4,11 +4,13 @@
 from unittest.mock import Mock, patch
 
 import frappe
+import pytest
 from frappe.exceptions import DoesNotExistError
 
 from beam.beam.printing import print_by_server
 
 
+@pytest.mark.order(100)
 def test_print_by_server_empty_string_uses_standard():
 	"""Empty print_format should default to Standard"""
 	mock_cups = Mock()
@@ -26,6 +28,7 @@ def test_print_by_server_empty_string_uses_standard():
 			assert "Standard" in str(e)
 
 
+@pytest.mark.order(102)
 def test_print_by_server_none_uses_standard():
 	"""None print_format should default to Standard"""
 	mock_cups = Mock()
@@ -43,6 +46,7 @@ def test_print_by_server_none_uses_standard():
 			assert "Standard" in str(e)
 
 
+@pytest.mark.order(104)
 def test_print_by_server_explicit_format():
 	"""Explicit print_format should be used"""
 	from beam.beam.printing import print_by_server
@@ -62,6 +66,7 @@ def test_print_by_server_explicit_format():
 			assert "Standard" not in str(e), "Should use explicit format, not Standard"
 
 
+@pytest.mark.order(106)
 def test_print_by_server_with_serialized_doc():
 	"""Serialized doc should be properly deserialized as full document instance"""
 	# Get a real item doc and serialize it like the frontend would
