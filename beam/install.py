@@ -6,6 +6,14 @@ import frappe
 from beam.beam.scan.config import get_scan_doctypes
 
 
+def create_beam_mobile_user_role():
+	if not frappe.db.exists("Role", "BEAM Mobile User"):
+		role = frappe.get_doc(
+			{"doctype": "Role", "role_name": "BEAM Mobile User", "desk_access": 0, "home_page": "/app"}
+		)
+		role.insert(ignore_permissions=True)
+
+
 def after_install():
 	print("Setting up Handling Unit Inventory Dimension")
 	if frappe.db.exists("Inventory Dimension", "Handling Unit"):
@@ -41,3 +49,5 @@ def after_install():
 		):
 			frappe.set_value("Custom Field", custom_field["name"], "read_only", 1)
 			frappe.set_value("Custom Field", custom_field["name"], "no_copy", 1)
+
+	create_beam_mobile_user_role()

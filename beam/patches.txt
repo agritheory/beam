@@ -1,0 +1,4 @@
+[pre_model_sync]
+
+[post_model_sync]
+beam.patches.v15.create_beam_mobile_user_role
