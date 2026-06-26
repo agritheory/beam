@@ -7,6 +7,7 @@ import frappe
 import pytest
 from frappe.auth import CookieManager
 
+from erpnext import get_default_company
 from beam.beam.barcodes import create_beam_barcode
 from beam.install import create_beam_mobile_user_role
 
@@ -16,7 +17,7 @@ TEST_USER_EMAIL = "scan_login_test@example.com"
 
 @pytest.fixture()
 def beam_settings():
-	company = frappe.defaults.get_defaults().get("company")
+	company = get_default_company()
 	settings = frappe.get_doc("BEAM Settings", {"company": company})
 	original_enable = settings.enable_scan_to_login
 	original_restrict_ip = settings.restrict_ip
