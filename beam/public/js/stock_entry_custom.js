@@ -23,13 +23,21 @@ frappe.ui.form.on('Stock Entry', {
 
 async function show_handling_unit_recombine_dialog(frm) {
 	const data = await get_handling_units(frm)
-	if (!data) {
-		return new Promise(resolve => {})
+	if (!data || !data.length) {
+		return []
 	}
 	let fields = [
 		{
 			fieldtype: 'Data',
 			fieldname: 'row_name',
+			in_list_view: 0,
+			read_only: 1,
+			disabled: 0,
+			hidden: 1,
+		},
+		{
+			fieldtype: 'Data',
+			fieldname: 'target_row_name',
 			in_list_view: 0,
 			read_only: 1,
 			disabled: 0,
@@ -43,6 +51,7 @@ async function show_handling_unit_recombine_dialog(frm) {
 			read_only: 1,
 			disabled: 0,
 			label: __('Item Code'),
+			columns: 2,
 		},
 		{
 			fieldtype: 'Data',
@@ -57,6 +66,7 @@ async function show_handling_unit_recombine_dialog(frm) {
 			label: __('Handling Unit'),
 			in_list_view: 1,
 			read_only: 1,
+			columns: 2,
 		},
 		{
 			fieldtype: 'Float',
@@ -64,6 +74,7 @@ async function show_handling_unit_recombine_dialog(frm) {
 			label: __('Remaining Qty'),
 			in_list_view: 1,
 			read_only: 1,
+			columns: 1,
 		},
 		{
 			fieldtype: 'Data',
@@ -71,6 +82,7 @@ async function show_handling_unit_recombine_dialog(frm) {
 			label: __('Handling Unit to recombine'),
 			in_list_view: 1,
 			read_only: 1,
+			columns: 2,
 		},
 		{
 			fieldtype: 'Float',
@@ -78,6 +90,7 @@ async function show_handling_unit_recombine_dialog(frm) {
 			label: __('Transferred Qty'),
 			in_list_view: 1,
 			read_only: 1,
+			columns: 1,
 		},
 	]
 
@@ -88,10 +101,9 @@ async function show_handling_unit_recombine_dialog(frm) {
 				{
 					fieldname: 'handling_units',
 					fieldtype: 'Table',
-					in_place_edit: false,
-					editable_grid: false,
 					cannot_add_rows: true,
-					cannot_delete_rows: true,
+					cannot_delete_rows: false,
+					reqd: 1,
 					data: data,
 					get_data: () => {
 						return data
@@ -103,9 +115,14 @@ async function show_handling_unit_recombine_dialog(frm) {
 				},
 			],
 			primary_action: () => {
-				let to_recombine = dialog.fields_dict.handling_units.grid.get_selected_children().map(row => {
-					return row.row_name
-				})
+				let selected = dialog.fields_dict.handling_units.grid.get_selected_children()
+				let to_recombine = []
+				for (let row of selected) {
+					to_recombine.push(row.row_name)
+					if (row.target_row_name) {
+						to_recombine.push(row.target_row_name)
+					}
+				}
 				dialog.hide()
 				return resolve(to_recombine)
 			},
@@ -113,14 +130,39 @@ async function show_handling_unit_recombine_dialog(frm) {
 			size: 'extra-large',
 		})
 		dialog.show()
+		// Pre-check all rows so recombine is the default behavior
+		setTimeout(() => {
+			const grid = dialog.fields_dict.handling_units.grid
+			// Enable and check all rows
+			if (grid.wrapper) {
+				grid.wrapper.find('.grid-row-check').prop('disabled', false).prop('checked', true)
+				// Hide the Delete button
+				grid.wrapper.find('.grid-remove-rows').hide()
+			}
+			grid.grid_rows?.forEach(row => {
+				if (row.doc) {
+					row.doc.__checked = 1
+					if (row.row) {
+						row.row.find('.grid-row-check').prop('disabled', false).prop('checked', true)
+					}
+				}
+			})
+			grid.refresh()
+		}, 200)
 		dialog.get_close_btn()
 	})
 }
 
 async function get_handling_units(frm) {
 	let handling_units = []
+	const transfer_types = ['Material Transfer', 'Send to Subcontractor', 'Material Transfer for Manufacture']
+
 	for (const row of frm.doc.items) {
-		if (row.handling_unit && row.to_handling_unit) {
+		if (!row.handling_unit) continue
+
+		if (transfer_types.includes(frm.doc.purpose)) {
+			// Material Transfer types: source and destination HU are on the same row
+			if (!row.to_handling_unit) continue
 			let remaining_qty = await get_handling_unit_stock_qty(frm.doc.name, row.handling_unit, row.s_warehouse)
 			handling_units.push({
 				row_name: row.name,
@@ -131,8 +173,25 @@ async function get_handling_units(frm) {
 				remaining_qty: remaining_qty,
 				transferred_qty: row.qty,
 			})
+		} else {
+			// Repack/Manufacture/etc: source and target HUs are on separate rows
+			// Only show source rows (those with s_warehouse); pair with matching target row
+			if (!row.s_warehouse) continue
+			let target_row = frm.doc.items.find(r => r.t_warehouse && r.handling_unit && r.item_code === row.item_code)
+			let remaining_qty = await get_handling_unit_stock_qty(frm.doc.name, row.handling_unit, row.s_warehouse)
+			handling_units.push({
+				row_name: row.name,
+				target_row_name: target_row?.name || '',
+				item_code: row.item_code,
+				item_name: row.item_name,
+				handling_unit: row.handling_unit,
+				to_handling_unit: target_row?.handling_unit || '',
+				remaining_qty: remaining_qty,
+				transferred_qty: row.transfer_qty || row.qty,
+			})
 		}
 	}
+
 	return handling_units
 }
 async function get_handling_unit_stock_qty(name, handling_unit, s_warehouse) {
@@ -146,6 +205,10 @@ async function get_handling_unit_stock_qty(name, handling_unit, s_warehouse) {
 
 //re combine
 async function set_recombine_handling_units(frm) {
+	// const beam_settings = frappe.boot.beam?.settings?.[frm.doc.company]
+	// if (!beam_settings?.enable_handling_units) {
+	// 	return
+	// }
 	let to_recombine = await show_handling_unit_recombine_dialog(frm)
 	await frappe.xcall('beam.beam.overrides.stock_entry.set_rows_to_recombine', {
 		docname: frm.doc.name,

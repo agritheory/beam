@@ -3,6 +3,11 @@ For license information, please see license.txt-->
 
 # Form
 
+<div class="byline">
+  Rohan Bansal, Heather Kusmierz, and Tyler Matteson 2025-05-28
+</div>
+
+
 The result of scanning a barcode in the form depends on several factors:
 
  - Is the barcode recognized?
@@ -14,6 +19,6 @@ For example, when an Item is scanned while viewing a Delivery Note record, it wi
 |-----------------|-----------------------|--------|--------|
 |Item|Delivery Note|add_or_increment|item_code|
 
-Beam uses a [decision matrix](./matrix.md) to decide what action to take based on what kind of doctype has been scanned.
+BEAM uses a [decision matrix](./matrix.md) to decide what action to take based on what kind of doctype has been scanned.
 
 Custom actions and client side functions can be added by using [hooks](./hooks.md).

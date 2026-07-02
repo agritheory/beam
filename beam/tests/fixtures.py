@@ -370,6 +370,19 @@ items = [
 		"default_warehouse": "Kitchen - APC",
 		"supplier": "Freedom Provisions",
 	},
+	{
+		"item_code": "Whipped Cream Canister",
+		"uom": "Nos",
+		"item_group": "Bakery Supplies",
+		"default_warehouse": "Storeroom - APC",
+		"description": "Pressurized whipped cream canister for serving pies; also sold retail.",
+		"item_price": 2.75,
+		"supplier": "Unity Bakery Supply",
+		"is_sales_item": 1,
+		"is_purchase_item": 1,
+		"has_serial_no": 1,
+		"serial_no_series": "WCC-.#####",
+	},
 ]
 
 boms = [
@@ -715,7 +728,7 @@ employees = [
 		},
 		"phone": "(704) 885-0542",
 		"roles": ["Stock Manager", "Item Manager"],
-		"department": "Management",
+		# "department": "Operations",
 		"designation": "Bakery Manager",
 	},
 	{
@@ -732,7 +745,7 @@ employees = [
 		"phone": "(658) 583-5499",
 		"roles": ["Stock User", "BEAM Mobile User"],
 		"reports_to": "Tristan Hawkins",
-		"department": "Operations",
+		# "department": "Operations",
 		"designation": "Baker",
 	},
 	{
@@ -749,7 +762,7 @@ employees = [
 		"phone": "(962) 762-5895",
 		"roles": ["Stock User", "BEAM Mobile User"],
 		"reports_to": "Tristan Hawkins",
-		"department": "Operations",
+		# "department": "Operations",
 		"designation": "Baker",
 	},
 	{
@@ -766,7 +779,7 @@ employees = [
 		"phone": "(366) 357-8223",
 		"roles": ["Stock User", "BEAM Mobile User"],
 		"reports_to": "Tristan Hawkins",
-		"department": "Operations",
+		# "department": "Operations",
 		"designation": "Bakery Manager",
 	},
 	{
@@ -783,7 +796,7 @@ employees = [
 		"phone": "(930) 920-4520",
 		"roles": ["Stock User", "BEAM Mobile User"],
 		"reports_to": "Tristan Hawkins",
-		"department": "Operations",
+		# "department": "Operations",
 		"designation": "Baker",
 	},
 	{
@@ -800,7 +813,7 @@ employees = [
 		"phone": "(054) 893-8970",
 		"roles": ["Stock User", "BEAM Mobile User"],
 		"reports_to": "Tristan Hawkins",
-		"department": "Operations",
+		# "department": "Operations",
 		"designation": "Baker",
 	},
 	{
@@ -817,7 +830,7 @@ employees = [
 		"phone": "(814) 677-9322",
 		"roles": ["Stock User", "BEAM Mobile User"],
 		"reports_to": "Tristan Hawkins",
-		"department": "Operations",
+		# "department": "Operations",
 		"designation": "Baker",
 	},
 	{
@@ -834,7 +847,7 @@ employees = [
 		"phone": "(133) 195-7828",
 		"roles": ["Stock User", "BEAM Mobile User"],
 		"reports_to": "Tristan Hawkins",
-		"department": "Operations",
+		# "department": "Operations",
 		"designation": "Baker",
 	},
 	{
@@ -851,7 +864,7 @@ employees = [
 		"phone": "(041) 000-2569",
 		"roles": ["Stock User", "BEAM Mobile User"],
 		"reports_to": "Tristan Hawkins",
-		"department": "Operations",
+		# "department": "Operations",
 		"designation": "Baker",
 	},
 ]
