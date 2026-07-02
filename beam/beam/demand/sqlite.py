@@ -3,6 +3,7 @@
 
 import pathlib
 import sqlite3
+from typing import Any
 
 import frappe
 from erpnext.stock.doctype.inventory_dimension.inventory_dimension import get_inventory_dimensions
@@ -153,7 +154,7 @@ def reset_receiving_db() -> None:
 		cursor.execute("DELETE FROM receiving")
 
 
-def dict_factory(cursor: sqlite3.Cursor, row: sqlite3.Row) -> frappe._dict:
+def dict_factory(cursor: sqlite3.Cursor, row: tuple[Any, ...]) -> frappe._dict:
 	_dict = frappe._dict()
 	for idx, col in enumerate(cursor.description):
 		_dict[col[0]] = row[idx]
