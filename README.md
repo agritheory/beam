@@ -29,11 +29,11 @@ If you're trying to review a pull request inside the codespace, you can follow t
 
 ## Install Instructions
 
-Set up a new bench, substitute a path to the python version to use, which should be 3.10 latest
+Set up a new bench, substitute a path to the python version to use, which should be 3.14 latest
 
 ```
 # for linux development
-bench init --frappe-branch version-15 {{ bench name }} --python ~/.pyenv/versions/3.10.13/bin/python3
+bench init --frappe-branch version-16 {{ bench name }} --python ~/.pyenv/versions/3.14/bin/python3
 ```
 Create a new site in that bench
 ```
@@ -43,11 +43,11 @@ bench use {{ site name }}
 ```
 Download the ERPNext app
 ```
-bench get-app erpnext --branch version-15
+bench get-app erpnext --branch version-16
 ```
 Download this application and install all apps
 ```
-bench get-app beam --branch version-15 git@github.com:agritheory/beam.git
+bench get-app beam --branch version-16 git@github.com:agritheory/beam.git
 ```
 Set developer mode in `site_config.json`
 ```
