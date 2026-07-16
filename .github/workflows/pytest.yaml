@@ -5,12 +5,15 @@ on:
     branches:
       - version-14
       - version-15
+      - version-16
   pull_request:
     branches:
       - version-14
       - version-15
+      - version-16
 env:
-    BRANCH_NAME: ${{ github.base_ref || github.ref_name }}
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  BRANCH_NAME: ${{ github.base_ref || github.ref_name }}
 
 # concurrency:
 #   group: develop-cloud_storage-${{ github.event.number }}
@@ -28,7 +31,7 @@ jobs:
       cups_admin_password: ${{ steps.creds.outputs.password }}
     steps:
       - name: Clone
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Resolve CUPS admin credentials
         id: creds
@@ -113,17 +116,17 @@ jobs:
 
     steps:
       - name: Clone
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
-          python-version: '3.10'
+          python-version: '3.14'
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: 18
+          node-version: 24
           check-latest: true
           cache: 'yarn'  # Replaces `Get yarn cache directory path` and `yarn-cache` steps
 
@@ -167,6 +170,7 @@ jobs:
           set -o pipefail
           source env/bin/activate
           cd apps/beam
+          mkdir -p ../logs test_site/logs
           poetry install
           pytest --cov=beam --cov-report=xml --cov-report=term-missing:skip-covered --disable-warnings -s | tee pytest-coverage.txt
 
@@ -176,6 +180,6 @@ jobs:
         with:
           pytest-coverage-path: ${{ env.BENCH_ROOT }}/apps/beam/pytest-coverage.txt
           pytest-xml-coverage-path: ${{ env.BENCH_ROOT }}/apps/beam/coverage.xml
-          default-branch: version-15
+          default-branch: version-16
           report-only-changed-files: true
           xml-skip-covered: true
