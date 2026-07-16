@@ -1,44 +1,17 @@
 [project]
 name = "beam"
 version = "15.11.0"
-authors = [
-    { name = "AgriTheory", email = "support@agritheory.dev" }
-]
 description = "Barcode Scanning for ERPNext"
-requires-python = ">=3.10,<3.15"
+requires-python = ">=3.14,<3.15"
 readme = "README.md"
-dynamic = ["dependencies"]
-
-[tool.poetry.dependencies]
-python = ">=3.10,<3.15"
-python-barcode = "^0.15.1"
-zebra-zpl = {git = "https://github.com/mtking2/py-zebra-zpl.git"}
-
-[tool.bench.dev-dependencies]
-pytest = "~=8.3.2"
-pytest-cov = "~=5.0.0"
-pytest-order = "~=1.2.1"
-pycups = "~=2.0.4"
-
-[tool.poetry.group.dev.dependencies]
-pytest = "^8.3.2"
-pytest-order = "^1.2.1"
-pytest-cov = "^5.0.0"
-pycups = "^2.0.4"
-test_utils = {git = "https://github.com/agritheory/test_utils.git", tag = "v1.28.0"}
+dynamic = [ "dependencies",]
+[[project.authors]]
+name = "AgriTheory"
+email = "support@agritheory.dev"
 
 [build-system]
-requires = ["poetry-core"]
+requires = [ "poetry-core",]
 build-backend = "poetry.core.masonry.api"
-
-[tool.bench.frappe-dependencies]
-frappe = ">=15.0.0,<16.0.0"
-erpnext = ">=15.0.0,<16.0.0"
-
-[tool.pytest.ini_options]
-testpaths = ["beam/tests"]
-pythonpath = ["beam/tests"]
-addopts = "--cov=beam --cov-report term-missing"
 
 [tool.codespell]
 skip = "CHANGELOG.md"
@@ -57,11 +30,41 @@ ensure_newline_before_comments = true
 indent = "\t"
 
 [tool.semantic_release]
-version_toml = ["pyproject.toml:project.version"]
-version_variables = [
-    "beam/__init__.py:__version__"
-]
+version_toml = [ "pyproject.toml:project.version",]
+version_variables = [ "beam/__init__.py:__version__",]
 build_command = "echo 1"
 
+[tool.poetry.dependencies]
+python = ">=3.14,<3.15"
+python-barcode = "^0.15.1"
+
+[tool.bench.dev-dependencies]
+pytest = "~=8.3.2"
+pytest-cov = "~=5.0.0"
+pytest-order = "~=1.2.1"
+pycups = "~=2.0.4"
+
+[tool.bench.frappe-dependencies]
+frappe = ">=16.0.0-dev,<17.0.0"
+erpnext = ">=16.0.0-dev,<17.0.0"
+
+[tool.pytest.ini_options]
+testpaths = [ "beam/tests",]
+pythonpath = [ "beam/tests",]
+addopts = "--cov=beam --cov-report term-missing"
+
+[tool.poetry.dependencies.zebra-zpl]
+git = "https://github.com/mtking2/py-zebra-zpl.git"
+
 [tool.semantic_release.branches.version]
-match = "version-15"
+match = "version-(15|16)"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.2"
+pytest-order = "^1.2.1"
+pytest-cov = "^5.0.0"
+pycups = "^2.0.4"
+
+[tool.poetry.group.dev.dependencies.test_utils]
+git = "https://github.com/agritheory/test_utils.git"
+tag = "v1.28.0"
