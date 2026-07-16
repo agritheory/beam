@@ -1,7 +1,7 @@
 {
   "pull_request": {
     "base": {
-      "ref": "version-15"
+      "ref": "version-16"
     },
     "head": {
       "ref": "add_printer_wizard"
