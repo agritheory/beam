@@ -5,9 +5,11 @@ on:
     branches:
       - version-14
       - version-15
+      - version-16
   workflow_dispatch:
 
 env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   REGISTRY: ghcr.io
   IMAGE_NAME: agritheory/beam-cups
 
@@ -20,7 +22,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Resolve CUPS admin credentials
         id: creds
