@@ -41,7 +41,7 @@ class ScanHandler {
 				onScan: async function (sCode, iQty) {
 					await me.get_scanned_context(sCode, iQty)
 				},
-				ignoreIfFocusOn: '.frappe-input',
+				ignoreIfFocusOn: 'input, textarea, select, [contenteditable]',
 			})
 			window.scanHandler = me
 		}
