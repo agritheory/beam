@@ -485,7 +485,14 @@ def create_production_plan(settings, prod_plan_from_doc):
 	raw_materials = get_items_for_material_requests(
 		pp.as_dict(), warehouses=None, get_parent_warehouse_data=None
 	)
+	combined_raw_materials = {}
 	for row in raw_materials:
+		item_code = row.get("item_code")
+		if item_code in combined_raw_materials:
+			combined_raw_materials[item_code]["quantity"] += row.get("quantity")
+		else:
+			combined_raw_materials[item_code] = row
+	for row in combined_raw_materials.values():
 		pp.append(
 			"mr_items",
 			{
