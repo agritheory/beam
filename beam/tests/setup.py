@@ -548,6 +548,8 @@ def create_production_plan(settings, prod_plan_from_doc):
 	for wo in wos:
 		wo = frappe.get_doc("Work Order", wo)
 		wo.wip_warehouse = "Kitchen - APC"
+		if not wo.fg_warehouse:
+			wo.fg_warehouse = "Kitchen - APC"
 		wo.actual_start_date = wo.planned_start_date = start_time
 		wo.required_items = sorted(wo.required_items, key=lambda x: x.get("item_code"))
 		for idx, w in enumerate(wo.required_items, start=1):
