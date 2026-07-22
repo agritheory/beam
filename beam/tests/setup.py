@@ -477,7 +477,7 @@ def create_production_plan(settings, prod_plan_from_doc):
 		pp.get_mr_items()
 	for item in pp.po_items:
 		item.planned_start_date = settings.day
-	pp.sub_assembly_warehouse = "Kitchen - APC"
+	pp.skip_available_sub_assembly_item = 0
 	pp.get_sub_assembly_items()
 	for item in pp.sub_assembly_items:
 		item.schedule_date = settings.day
