@@ -505,9 +505,23 @@ def create_production_plan(settings, prod_plan_from_doc):
 	pp.save()
 	pp.submit()
 
-	pp.make_material_request()
-	mr = frappe.get_last_doc("Material Request")
+	mr = frappe.new_doc("Material Request")
+	mr.company = settings.company
+	mr.material_request_type = "Purchase"
 	mr.schedule_date = mr.transaction_date = settings.day
+	for row in combined_raw_materials.values():
+		mr.append(
+			"items",
+			{
+				"item_code": row.get("item_code"),
+				"qty": row.get("quantity"),
+				"uom": row.get("uom") or row.get("stock_uom"),
+				"warehouse": frappe.get_value(
+					"Item Default", {"parent": row.get("item_code")}, "default_warehouse"
+				),
+				"schedule_date": settings.day,
+			},
+		)
 	mr.save()
 	mr.submit()
 
