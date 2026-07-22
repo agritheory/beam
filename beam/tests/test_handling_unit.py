@@ -294,7 +294,7 @@ def test_stock_entry_for_manufacture():
 		):
 			continue
 		if (
-			row.is_finished_item or row.is_scrap_item
+			row.is_finished_item or row.type == "Scrap"
 		):  # finished and scrap items' handling units will be generated and wouldn't be scanned
 			continue
 		hu = frappe.get_value(
@@ -321,12 +321,12 @@ def test_stock_entry_for_manufacture():
 		sle = frappe.get_doc(
 			"Stock Ledger Entry", {"voucher_detail_no": row.name, "handling_unit": row.handling_unit}
 		)
-		if not row.is_finished_item and not row.is_scrap_item:
+		if not row.is_finished_item and row.type != "Scrap":
 			assert row.transfer_qty == -(sle.actual_qty)
 			assert row.item_code == sle.item_code
 			assert row.s_warehouse == sle.warehouse  # source/ warehouse
 			assert sle.handling_unit == row.handling_unit
-		elif row.is_scrap_item:
+		elif row.type == "Scrap":
 			assert row.transfer_qty == sle.actual_qty
 			assert row.item_code == sle.item_code
 			create_handling_unit = frappe.get_value(
