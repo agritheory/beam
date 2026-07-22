@@ -56,7 +56,9 @@ def generate_handling_units(doc, method=None):
 
 		if doc.doctype == "Stock Entry" and doc.purpose == "Manufacture" and row.is_scrap_item:
 			create_handling_unit = frappe.get_value(
-				"BOM Scrap Item", {"item_code": row.item_code, "parent": doc.bom_no}, "create_handling_unit"
+				"BOM Secondary Item",
+				{"item_code": row.item_code, "parent": doc.bom_no, "type": "Scrap"},
+				"create_handling_unit",
 			)
 			if bool(create_handling_unit):
 				handling_unit = frappe.new_doc("Handling Unit")

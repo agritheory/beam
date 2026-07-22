@@ -330,7 +330,9 @@ def test_stock_entry_for_manufacture():
 			assert row.transfer_qty == sle.actual_qty
 			assert row.item_code == sle.item_code
 			create_handling_unit = frappe.get_value(
-				"BOM Scrap Item", {"item_code": row.item_code, "parent": _se.bom_no}, "create_handling_unit"
+				"BOM Secondary Item",
+				{"item_code": row.item_code, "parent": _se.bom_no, "type": "Scrap"},
+				"create_handling_unit",
 			)
 			if create_handling_unit:
 				assert row.handling_unit == sle.handling_unit

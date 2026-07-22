@@ -173,8 +173,8 @@ def validate_items_with_handling_unit(doc, method=None):
 			if not frappe.get_value("Item", row.item_code, "enable_handling_unit"):
 				continue
 			elif row.is_scrap_item and not frappe.get_value(
-				"BOM Scrap Item",
-				{"item_code": row.item_code, "parent": doc.get("bom_no")},
+				"BOM Secondary Item",
+				{"item_code": row.item_code, "parent": doc.get("bom_no"), "type": "Scrap"},
 				"create_handling_unit",
 			):
 				continue

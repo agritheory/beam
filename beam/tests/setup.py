@@ -355,7 +355,7 @@ def create_boms(settings):
 			b.append("operations", {**operation, "hour_rate": 15.00})
 		if bom.get("scrap_items"):
 			for scrap_item in bom.get("scrap_items"):
-				b.append("scrap_items", {**scrap_item})
+				b.append("secondary_items", {**scrap_item, "type": "Scrap"})
 		b.save()
 		b.submit()
 
