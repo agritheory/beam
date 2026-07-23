@@ -125,12 +125,8 @@ def test_propagate_copies_source_to_empty_target():
 		pytest.skip("Handling units not enabled")
 
 	original_cf = frappe.db.get_value("Inventory Dimension", "Handling Unit", "custom_carry_forward")
-	original_tf = frappe.db.get_value("Inventory Dimension", "Handling Unit", "target_fieldname")
 	try:
 		frappe.db.set_value("Inventory Dimension", "Handling Unit", "custom_carry_forward", 1)
-		frappe.db.set_value(
-			"Inventory Dimension", "Handling Unit", "target_fieldname", "to_handling_unit"
-		)
 		clear_inv_dim_cache()
 
 		doc = frappe.new_doc("Stock Entry")
@@ -150,7 +146,6 @@ def test_propagate_copies_source_to_empty_target():
 		frappe.db.set_value(
 			"Inventory Dimension", "Handling Unit", "custom_carry_forward", original_cf or 0
 		)
-		frappe.db.set_value("Inventory Dimension", "Handling Unit", "target_fieldname", original_tf)
 		clear_inv_dim_cache()
 
 
@@ -336,12 +331,8 @@ def test_hu_carry_forward_full_transfer_conserves_hu():
 	source_hu = se_receipt.items[0].handling_unit
 
 	original_cf = frappe.db.get_value("Inventory Dimension", "Handling Unit", "custom_carry_forward")
-	original_tf = frappe.db.get_value("Inventory Dimension", "Handling Unit", "target_fieldname")
 	try:
 		frappe.db.set_value("Inventory Dimension", "Handling Unit", "custom_carry_forward", 1)
-		frappe.db.set_value(
-			"Inventory Dimension", "Handling Unit", "target_fieldname", "to_handling_unit"
-		)
 		clear_inv_dim_cache()
 
 		se_transfer = frappe.new_doc("Stock Entry")
@@ -376,7 +367,6 @@ def test_hu_carry_forward_full_transfer_conserves_hu():
 		frappe.db.set_value(
 			"Inventory Dimension", "Handling Unit", "custom_carry_forward", original_cf or 0
 		)
-		frappe.db.set_value("Inventory Dimension", "Handling Unit", "target_fieldname", original_tf)
 		clear_inv_dim_cache()
 
 

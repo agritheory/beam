@@ -13,6 +13,17 @@ from frappe.query_builder.custom import ConstantColumn
 from frappe.query_builder.functions import Coalesce
 
 
+# Frappe v16 rejects string-form SQL functions in SELECT and requires the dict form; v15 has no
+# dict-function support and requires the string form. The two are mutually exclusive, so the
+# aggregate field for get_handling_unit must be chosen by version to keep BEAM v15/v16 compatible.
+_FRAPPE_MAJOR = int(frappe.__version__.split(".")[0])
+_STOCK_QTY_FIELD = (
+	{"SUM": "actual_qty", "as": "stock_qty"}
+	if _FRAPPE_MAJOR >= 16
+	else "SUM(actual_qty) as stock_qty"
+)
+
+
 _INV_DIM_CACHE_KEY = "beam:inv_dim_source_fieldnames"
 
 
@@ -125,7 +136,7 @@ def get_handling_unit(
 		filters={"handling_unit": handling_unit, "is_cancelled": 0},
 		fields=[
 			"item_code",
-			{"SUM": "actual_qty", "as": "stock_qty"},
+			_STOCK_QTY_FIELD,
 			"company",
 			"handling_unit",
 			"voucher_no",

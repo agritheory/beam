@@ -71,22 +71,27 @@ def get_carry_forward_dims() -> list[dict]:
 			for d in frappe.get_all(
 				"Inventory Dimension",
 				filters={"custom_carry_forward": 1},
-				fields=["source_fieldname", "target_fieldname"],
+				fields=["source_fieldname"],
 			)
-			if d.source_fieldname and d.target_fieldname
+			if d.source_fieldname
 		]
 
 	return frappe.cache().get_value(_CARRY_FORWARD_CACHE_KEY, generator=_fetch)
 
 
 def propagate_inventory_dimensions(doc, method=None):
-	"""before_submit hook for Stock Entry: copy each Inventory Dimension's source field to its
-	target field on rows where target is empty. Only fires for dimensions flagged with
-	`custom_carry_forward`, and only on rows that represent a real transfer (both s_warehouse
-	and t_warehouse set, row has a stock item code).
+	"""before_submit hook for Stock Entry: copy each carry-forward Inventory Dimension's source
+	field into its transfer field (``to_<source_fieldname>``) on rows where that transfer field is
+	empty. Only fires for dimensions flagged with `custom_carry_forward`, and only on rows that
+	represent a real transfer (both s_warehouse and t_warehouse set, row has a stock item code).
 
-	App-specific flows that explicitly set target (including explicit `None`) are unaffected
-	as long as their dimension is not flagged to carry forward."""
+	We write to ``to_<source_fieldname>`` -- the field ERPNext's stock controller reads for the
+	incoming leg of a transfer -- rather than to ``target_fieldname``. ``target_fieldname`` names
+	the Stock Ledger Entry column (which must stay ``<source_fieldname>`` so the SLE dimension keeps
+	its expected name), so the two must not be conflated.
+
+	App-specific flows that explicitly set the transfer field (including explicit `None`) are
+	unaffected as long as their dimension is not flagged to carry forward."""
 	dims = get_carry_forward_dims()
 	if not dims:
 		return
@@ -95,5 +100,6 @@ def propagate_inventory_dimensions(doc, method=None):
 		if not row.item_code or not row.s_warehouse or not row.t_warehouse:
 			continue
 		for dim in dims:
-			if row.get(dim.source_fieldname) and not row.get(dim.target_fieldname):
-				row.set(dim.target_fieldname, row.get(dim.source_fieldname))
+			target = f"to_{dim.source_fieldname}"
+			if row.get(dim.source_fieldname) and not row.get(target):
+				row.set(target, row.get(dim.source_fieldname))

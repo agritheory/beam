@@ -14,6 +14,12 @@ See docs/handling_unit.md
 """
 
 
+def is_scrap_item(row):
+	# ERPNext v16 removed `is_scrap_item` from Stock Entry Detail: scrap outputs are now
+	# marked via `type == "Scrap"`, with the old flag preserved as `is_legacy_scrap_item`.
+	return bool(row.get("is_legacy_scrap_item") or row.get("type") == "Scrap")
+
+
 @frappe.whitelist()
 def generate_handling_units(doc, method=None):
 	company = doc.get("company") or frappe.defaults.get_defaults().company
@@ -62,7 +68,7 @@ def generate_handling_units(doc, method=None):
 			handling_unit.save()
 			row.handling_unit = handling_unit.name
 
-		if doc.doctype == "Stock Entry" and doc.purpose == "Manufacture" and row.is_scrap_item:
+		if doc.doctype == "Stock Entry" and doc.purpose == "Manufacture" and is_scrap_item(row):
 			create_handling_unit = frappe.get_value(
 				"BOM Scrap Item", {"item_code": row.item_code, "parent": doc.bom_no}, "create_handling_unit"
 			)
@@ -76,7 +82,7 @@ def generate_handling_units(doc, method=None):
 			continue
 
 		if doc.doctype == "Stock Entry" and not (
-			any([row.is_finished_item, doc.purpose == "Material Receipt", row.is_scrap_item])
+			any([row.is_finished_item, doc.purpose == "Material Receipt", is_scrap_item(row)])
 		):
 			continue
 
@@ -127,7 +133,7 @@ def validate_handling_unit_overconsumption(doc, method=None):
 				if (
 					abs(hu.stock_qty - row.get(qty_field)) > 0.0
 					and (hu.stock_qty - row.get(qty_field) > precision_denominator)
-					and not row.is_scrap_item
+					and not is_scrap_item(row)
 				):
 					error = True
 			else:  # incoming and transfer / same warehouse
