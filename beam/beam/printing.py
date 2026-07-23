@@ -13,10 +13,13 @@ from frappe.utils.safe_exec import get_safe_globals
 from jinja2 import DebugUndefined, Environment
 from pypdf import PdfWriter
 
+from beam.beam.overrides.network_printer_settings import cups_connection, require_cups
+
 try:
-	import cups
-except Exception as e:
-	frappe.log_error(e, "CUPS is not installed on this server")
+	cups = require_cups()
+except Exception:
+	cups = None
+	frappe.log_error("CUPS is not installed on this server", "CUPS Import Error")
 
 
 @frappe.whitelist()
@@ -40,10 +43,10 @@ def print_by_server(
 	if not print_format:
 		print_format = "Standard"
 	print_format = frappe.get_doc("Print Format", print_format)
+	if not cups:
+		frappe.throw(frappe._("CUPS is not installed on this server"))
 	try:
-		cups.setServer(print_settings.server_ip)
-		cups.setPort(print_settings.port)
-		conn = cups.Connection()
+		conn = cups_connection(print_settings.server_ip, print_settings.port)
 		if print_format.raw_printing == 1:
 			output = ""
 			# using a custom jinja environment so we don't have to use frappe's formatting

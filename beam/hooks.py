@@ -19,7 +19,7 @@ app_include_js = ["beam.bundle.js"]
 
 # include js, css files in header of web template
 # web_include_css = "/assets/beam/css/beam.css"
-# web_include_js = "/assets/beam/js/beam.js"
+web_include_js = ["beam-web.bundle.js"]
 
 # include custom scss in every website theme (without file extension ".scss")
 # website_theme_scss = "beam/public/scss/website"
@@ -29,14 +29,18 @@ app_include_js = ["beam.bundle.js"]
 # webform_include_css = {"doctype": "public/css/doctype.css"}
 
 # include js in page
-# page_js = {"page" : "public/js/file.js"}
+page_js = {
+	"printer-queue": "beam/page/printer_queue/printer_queue.js",
+}
 
 # include js in doctype views
 doctype_js = {
 	"Network Printer Settings": "public/js/network_printer_settings_custom.js",
 	"Stock Entry": "public/js/stock_entry_custom.js",
 }
-# doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
+doctype_list_js = {
+	"Network Printer Settings": "public/js/network_printer_settings_list.js",
+}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
 
@@ -137,6 +141,11 @@ doc_events = {
 		]
 	},
 	"Warehouse": {
+		"validate": [
+			"beam.beam.barcodes.create_beam_barcode",
+		]
+	},
+	"User": {
 		"validate": [
 			"beam.beam.barcodes.create_beam_barcode",
 		]

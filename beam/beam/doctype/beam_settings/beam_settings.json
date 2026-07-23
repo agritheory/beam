@@ -16,7 +16,10 @@
 		"barcode_generation_section",
 		"barcode_exclusions_html",
 		"column_break_barcode",
-		"auto_barcode_doctypes"
+		"auto_barcode_doctypes",
+		"section_break_scan_login",
+		"enable_scan_to_login",
+		"restrict_ip"
 	],
 	"fields": [
 		{
@@ -89,6 +92,25 @@
 			"fieldtype": "JSON",
 			"hidden": 1,
 			"label": "Auto Barcode Doctypes"
+		},
+		{
+			"fieldname": "section_break_scan_login",
+			"fieldtype": "Section Break",
+			"label": "Scan to Login"
+		},
+		{
+			"default": "Not Allowed",
+			"fieldname": "enable_scan_to_login",
+			"fieldtype": "Select",
+			"label": "Enable Scan to Login",
+			"options": "Not Allowed\nMobile Users Only\nAll Users"
+		},
+		{
+			"columns": 4,
+			"description": "Restrict user from this IP address only. Multiple IP addresses can be added by separating with commas. Also accepts partial IP addresses like (111.111.111)",
+			"fieldname": "restrict_ip",
+			"fieldtype": "Small Text",
+			"label": "Restrict IP"
 		}
 	],
 	"links": [],

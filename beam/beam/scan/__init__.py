@@ -244,6 +244,13 @@ def get_list_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 	return actions
 
 
+def set_item_stock_uom(target: frappe._dict, item_code: str) -> None:
+	stock_uom = frappe.get_cached_value("Item", item_code, "stock_uom")
+	if stock_uom:
+		target.uom = stock_uom
+		target.stock_uom = stock_uom
+
+
 def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[dict[str, Any]]:
 	target = None
 	beam_override = frappe.get_hooks("beam_frm")
@@ -265,7 +272,7 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 				}
 			)
 		elif has_frm_override:
-			# A beam_frm override handles this form - skip get_item_details() which would
+			# A beam_frm override handles this form — skip get_item_details() which would
 			# fail for forms without a standard "{doctype} Item" child table.
 			target = frappe._dict(
 				{
@@ -273,6 +280,7 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 					"item_code": hu_details.item_code,
 				}
 			)
+			set_item_stock_uom(target, hu_details.item_code)
 		else:
 			target = get_item_details(
 				{
@@ -314,6 +322,7 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 					"item_code": barcode_doc.doc.name,
 				}
 			)
+			set_item_stock_uom(target, barcode_doc.doc.name)
 		else:
 			target = get_item_details(
 				{
