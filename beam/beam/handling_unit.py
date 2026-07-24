@@ -15,9 +15,14 @@ See docs/handling_unit.md
 
 
 def is_scrap_item(row):
-	# ERPNext v16 removed `is_scrap_item` from Stock Entry Detail: scrap outputs are now
-	# marked via `type == "Scrap"`, with the old flag preserved as `is_legacy_scrap_item`.
-	return bool(row.get("is_legacy_scrap_item") or row.get("type") == "Scrap")
+	# ERPNext is migrating the Stock Entry Detail scrap marker across versions, so check every
+	# form: v15 (and transitional v16 builds that still ship `BOM Scrap Item`) populate the
+	# `is_scrap_item` field; later v16 removed that field and marks scrap outputs via
+	# `type == "Scrap"`, preserving the old flag as `is_legacy_scrap_item`. `row.get` returns
+	# None for fields absent on the running version, so this stays safe everywhere.
+	return bool(
+		row.get("is_scrap_item") or row.get("is_legacy_scrap_item") or row.get("type") == "Scrap"
+	)
 
 
 @frappe.whitelist()

@@ -1,6 +1,8 @@
 # Copyright (c) 2025, AgriTheory and contributors
 # For license information, please see license.txt
 
+import frappe
+
 from beam.beam.inventory_dimension import setup_inventory_dimensions
 
 
