@@ -150,6 +150,13 @@ def setup_manufacturing_settings(settings):
 	mfg_settings.job_Card_excess_transfer = 1
 	mfg_settings.save()
 
+	frappe.set_value(
+		"Company",
+		settings.company,
+		"default_operating_cost_account",
+		frappe.get_value("Company", settings.company, "default_expense_account"),
+	)
+
 	if frappe.db.exists("Account", {"account_name": "Work In Progress", "company": settings.company}):
 		return
 	wip = frappe.new_doc("Account")
@@ -355,7 +362,7 @@ def create_boms(settings):
 			b.append("operations", {**operation, "hour_rate": 15.00})
 		if bom.get("scrap_items"):
 			for scrap_item in bom.get("scrap_items"):
-				b.append("scrap_items", {**scrap_item})
+				b.append("secondary_items", {**scrap_item, "type": "Scrap"})
 		b.save()
 		b.submit()
 
@@ -477,6 +484,7 @@ def create_production_plan(settings, prod_plan_from_doc):
 		pp.get_mr_items()
 	for item in pp.po_items:
 		item.planned_start_date = settings.day
+	pp.skip_available_sub_assembly_item = 0
 	pp.get_sub_assembly_items()
 	for item in pp.sub_assembly_items:
 		item.schedule_date = settings.day
@@ -484,7 +492,14 @@ def create_production_plan(settings, prod_plan_from_doc):
 	raw_materials = get_items_for_material_requests(
 		pp.as_dict(), warehouses=None, get_parent_warehouse_data=None
 	)
+	combined_raw_materials = {}
 	for row in raw_materials:
+		item_code = row.get("item_code")
+		if item_code in combined_raw_materials:
+			combined_raw_materials[item_code]["quantity"] += row.get("quantity")
+		else:
+			combined_raw_materials[item_code] = row
+	for row in combined_raw_materials.values():
 		pp.append(
 			"mr_items",
 			{
@@ -497,9 +512,23 @@ def create_production_plan(settings, prod_plan_from_doc):
 	pp.save()
 	pp.submit()
 
-	pp.make_material_request()
-	mr = frappe.get_last_doc("Material Request")
+	mr = frappe.new_doc("Material Request")
+	mr.company = settings.company
+	mr.material_request_type = "Purchase"
 	mr.schedule_date = mr.transaction_date = settings.day
+	for row in combined_raw_materials.values():
+		mr.append(
+			"items",
+			{
+				"item_code": row.get("item_code"),
+				"qty": row.get("quantity"),
+				"uom": row.get("uom") or row.get("stock_uom"),
+				"warehouse": frappe.get_value(
+					"Item Default", {"parent": row.get("item_code")}, "default_warehouse"
+				),
+				"schedule_date": settings.day,
+			},
+		)
 	mr.save()
 	mr.submit()
 
@@ -547,10 +576,16 @@ def create_production_plan(settings, prod_plan_from_doc):
 	for wo in wos:
 		wo = frappe.get_doc("Work Order", wo)
 		wo.wip_warehouse = "Kitchen - APC"
+		if not wo.fg_warehouse:
+			wo.fg_warehouse = "Kitchen - APC"
 		wo.actual_start_date = wo.planned_start_date = start_time
 		wo.required_items = sorted(wo.required_items, key=lambda x: x.get("item_code"))
 		for idx, w in enumerate(wo.required_items, start=1):
 			w.idx = idx
+			if not w.source_warehouse:
+				w.source_warehouse = frappe.get_value(
+					"Item Default", {"parent": w.item_code}, "default_warehouse"
+				)
 		wo.save()
 		wo.submit()
 		frappe.db.set_value("Work Order", wo.name, "creation", start_time)

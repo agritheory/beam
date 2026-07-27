@@ -7,7 +7,7 @@
 			"collapsible": 0,
 			"columns": 0,
 			"default": null,
-			"dt": "BOM Scrap Item",
+			"dt": "BOM Secondary Item",
 			"fetch_if_empty": 0,
 			"fieldname": "create_handling_unit",
 			"fieldtype": "Check",
@@ -28,7 +28,7 @@
 			"label": "Create Handling Unit",
 			"length": 0,
 			"module": "BEAM",
-			"name": "BOM Scrap Item-create_handling_unit",
+			"name": "BOM Secondary Item-create_handling_unit",
 			"no_copy": 0,
 			"non_negative": 0,
 			"permlevel": 0,
@@ -43,7 +43,7 @@
 			"unique": 0
 		}
 	],
-	"doctype": "BOM Scrap Item",
+	"doctype": "BOM Secondary Item",
 	"property_setters": [],
 	"sync_on_migrate": 1
 }
