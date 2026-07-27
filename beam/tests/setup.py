@@ -150,6 +150,13 @@ def setup_manufacturing_settings(settings):
 	mfg_settings.job_Card_excess_transfer = 1
 	mfg_settings.save()
 
+	frappe.set_value(
+		"Company",
+		settings.company,
+		"default_operating_cost_account",
+		frappe.get_value("Company", settings.company, "default_expense_account"),
+	)
+
 	if frappe.db.exists("Account", {"account_name": "Work In Progress", "company": settings.company}):
 		return
 	wip = frappe.new_doc("Account")
