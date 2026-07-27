@@ -575,6 +575,10 @@ def create_production_plan(settings, prod_plan_from_doc):
 		wo.required_items = sorted(wo.required_items, key=lambda x: x.get("item_code"))
 		for idx, w in enumerate(wo.required_items, start=1):
 			w.idx = idx
+			if not w.source_warehouse:
+				w.source_warehouse = frappe.get_value(
+					"Item Default", {"parent": w.item_code}, "default_warehouse"
+				)
 		wo.save()
 		wo.submit()
 		frappe.db.set_value("Work Order", wo.name, "creation", start_time)
