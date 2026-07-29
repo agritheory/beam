@@ -4,7 +4,7 @@ For license information, please see license.txt-->
 # Zebra Printing
 
 <div class="byline">
-  Tyler Matteson 2026-02-24
+  Rohan Bansal, Robert Duncan, and Tyler Matteson 2026-04-18
 </div>
 
 
@@ -24,6 +24,15 @@ BEAM uses the [py-zebra-zpl](https://github.com/mtking2/py-zebra-zpl) library to
 **Note:** Additional ZPL elements (like graphic fields) and commands (text mirroring, character encoding, etc.) can be developed separately and added as text directly to the ZPL Print Format. For more information, visit the [official documentation page](https://supportcommunity.zebra.com/s/article/ZPL-Command-Information-and-DetailsV2?language=en_US) or the [Labelary ZPL Programming Guide](https://labelary.com/zpl.html).
 
 In addition, BEAM exposes the following Jinja functions to be used within a Print Format:
+
+> [!IMPORTANT]
+> **Never render `label.add(...)` with an output tag.** `add()` mutates the label and returns `None`, so
+> `{{ label.add(...) }}` writes the literal text `None` into the stream ahead of `^XA`. Zebra firmware
+> discards a format when any data precedes `^XA`, and the failure is silent: the CUPS job is accepted and
+> reported as `completed`, the printer never moves, and nothing is written to the CUPS error log.
+>
+> Use a statement tag instead — `{%- set _ = label.add(...) -%}` — and keep whitespace control tight on the
+> surrounding tags so the rendered output begins at exactly `^XA`.
 
 ---
 
@@ -102,8 +111,8 @@ Additional arguments can be passed to the function to customize the barcode. Ple
 
 ##### Example
 ```jinja
-{% set label = zebra_zpl_label(width=6*203, length=4*203, dpi=203) -%}
-{{ label.add(zebra_zpl_barcode(doc.barcodes[0].barcode)) }}
+{%- set label = zebra_zpl_label(width=6*203, length=4*203, dpi=203) -%}
+{%- set _ = label.add(zebra_zpl_barcode(doc.barcodes[0].barcode)) -%}
 {{ label.dump_contents() }}
 ```
 
@@ -115,7 +124,7 @@ Generate a Zebra ZPL `Label` object. Arguments can be passed to the function to 
 
 ##### Example
 ```jinja
-{% set label = zebra_zpl_label(width=6*203, length=4*203, dpi=203) -%}
+{%- set label = zebra_zpl_label(width=6*203, length=4*203, dpi=203) -%}
 {{ label.dump_contents() }}
 ```
 
@@ -131,8 +140,8 @@ Additional arguments can be passed to the function to customize the text. Please
 
 ##### Example
 ```jinja
-{% set label = zebra_zpl_label(width=6*203, length=4*203, dpi=203) -%}
-{{ label.add(zebra_zpl_text('Hello, World!')) }}
+{%- set label = zebra_zpl_label(width=6*203, length=4*203, dpi=203) -%}
+{%- set _ = label.add(zebra_zpl_text('Hello, World!')) -%}
 {{ label.dump_contents() }}
 ```
 
@@ -195,9 +204,9 @@ Add text, barcodes, and other printable elements to a ZPL label. It takes the fo
 
 ##### Example
 ```jinja
-{% set label = zebra_zpl_label(width=6*203, length=4*203, dpi=203) -%}
-{% set barcode = zebra_zpl_barcode(doc.barcodes[0].barcode) %}
-{% add_to_label(label, barcode) %}
+{%- set label = zebra_zpl_label(width=6*203, length=4*203, dpi=203) -%}
+{%- set barcode = zebra_zpl_barcode(doc.barcodes[0].barcode) -%}
+{%- set _ = add_to_label(label, barcode) -%}
 {{ label.dump_contents() }}
 ```
 
@@ -263,8 +272,8 @@ A Jinja2-compatible ZPL template with:
 
 Example:
 ```jinja
-{# Shipping Label - 6.0x4.0" @ 300 DPI #}
-{% set label = zebra_zpl_label(width=1800.0, length=1200.0, dpi=300) -%}
+{#- Shipping Label - 6.0x4.0" @ 300 DPI -#}
+{%- set label = zebra_zpl_label(width=1800.0, length=1200.0, dpi=300) -%}
 
 ^XA  {# Start Format #}
 ^PW1800.0  {# Print Width: 1800.0 dots #}
