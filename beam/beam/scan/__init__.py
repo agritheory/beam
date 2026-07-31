@@ -161,7 +161,15 @@ def get_handling_unit(
 		"Stock Entry Detail" if sle.voucher_type == "Stock Entry" else f"{sle.voucher_type} Item"
 	)
 
-	child_doctype_fields = ["uom", "qty", "conversion_factor", "idx", "item_name", "name"]
+	# Not every voucher's items table carries UOM / conversion factor fields — Stock Reconciliation
+	# Item, for example, only records quantities in the item's stock UOM — so select the optional
+	# fields the child doctype actually has, otherwise the query fails on an unknown column
+	child_meta = frappe.get_meta(child_doctype)
+	child_doctype_fields = ["idx", "name"] + [
+		field
+		for field in ("uom", "qty", "conversion_factor", "item_name")
+		if child_meta.has_field(field)
+	]
 
 	if child_doctype == "Purchase Receipt Item":
 		child_doctype_fields.append("stock_qty")
@@ -182,6 +190,9 @@ def get_handling_unit(
 
 	if item:
 		sle.update({**item})
+		# vouchers without UOM fields record quantities in the item's stock UOM
+		sle.uom = sle.get("uom") or sle.stock_uom
+		sle.conversion_factor = sle.get("conversion_factor") or 1
 		sle.qty = (
 			sle.stock_qty / sle.conversion_factor
 		)  # use conversion factor based on transaction not current conversion factor
@@ -301,6 +312,10 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 					"currency": frappe.defaults.get_user_default("Currency"),
 				}
 			)
+		if context.frm == "Stock Reconciliation":
+			# reconcile the handling unit where its stock actually is, not the item's default
+			# warehouse that get_item_details returns
+			target.warehouse = hu_details.warehouse
 		target.update(
 			{
 				"handling_unit": hu_details.handling_unit,
