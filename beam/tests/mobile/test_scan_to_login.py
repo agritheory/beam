@@ -5,7 +5,7 @@ import frappe
 import pytest
 from playwright.sync_api import expect
 
-from beam.tests.test_utils import use_current_db_transaction
+from beam.tests.playwright_utils import use_current_db_transaction
 
 MOBILE_USER_EMAIL = "dsolomon@cfc.co"  # Has "BEAM Mobile User" role
 NON_MOBILE_USER_EMAIL = "mreynolds@cfc.co"  # Does NOT have "BEAM Mobile User" role

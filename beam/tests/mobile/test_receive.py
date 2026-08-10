@@ -13,7 +13,7 @@ import frappe
 import pytest
 from playwright.sync_api import expect
 
-from beam.tests.test_utils import use_current_db_transaction
+from beam.tests.playwright_utils import use_current_db_transaction
 
 # NOTE: any navigation tests should be done using `expect(page).to_have_url` since
 # `page.expect_navigation()` won't work with Beam's hash-based routes
