@@ -20,7 +20,7 @@ def browser_context_args(browser_context_args):
 @pytest.fixture(autouse=True)
 def setup(page, request):
 	# delete all existing draft Purchase Receipts
-	delete_draft_records(["Purchase Receipt", "Stock Entry"])
+	delete_draft_records(["Purchase Receipt", "Stock Entry", "Delivery Note"])
 
 	page.set_default_timeout(5000)
 
