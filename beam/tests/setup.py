@@ -98,6 +98,7 @@ def create_test_data():
 	create_employees(settings)
 	create_items(settings)
 	create_boms(settings)
+	create_finished_goods_stock(settings)
 	prod_plan_from_doc = "Sales Order"
 	if prod_plan_from_doc == "Sales Order":
 		create_sales_order(settings)
@@ -365,6 +366,35 @@ def create_items(settings):
 	)
 	water.save()
 	water.submit()
+
+
+def create_finished_goods_stock(settings):
+	"""Create initial stock of finished goods for testing.
+	Used by test_shipping.py::test_complete_partial_shipment and other shipping tests.
+	"""
+	finished_goods_items = [
+		{"item_code": "Ambrosia Pie", "qty": 50, "rate": 10.00},
+		{"item_code": "Double Plum Pie", "qty": 50, "rate": 9.00},
+		{"item_code": "Gooseberry Pie", "qty": 50, "rate": 12.00},
+		{"item_code": "Kaduka Key Lime Pie", "qty": 50, "rate": 9.00},
+	]
+
+	for item_data in finished_goods_items:
+		stock_entry = frappe.new_doc("Stock Entry")
+		stock_entry.stock_entry_type = stock_entry.purpose = "Material Receipt"
+		stock_entry.append(
+			"items",
+			{
+				"item_code": item_data["item_code"],
+				"qty": item_data["qty"],
+				"t_warehouse": "Baked Goods - APC",
+				"uom": "Nos",
+				"basic_rate": item_data["rate"],
+				"expense_account": "5111 - Cost of Goods Sold - APC",
+			},
+		)
+		stock_entry.save()
+		stock_entry.submit()
 
 
 def create_warehouses(settings):
