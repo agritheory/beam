@@ -4,7 +4,7 @@ For license information, please see license.txt-->
 # BEAM
 
 <div class="byline">
-  Rohan Bansal, Heather Kusmierz, Tyler Matteson, and Francisco Roldán 2025-05-28
+  Rohan Bansal, Ishwarya, Lautaro Juarez, Heather Kusmierz, Tyler Matteson, and Francisco Roldán 2026-03-02
 </div>
 
 BEAM is a general purpose barcode scanning application for ERPNext.

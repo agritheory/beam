@@ -45,6 +45,7 @@ line-length = 99
 
 [tool.codespell]
 skip = '*.md, yarn.lock, *.js.map'
+ignore-words-list = "fo"
 
 [tool.isort]
 line_length = 99

@@ -88,7 +88,7 @@ mypy ./apps/beam/beam --ignore-missing-imports
 pytest ./apps/beam/beam/tests -s --disable-warnings
 ```
 
-### Beam Portal setup
+### BEAM Portal setup
 
 <details>
 <summary>Development</summary>

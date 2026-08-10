@@ -13,6 +13,7 @@ from datetime import datetime
 
 import frappe
 import pytest
+from frappe.utils import flt
 
 from beam.beam.demand.receiving import (
 	_get_receiving_demand,
@@ -51,7 +52,8 @@ def test_opening_receiving():
 	assert len(water) == 1
 
 	assert water[0].parent == f"PUR-ORD-{current_year}-00002"
-	assert water[0].stock_qty == 24.999442
+	precision = frappe.get_system_settings("float_precision") or 3
+	assert flt(water[0].stock_qty, precision) == flt(24.999442, precision)
 	assert water[0].warehouse == "Kitchen - APC"
 
 
