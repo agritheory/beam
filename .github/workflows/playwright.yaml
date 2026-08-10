@@ -70,4 +70,4 @@ jobs:
           cd apps/beam
           poetry install
           python -m playwright install --with-deps
-          pytest ./beam/tests/mobile --browser chromium --disable-warnings
+          pytest ./beam/tests/mobile --browser chromium --order-scope=module --disable-warnings

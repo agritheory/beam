@@ -39,7 +39,7 @@ erpnext = ">=15.0.0,<16.0.0"
 [tool.pytest.ini_options]
 testpaths = ["beam/tests"]
 pythonpath = ["beam/tests"]
-addopts = "--cov=beam --cov-report term-missing --order-scope=module"
+addopts = "--cov=beam --cov-report term-missing"
 
 [tool.black]
 line-length = 99

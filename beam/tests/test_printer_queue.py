@@ -8,6 +8,7 @@ import frappe
 import pytest
 
 from beam.beam import printer_queue as pq
+from beam.beam.overrides import network_printer_settings as nps
 
 
 TEST_PRINT_SERVER = {"server_ip": "localhost", "port": 631}
@@ -17,6 +18,15 @@ def mock_cups_connection(get_jobs=None):
 	mock_conn = Mock()
 	mock_conn.getJobs.return_value = get_jobs or {}
 	mock_conn.cancelJob = Mock()
+	mock_conn.setPrinterLocation = Mock()
+	return mock_conn
+
+
+def insert_test_nps(doc):
+	"""Insert without touching a real print server (validate syncs location to CUPS)."""
+	mock_conn = mock_cups_connection()
+	with patch.object(nps, "cups_connection", return_value=mock_conn):
+		doc.insert()
 	return mock_conn
 
 
@@ -26,15 +36,17 @@ def test_get_printer_jobs_snapshot_returns_active_jobs_only():
 	if frappe.db.exists("Network Printer Settings", doc_name):
 		frappe.delete_doc("Network Printer Settings", doc_name)
 
-	frappe.get_doc(
-		{
-			"doctype": "Network Printer Settings",
-			"name": doc_name,
-			"server_ip": "localhost",
-			"port": 631,
-			"printer_name": "ZD621",
-		}
-	).insert()
+	insert_test_nps(
+		frappe.get_doc(
+			{
+				"doctype": "Network Printer Settings",
+				"name": doc_name,
+				"server_ip": "localhost",
+				"port": 631,
+				"printer_name": "ZD621",
+			}
+		)
+	)
 
 	def get_jobs(which_jobs="not-completed", **kwargs):
 		if which_jobs == "not-completed":
@@ -88,15 +100,17 @@ def test_session_snapshot_includes_recent_completed_jobs():
 	if frappe.db.exists("Network Printer Settings", doc_name):
 		frappe.delete_doc("Network Printer Settings", doc_name)
 
-	frappe.get_doc(
-		{
-			"doctype": "Network Printer Settings",
-			"name": doc_name,
-			"server_ip": "localhost",
-			"port": 631,
-			"printer_name": "ZD621",
-		}
-	).insert()
+	insert_test_nps(
+		frappe.get_doc(
+			{
+				"doctype": "Network Printer Settings",
+				"name": doc_name,
+				"server_ip": "localhost",
+				"port": 631,
+				"printer_name": "ZD621",
+			}
+		)
+	)
 
 	task_id = "testsnapshot01"
 	completed_since = 1_700_000_000

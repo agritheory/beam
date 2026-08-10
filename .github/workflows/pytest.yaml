@@ -155,7 +155,7 @@ jobs:
           source env/bin/activate
           cd apps/beam
           poetry install
-          pytest --cov=beam --cov-report=xml --cov-report=term-missing:skip-covered ./beam --ignore=./beam/tests/mobile --disable-warnings -s --tracing=retain-on-failure | tee pytest-coverage.txt
+          pytest --cov=beam --cov-report=xml --cov-report=term-missing:skip-covered ./beam --ignore=./beam/tests/mobile --disable-warnings -s | tee pytest-coverage.txt
 
       - name: Pytest coverage comment
         if: ${{ !env.ACT }}
