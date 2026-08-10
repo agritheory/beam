@@ -4,7 +4,7 @@ For license information, please see license.txt-->
 # Zebra Printing
 
 <div class="byline">
-  Rohan Bansal, Ishwarya, Lautaro Juarez, Tyler Matteson, and Francisco Roldán 2026-03-02
+  Rohan Bansal, Ishwarya, Lautaro Juarez, Tyler Matteson, and Francisco Roldán 2026-08-10
 </div>
 
 

@@ -1,0 +1,10 @@
+{
+  "pull_request": {
+    "base": {
+      "ref": "version-15"
+    },
+    "head": {
+      "ref": "add_printer_wizard"
+    }
+  }
+}

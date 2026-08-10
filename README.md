@@ -110,6 +110,8 @@ bench build
 ```
 </details>
 
+CUPS integration tests (`test_printer_cups_integration.py`) use the CUPS service container from the pytest workflow (built from [`cups/cups/Containerfile`](./cups/cups/Containerfile)). Locally, publish port 631 from the beam-cups image and set `BEAM_CUPS_HOST` / `BEAM_CUPS_PORT`.
+
 ### Printer Server setup
 ```shell
 sudo apt-get install gcc cups python3-dev libcups2-dev -y
