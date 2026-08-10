@@ -73,9 +73,7 @@ def main() -> int:
 			with json_report.open() as f:
 				data = json.load(f)
 			clones = data.get("statistics", {}).get("total", {}).get("clones", 0)
-			percentage = float(
-				data.get("statistics", {}).get("total", {}).get("percentage") or 0
-			)
+			percentage = float(data.get("statistics", {}).get("total", {}).get("percentage") or 0)
 		except (json.JSONDecodeError, KeyError, OSError):
 			return 0
 
