@@ -44,20 +44,20 @@ const canUseCamera = computed(() => {
 
 const checkCameraPermissions = async () => {
 	try {
-		if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-			errorMessage.value = 'Your browser does not support camera access'
-			return
-		}
-
-		const devices = await navigator.mediaDevices.enumerateDevices()
-		const cameras = devices.filter(device => device.kind === 'videoinput')
-
-		if (cameras.length === 0) {
-			errorMessage.value = 'There is no camera found on this device'
+		if (!window.isSecureContext) {
+			errorMessage.value = 'Camera access requires HTTPS'
 			showComponent.value = false
 			return
 		}
 
+		if (!navigator.mediaDevices?.getUserMedia) {
+			errorMessage.value = 'Your browser does not support camera access'
+			showComponent.value = false
+			return
+		}
+
+		// Do not rely on enumerateDevices() to decide visibility. Browsers (especially
+		// iOS Safari) often omit videoinput devices until after camera permission is granted.
 		hasCheckedPermissions.value = true
 		errorMessage.value = ''
 	} catch (err) {

@@ -10,18 +10,9 @@ from playwright.sync_api import expect
 def test_camera_scanner_button_hidden(page, setup):
 	page.add_init_script(
 		"""
-		Object.defineProperty(navigator, 'mediaDevices', {
-			value: {
-				enumerateDevices: async () => {
-					return []; // No cameras available
-				},
-				getUserMedia: async (constraints) => {
-					const canvas = document.createElement('canvas');
-					canvas.width = 640;
-					canvas.height = 480;
-					return canvas.captureStream(30);
-				}
-			},
+		Object.defineProperty(window, 'isSecureContext', {
+			value: false,
+			configurable: true,
 		});
 	"""
 	)
@@ -32,7 +23,7 @@ def test_camera_scanner_button_hidden(page, setup):
 	# Wait for component to check permissions and decide to hide itself
 	page.wait_for_timeout(1500)
 
-	# The component should not be visible when no cameras are found
+	# Camera UI is hidden on non-secure origins (HTTP bench, etc.)
 	camera_scanner = page.locator(".camera-scanner")
 	expect(camera_scanner).to_have_count(0)
 
