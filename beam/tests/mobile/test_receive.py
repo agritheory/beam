@@ -13,15 +13,17 @@ import frappe
 import pytest
 from playwright.sync_api import expect
 
-from beam.tests.test_utils import use_current_db_transaction
+from beam.tests.playwright_utils import use_current_db_transaction
 
 # NOTE: any navigation tests should be done using `expect(page).to_have_url` since
 # `page.expect_navigation()` won't work with Beam's hash-based routes
 
 
-@pytest.mark.order(2)
+@pytest.mark.order(1)
 def test_scan_invalid_barcode(page):
 	page.get_by_text("Receive").click()
+	# wait for list to load
+	expect(page.locator("css=.beam_list-item").first).to_be_visible()
 	page.locator("css=.beam_list-item").first.click()
 
 	# get the selected Purchase Order
@@ -30,6 +32,8 @@ def test_scan_invalid_barcode(page):
 	order_id = path_parts[-1] if path_parts else None
 	assert order_id
 
+	# wait for items to load after navigation
+	expect(page.locator("css=.box .beam_item-count").first).to_be_visible()
 	# find all items in the list
 	all_item_counts = page.locator("css=.box .beam_item-count")
 
@@ -78,11 +82,13 @@ def test_scan_invalid_barcode(page):
 		), f"Invalid barcode scan should not create any Purchase Receipts, but found: {new_receipts}"
 
 
-@pytest.mark.order(3)
+@pytest.mark.order(2)
 def test_receive_without_scanning(page):
 	"""Test trying to receive without scanning any items"""
 	# navigate to a Purchase Order
 	page.get_by_text("Receive").click()
+	# wait for list to load
+	expect(page.locator("css=.beam_list-item").first).to_be_visible()
 	page.locator("css=.beam_list-item").first.click()
 
 	# get the selected Purchase Order
@@ -91,6 +97,8 @@ def test_receive_without_scanning(page):
 	order_id = path_parts[-1] if path_parts else None
 	assert order_id
 
+	# wait for items to load after navigation
+	expect(page.locator("css=.box .beam_list-item").first).to_be_visible()
 	item = page.locator("css=.box .beam_list-item").first
 	item_code, *others = item.inner_text().split("\n")
 
@@ -132,10 +140,12 @@ def test_receive_without_scanning(page):
 		), f"Expected no new receipts, but count changed from {initial_count} to {final_count}"
 
 
-@pytest.mark.order(4)
+@pytest.mark.order(3)
 def test_complete_partial_receipt(page):
 	# navigate in the following order: Home -> Receive -> Purchase Order
 	page.get_by_text("Receive").click()
+
+	expect(page.locator("css=.beam_list-item").first).to_be_visible()
 	page.locator("css=.beam_list-item").first.click()
 
 	# get the selected Purchase Order
@@ -148,6 +158,7 @@ def test_complete_partial_receipt(page):
 
 	assert order_id
 
+	expect(page.locator("css=.box .beam_list-item").first).to_be_visible()
 	# find the first item in the list
 	item = page.locator("css=.box .beam_list-item").first
 	item_code, *others = item.inner_text().split("\n")
@@ -213,11 +224,13 @@ def test_complete_partial_receipt(page):
 	assert receipts[0]["received_qty"] == 1
 
 
-@pytest.mark.order(5)
+@pytest.mark.order(4)
 def test_rapid_barcode_scanning(page):
 	"""Test scanning multiple barcodes quickly"""
 	# navigate to a Purchase Order
 	page.get_by_text("Receive").click()
+	# wait for list to load
+	expect(page.locator("css=.beam_list-item").first).to_be_visible()
 	page.locator("css=.beam_list-item").first.click()
 
 	# get the selected Purchase Order
@@ -226,6 +239,8 @@ def test_rapid_barcode_scanning(page):
 	order_id = path_parts[-1] if path_parts else None
 	assert order_id
 
+	# wait for items to load after navigation
+	expect(page.locator("css=.box .beam_list-item").first).to_be_visible()
 	# find the first item in the list
 	item = page.locator("css=.box .beam_list-item").first
 	item_code, *others = item.inner_text().split("\n")

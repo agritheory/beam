@@ -26,6 +26,7 @@ class BEAMSettings(Document):
 		receiving_workstation: DF.Link | None
 		restrict_ip: DF.SmallText | None
 		routes: DF.Table[BEAMMobileRoute]
+		scan_serial_no: DF.Check
 		shipping_workstation: DF.Link | None
 		show_scan_output: DF.Check
 		warehouse_types: DF.TableMultiSelect[WarehouseTypes]
@@ -54,6 +55,7 @@ class BEAMSettings(Document):
 def create_beam_settings(company: str) -> str:
 	beam_settings = frappe.new_doc("BEAM Settings")
 	beam_settings.company = company
+	beam_settings.auto_barcode_doctypes = '["Item", "Warehouse"]'
 	beam_settings.save()
 	return beam_settings
 

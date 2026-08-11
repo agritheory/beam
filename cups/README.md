@@ -6,6 +6,25 @@ For license information, please see license.txt-->
 Printers service containerized.
 Caddy (with TLS) + CUPS.
 
+## GHCR image
+
+The CUPS service image is published to GitHub Container Registry:
+
+```sh
+docker pull ghcr.io/agritheory/beam-cups:latest
+docker run --rm -p 631:631 \
+  --add-host=host.docker.internal:host-gateway \
+  ghcr.io/agritheory/beam-cups:latest
+```
+
+CI publishes on push to `version-14` / `version-15` via [`.github/workflows/publish-cups.yml`](../.github/workflows/publish-cups.yml). Optional repository secrets `CUPS_ADMIN_USER` and `CUPS_ADMIN_PASSWORD` override the default admin credentials baked in at build time (defaults match `.env.example`).
+
+To use the published image with compose instead of a local build, replace the `cups` service `build:` block with:
+
+```yaml
+# image: ghcr.io/agritheory/beam-cups:latest
+```
+
 <details><summary>Podman</summary>
 
 ## Initial Setup

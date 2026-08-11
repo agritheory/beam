@@ -4,7 +4,7 @@ For license information, please see license.txt-->
 # BEAM
 
 <div class="byline">
-  Rohan Bansal, Heather Kusmierz, Tyler Matteson, and Francisco Roldán 2025-05-28
+  Rohan Bansal, Ishwarya, Lautaro Juarez, Heather Kusmierz, Tyler Matteson, and Francisco Roldán 2026-08-10
 </div>
 
 BEAM is a general purpose barcode scanning application for ERPNext.
@@ -31,14 +31,16 @@ Read more about [how scanning in form views works](./form.md).
 
 Version 15 introduced a new BEAM Settings document to allow users to opt in or out of features in the app. Settings are unique on a per-company basis and are automatically generated (with default options) during certain related transactions if a BEAM Settings document doesn't already exist for the company. Related transactions include submission of a Purchase Receipt, Purchase Invoice, or Stock Entry.
 
-![Screen shot of the Beam Settings document for the fictitious Ambrosia Pie Company with Barcode Font size of 12, Enable Handling Units checked, Ignore Drop Shipped Items in Demand unchecked, and fields for Receiving Workstation and Shipping Workstation.](./assets/beam_settings.png)
+![Screen shot of the BEAM Settings document for the fictitious Ambrosia Pie Company showing configuration options including barcode font size, QR code settings, Enable Handling Units, Ignore Drop Shipped Items in Demand, Receiving Workstation and Shipping Workstation, and the Barcode Generation section.](./assets/beam_settings.png)
 
 Settings options include:
 
-- **Company:** the company in ERPNext to apply the given settings to. One Beam Settings document may exist for each company in the system
-- **Barcode Font Size:** (default 12) the font size to use when printing barcodes
+- **Company:** the company in ERPNext to apply the given settings to. One BEAM Settings document may exist for each company in the system
 - **Enable Handling Units:** (default checked) enables the generation of Handling Units (see What is a Handling Unit section for more information)
+- **Enable Scanning of Serial Numbers:** (default unchecked) when enabled, BEAM will resolve scanned barcodes against Serial Number records in addition to Item barcodes
+- **Barcode Font Size:** (default 12) controls the font size of the human-readable text rendered beneath Code128 barcode images in print formats
 - **Ignore Drop Shipped Items in Demand:** (default unchecked) if checked, calculated demand from Sales Orders will ignore any items marked to be shipped by the supplier (drop shipped)
+- **Receiving Workstation** and **Shipping Workstation:** optional Workstation links for receiving and shipping workflows
 
 ### QR Code Settings
 
