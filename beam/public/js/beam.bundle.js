@@ -3,4 +3,5 @@
 
 import './scan/scan.js'
 import './print/print.js'
+import './network_printer_settings_quick_entry.js'
 // import './example_custom_callback.js'

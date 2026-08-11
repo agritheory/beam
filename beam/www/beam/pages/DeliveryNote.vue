@@ -23,7 +23,7 @@
 <script setup lang="ts">
 import type { ListViewItem } from '@stonecrop/beam'
 import { computed, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { onBeforeRouteLeave, useRoute } from 'vue-router'
 
 import ControlButtons from '@/components/ControlButtons.vue'
 import ScanOutput from '@/components/ScanOutput.vue'
@@ -41,6 +41,19 @@ const refreshKey = ref(0)
 store.$subscribe(mutation => {
 	if (['patch function', 'patch object'].includes(mutation.type)) {
 		refreshKey.value++
+	}
+})
+
+onBeforeRouteLeave((to, from, next) => {
+	if (deliveryNote.value?.dirty) {
+		const answer = window.confirm('You have unsaved changes. Do you want to leave without saving?')
+		if (answer) {
+			next()
+		} else {
+			next(false)
+		}
+	} else {
+		next()
 	}
 })
 
@@ -67,7 +80,7 @@ const create = async () => {
 		}
 		const { data, response } = await store.insert('Delivery Note', document)
 
-		if (!response.ok) {
+		if (response.ok) {
 			store.$patch(() => {
 				deliveryNote.value = data
 				deliveryNote.value.dirty = false
@@ -77,6 +90,26 @@ const create = async () => {
 		// TODO: a few options here:
 		// 1. allow setting a condition in ControlButtons to control when to enable the button
 		// 2. add a toast message here telling the user why this is a no-op
+	}
+}
+
+const submit = async () => {
+	const { data, response } = await store.submit<DeliveryNote>('Delivery Note', deliveryNote.value.name)
+	if (response.ok) {
+		store.$patch(() => {
+			deliveryNote.value = data
+			deliveryNote.value.dirty = false
+		})
+	}
+}
+
+const cancel = async () => {
+	const { data, response } = await store.cancel<DeliveryNote>('Delivery Note', deliveryNote.value.name)
+	if (response.ok) {
+		store.$patch(() => {
+			deliveryNote.value = data
+			deliveryNote.value.dirty = false
+		})
 	}
 }
 
@@ -98,14 +131,14 @@ const controlButtons = computed((): ControlButton[] => {
 			disabled: form.items.length === 0 || !form.name,
 			hidden: Boolean(form.__islocal) || form.docstatus !== 0,
 			color: { background: 'var(--sc-success)', text: 'var(--sc-btn-color)' },
-			action: async () => await store.submit<DeliveryNote>('Delivery Note', form.name),
+			action: submit,
 		},
 		{
 			label: 'CANCEL',
 			disabled: form.items.length === 0 || !form.name,
 			hidden: Boolean(form.__islocal) || form.docstatus !== 1,
 			color: { background: 'var(--sc-alert)', text: 'var(--sc-btn-color)' },
-			action: async () => await store.cancel<DeliveryNote>('Delivery Note', form.name),
+			action: cancel,
 		},
 	]
 })

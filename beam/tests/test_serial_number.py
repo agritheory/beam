@@ -12,7 +12,7 @@ def _make_serials(series="WCC-.#####", qty=1):
 	return [make_autoname(series) for _ in range(qty)]
 
 
-@pytest.mark.order(20)
+@pytest.mark.order(71)
 def test_serial_number_scan():
 	warehouse = "Storeroom - APC"
 	supplier = "Unity Bakery Supply"

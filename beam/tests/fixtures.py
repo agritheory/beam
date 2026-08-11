@@ -728,7 +728,7 @@ employees = [
 		},
 		"phone": "(704) 885-0542",
 		"roles": ["Stock Manager", "Item Manager"],
-		# "department": "Operations",
+		"department": "Management - APC",
 		"designation": "Bakery Manager",
 	},
 	{
@@ -745,7 +745,7 @@ employees = [
 		"phone": "(658) 583-5499",
 		"roles": ["Stock User", "BEAM Mobile User"],
 		"reports_to": "Tristan Hawkins",
-		# "department": "Operations",
+		"department": "Operations - APC",
 		"designation": "Baker",
 	},
 	{
@@ -762,7 +762,7 @@ employees = [
 		"phone": "(962) 762-5895",
 		"roles": ["Stock User", "BEAM Mobile User"],
 		"reports_to": "Tristan Hawkins",
-		# "department": "Operations",
+		"department": "Operations - APC",
 		"designation": "Baker",
 	},
 	{
@@ -779,7 +779,7 @@ employees = [
 		"phone": "(366) 357-8223",
 		"roles": ["Stock User", "BEAM Mobile User"],
 		"reports_to": "Tristan Hawkins",
-		# "department": "Operations",
+		"department": "Operations - APC",
 		"designation": "Bakery Manager",
 	},
 	{
@@ -796,7 +796,7 @@ employees = [
 		"phone": "(930) 920-4520",
 		"roles": ["Stock User", "BEAM Mobile User"],
 		"reports_to": "Tristan Hawkins",
-		# "department": "Operations",
+		"department": "Operations - APC",
 		"designation": "Baker",
 	},
 	{
@@ -813,7 +813,7 @@ employees = [
 		"phone": "(054) 893-8970",
 		"roles": ["Stock User", "BEAM Mobile User"],
 		"reports_to": "Tristan Hawkins",
-		# "department": "Operations",
+		"department": "Operations - APC",
 		"designation": "Baker",
 	},
 	{
@@ -830,7 +830,7 @@ employees = [
 		"phone": "(814) 677-9322",
 		"roles": ["Stock User", "BEAM Mobile User"],
 		"reports_to": "Tristan Hawkins",
-		# "department": "Operations",
+		"department": "Operations - APC",
 		"designation": "Baker",
 	},
 	{
@@ -847,7 +847,7 @@ employees = [
 		"phone": "(133) 195-7828",
 		"roles": ["Stock User", "BEAM Mobile User"],
 		"reports_to": "Tristan Hawkins",
-		# "department": "Operations",
+		"department": "Operations - APC",
 		"designation": "Baker",
 	},
 	{
@@ -864,7 +864,24 @@ employees = [
 		"phone": "(041) 000-2569",
 		"roles": ["Stock User", "BEAM Mobile User"],
 		"reports_to": "Tristan Hawkins",
-		# "department": "Operations",
+		"department": "Operations - APC",
 		"designation": "Baker",
+	},
+	{
+		"name": "Marcus Reynolds",
+		"gender": "Male",
+		"date_of_birth": "1990-05-15",
+		"date_of_joining": "2023-03-01",
+		"address": {
+			"address_line1": "456 Testing Lane",
+			"city": "Boston",
+			"state": "MA",
+			"postal_code": "02101",
+		},
+		"phone": "(555) 123-4567",
+		"roles": ["Stock User"],  # NO BEAM Mobile User role - for restriction tests
+		"reports_to": "Tristan Hawkins",
+		"department": "Operations - APC",
+		"designation": "Warehouse Associate",
 	},
 ]

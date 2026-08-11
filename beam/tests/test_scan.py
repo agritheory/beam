@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import frappe
+import pytest
 
 """
 1. Test that a scanned item code in a list view returns the correct values for filtering
@@ -12,6 +13,7 @@ import frappe
 """
 
 
+@pytest.mark.order(40)
 def test_item_scan_from_list_view_for_filter():
 	# purchase receipt listview
 	item_barcode = frappe.get_value("Item Barcode", {"parent": "Butter"}, "barcode")
@@ -25,6 +27,7 @@ def test_item_scan_from_list_view_for_filter():
 	assert scan[0].get("target") == "Butter"
 
 
+@pytest.mark.order(42)
 def test_item_scan_from_list_view_for_route():
 	# item listview
 	item_barcode = frappe.get_value("Item Barcode", {"parent": "Butter"}, "barcode")
@@ -38,6 +41,7 @@ def test_item_scan_from_list_view_for_route():
 	assert scan[0].get("target") == "Butter"
 
 
+@pytest.mark.order(44)
 def test_item_scan_from_form_view():
 	context = {
 		"frm": "Purchase Receipt",
