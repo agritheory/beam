@@ -9,6 +9,7 @@ jobs:
   test:
     name: Mobile
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     services:
       mariadb:
@@ -62,6 +63,33 @@ jobs:
           MYSQL_HOST: 'localhost'
           MYSQL_PWD: 'admin'
         run: bash ${{ github.workspace }}/.github/helper/install.sh
+
+      - name: Start Bench Web Server
+        env:
+          BENCH_ROOT: /home/runner/frappe-bench
+          BENCH_PORT: 8000
+        run: |
+          set -euo pipefail
+          PING_URL="http://127.0.0.1:${BENCH_PORT}/api/method/ping"
+
+          if curl -sf --connect-timeout 2 "$PING_URL" >/dev/null 2>&1; then
+            exit 0
+          fi
+
+          cd "${BENCH_ROOT}"
+          nohup bench serve --port "${BENCH_PORT}" >> bench_run_logs.txt 2>&1 &
+          sleep 3
+
+          for _ in $(seq 1 60); do
+            if curl -sf --connect-timeout 2 "$PING_URL" >/dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 2
+          done
+
+          echo "bench web not ready at ${PING_URL}" >&2
+          tail -80 "${BENCH_ROOT}/bench_run_logs.txt" 2>/dev/null || true
+          exit 56
 
       - name: Run Mobile Tests
         working-directory: /home/runner/frappe-bench

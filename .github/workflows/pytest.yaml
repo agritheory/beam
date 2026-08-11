@@ -8,6 +8,7 @@ on:
 jobs:
   build-cups:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
       packages: write
@@ -54,6 +55,7 @@ jobs:
   tests:
     needs: build-cups
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
     permissions:
       contents: read
       packages: read

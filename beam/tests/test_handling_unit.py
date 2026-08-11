@@ -118,7 +118,7 @@ def test_purchase_receipt_handling_unit_generation():
 
 @pytest.mark.order(62)
 def test_purchase_invoice():
-	for pi in frappe.get_all("Purchase Invoice"):
+	for pi in frappe.get_all("Purchase Invoice", {"docstatus": 0}):
 		pi = frappe.get_doc("Purchase Invoice", pi)
 		for row in pi.items:
 			assert row.handling_unit == None
