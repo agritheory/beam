@@ -53,6 +53,8 @@ export const useScanStore = defineStore('scan', () => {
 	}
 
 	const add_or_associate = (barcode_context: FormContext[]) => {
+		if (!mappedDoc.value?.items) return
+
 		const is_stock_entry =
 			mappedDoc.value.doctype === 'Stock Entry' &&
 			[
@@ -111,6 +113,8 @@ export const useScanStore = defineStore('scan', () => {
 	}
 
 	const add_or_increment = (barcode_context: FormContext[]) => {
+		if (!mappedDoc.value?.items) return
+
 		for (const action of barcode_context) {
 			const existing_rows = mappedDoc.value.items.filter(
 				row =>
@@ -233,6 +237,7 @@ export const useScanStore = defineStore('scan', () => {
 				})
 			} else {
 				const warehouse = barcode_context[0].context.doc?.name
+				if (!mappedDoc.value) return
 				if (!(mappedDoc.value as StockEntry).from_warehouse) {
 					;(mappedDoc.value as StockEntry).from_warehouse = warehouse
 				} else if (!(mappedDoc.value as StockEntry).to_warehouse) {

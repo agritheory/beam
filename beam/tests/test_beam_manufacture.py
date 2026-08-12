@@ -1,10 +1,12 @@
 # Copyright (c) 2024, AgriTheory and contributors
 # For license information, please see license.txt
 
+pytest_plugins = ["beam.tests.playwright_fixtures"]
+
 # To test locally:
 #  active the virtual environment
 #  bench start, and then run:
-#  pytest ./beam/tests/mobile/test_manufacture.py --browser firefox --headed --disable-warnings
+#  pytest ./beam/tests/test_beam_manufacture.py --browser firefox --headed --disable-warnings
 
 import re
 
@@ -15,7 +17,7 @@ from playwright.sync_api import expect
 from beam.tests.playwright_utils import use_current_db_transaction
 
 
-@pytest.mark.order(1)
+@pytest.mark.order(300)
 def test_complete_partial_stock_entry(page):
 	"""
 	This test needs to disable handling units on Beam Settings and

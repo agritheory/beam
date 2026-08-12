@@ -1,10 +1,12 @@
 # Copyright (c) 2024, AgriTheory and contributors
 # For license information, please see license.txt
 
+pytest_plugins = ["beam.tests.playwright_fixtures"]
+
 # To test locally:
 #  active the virtual environment
 #  bench start, and then run:
-#  pytest ./beam/tests/mobile/test_mobile.py --browser firefox --headed --disable-warnings
+#  pytest ./beam/tests/test_beam_scan_nav.py --browser firefox --headed --disable-warnings
 
 import re
 
@@ -16,7 +18,7 @@ from playwright.sync_api import expect
 # `page.expect_navigation()` since the latter won't work with Beam's hash-based routes
 
 
-@pytest.mark.order(1)
+@pytest.mark.order(301)
 @pytest.mark.parametrize("route", ["Ship"])
 def test_scan_item_barcode(page, route):
 	# navigate in the following order: Home -> List -> Form

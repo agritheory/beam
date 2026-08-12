@@ -12,7 +12,7 @@
 
 	<!-- body section -->
 	<div class="box" v-show="items.length">
-		<ListView :items="items" :key="refreshKey" />
+		<ListView :items="items" :key="refreshKey" @update="handleItemUpdate" />
 	</div>
 
 	<!-- footer section -->
@@ -30,10 +30,26 @@ import type { ControlButton, PurchaseReceipt, PurchaseReceiptItem } from '@/type
 
 const route = useRoute()
 const store = useBeamStore()
-const purchaseOrderId = route.params.id?.toString() || 'new-purchase-receipt'
-
-const purchaseReceipt = ref(store.cache.mappers[purchaseOrderId] as PurchaseReceipt)
 const refreshKey = ref(0)
+
+const purchaseOrderId = computed(() => route.params.id?.toString() || 'new-purchase-receipt')
+
+const purchaseReceipt = computed(() => store.cache.mappers[purchaseOrderId.value] as PurchaseReceipt | undefined)
+
+const handleItemUpdate = (updatedItem: PurchaseReceiptItem & ListViewItem) => {
+	const doc = purchaseReceipt.value
+	if (!doc?.items) return
+
+	const itemIndex = doc.items.findIndex(item => item.item_code === updatedItem.item_code)
+
+	if (itemIndex !== -1) {
+		if (updatedItem.count?.count !== undefined) {
+			doc.items[itemIndex].received_qty = updatedItem.count.count
+		}
+
+		doc.dirty = true
+	}
+}
 
 // hack: since array reactivity is not present in Vue 3, force-refresh the listviews on store update
 store.$subscribe(mutation => {
@@ -43,6 +59,8 @@ store.$subscribe(mutation => {
 })
 
 const items = computed((): (PurchaseReceiptItem & ListViewItem)[] => {
+	if (!purchaseReceipt.value?.items) return []
+
 	return purchaseReceipt.value.items.map(item => {
 		return {
 			...item,
@@ -57,32 +75,34 @@ const items = computed((): (PurchaseReceiptItem & ListViewItem)[] => {
 })
 
 const create = async () => {
-	if (purchaseReceipt.value.dirty) {
-		const document: PurchaseReceipt = { ...purchaseReceipt.value }
-		document.items = document.items.filter(item => item.received_qty > 0)
-		for (const item of document.items) {
-			item.qty = item.received_qty
-		}
-		const { data, response } = await store.insert('Purchase Receipt', document)
+	const doc = purchaseReceipt.value
+	if (!doc?.dirty) {
+		return
+	}
 
-		if (response.ok) {
-			store.$patch(() => {
-				purchaseReceipt.value = data
-				purchaseReceipt.value.dirty = false
-			})
+	const document: PurchaseReceipt = { ...doc }
+	document.items = document.items.filter(item => item.received_qty > 0)
+	for (const item of document.items) {
+		item.qty = item.received_qty
+	}
+	const { data, response } = await store.insert('Purchase Receipt', document)
+
+	if (response.ok && data) {
+		if (store.camera.pendingPhotos.length > 0) {
+			await store.uploadFiles('Purchase Receipt', data.name || '', store.camera.pendingPhotos)
+			store.clearPendingPhotos()
 		}
-	} else {
-		// TODO: a few options here:
-		// 1. allow setting a condition in ControlButtons to control when to enable the button
-		// 2. add a toast message here telling the user why this is a no-op
+
+		store.$patch(state => {
+			state.cache.mappers[purchaseOrderId.value] = data
+			data.dirty = false
+		})
 	}
 }
 
 const controlButtons = computed((): ControlButton[] => {
-	if (!purchaseReceipt.value) return []
-
-	const form = purchaseReceipt.value as PurchaseReceipt
-	if (!form.items) return []
+	const form = purchaseReceipt.value
+	if (!form?.items) return []
 
 	return [
 		{
@@ -119,7 +139,6 @@ b {
 .container {
 	display: flex;
 	gap: 20px;
-	/* Space between the boxes */
 }
 
 .box {

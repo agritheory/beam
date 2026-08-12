@@ -110,7 +110,22 @@ bench build
 ```
 </details>
 
-CUPS integration tests (`test_printer_cups_integration.py`) use the CUPS service container from the pytest workflow (built from [`cups/cups/Containerfile`](./cups/cups/Containerfile)). Locally, publish port 631 from the beam-cups image and set `BEAM_CUPS_HOST` / `BEAM_CUPS_PORT`.
+CUPS integration tests (`test_printer_cups_integration.py`) use the CUPS service container from the pytest workflow (built from [`cups/cups/Containerfile`](./cups/cups/Containerfile)). Locally, publish beam-cups (e.g. `-p 1631:631`, matching CI) and set both `BEAM_CUPS_HOST` and `BEAM_CUPS_PORT`. Without those env vars the tests skip — they must not target system cupsd on `:631` (that hangs).
+
+### Running tests
+
+From `apps/beam` with the bench virtualenv active:
+
+```shell
+# Full suite (unit story, then portal/Playwright at order 300+)
+python -m playwright install chromium   # once per env
+pytest beam/tests --browser chromium
+
+# Unit-only
+pytest beam/tests --ignore-glob='**/test_beam_*.py'
+```
+
+Portal tests (`test_beam_*.py`) start `bench serve` if needed and map the site hostname to `127.0.0.1` for Chromium (same approach as approvals). CI runs one pytest job from the Run Tests step in `.github/workflows/pytest.yaml`.
 
 ### Printer Server setup
 ```shell

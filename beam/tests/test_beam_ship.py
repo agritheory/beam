@@ -1,25 +1,29 @@
 # Copyright (c) 2024, AgriTheory and contributors
 # For license information, please see license.txt
 
+pytest_plugins = ["beam.tests.playwright_fixtures"]
+
 import re
-from urllib.parse import urlparse
 
 import frappe
 import pytest
 from playwright.sync_api import expect
 
-from beam.tests.playwright_utils import use_current_db_transaction
+from beam.tests.playwright_utils import (
+	open_desk_form,
+	open_first_beam_list_row,
+	order_id_from_beam_url,
+	use_current_db_transaction,
+	wait_for_docstatus,
+)
 
 
-@pytest.mark.order(15)
+@pytest.mark.order(340)
 def test_ship_without_scanning(page):
 	"""Test trying to ship without scanning any items"""
 	# navigate to Ship -> Sales Order
-	page.get_by_text("Ship").click()
-	page.locator("css=.beam_list-item").first.click()
-
-	parsed_url = urlparse(page.url.replace("#", ""))
-	order_id = parsed_url.query.replace("id=", "")
+	open_first_beam_list_row(page, "Ship", r"delivery-note")
+	order_id = order_id_from_beam_url(page.url)
 	assert order_id
 
 	item = page.locator("css=.box .beam_list-item").first
@@ -71,14 +75,11 @@ def test_ship_without_scanning(page):
 		), f"Expected no new delivery notes, but count changed from {initial_count} to {final_count}"
 
 
-@pytest.mark.order(16)
+@pytest.mark.order(341)
 def test_complete_partial_shipment(page):
 	"""Test completing a partial shipment"""
-	page.get_by_text("Ship").click()
-	page.locator("css=.beam_list-item").first.click()
-
-	parsed_url = urlparse(page.url.replace("#", ""))
-	order_id = parsed_url.query.replace("id=", "")
+	open_first_beam_list_row(page, "Ship", r"delivery-note")
+	order_id = order_id_from_beam_url(page.url)
 	assert order_id
 
 	# find the first item in the list
@@ -164,14 +165,11 @@ def test_complete_partial_shipment(page):
 		assert new_delivered_qty < ordered_qty, "Should still have remaining qty available"
 
 
-@pytest.mark.order(17)
+@pytest.mark.order(342)
 def test_prevent_over_delivery(page):
 	"""Test that system prevents over-delivery beyond ordered quantity"""
-	page.get_by_text("Ship").click()
-	page.locator("css=.beam_list-item").first.click()
-
-	parsed_url = urlparse(page.url.replace("#", ""))
-	order_id = parsed_url.query.replace("id=", "")
+	open_first_beam_list_row(page, "Ship", r"delivery-note")
+	order_id = order_id_from_beam_url(page.url)
 	assert order_id
 
 	item = page.locator("css=.box .beam_list-item").first
@@ -226,14 +224,11 @@ def test_prevent_over_delivery(page):
 			assert notes[0]["qty"] <= remaining_qty, "Delivery Note qty should not exceed remaining qty"
 
 
-@pytest.mark.order(18)
+@pytest.mark.order(343)
 def test_cancel_submitted_delivery_note_workflow(page):
 	"""Test cancelling a submitted Delivery Note through the complete workflow"""
-	page.get_by_text("Ship").click()
-	page.locator("css=.beam_list-item").first.click()
-
-	parsed_url = urlparse(page.url.replace("#", ""))
-	order_id = parsed_url.query.replace("id=", "")
+	open_first_beam_list_row(page, "Ship", r"delivery-note")
+	order_id = order_id_from_beam_url(page.url)
 	assert order_id
 
 	item = page.locator("css=.box .beam_list-item").first
@@ -271,12 +266,7 @@ def test_cancel_submitted_delivery_note_workflow(page):
 	ship_button = page.get_by_text("SHIP", exact=True)
 	expect(ship_button).to_be_visible()
 	ship_button.click()
-	page.wait_for_timeout(1500)
-
-	# Verify Delivery Note is submitted
-	with use_current_db_transaction():
-		dn = frappe.get_doc("Delivery Note", dn_name)
-		assert dn.docstatus == 1, f"Expected docstatus 1 (Submitted), got {dn.docstatus}"
+	wait_for_docstatus("Delivery Note", dn_name, 1)
 
 	# Verify CANCEL button is visible and SHIP button is hidden
 	cancel_button = page.get_by_text("CANCEL", exact=True)
@@ -294,12 +284,9 @@ def test_cancel_submitted_delivery_note_workflow(page):
 
 	# Click CANCEL button
 	cancel_button.click()
-	page.wait_for_timeout(1500)
+	wait_for_docstatus("Delivery Note", dn_name, 2)
 
 	with use_current_db_transaction():
-		dn = frappe.get_doc("Delivery Note", dn_name)
-		assert dn.docstatus == 2, f"Expected docstatus 2 (Cancelled), got {dn.docstatus}"
-
 		# Verify stock ledger entries were reversed
 		sle_after = frappe.get_all(
 			"Stock Ledger Entry",
@@ -316,12 +303,9 @@ def test_cancel_submitted_delivery_note_workflow(page):
 	expect(cancel_button).not_to_be_visible()
 
 
-@pytest.mark.order(19)
-@pytest.mark.skip(
-	reason="Frontend does not load docstatus when navigating directly to delivery-note URL"
-)
+@pytest.mark.order(344)
 def test_cancel_submitted_delivery_note(page):
-	"""Test cancelling a submitted Delivery Note"""
+	"""Test cancelling a submitted Delivery Note from Desk."""
 	with use_current_db_transaction():
 		submitted_notes = frappe.get_all(
 			"Delivery Note",
@@ -336,22 +320,25 @@ def test_cancel_submitted_delivery_note(page):
 		), "Should have at least one submitted Delivery Note from previous tests"
 		dn_name = submitted_notes[0]["name"]
 
-	base_url = frappe.utils.get_url()
-	page.goto(f"{base_url}/app/delivery-note/{dn_name}")
-	page.wait_for_timeout(1000)
+	open_desk_form(page, "delivery-note", dn_name)
+	expect(page.locator(".page-head")).to_be_visible()
 
-	cancel_button = page.get_by_role("button", name="Cancel")
-	expect(cancel_button).to_be_visible()
+	# Primary toolbar Cancel, or Menu → Cancel (ERPNext often hides Cancel in Menu).
+	cancel_button = page.locator(".page-actions").get_by_role("button", name="Cancel")
+	if cancel_button.count() == 0 or not cancel_button.first.is_visible():
+		menu = page.locator(".menu-btn-group > button, .page-actions .menu-btn-group button").first
+		expect(menu).to_be_visible(timeout=10000)
+		menu.click()
+		cancel_button = page.locator(".dropdown-menu").get_by_text("Cancel", exact=True)
+
+	expect(cancel_button.first).to_be_visible(timeout=10000)
 
 
-@pytest.mark.order(20)
+@pytest.mark.order(345)
 def test_unsaved_changes_warning(page):
 	"""Test that user is warned when navigating away with unsaved changes"""
-	page.get_by_text("Ship").click()
-	page.locator("css=.beam_list-item").first.click()
-
-	parsed_url = urlparse(page.url.replace("#", ""))
-	order_id = parsed_url.query.replace("id=", "")
+	open_first_beam_list_row(page, "Ship", r"delivery-note")
+	order_id = order_id_from_beam_url(page.url)
 	assert order_id
 
 	unsaved_indicator = page.locator("span.dirty")
@@ -407,14 +394,11 @@ def test_unsaved_changes_warning(page):
 	), "Should have left delivery-note page after accepting warning"
 
 
-@pytest.mark.order(21)
+@pytest.mark.order(346)
 def test_scan_handling_unit_on_delivery_note(page):
 	"""Test scanning a handling unit barcode instead of item barcode"""
-	page.get_by_text("Ship").click()
-	page.locator("css=.beam_list-item").first.click()
-
-	parsed_url = urlparse(page.url.replace("#", ""))
-	order_id = parsed_url.query.replace("id=", "")
+	open_first_beam_list_row(page, "Ship", r"delivery-note")
+	order_id = order_id_from_beam_url(page.url)
 	assert order_id
 
 	item = page.locator("css=.box .beam_list-item").first

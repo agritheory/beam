@@ -1,13 +1,15 @@
 # Copyright (c) 2024, AgriTheory and contributors
 # For license information, please see license.txt
 
+pytest_plugins = ["beam.tests.playwright_fixtures"]
+
 import re
 
 import frappe
 import pytest
 from playwright.sync_api import expect
 
-from beam.tests.playwright_utils import use_current_db_transaction
+from beam.tests.playwright_utils import error_toast_text, use_current_db_transaction
 
 
 def fill_warehouse_dropdown(page, label: str, value: str):
@@ -21,20 +23,22 @@ def fill_warehouse_dropdown(page, label: str, value: str):
 	result.click()
 
 
-@pytest.fixture(autouse=True, scope="session")
+@pytest.fixture(autouse=True, scope="module")
 def disable_handling_unit_for_tests():
-	"""Disable handling unit validation for all items during tests."""
+	"""Disable handling unit validation for repack tests in this module only."""
 	items = frappe.get_all("Item", filters={"enable_handling_unit": 1}, pluck="name")
-	for item in items:
-		frappe.db.set_value("Item", item, "enable_handling_unit", 0)
-	frappe.db.commit()
-	yield
-	for item in items:
-		frappe.db.set_value("Item", item, "enable_handling_unit", 1)
-	frappe.db.commit()
+	try:
+		for item in items:
+			frappe.db.set_value("Item", item, "enable_handling_unit", 0)
+		frappe.db.commit()
+		yield
+	finally:
+		for item in items:
+			frappe.db.set_value("Item", item, "enable_handling_unit", 1)
+		frappe.db.commit()
 
 
-@pytest.mark.order(1)
+@pytest.mark.order(320)
 def test_repack_items_manually(page):
 	page.get_by_text("Repack").click()
 	expect(page).to_have_url(re.compile(r"#/repack"), timeout=15000)
@@ -124,7 +128,7 @@ def test_repack_items_manually(page):
 	assert submitted, f"Expected Stock Entry {stock_entry_name} to be submitted"
 
 
-@pytest.mark.order(2)
+@pytest.mark.order(321)
 def test_repack_using_bom(page):
 	page.get_by_text("Repack").click()
 	page.wait_for_load_state("networkidle")
@@ -174,7 +178,7 @@ def test_repack_using_bom(page):
 	assert entries, "Expected a draft Stock Entry to be created from BOM repack"
 
 
-@pytest.mark.order(3)
+@pytest.mark.order(322)
 def test_scan_item_for_repack(page):
 	page.get_by_text("Repack").click()
 	page.wait_for_load_state("networkidle")
@@ -214,28 +218,26 @@ def test_scan_item_for_repack(page):
 	expect(qty_input).to_have_value("2")
 
 
-@pytest.mark.order(4)
+@pytest.mark.order(323)
 def test_clear_repack_form(page):
 	page.get_by_text("Repack").click()
 	page.wait_for_load_state("networkidle")
 	assert "/repack" in page.url
 
 	with use_current_db_transaction():
-		item_barcodes = frappe.get_all(
+		# Named fixture data rather than an unordered LIMIT 1. This test needs a
+		# pair that ADD accepts, and test_repack_items_manually proves this one is;
+		# an arbitrary first row is whatever the table happens to return and
+		# changes when the site is reseeded.
+		source_barcode = frappe.get_all(
 			"Item Barcode",
-			filters={"parenttype": "Item"},
-			fields=["parent", "barcode"],
+			filters={"parent": "Butter"},
+			pluck="barcode",
 			limit=1,
 		)
-		assert item_barcodes, "No Item barcodes found in test data"
-		barcode = item_barcodes[0]["barcode"]
-
-		warehouse = frappe.get_all(
-			"Warehouse",
-			filters={"is_group": 0, "company": "Ambrosia Pie Company"},
-			pluck="name",
-			limit=1,
-		)[0]
+		assert source_barcode, "Butter must have a barcode"
+		barcode = source_barcode[0]
+		warehouse = "Refrigerator - APC"
 
 	with page.expect_request(
 		lambda request: request.headers.get("x-frappe-cmd") == "beam.beam.scan.scan"
@@ -249,6 +251,9 @@ def test_clear_repack_form(page):
 	page.get_by_role("button", name="ADD", exact=True).click()
 	page.wait_for_timeout(500)
 
+	rejected = error_toast_text(page)
+	assert rejected is None, f"ADD was rejected: {rejected}"
+
 	expect(page.locator("css=.beam_list-item").first).to_be_visible()
 	expect(page.get_by_role("button", name="CLEAN", exact=True)).to_be_visible()
 
@@ -260,7 +265,7 @@ def test_clear_repack_form(page):
 	expect(page.get_by_role("button", name="CLEAN", exact=True)).to_be_hidden()
 
 
-@pytest.mark.order(5)
+@pytest.mark.order(324)
 def test_repack_validation_single_warehouse_direction(page):
 	page.get_by_text("Repack").click()
 	page.wait_for_load_state("networkidle")

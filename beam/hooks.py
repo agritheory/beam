@@ -146,12 +146,12 @@ doc_events = {
 	("Item", "Warehouse", "User"): {
 		"validate": ["beam.beam.barcodes.create_beam_barcode"],
 	},
-	# (
-	# 	"Purchase Receipt",
-	# 	"Stock Entry",
-	# 	"Sales Invoice",
-	# 	"Delivery Note",
-	# ): {"validate": ["beam.beam.handling_unit.validate_handling_unit_overconsumption"]},
+	(
+		"Purchase Receipt",
+		"Stock Entry",
+		"Sales Invoice",
+		"Delivery Note",
+	): {"validate": ["beam.beam.handling_unit.validate_handling_unit_overconsumption"]},
 	("Delivery Note", "Purchase Receipt", "Sales Invoice", "Stock Entry", "Stock Reconciliation",): {
 		"on_submit": ["beam.beam.demand.demand.modify_allocations"],
 		"on_cancel": ["beam.beam.demand.demand.modify_allocations"],
@@ -590,13 +590,13 @@ beam_mobile = {
 			"path": "/work_order/:id/",
 			"name": "work_order",
 			"component": "WorkOrder",
-			"meta": {"requiresAuth": True, "doctype": "Work Order", "view": "form"},
+			"meta": {"requiresAuth": True, "doctype": "Work Order", "view": "form", "cameraPhoto": True},
 		},
 		{
 			"path": "/job_card/:id/",
 			"name": "job_card",
 			"component": "JobCard",
-			"meta": {"requiresAuth": True, "doctype": "Work Order", "view": "form"},
+			"meta": {"requiresAuth": True, "doctype": "Work Order", "view": "form", "cameraPhoto": True},
 		},
 		{
 			"path": "/work_order/:id/operation/:operationId",
@@ -620,7 +620,12 @@ beam_mobile = {
 			"path": "/purchase-receipt/:id",
 			"name": "purchase-receipt",
 			"component": "PurchaseReceipt",
-			"meta": {"requiresAuth": True, "doctype": "Purchase Receipt", "view": "form"},
+			"meta": {
+				"requiresAuth": True,
+				"doctype": "Purchase Receipt",
+				"view": "form",
+				"cameraPhoto": True,
+			},
 		},
 		{
 			"path": "/ship",
@@ -632,7 +637,7 @@ beam_mobile = {
 			"path": "/delivery-note",
 			"name": "delivery-note",
 			"component": "DeliveryNote",
-			"meta": {"requiresAuth": True, "doctype": "Delivery Note", "view": "form"},
+			"meta": {"requiresAuth": True, "doctype": "Delivery Note", "view": "form", "cameraPhoto": True},
 		},
 		{
 			"path": "/demand",
@@ -644,7 +649,7 @@ beam_mobile = {
 			"path": "/move",
 			"name": "move",
 			"component": "Move",
-			"meta": {"requiresAuth": True, "doctype": "Stock Entry", "view": "form"},
+			"meta": {"requiresAuth": True, "doctype": "Stock Entry", "view": "form", "cameraPhoto": True},
 		},
 		{
 			"path": "/manufacture",

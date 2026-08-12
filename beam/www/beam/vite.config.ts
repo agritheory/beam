@@ -82,8 +82,8 @@ export default defineConfig({
 		VitePWA({
 			registerType: 'autoUpdate',
 			manifest: {
-				name: 'Beam',
-				short_name: 'Beam',
+				name: 'BEAM',
+				short_name: 'BEAM',
 				description: 'AgriTheory Beam',
 				theme_color: '#7B4112',
 				icons: [
@@ -100,7 +100,7 @@ export default defineConfig({
 				],
 			},
 			workbox: {
-				globPatterns: ['**/*.{html,js,css,woff2,webmanifest}'],
+				globPatterns: ['**/*.{html,js,css,woff2,webmanifest,wasm}'],
 				maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
 			},
 		}),

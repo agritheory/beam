@@ -8,8 +8,6 @@
 		</template>
 	</Navbar>
 	<div class="move">
-		<CameraScanner @scan="handleCameraScan" />
-
 		<div class="dropdown-container">
 			<ADropdown label="Source Warehouse" :items="warehouseList" v-model="stockEntry.from_warehouse" />
 			<BeamBtn class="clear-button" @click="clearField('from_warehouse')"> X </BeamBtn>
@@ -34,14 +32,11 @@ import type { ListViewItem } from '@stonecrop/beam'
 import { ref, onMounted, computed } from 'vue'
 
 import ControlButtons from '@/components/ControlButtons.vue'
-import CameraScanner from '@/components/CameraScanner.vue'
 import { useBeamStore } from '@/stores/beam'
-import { useScanStore } from '@/stores/scan'
 import type { ControlButton, DocActionResponse, StockEntry } from '@/types'
 import { watch } from 'vue'
 
 const store = useBeamStore()
-const scanStore = useScanStore()
 const items = ref<ListViewItem[]>([])
 const stockEntry = computed(
 	(): StockEntry =>
@@ -54,10 +49,6 @@ const stockEntry = computed(
 		}
 )
 const componentKey = ref(0)
-
-const handleCameraScan = async (barcode: string, qty: number) => {
-	await scanStore.scan(barcode, qty)
-}
 
 const warehouseList = ref<string[]>([])
 
