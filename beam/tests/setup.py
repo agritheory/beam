@@ -12,7 +12,16 @@ from erpnext.setup.utils import enable_all_roles_and_domains, set_defaults_for_t
 from erpnext.stock.get_item_details import get_item_details
 from frappe.desk.page.setup_wizard.setup_wizard import setup_complete
 
-from beam.tests.fixtures import boms, customers, items, operations, suppliers, workstations
+from beam.install import create_beam_mobile_user_role
+from beam.tests.fixtures import (
+	boms,
+	customers,
+	employees,
+	items,
+	operations,
+	suppliers,
+	workstations,
+)
 
 
 def before_test():
@@ -62,6 +71,8 @@ def create_test_data():
 					"is_group": 0,
 				},
 			),
+			"language": "en",
+			"time_zone": "America/New_York",
 		}
 	)
 	company_address = frappe.new_doc("Address")
@@ -82,6 +93,7 @@ def create_test_data():
 	create_item_groups(settings)
 	create_suppliers(settings)
 	create_customers(settings)
+	create_employees(settings)
 	create_items(settings)
 	create_boms(settings)
 	prod_plan_from_doc = "Sales Order"
@@ -621,3 +633,76 @@ def create_network_printer_settings(settings):
 			nps.port = ps["port"]
 			nps.printer_name = ps["name"]
 			nps.save()
+
+
+def ensure_department(department, company):
+	if not department or frappe.db.exists("Department", department):
+		return
+
+	company_doc = frappe.get_doc("Company", company)
+	company_doc.create_default_departments()
+
+	if frappe.db.exists("Department", department):
+		return
+
+	from frappe.utils.nestedset import get_root_of
+
+	abbr = company_doc.abbr
+	suffix = f" - {abbr}"
+	department_name = department[: -len(suffix)] if department.endswith(suffix) else department
+
+	frappe.get_doc(
+		{
+			"doctype": "Department",
+			"department_name": department_name,
+			"company": company,
+			"parent_department": get_root_of("Department"),
+		}
+	).insert(ignore_permissions=True)
+
+
+def create_employees(settings, only_create=None):
+	create_beam_mobile_user_role()
+	departments = {employee.get("department") for employee in employees if employee.get("department")}
+	for department in departments:
+		ensure_department(department, settings.company)
+
+	for employee in employees:
+		row = {**employee}
+		if only_create and row.get("name") not in only_create:
+			continue
+
+		if frappe.db.exists("Employee", {"employee_name": row.get("name")}):
+			continue
+
+		if not frappe.db.exists("Designation", row.get("designation")):
+			desg = frappe.new_doc("Designation")
+			desg.designation_name = row.get("designation")
+			desg.save()
+
+		empl = frappe.new_doc("Employee")
+		name = row.pop("name")
+		empl.first_name = name.split(" ")[0]
+		empl.last_name = name.split(" ")[1]
+		empl.update(row)
+		empl.reports_to = None
+		if settings.company:
+			empl.company = settings.company
+		empl.save()
+
+		user = frappe.new_doc("User")
+		user.email = f"{empl.first_name[0].lower()}{empl.last_name.lower()}@cfc.co"
+		user.first_name = empl.first_name
+		user.last_name = empl.last_name
+		user.send_welcome_email = 0
+		user.enabled = 1
+		user.language = settings.language
+		user.time_zone = settings.time_zone
+		for role in row.get("roles", []):
+			user.append("roles", {"role": role})
+
+		user.save()
+		empl.user_id = user.email
+		if row.get("reports_to"):
+			empl.reports_to = frappe.get_value("Employee", {"employee_name": row.get("reports_to")})
+		empl.save()

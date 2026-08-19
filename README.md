@@ -85,7 +85,7 @@ mypy ./apps/beam/beam --ignore-missing-imports
 pytest ./apps/beam/beam/tests -s --disable-warnings
 ```
 
-CUPS integration tests (`test_printer_cups_integration.py`) use the CUPS service container from the pytest workflow (built from [`cups/cups/Containerfile`](./cups/cups/Containerfile)). Locally, publish port 631 from the beam-cups image and set `BEAM_CUPS_HOST` / `BEAM_CUPS_PORT`.
+CUPS integration tests (`test_printer_cups_integration.py`) talk to system cupsd on `:631` locally (Unix socket + loopback device URIs). CI uses the beam-cups workflow service on port `1631` with `BEAM_CUPS_HOST` / `BEAM_CUPS_PORT`. Override routing with `BEAM_CUPS_SAME_HOST` or `BEAM_CUPS_MOCK_HOST`.
 
 ### Printer Server setup
 ```shell

@@ -350,6 +350,13 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 				"dn_detail": serial_no_details.dn_detail,
 			}
 		)
+	elif has_frm_override:
+		target = frappe._dict(
+			{
+				"doctype": barcode_doc.doc.doctype,
+				"name": barcode_doc.doc.name,
+			}
+		)
 
 	if not target:
 		return []
