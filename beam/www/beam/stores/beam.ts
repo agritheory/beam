@@ -316,7 +316,8 @@ export const useBeamStore = defineStore('beam', () => {
 	}
 
 	const uploadFiles = async (doctype: string, docname: string, files: File[]) => {
-		if (files.length === 0) return
+		const failed: File[] = []
+		if (files.length === 0) return { failed }
 
 		for (const file of files) {
 			const formData = new FormData()
@@ -344,12 +345,16 @@ export const useBeamStore = defineStore('beam', () => {
 					const errorData = await response.json()
 					const errorMsg = errorData?.exception || errorData?.message || 'Unknown error'
 					toast.error(errorMsg)
+					failed.push(file)
 				}
 			} catch (error: any) {
 				const errorMsg = error?.message || 'Connection error'
 				toast.error(errorMsg)
+				failed.push(file)
 			}
 		}
+
+		return { failed }
 	}
 
 	const formatDate = (date: Date) => {

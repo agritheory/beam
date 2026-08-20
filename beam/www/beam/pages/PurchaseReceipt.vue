@@ -74,9 +74,18 @@ const items = computed((): (PurchaseReceiptItem & ListViewItem)[] => {
 	})
 })
 
+const retryPendingPhotoUpload = async (docname: string) => {
+	const result = await store.uploadFiles('Purchase Receipt', docname, store.camera.pendingPhotos)
+	store.setPendingPhotos(result?.failed ?? [])
+}
+
 const create = async () => {
 	const doc = purchaseReceipt.value
+
 	if (!doc?.dirty) {
+		if (doc?.name && store.camera.pendingPhotos.length > 0) {
+			await retryPendingPhotoUpload(doc.name)
+		}
 		return
 	}
 
@@ -88,9 +97,8 @@ const create = async () => {
 	const { data, response } = await store.insert('Purchase Receipt', document)
 
 	if (response.ok && data) {
-		if (store.camera.pendingPhotos.length > 0) {
-			await store.uploadFiles('Purchase Receipt', data.name || '', store.camera.pendingPhotos)
-			store.clearPendingPhotos()
+		if (data.name && store.camera.pendingPhotos.length > 0) {
+			await retryPendingPhotoUpload(data.name)
 		}
 
 		store.$patch(state => {

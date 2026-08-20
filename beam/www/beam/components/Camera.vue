@@ -36,7 +36,27 @@
 					</button>
 				</div>
 				<span v-else class="camera-sheet-title">Scan barcode</span>
-				<BeamBtn type="button" class="camera-close" aria-label="Close camera" @click="closeCamera"> Close </BeamBtn>
+				<div class="camera-sheet-actions">
+					<BeamBtn
+						type="button"
+						class="beep-toggle"
+						:aria-label="scanBeepMuted ? 'Unmute scan sound' : 'Mute scan sound'"
+						:aria-pressed="scanBeepMuted"
+						@click="scanBeepMuted = !scanBeepMuted">
+						<svg class="beep-toggle-icon" viewBox="0 0 24 24" aria-hidden="true">
+							<path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3z" />
+							<path
+								v-if="!scanBeepMuted"
+								fill="currentColor"
+								d="M16.5 12c0-1.77-.77-3.29-2-4.24v8.48c1.23-.95 2-2.47 2-4.24z" />
+							<path
+								v-else
+								fill="currentColor"
+								d="M19.5 12c0-2.65-1.42-4.83-3.5-6v2.18c1.16.97 2 2.34 2 3.82s-.84 2.85-2 3.82V18c2.08-1.17 3.5-3.35 3.5-6zM4.27 3 3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06a8.94 8.94 0 0 0 3.69-1.81L18.73 21 20 19.73l-9-9L4.27 3z" />
+						</svg>
+					</BeamBtn>
+					<BeamBtn type="button" class="camera-close" aria-label="Close camera" @click="closeCamera"> Close </BeamBtn>
+				</div>
 			</header>
 
 			<div class="camera-preview" :class="{ 'camera-preview--photo': props.allowPhoto && mode === 'photo' }">
@@ -76,6 +96,7 @@
 
 <script setup lang="ts">
 import { ref, onUnmounted, onMounted, nextTick } from 'vue'
+import { useStorage } from '@vueuse/core'
 import { Html5Qrcode } from 'html5-qrcode'
 import { BarcodeDetector, prepareZXingModule, type BarcodeFormat } from 'barcode-detector/ponyfill'
 import zxingReaderWasmUrl from 'zxing-wasm/reader/zxing_reader.wasm?url'
@@ -110,6 +131,7 @@ const showPermissionHelp = ref(false)
 const videoRef = ref<HTMLVideoElement | null>(null)
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 const capturedPhotos = ref<CapturedPhoto[]>([])
+const scanBeepMuted = useStorage('beam-camera-scan-beep-muted', false)
 
 let mediaStream: MediaStream | null = null
 let nativeScanTimer: ReturnType<typeof setInterval> | null = null
@@ -117,6 +139,7 @@ let nativeScanInFlight = false
 let nativeScanTick = 0
 let lastEmittedBarcode = ''
 let lastEmittedAt = 0
+let audioContext: AudioContext | null = null
 
 const PREVIEW_HEIGHT_PX = 150
 const NATIVE_DECODE_SCALE = 2
@@ -135,6 +158,35 @@ const formatDecodeError = (err: unknown): string => {
 }
 
 const isMobileDevice = () => /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+
+const unlockAudioContext = () => {
+	const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
+	if (!AudioContextClass) {
+		return
+	}
+	if (!audioContext) {
+		audioContext = new AudioContextClass()
+	} else if (audioContext.state === 'suspended') {
+		audioContext.resume()
+	}
+}
+
+const playScanBeep = () => {
+	if (scanBeepMuted.value || !audioContext) {
+		return
+	}
+
+	const oscillator = audioContext.createOscillator()
+	const gain = audioContext.createGain()
+	oscillator.type = 'sine'
+	oscillator.frequency.value = 880
+	gain.gain.setValueAtTime(0.15, audioContext.currentTime)
+	gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.12)
+	oscillator.connect(gain)
+	gain.connect(audioContext.destination)
+	oscillator.start()
+	oscillator.stop(audioContext.currentTime + 0.12)
+}
 
 const initWasmBarcodeDetector = async () => {
 	wasmBarcodeDetector = null
@@ -291,6 +343,7 @@ const onScanSuccess = (decodedText: string) => {
 
 	lastEmittedBarcode = barcode
 	lastEmittedAt = now
+	playScanBeep()
 	emit('scan', barcode, 1)
 }
 
@@ -482,6 +535,25 @@ const emitCapturedPhotos = () => {
 	)
 }
 
+const resetPhotos = () => {
+	capturedPhotos.value.forEach(photo => URL.revokeObjectURL(photo.preview))
+	capturedPhotos.value = []
+	emitCapturedPhotos()
+}
+
+const syncCapturedPhotos = (files: File[]) => {
+	const keep = new Set(files)
+	capturedPhotos.value = capturedPhotos.value.filter(photo => {
+		if (keep.has(photo.file)) {
+			return true
+		}
+		URL.revokeObjectURL(photo.preview)
+		return false
+	})
+}
+
+defineExpose({ resetPhotos, syncCapturedPhotos })
+
 const capturePhoto = () => {
 	const video = videoRef.value
 	const canvas = canvasRef.value
@@ -588,6 +660,7 @@ const closeCamera = () => {
 
 const toggleOpen = async () => {
 	if (!isOpen.value) {
+		unlockAudioContext()
 		await openCamera()
 	} else {
 		closeCamera()
@@ -709,8 +782,29 @@ onUnmounted(() => {
 	background: var(--sc-btn-hover);
 }
 
+.camera-sheet-actions {
+	display: flex;
+	align-items: center;
+	gap: 0.375rem;
+	flex-shrink: 0;
+}
+
 .camera-close {
 	flex-shrink: 0;
+}
+
+.beep-toggle {
+	flex-shrink: 0;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0.375rem;
+}
+
+.beep-toggle-icon {
+	width: 1.125rem;
+	height: 1.125rem;
+	color: var(--sc-btn-label-color);
 }
 
 .camera-preview {
