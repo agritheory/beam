@@ -3,6 +3,7 @@ version: '3'
 services:
   cups:
     container_name: ${CONTAINER_NAME_PREFIX}_cups
+    # image: ghcr.io/agritheory/beam-cups:latest
     build:
       context: cups
       dockerfile: Containerfile

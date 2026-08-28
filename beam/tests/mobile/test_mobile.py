@@ -16,15 +16,17 @@ from playwright.sync_api import expect
 # `page.expect_navigation()` since the latter won't work with Beam's hash-based routes
 
 
-@pytest.mark.order(6)
+@pytest.mark.order(1)
 @pytest.mark.parametrize("route", ["Ship"])
 def test_scan_item_barcode(page, route):
 	# navigate in the following order: Home -> List -> Form
 	page.get_by_text(route).click()
-	list_item = page.locator("css=.beam_list-item").first
-	expect(list_item).to_be_visible(timeout=15000)
-	list_item.click()
+	# wait for list to load
+	expect(page.locator("css=.beam_list-item").first).to_be_visible()
+	page.locator("css=.beam_list-item").first.click()
 
+	# wait for items to load after navigation
+	expect(page.locator("css=.box .beam_list-item").first).to_be_visible()
 	# find the first item in the list
 	item = page.locator("css=.box .beam_list-item").first
 	expect(item).to_be_visible(timeout=15000)

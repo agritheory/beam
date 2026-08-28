@@ -97,7 +97,7 @@ source env/bin/activate
 pytest ./apps/beam/beam/tests/mobile --browser chromium --disable-warnings
 ```
 
-### Beam Portal setup
+### BEAM Portal setup
 
 <details>
 <summary>Development</summary>
@@ -118,6 +118,8 @@ bench build
 # visit `{server URL}/beam` to access the portal page.
 ```
 </details>
+
+CUPS integration tests (`test_printer_cups_integration.py`) use the CUPS service container from the pytest workflow (built from [`cups/cups/Containerfile`](./cups/cups/Containerfile)). Locally, publish port 631 from the beam-cups image and set `BEAM_CUPS_HOST` / `BEAM_CUPS_PORT`.
 
 ### Printer Server setup
 ```shell

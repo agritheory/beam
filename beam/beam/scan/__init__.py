@@ -84,6 +84,13 @@ def get_barcode_context(barcode: str) -> frappe._dict | None:
 					"barcode": barcode,
 				}
 			)
+
+	# Fallback: custom barcode resolvers registered by other apps via beam_barcode_resolver hook
+	for resolver in frappe.get_hooks("beam_barcode_resolver"):
+		result = frappe.call(resolver, barcode=barcode)
+		if result:
+			return result
+
 	return None
 
 
@@ -221,8 +228,20 @@ def get_list_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 	return actions
 
 
+def set_item_stock_uom(target: frappe._dict, item_code: str) -> None:
+	stock_uom = frappe.get_cached_value("Item", item_code, "stock_uom")
+	if stock_uom:
+		target.uom = stock_uom
+		target.stock_uom = stock_uom
+
+
 def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[dict[str, Any]]:
 	target = None
+	beam_override = frappe.get_hooks("beam_frm")
+	has_frm_override = bool(
+		beam_override and beam_override.get(barcode_doc.doc.doctype, {}).get(context.frm)
+	)
+
 	if barcode_doc.doc.doctype == "Handling Unit":
 		hu_details = get_handling_unit(barcode_doc.doc.name, context.frm)
 		if context.frm == "Stock Entry":
@@ -237,6 +256,16 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 					"item_code": hu_details.item_code,
 				}
 			)
+		elif has_frm_override:
+			# A beam_frm override handles this form — skip get_item_details() which would
+			# fail for forms without a standard "{doctype} Item" child table.
+			target = frappe._dict(
+				{
+					"doctype": context.frm,
+					"item_code": hu_details.item_code,
+				}
+			)
+			set_item_stock_uom(target, hu_details.item_code)
 		else:
 			target = get_item_details(
 				{
@@ -268,6 +297,16 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 					"item_code": barcode_doc.doc.name,
 				}
 			)
+		elif has_frm_override:
+			# A beam_frm override handles this form — skip get_item_details() which would
+			# fail for forms without a standard "{doctype} Item" child table.
+			target = frappe._dict(
+				{
+					"doctype": context.frm,
+					"item_code": barcode_doc.doc.name,
+				}
+			)
+			set_item_stock_uom(target, barcode_doc.doc.name)
 		else:
 			target = get_item_details(
 				{
@@ -289,14 +328,45 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 			}
 		)
 		target.barcode = barcode_doc.barcode
-
+	elif barcode_doc.doc.doctype == "Serial No":
+		serial_no_details = get_serial_no(barcode_doc.doc.name, context.frm)
+		if context.frm == "Stock Entry":
+			target = get_stock_entry_item_details(context.doc, serial_no_details.item_code)
+			target.warehouse = serial_no_details.warehouse
+		elif context.frm in ("Putaway Rule", "Warranty Claim", "Item Price", "Quality Inspection"):
+			target = frappe._dict(
+				{
+					"doctype": context.frm,
+					"item_code": serial_no_details.item_code,
+				}
+			)
+		else:
+			target = get_item_details(
+				{
+					"doctype": context.frm,
+					"item_code": serial_no_details.item_code,
+					"company": frappe.defaults.get_user_default("Company"),
+					"currency": frappe.defaults.get_user_default("Currency"),
+				}
+			)
+		target.update(
+			{
+				"handling_unit": serial_no_details.handling_unit,
+				"voucher_no": serial_no_details.voucher_no,
+				"stock_qty": serial_no_details.stock_qty,
+				"qty": serial_no_details.stock_qty / target.conversion_factor
+				if target.conversion_factor
+				else serial_no_details.stock_qty,
+				"posting_datetime": serial_no_details.posting_datetime,
+				"dn_detail": serial_no_details.dn_detail,
+			}
+		)
 	else:
 		target = frappe._dict(**barcode_doc)
 
 	if not target:
 		return []
 
-	beam_override = frappe.get_hooks("beam_frm")
 	if beam_override:
 		override_doctype = beam_override.get(barcode_doc.doc.doctype)
 		if override_doctype:
@@ -661,6 +731,13 @@ frm = {
 				"doctype": "Delivery Note Item",
 				"field": "handling_unit",
 				"target": "target.handling_unit",
+				"context": "target",
+			},
+			{
+				"action": "add_or_associate",
+				"doctype": "Delivery Note Item",
+				"field": "delivered_qty",
+				"target": "target.qty",
 				"context": "target",
 			},
 			{
