@@ -13,6 +13,41 @@ from frappe.query_builder.custom import ConstantColumn
 from frappe.query_builder.functions import Coalesce
 
 
+# Frappe v16 rejects string-form SQL functions in SELECT and requires the dict form; v15 has no
+# dict-function support and requires the string form. The two are mutually exclusive, so the
+# aggregate field for get_handling_unit must be chosen by version to keep BEAM v15/v16 compatible.
+_FRAPPE_MAJOR = int(frappe.__version__.split(".")[0])
+_STOCK_QTY_FIELD = (
+	{"SUM": "actual_qty", "as": "stock_qty"}
+	if _FRAPPE_MAJOR >= 16
+	else "SUM(actual_qty) as stock_qty"
+)
+
+
+_INV_DIM_CACHE_KEY = "beam:inv_dim_source_fieldnames"
+
+
+def get_inv_dim_source_fieldnames() -> list[str]:
+	"""Cached list of Inventory Dimension source_fieldnames (excluding Handling Unit). Cleared
+	whenever an Inventory Dimension is updated or deleted via `clear_inv_dim_cache` hook."""
+
+	def _fetch():
+		return frappe.get_all(
+			"Inventory Dimension",
+			filters={"name": ["!=", "Handling Unit"]},
+			pluck="source_fieldname",
+		)
+
+	return frappe.cache().get_value(_INV_DIM_CACHE_KEY, generator=_fetch)
+
+
+def clear_inv_dim_cache(doc=None, method=None) -> None:
+	from beam.beam.inventory_dimension import _CARRY_FORWARD_CACHE_KEY
+
+	frappe.cache().delete_value(_INV_DIM_CACHE_KEY)
+	frappe.cache().delete_value(_CARRY_FORWARD_CACHE_KEY)
+
+
 @frappe.whitelist()
 def scan(
 	barcode: str,
@@ -93,13 +128,15 @@ def get_barcode_context(barcode: str) -> frappe._dict | None:
 	return None
 
 
-def get_handling_unit(handling_unit: str, parent_doctype: str | None = None) -> frappe._dict:
+def get_handling_unit(
+	handling_unit: str, parent_doctype: str | None = None, inv_dims: list | None = None
+) -> frappe._dict:
 	sl_entries = frappe.get_all(
 		"Stock Ledger Entry",
 		filters={"handling_unit": handling_unit, "is_cancelled": 0},
 		fields=[
 			"item_code",
-			"SUM(actual_qty) AS stock_qty",
+			_STOCK_QTY_FIELD,
 			"company",
 			"handling_unit",
 			"voucher_no",
@@ -109,7 +146,8 @@ def get_handling_unit(handling_unit: str, parent_doctype: str | None = None) -> 
 			"voucher_type",
 			"voucher_detail_no",
 			"warehouse",
-		],
+		]
+		+ (inv_dims if inv_dims else []),
 		group_by="handling_unit",
 		order_by="posting_date DESC",
 		limit=1,
@@ -123,7 +161,15 @@ def get_handling_unit(handling_unit: str, parent_doctype: str | None = None) -> 
 		"Stock Entry Detail" if sle.voucher_type == "Stock Entry" else f"{sle.voucher_type} Item"
 	)
 
-	child_doctype_fields = ["uom", "qty", "conversion_factor", "idx", "item_name", "name"]
+	# Not every voucher's items table carries UOM / conversion factor fields — Stock Reconciliation
+	# Item, for example, only records quantities in the item's stock UOM — so select the optional
+	# fields the child doctype actually has, otherwise the query fails on an unknown column
+	child_meta = frappe.get_meta(child_doctype)
+	child_doctype_fields = ["idx", "name"] + [
+		field
+		for field in ("uom", "qty", "conversion_factor", "item_name")
+		if child_meta.has_field(field)
+	]
 
 	if child_doctype == "Purchase Receipt Item":
 		child_doctype_fields.append("stock_qty")
@@ -144,6 +190,9 @@ def get_handling_unit(handling_unit: str, parent_doctype: str | None = None) -> 
 
 	if item:
 		sle.update({**item})
+		# vouchers without UOM fields record quantities in the item's stock UOM
+		sle.uom = sle.get("uom") or sle.stock_uom
+		sle.conversion_factor = sle.get("conversion_factor") or 1
 		sle.qty = (
 			sle.stock_qty / sle.conversion_factor
 		)  # use conversion factor based on transaction not current conversion factor
@@ -166,7 +215,7 @@ def get_stock_entry_item_details(doc: dict, item_code: str) -> frappe._dict:
 	if not stock_entry.stock_entry_type:
 		stock_entry.purpose = "Material Transfer"
 		stock_entry.set_stock_entry_type()
-	target = stock_entry.get_item_details({"item_code": item_code})
+	target = stock_entry.get_item_details(frappe._dict(item_code=item_code))
 	target.item_code = item_code
 	target.qty = 1  # only required for first scan, since quantity by default is zero
 	return target
@@ -232,7 +281,8 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 	)
 
 	if barcode_doc.doc.doctype == "Handling Unit":
-		hu_details = get_handling_unit(barcode_doc.doc.name, context.frm)
+		inv_dims = get_inv_dim_source_fieldnames()
+		hu_details = get_handling_unit(barcode_doc.doc.name, context.frm, inv_dims)
 		if context.frm == "Stock Entry":
 			target = get_stock_entry_item_details(context.doc, hu_details.item_code)
 			target.warehouse = hu_details.warehouse
@@ -262,6 +312,10 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 					"currency": frappe.defaults.get_user_default("Currency"),
 				}
 			)
+		if context.frm == "Stock Reconciliation":
+			# reconcile the handling unit where its stock actually is, not the item's default
+			# warehouse that get_item_details returns
+			target.warehouse = hu_details.warehouse
 		target.update(
 			{
 				"handling_unit": hu_details.handling_unit,
@@ -273,6 +327,7 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 				"posting_datetime": hu_details.posting_datetime,
 				"dn_detail": hu_details.dn_detail,
 			}
+			| {i: hu_details[i] for i in inv_dims}
 		)
 	elif barcode_doc.doc.doctype == "Item":
 		if context.frm == "Stock Entry":

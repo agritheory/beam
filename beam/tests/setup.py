@@ -489,10 +489,11 @@ def create_production_plan(settings, prod_plan_from_doc):
 		pp.get_mr_items()
 	for item in pp.po_items:
 		item.planned_start_date = settings.day
+	pp.for_warehouse = "Storeroom - APC"
+	pp.sub_assembly_warehouse = "Kitchen - APC"
 	pp.get_sub_assembly_items()
 	for item in pp.sub_assembly_items:
 		item.schedule_date = settings.day
-	pp.for_warehouse = "Storeroom - APC"
 	raw_materials = get_items_for_material_requests(
 		pp.as_dict(), warehouses=None, get_parent_warehouse_data=None
 	)
@@ -563,6 +564,11 @@ def create_production_plan(settings, prod_plan_from_doc):
 		wo.required_items = sorted(wo.required_items, key=lambda x: x.get("item_code"))
 		for idx, w in enumerate(wo.required_items, start=1):
 			w.idx = idx
+			default_warehouse = frappe.db.get_value(
+				"Item Default", {"parent": w.item_code}, "default_warehouse"
+			)
+			if default_warehouse:
+				w.source_warehouse = default_warehouse
 		wo.save()
 		wo.submit()
 		frappe.db.set_value("Work Order", wo.name, "creation", start_time)

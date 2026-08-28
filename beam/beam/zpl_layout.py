@@ -265,9 +265,9 @@ def generate_zpl_template(analysis, sections):
 	height_dots = analysis["label_dimensions"]["height_dots"]
 	width_inches = width_dots / dpi
 	height_inches = height_dots / dpi
-	lines.append("{# Shipping Label - " + f'{width_inches}x{height_inches}" @ {dpi} DPI #}}')
+	lines.append("{#- Shipping Label - " + f'{width_inches}x{height_inches}" @ {dpi} DPI -#}}')
 	lines.append(
-		"{% set label = zebra_zpl_label(width="
+		"{%- set label = zebra_zpl_label(width="
 		+ str(width_dots)
 		+ ", length="
 		+ str(height_dots)

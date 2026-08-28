@@ -9,6 +9,7 @@ from erpnext.subcontracting.doctype.subcontracting_order.subcontracting_order im
 	make_subcontracting_receipt,
 )
 
+from beam.beam.handling_unit import is_scrap_item
 from beam.beam.scan import get_handling_unit
 
 
@@ -293,8 +294,8 @@ def test_stock_entry_for_manufacture():
 			"Item", row.item_code, "enable_handling_unit"
 		):
 			continue
-		if (
-			row.is_finished_item or row.is_scrap_item
+		if row.is_finished_item or is_scrap_item(
+			row
 		):  # finished and scrap items' handling units will be generated and wouldn't be scanned
 			continue
 		hu = frappe.get_value(
@@ -321,12 +322,12 @@ def test_stock_entry_for_manufacture():
 		sle = frappe.get_doc(
 			"Stock Ledger Entry", {"voucher_detail_no": row.name, "handling_unit": row.handling_unit}
 		)
-		if not row.is_finished_item and not row.is_scrap_item:
+		if not row.is_finished_item and not is_scrap_item(row):
 			assert row.transfer_qty == -(sle.actual_qty)
 			assert row.item_code == sle.item_code
 			assert row.s_warehouse == sle.warehouse  # source/ warehouse
 			assert sle.handling_unit == row.handling_unit
-		elif row.is_scrap_item:
+		elif is_scrap_item(row):
 			assert row.transfer_qty == sle.actual_qty
 			assert row.item_code == sle.item_code
 			create_handling_unit = frappe.get_value(
