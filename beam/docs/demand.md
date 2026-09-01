@@ -3,6 +3,11 @@ For license information, please see license.txt-->
 
 # Demand
 
+<div class="byline">
+  AgriTheory, Rohan Bansal, fproldan, Ishwarya, Lautaro Juarez, Myuddin Khatri, Tyler Matteson, and ViralKansodiya-Fosserp 2026-08-10
+</div>
+
+
 This feature computes the what Items are needed and where they are available.
 
 ### Demand Map

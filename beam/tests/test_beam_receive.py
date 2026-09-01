@@ -1,35 +1,37 @@
 # Copyright (c) 2024, AgriTheory and contributors
 # For license information, please see license.txt
 
+pytest_plugins = ["beam.tests.playwright_fixtures"]
+
 # To test locally:
 #  active the virtual environment
 #  bench start, and then run:
-#  pytest ./beam/tests/mobile/test_receive.py --browser firefox --headed --disable-warnings
+#  pytest ./beam/tests/test_beam_receive.py --browser firefox --headed --disable-warnings
 
 import re
-from urllib.parse import urlparse
 
 import frappe
 import pytest
 from playwright.sync_api import expect
 
-from beam.tests.test_utils import use_current_db_transaction
+from beam.tests.playwright_utils import (
+	open_first_beam_list_row,
+	order_id_from_beam_url,
+	use_current_db_transaction,
+)
 
 # NOTE: any navigation tests should be done using `expect(page).to_have_url` since
 # `page.expect_navigation()` won't work with Beam's hash-based routes
 
 
-@pytest.mark.order(2)
+@pytest.mark.order(310)
 def test_scan_invalid_barcode(page):
-	page.get_by_text("Receive").click()
-	page.locator("css=.beam_list-item").first.click()
-
-	# get the selected Purchase Order
-	parsed_url = urlparse(page.url.replace("#", ""))
-	path_parts = [p for p in parsed_url.path.split("/") if p]
-	order_id = path_parts[-1] if path_parts else None
+	open_first_beam_list_row(page, "Receive", r"purchase-receipt/")
+	order_id = order_id_from_beam_url(page.url)
 	assert order_id
 
+	# wait for items to load after navigation
+	expect(page.locator("css=.box .beam_item-count").first).to_be_visible()
 	# find all items in the list
 	all_item_counts = page.locator("css=.box .beam_item-count")
 
@@ -78,19 +80,15 @@ def test_scan_invalid_barcode(page):
 		), f"Invalid barcode scan should not create any Purchase Receipts, but found: {new_receipts}"
 
 
-@pytest.mark.order(3)
+@pytest.mark.order(311)
 def test_receive_without_scanning(page):
 	"""Test trying to receive without scanning any items"""
-	# navigate to a Purchase Order
-	page.get_by_text("Receive").click()
-	page.locator("css=.beam_list-item").first.click()
-
-	# get the selected Purchase Order
-	parsed_url = urlparse(page.url.replace("#", ""))
-	path_parts = [p for p in parsed_url.path.split("/") if p]
-	order_id = path_parts[-1] if path_parts else None
+	open_first_beam_list_row(page, "Receive", r"purchase-receipt/")
+	order_id = order_id_from_beam_url(page.url)
 	assert order_id
 
+	# wait for items to load after navigation
+	expect(page.locator("css=.box .beam_list-item").first).to_be_visible()
 	item = page.locator("css=.box .beam_list-item").first
 	item_code, *others = item.inner_text().split("\n")
 
@@ -132,22 +130,13 @@ def test_receive_without_scanning(page):
 		), f"Expected no new receipts, but count changed from {initial_count} to {final_count}"
 
 
-@pytest.mark.order(4)
+@pytest.mark.order(312)
 def test_complete_partial_receipt(page):
-	# navigate in the following order: Home -> Receive -> Purchase Order
-	page.get_by_text("Receive").click()
-	page.locator("css=.beam_list-item").first.click()
-
-	# get the selected Purchase Order
-	# NOTE: URL format changed: the id lives in the path after the hash (e.g. #/purchase-receipt/PUR-ORD-...)
-	# this PR changed the URL format:
-	# https://github.com/agritheory/beam/pull/274
-	parsed_url = urlparse(page.url.replace("#", ""))
-	path_parts = [p for p in parsed_url.path.split("/") if p]
-	order_id = path_parts[-1] if path_parts else None
-
+	open_first_beam_list_row(page, "Receive", r"purchase-receipt/")
+	order_id = order_id_from_beam_url(page.url)
 	assert order_id
 
+	expect(page.locator("css=.box .beam_list-item").first).to_be_visible()
 	# find the first item in the list
 	item = page.locator("css=.box .beam_list-item").first
 	item_code, *others = item.inner_text().split("\n")
@@ -213,19 +202,15 @@ def test_complete_partial_receipt(page):
 	assert receipts[0]["received_qty"] == 1
 
 
-@pytest.mark.order(5)
+@pytest.mark.order(313)
 def test_rapid_barcode_scanning(page):
 	"""Test scanning multiple barcodes quickly"""
-	# navigate to a Purchase Order
-	page.get_by_text("Receive").click()
-	page.locator("css=.beam_list-item").first.click()
-
-	# get the selected Purchase Order
-	parsed_url = urlparse(page.url.replace("#", ""))
-	path_parts = [p for p in parsed_url.path.split("/") if p]
-	order_id = path_parts[-1] if path_parts else None
+	open_first_beam_list_row(page, "Receive", r"purchase-receipt/")
+	order_id = order_id_from_beam_url(page.url)
 	assert order_id
 
+	# wait for items to load after navigation
+	expect(page.locator("css=.box .beam_list-item").first).to_be_visible()
 	# find the first item in the list
 	item = page.locator("css=.box .beam_list-item").first
 	item_code, *others = item.inner_text().split("\n")

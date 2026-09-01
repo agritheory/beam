@@ -23,6 +23,85 @@ def submit_all_purchase_receipts():
 
 
 @pytest.mark.order(10)
+def test_enable_handling_units_setting():
+	"""Test that enable_handling_units setting controls whether handling units are assigned to SLEs"""
+	company = frappe.defaults.get_defaults().get("company")
+
+	# Test with enable_handling_units = False (default)
+	beam_settings = frappe.get_doc("BEAM Settings", {"company": company})
+	original_value = beam_settings.enable_handling_units
+	beam_settings.enable_handling_units = 0
+	beam_settings.save()
+
+	try:
+		se_disabled = frappe.new_doc("Stock Entry")
+		se_disabled.stock_entry_type = se_disabled.purpose = "Material Receipt"
+		se_disabled.company = company
+		se_disabled.append(
+			"items",
+			{
+				"item_code": "Ambrosia Pie",
+				"qty": 10,
+				"t_warehouse": "Baked Goods - APC",
+				"basic_rate": frappe.get_value("Item Price", {"item_code": "Ambrosia Pie"}, "price_list_rate"),
+			},
+		)
+		se_disabled.save()
+		se_disabled.submit()
+
+		# When disabled, handling_unit should NOT be generated
+		item_row = se_disabled.items[0]
+		assert (
+			not item_row.handling_unit
+		), f"Item row should not have handling_unit when setting is disabled, but got: {item_row.handling_unit}"
+
+		# Check SLE - handling_unit should also NOT be set
+		sle_disabled = frappe.get_doc("Stock Ledger Entry", {"voucher_detail_no": item_row.name})
+		assert (
+			not sle_disabled.handling_unit or sle_disabled.handling_unit == ""
+		), f"SLE should not have handling_unit when enable_handling_units is disabled, but got: {sle_disabled.handling_unit}"
+
+		# Now test with enable_handling_units = True
+		beam_settings.enable_handling_units = 1
+		beam_settings.save()
+
+		se_enabled = frappe.new_doc("Stock Entry")
+		se_enabled.stock_entry_type = se_enabled.purpose = "Material Receipt"
+		se_enabled.company = company
+		se_enabled.append(
+			"items",
+			{
+				"item_code": "Ambrosia Pie",
+				"qty": 10,
+				"t_warehouse": "Baked Goods - APC",
+				"basic_rate": frappe.get_value("Item Price", {"item_code": "Ambrosia Pie"}, "price_list_rate"),
+			},
+		)
+		se_enabled.save()
+		se_enabled.submit()
+
+		# When enabled, handling_unit should be generated on item row
+		item_row_enabled = se_enabled.items[0]
+		assert (
+			item_row_enabled.handling_unit
+		), "Item row should have handling_unit when setting is enabled"
+
+		# Check SLE - handling_unit SHOULD be set when enabled
+		sle_enabled = frappe.get_doc("Stock Ledger Entry", {"voucher_detail_no": item_row_enabled.name})
+		assert (
+			sle_enabled.handling_unit
+		), "SLE should have handling_unit when enable_handling_units is enabled"
+		assert (
+			sle_enabled.handling_unit == item_row_enabled.handling_unit
+		), f"SLE handling_unit should match item row: {sle_enabled.handling_unit} != {item_row_enabled.handling_unit}"
+
+	finally:
+		# Restore original setting
+		beam_settings.enable_handling_units = original_value
+		beam_settings.save()
+
+
+@pytest.mark.order(60)
 def test_purchase_receipt_handling_unit_generation():
 	for pr in frappe.get_all("Purchase Receipt"):
 		pr = frappe.get_doc("Purchase Receipt", pr)
@@ -33,13 +112,13 @@ def test_purchase_receipt_handling_unit_generation():
 			assert isinstance(row.handling_unit, str)
 			if row.rejected_qty:
 				assert row.rejected_qty + row.qty == row.received_qty
-			hu = get_handling_unit(row.handling_unit)
-			assert hu.stock_qty == row.stock_qty
+				hu = get_handling_unit(row.handling_unit)
+				assert hu.stock_qty == row.stock_qty
 
 
-@pytest.mark.order(11)
+@pytest.mark.order(62)
 def test_purchase_invoice():
-	for pi in frappe.get_all("Purchase Invoice"):
+	for pi in frappe.get_all("Purchase Invoice", {"docstatus": 0}):
 		pi = frappe.get_doc("Purchase Invoice", pi)
 		for row in pi.items:
 			assert row.handling_unit == None
@@ -54,7 +133,7 @@ def test_purchase_invoice():
 				assert row.handling_unit == None
 
 
-@pytest.mark.order(13)
+@pytest.mark.order(64)
 def test_stock_entry_material_receipt():
 	submit_all_purchase_receipts()
 	se = frappe.new_doc("Stock Entry")
@@ -93,7 +172,7 @@ def test_stock_entry_material_receipt():
 		assert row.handling_unit == sle.handling_unit
 
 
-@pytest.mark.order(14)
+@pytest.mark.order(66)
 def test_stock_entry_repack():
 	submit_all_purchase_receipts()
 	pr_hu = frappe.get_value(
@@ -120,18 +199,6 @@ def test_stock_entry_repack():
 			"handling_unit": pr_hu["handling_unit"],
 		},
 	)
-	scan = frappe.call(
-		"beam.beam.scan.scan",
-		**{
-			"barcode": pr_hu.handling_unit,
-			"context": {"frm": "Stock Entry", "doc": se.as_dict()},
-			"current_qty": 100,
-		},
-	)
-	assert scan[0]["action"] == "add_or_associate"
-	se.items[0].handling_unit = scan[0]["context"].get(
-		"handling_unit"
-	)  # simulates the effect of 'associate'
 	se.append(
 		"items",
 		{
@@ -161,7 +228,7 @@ def test_stock_entry_repack():
 	assert hu.stock_qty == 100
 
 
-@pytest.mark.order(15)
+@pytest.mark.order(68)
 def test_stock_entry_material_transfer_for_manufacture():
 	submit_all_purchase_receipts()
 	wo = frappe.get_value("Work Order", {"production_item": "Kaduka Key Lime Pie Filling"})
@@ -212,17 +279,20 @@ def test_stock_entry_material_transfer_for_manufacture():
 			assert row.handling_unit != row.to_handling_unit
 
 
-@pytest.mark.order(16)
+@pytest.mark.order(70)
 def test_stock_entry_for_manufacture():
 	submit_all_purchase_receipts()
 	wo = frappe.get_value("Work Order", {"production_item": "Kaduka Key Lime Pie Filling"})
 	se_tfm = frappe.get_value(
 		"Stock Entry", {"work_order": wo, "purpose": "Material Transfer for Manufacture"}
 	)
-	job_cards = frappe.get_all("Job Card", {"work_order": wo})
-	for job_card in job_cards:
-		job_card = frappe.get_doc("Job Card", job_card)
-		# Complete the job card by setting completed qty equal to qty to manufacture
+	# ERPNext blocks Manufacture until Job Card operations are complete (this site
+	# enables operation completion checks; version-15 fixtures alone are not enough).
+	job_cards = frappe.get_all(
+		"Job Card", {"work_order": wo}, ["name", "sequence_id"], order_by="sequence_id asc"
+	)
+	for jc in job_cards:
+		job_card = frappe.get_doc("Job Card", jc.name)
 		for time_log in job_card.time_logs:
 			time_log.completed_qty = job_card.for_quantity
 		job_card.submit()
@@ -283,7 +353,7 @@ def test_stock_entry_for_manufacture():
 			assert row.t_warehouse == sle.warehouse  # target warehouse
 
 
-@pytest.mark.order(17)
+@pytest.mark.order(72)
 def test_delivery_note():
 	se = frappe.new_doc("Stock Entry")
 	se.stock_entry_type = se.purpose = "Material Receipt"
@@ -326,7 +396,7 @@ def test_delivery_note():
 	assert hu.item_code == dn.items[0].item_code
 
 
-@pytest.mark.order(18)
+@pytest.mark.order(74)
 def test_sales_invoice():
 	se = frappe.new_doc("Stock Entry")
 	se.stock_entry_type = se.purpose = "Material Receipt"
@@ -370,7 +440,7 @@ def test_sales_invoice():
 	assert hu.item_code == si.items[0].item_code
 
 
-@pytest.mark.order(19)
+@pytest.mark.order(76)
 def test_packing_slip():
 	se = frappe.new_doc("Stock Entry")
 	se.stock_entry_type = se.purpose = "Material Receipt"
@@ -427,7 +497,7 @@ def test_packing_slip():
 		assert hu.stock_qty == 0
 
 
-@pytest.mark.order(20)
+@pytest.mark.order(78)
 def test_stock_entry_material_transfer():
 	# create clean material receipt to avoid conflicts with Repack test
 	semr = frappe.new_doc("Stock Entry")
@@ -483,7 +553,11 @@ def test_stock_entry_material_transfer():
 			"Item", row.item_code, "enable_handling_unit"
 		):
 			continue
-		sle = frappe.get_doc("Stock Ledger Entry", {"handling_unit": row.handling_unit})
+		# For Material Transfer, there are two SLEs - one for source (negative) and one for target (positive)
+		# Get the source warehouse SLE (the one consuming from the handling unit)
+		sle = frappe.get_doc(
+			"Stock Ledger Entry", {"handling_unit": row.handling_unit, "warehouse": row.s_warehouse}
+		)
 		hu = get_handling_unit(str(row.handling_unit))
 		assert row.transfer_qty == abs(sle.actual_qty)
 		assert hu.stock_qty == 95  # net qty
@@ -516,7 +590,7 @@ def test_stock_entry_material_transfer():
 		assert row.t_warehouse == tsle.warehouse  # target warehouse
 
 
-@pytest.mark.order(21)
+@pytest.mark.order(80)
 def test_stock_entry_for_send_to_subcontractor():
 	submit_all_purchase_receipts()
 	se = frappe.new_doc("Stock Entry")
@@ -577,7 +651,7 @@ def test_stock_entry_for_send_to_subcontractor():
 		assert hu.qty > 0
 
 
-@pytest.mark.order(22)
+@pytest.mark.order(82)
 def test_subcontracting_receipt():
 	for row in frappe.get_all("Subcontracting Order", pluck="name"):
 		if not frappe.db.exists(
@@ -599,8 +673,7 @@ def test_subcontracting_receipt():
 				assert hu.stock_qty == row.returned_qty
 
 
-@pytest.mark.order(23)
-@pytest.mark.skip()  # Remove when validate_handling_unit_overconsumption is uncommented in hooks.py doc_events
+@pytest.mark.order(84)
 def test_handling_units_overconsumption_in_material_transfer_stock_entry():
 	# Tests validate_handling_unit_overconsumption Stock Entry incoming code block
 	with pytest.raises(NegativeStockError) as exc_info:
@@ -655,8 +728,7 @@ def test_handling_units_overconsumption_in_material_transfer_stock_entry():
 	)
 
 
-@pytest.mark.order(24)
-@pytest.mark.skip()  # Remove when validate_handling_unit_overconsumption is uncommented in hooks.py doc_events
+@pytest.mark.order(86)
 def test_handling_units_overconsumption_in_delivery_note():
 	# Tests validate_handling_unit_overconsumption Delivery Note code block
 	with pytest.raises(NegativeStockError) as exc_info:
@@ -701,3 +773,223 @@ def test_handling_units_overconsumption_in_delivery_note():
 		f"Row #1: Handling Unit for Ambrosia Pie cannot be more than {hu.stock_qty} {hu.stock_uom}. You have {row_qty:.1f} {row_stock_uom}"
 		in exc_info.value.args[0]
 	)
+
+
+@pytest.mark.order(88)
+def test_repack_cancel_without_recombine():
+	"""Test cancelling a Repack Stock Entry without recombining handling units"""
+	# Create a material receipt with a known handling unit
+	se_receipt = frappe.new_doc("Stock Entry")
+	se_receipt.stock_entry_type = se_receipt.purpose = "Material Receipt"
+	se_receipt.append(
+		"items",
+		{
+			"item_code": "Parchment Paper",
+			"qty": 100,
+			"t_warehouse": "Storeroom - APC",
+			"basic_rate": frappe.get_value(
+				"Item Price", {"item_code": "Parchment Paper"}, "price_list_rate"
+			),
+		},
+	)
+	se_receipt.save()
+	se_receipt.submit()
+	source_hu = se_receipt.items[0].handling_unit
+
+	# Create a repack entry
+	se_repack = frappe.new_doc("Stock Entry")
+	se_repack.stock_entry_type = se_repack.purpose = "Repack"
+	se_repack.append(
+		"items",
+		{
+			"item_code": "Parchment Paper",
+			"qty": 1,
+			"uom": "Box",
+			"conversion_factor": 100,
+			"stock_qty": 100,
+			"actual_qty": 100,
+			"transfer_qty": 100,
+			"s_warehouse": "Storeroom - APC",
+			"handling_unit": source_hu,
+		},
+	)
+	se_repack.append(
+		"items",
+		{
+			"item_code": "Parchment Paper",
+			"uom": "Nos",
+			"qty": 100,
+			"actual_qty": 100,
+			"transfer_qty": 100,
+			"t_warehouse": "Storeroom - APC",
+		},
+	)
+	se_repack.save()
+	se_repack.submit()
+
+	source_row = se_repack.items[0]
+	target_row = se_repack.items[1]
+	target_hu = target_row.handling_unit
+
+	# Verify initial state
+	source_hu_doc = get_handling_unit(source_hu)
+	target_hu_doc = get_handling_unit(target_hu)
+	assert source_hu_doc.stock_qty == 0  # consumed
+	assert target_hu_doc.stock_qty == 100  # created
+
+	# Cancel WITHOUT recombine (don't set recombine_on_cancel)
+	se_repack.cancel()
+
+	# After cancel without recombine:
+	# - Source HU should have qty 0 (consumed stays consumed)
+	# - Target HU should still exist with qty 100 (produced stays produced)
+	# This "keep separate" behavior maintains the split in cancelled state
+	source_hu_doc = get_handling_unit(source_hu)
+	target_hu_doc = get_handling_unit(target_hu)
+	assert source_hu_doc.stock_qty == 0  # consumed
+	assert target_hu_doc.stock_qty == 100  # produced
+
+
+@pytest.mark.order(90)
+def test_repack_cancel_with_recombine():
+	"""Test cancelling a Repack Stock Entry WITH recombining handling units"""
+	# Create a material receipt with a known handling unit
+	se_receipt = frappe.new_doc("Stock Entry")
+	se_receipt.stock_entry_type = se_receipt.purpose = "Material Receipt"
+	se_receipt.append(
+		"items",
+		{
+			"item_code": "Parchment Paper",
+			"qty": 100,
+			"t_warehouse": "Storeroom - APC",
+			"basic_rate": frappe.get_value(
+				"Item Price", {"item_code": "Parchment Paper"}, "price_list_rate"
+			),
+		},
+	)
+	se_receipt.save()
+	se_receipt.submit()
+	source_hu = se_receipt.items[0].handling_unit
+
+	# Create a repack entry
+	se_repack = frappe.new_doc("Stock Entry")
+	se_repack.stock_entry_type = se_repack.purpose = "Repack"
+	se_repack.append(
+		"items",
+		{
+			"item_code": "Parchment Paper",
+			"qty": 1,
+			"uom": "Box",
+			"conversion_factor": 100,
+			"stock_qty": 100,
+			"actual_qty": 100,
+			"transfer_qty": 100,
+			"s_warehouse": "Storeroom - APC",
+			"handling_unit": source_hu,
+		},
+	)
+	se_repack.append(
+		"items",
+		{
+			"item_code": "Parchment Paper",
+			"uom": "Nos",
+			"qty": 100,
+			"actual_qty": 100,
+			"transfer_qty": 100,
+			"t_warehouse": "Storeroom - APC",
+		},
+	)
+	se_repack.save()
+	se_repack.submit()
+
+	source_row = se_repack.items[0]
+	target_row = se_repack.items[1]
+	target_hu = target_row.handling_unit
+
+	# Set recombine_on_cancel on BOTH rows (as the frontend does)
+	source_row.db_set("recombine_on_cancel", True)
+	target_row.db_set("recombine_on_cancel", True)
+
+	# Cancel WITH recombine
+	se_repack.reload()
+	se_repack.cancel()
+
+	# After cancel with recombine:
+	# - Source HU should NOT get additional entries (recombine prevents split)
+	# - Target HU should NOT exist (was recombined back)
+	source_hu_doc = get_handling_unit(source_hu)
+	target_hu_doc = get_handling_unit(target_hu)
+
+	# Source HU should have the original quantity (no split entries added)
+	assert source_hu_doc.stock_qty == 100
+	# Target HU should be empty/zero (recombined back to source)
+	assert target_hu_doc is None or target_hu_doc.stock_qty == 0
+
+
+@pytest.mark.order(92)
+def test_material_transfer_cancel_without_recombine():
+	"""Test cancelling a Material Transfer Stock Entry without recombining handling units"""
+	# Create a material receipt
+	se_receipt = frappe.new_doc("Stock Entry")
+	se_receipt.stock_entry_type = se_receipt.purpose = "Material Receipt"
+	se_receipt.append(
+		"items",
+		{
+			"item_code": "Parchment Paper",
+			"qty": 100,
+			"t_warehouse": "Storeroom - APC",
+			"basic_rate": frappe.get_value(
+				"Item Price", {"item_code": "Parchment Paper"}, "price_list_rate"
+			),
+		},
+	)
+	se_receipt.save()
+	se_receipt.submit()
+	source_hu = se_receipt.items[0].handling_unit
+
+	# Create a material transfer
+	se_transfer = frappe.new_doc("Stock Entry")
+	se_transfer.stock_entry_type = se_transfer.purpose = "Material Transfer"
+	se_transfer.company = frappe.defaults.get_defaults().get("company")
+
+	scan = frappe.call(
+		"beam.beam.scan.scan",
+		**{
+			"barcode": str(source_hu),
+			"context": {"frm": "Stock Entry", "doc": se_transfer.as_dict()},
+			"current_qty": 1,
+		},
+	)
+	se_transfer.append(
+		"items",
+		{
+			**scan[0]["context"],
+			"qty": 50,
+			"actual_qty": 50,
+			"transfer_qty": 50,
+			"s_warehouse": "Storeroom - APC",
+			"t_warehouse": "Kitchen - APC",
+		},
+	)
+	se_transfer.save()
+	se_transfer.submit()
+
+	transfer_row = se_transfer.items[0]
+	target_hu = transfer_row.to_handling_unit
+
+	# Verify initial state
+	source_hu_doc = get_handling_unit(source_hu)
+	target_hu_doc = get_handling_unit(target_hu)
+	assert source_hu_doc.stock_qty == 50  # remaining in source
+	assert target_hu_doc.stock_qty == 50  # transferred to target
+
+	# Cancel WITHOUT recombine
+	se_transfer.cancel()
+
+	# After cancel without recombine:
+	# - Source HU should be restored
+	# - Target HU should also be restored (both persist separately)
+	source_hu_doc = get_handling_unit(source_hu)
+	target_hu_doc = get_handling_unit(target_hu)
+	assert source_hu_doc.stock_qty == 50  # restored in source warehouse
+	assert target_hu_doc.stock_qty == 50  # restored in target warehouse

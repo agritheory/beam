@@ -3,6 +3,11 @@ For license information, please see license.txt-->
 
 # Testing
 
+<div class="byline">
+  Rohan Bansal, Ishwarya, Lautaro Juarez, Heather Kusmierz, Tyler Matteson, and Francisco Roldán 2026-08-10
+</div>
+
+
 ## Simulating a Scanner
 
 Open the browser console. This assumes a barcode of `'9968934975826708157'` which must be sent as a string.

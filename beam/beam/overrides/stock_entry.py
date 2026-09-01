@@ -20,23 +20,27 @@ class BEAMStockEntry(StockEntry):
 		self.get_sle_for_source_warehouse(sl_entries, finished_item_row)
 		self.get_sle_for_target_warehouse(sl_entries, finished_item_row)
 
-		# Add handling_unit to Stock Ledger Entries
+		# Ensure handling_unit is set on SLE entries if enabled
 		if settings.enable_handling_units:
 			for sle in sl_entries:
-				if hasattr(sle, "voucher_detail_no") and sle.voucher_detail_no:
-					for item in self.get("items"):
-						if item.name == sle.voucher_detail_no:
-							# For transfers with both handling_unit and to_handling_unit
-							if item.handling_unit and item.to_handling_unit:
-								if sle.get("warehouse") == item.s_warehouse:
-									# Source warehouse uses original handling_unit
-									sle.handling_unit = item.handling_unit
-								elif sle.get("warehouse") == item.t_warehouse:
-									# Target warehouse uses to_handling_unit
-									sle.handling_unit = item.to_handling_unit
-							elif item.handling_unit:
-								sle.handling_unit = item.handling_unit
-							break
+				if hasattr(sle, "get") and "voucher_detail_no" in sle:
+					item_row = next(
+						(item for item in self.items if item.name == sle.get("voucher_detail_no")), None
+					)
+					if item_row:
+						# For source warehouse (consumption), use handling_unit
+						if (
+							sle.get("warehouse") == item_row.s_warehouse
+							and hasattr(item_row, "handling_unit")
+							and item_row.handling_unit
+						):
+							sle["handling_unit"] = item_row.handling_unit
+						# For target warehouse (receipt), use to_handling_unit if it exists, otherwise handling_unit
+						elif sle.get("warehouse") == item_row.t_warehouse:
+							if hasattr(item_row, "to_handling_unit") and item_row.to_handling_unit:
+								sle["handling_unit"] = item_row.to_handling_unit
+							elif hasattr(item_row, "handling_unit") and item_row.handling_unit:
+								sle["handling_unit"] = item_row.handling_unit
 
 		if self.docstatus == 2:
 			sl_entries.reverse()
@@ -49,7 +53,12 @@ class BEAMStockEntry(StockEntry):
 	def make_handling_unit_sles(self):
 		hu_sles = []
 		for d in self.get("items"):
-			if self.docstatus == 2 and not d.recombine_on_cancel and d.handling_unit and d.to_handling_unit:
+			# Only process when cancelling AND user wants to keep separate (NOT recombine)
+			if self.docstatus != 2 or d.recombine_on_cancel or not d.handling_unit:
+				continue
+
+			if d.handling_unit and d.to_handling_unit:
+				# Material Transfer types: both HUs on the same row
 				sle = self.get_sl_entries(
 					d,
 					{
@@ -72,6 +81,32 @@ class BEAMStockEntry(StockEntry):
 				_sle["handling_unit"] = d.to_handling_unit
 				_sle["is_cancelled"] = 0
 				hu_sles.append(_sle)
+			elif d.s_warehouse and not d.t_warehouse:
+				# Repack/Manufacture source row: re-consume from source HU
+				sle = self.get_sl_entries(
+					d,
+					{
+						"warehouse": cstr(d.s_warehouse),
+						"actual_qty": -flt(d.transfer_qty),
+						"incoming_rate": flt(d.valuation_rate),
+					},
+				)
+				sle["handling_unit"] = d.handling_unit
+				sle["is_cancelled"] = 0
+				hu_sles.append(sle)
+			elif d.t_warehouse and not d.s_warehouse:
+				# Repack/Manufacture target row: re-add to target HU
+				sle = self.get_sl_entries(
+					d,
+					{
+						"warehouse": cstr(d.t_warehouse),
+						"actual_qty": flt(d.transfer_qty),
+						"incoming_rate": flt(d.valuation_rate),
+					},
+				)
+				sle["handling_unit"] = d.handling_unit
+				sle["is_cancelled"] = 0
+				hu_sles.append(sle)
 		return hu_sles
 
 
@@ -128,6 +163,9 @@ def get_handling_unit_qty(voucher_no, handling_unit, warehouse):
 def validate_items_with_handling_unit(doc, method=None):
 	beam_settings = frappe.get_doc("BEAM Settings", doc.company)
 	if not beam_settings.enable_handling_units:
+		return
+
+	if frappe.flags.get("beam_allow_source_rows_without_hu"):
 		return
 
 	if doc.stock_entry_type != "Material Receipt":

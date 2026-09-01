@@ -8,6 +8,7 @@ app_publisher = "AgriTheory"
 app_description = "Barcode Scanning for ERPNext"
 app_email = "support@agritheory.dev"
 app_license = "MIT"
+required_apps = ["erpnext"]
 
 # Includes in <head>
 # ------------------
@@ -28,11 +29,18 @@ web_include_js = ["beam-web.bundle.js"]
 # webform_include_css = {"doctype": "public/css/doctype.css"}
 
 # include js in page
-# page_js = {"page" : "public/js/file.js"}
+page_js = {
+	"printer-queue": "beam/page/printer_queue/printer_queue.js",
+}
 
 # include js in doctype views
-doctype_js = {"Stock Entry": "public/js/stock_entry_custom.js"}
-# doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
+doctype_js = {
+	"Network Printer Settings": "public/js/network_printer_settings_custom.js",
+	"Stock Entry": "public/js/stock_entry_custom.js",
+}
+doctype_list_js = {
+	"Network Printer Settings": "public/js/network_printer_settings_list.js",
+}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
 
@@ -60,6 +68,7 @@ jinja = {
 	"methods": [
 		"beam.beam.barcodes.add_to_label",
 		"beam.beam.barcodes.barcode128",
+		"beam.beam.barcodes.get_qr_code",
 		"beam.beam.barcodes.formatted_zpl_barcode",
 		"beam.beam.barcodes.formatted_zpl_label",
 		"beam.beam.barcodes.formatted_zpl_text",
@@ -68,6 +77,7 @@ jinja = {
 		"beam.beam.barcodes.zebra_zpl_text",
 		"beam.beam.printing.labelary_api",
 		"beam.beam.scan.get_handling_unit",
+		"beam.beam.scan.get_serial_no",
 	],
 }
 
@@ -111,6 +121,7 @@ extend_bootinfo = "beam.beam.boot.boot_session"
 # Override standard doctype classes
 override_doctype_class = {
 	"Sales Order": "beam.beam.overrides.sales_order.BEAMSalesOrder",
+	"Network Printer Settings": "beam.beam.overrides.network_printer_settings.BEAMNetworkPrinterSettings",
 	"Stock Entry": "beam.beam.overrides.stock_entry.BEAMStockEntry",
 	"Subcontracting Receipt": "beam.beam.overrides.subcontracting_receipt.BEAMSubcontractingReceipt",
 	"Work Order": "beam.beam.overrides.work_order.BEAMWorkOrder",
@@ -135,12 +146,12 @@ doc_events = {
 	("Item", "Warehouse", "User"): {
 		"validate": ["beam.beam.barcodes.create_beam_barcode"],
 	},
-	# (
-	# 	"Purchase Receipt",
-	# 	"Stock Entry",
-	# 	"Sales Invoice",
-	# 	"Delivery Note",
-	# ): {"validate": ["beam.beam.handling_unit.validate_handling_unit_overconsumption"]},
+	(
+		"Purchase Receipt",
+		"Stock Entry",
+		"Sales Invoice",
+		"Delivery Note",
+	): {"validate": ["beam.beam.handling_unit.validate_handling_unit_overconsumption"]},
 	("Delivery Note", "Purchase Receipt", "Sales Invoice", "Stock Entry", "Stock Reconciliation",): {
 		"on_submit": ["beam.beam.demand.demand.modify_allocations"],
 		"on_cancel": ["beam.beam.demand.demand.modify_allocations"],
@@ -170,6 +181,11 @@ doc_events = {
 		"on_cancel": [
 			"beam.beam.demand.receiving.modify_receiving",
 			"beam.beam.demand.demand.modify_allocations",
+		],
+	},
+	"Company": {
+		"after_insert": [
+			"beam.beam.overrides.company.create_company_beam_settings",
 		],
 	},
 }
@@ -575,13 +591,13 @@ beam_mobile = {
 			"path": "/work_order/:id/",
 			"name": "work_order",
 			"component": "WorkOrder",
-			"meta": {"requiresAuth": True, "doctype": "Work Order", "view": "form"},
+			"meta": {"requiresAuth": True, "doctype": "Work Order", "view": "form", "cameraPhoto": True},
 		},
 		{
 			"path": "/job_card/:id/",
 			"name": "job_card",
 			"component": "JobCard",
-			"meta": {"requiresAuth": True, "doctype": "Work Order", "view": "form"},
+			"meta": {"requiresAuth": True, "doctype": "Work Order", "view": "form", "cameraPhoto": True},
 		},
 		{
 			"path": "/work_order/:id/operation/:operationId",
@@ -605,7 +621,12 @@ beam_mobile = {
 			"path": "/purchase-receipt/:id",
 			"name": "purchase-receipt",
 			"component": "PurchaseReceipt",
-			"meta": {"requiresAuth": True, "doctype": "Purchase Receipt", "view": "form"},
+			"meta": {
+				"requiresAuth": True,
+				"doctype": "Purchase Receipt",
+				"view": "form",
+				"cameraPhoto": True,
+			},
 		},
 		{
 			"path": "/ship",
@@ -617,7 +638,7 @@ beam_mobile = {
 			"path": "/delivery-note",
 			"name": "delivery-note",
 			"component": "DeliveryNote",
-			"meta": {"requiresAuth": True, "doctype": "Delivery Note", "view": "form"},
+			"meta": {"requiresAuth": True, "doctype": "Delivery Note", "view": "form", "cameraPhoto": True},
 		},
 		{
 			"path": "/demand",
@@ -629,7 +650,7 @@ beam_mobile = {
 			"path": "/move",
 			"name": "move",
 			"component": "Move",
-			"meta": {"requiresAuth": True, "doctype": "Stock Entry", "view": "form"},
+			"meta": {"requiresAuth": True, "doctype": "Stock Entry", "view": "form", "cameraPhoto": True},
 		},
 		{
 			"path": "/manufacture",

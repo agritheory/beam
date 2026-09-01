@@ -39,34 +39,41 @@ const filters = ref<Record<string, any>>({})
 const canLoadMore = ref(true)
 const page = ref(1)
 const listKey = ref(0)
+const loading = ref(false)
 
 const getDemand = async () => {
-	const { data } = await store.getDemand({
-		...(Object.keys(filters.value).length && { filters: JSON.stringify(filters.value) }),
-		page: page.value,
-	})
+	if (loading.value || !canLoadMore.value) {
+		return
+	}
+	loading.value = true
+	const start = demand.value.length
+	try {
+		const { data } = await store.getDemand({
+			...(Object.keys(filters.value).length && { filters: JSON.stringify(filters.value) }),
+			page: page.value,
+		})
 
-	if (!data || data.length === 0) {
-		canLoadMore.value = false
-	} else {
+		if (!data || data.length === 0) {
+			canLoadMore.value = false
+			return
+		}
+
 		demand.value = [...demand.value, ...data]
 		page.value++
+		// Append only — rebuilding the whole list (or bumping :key) remounts rows mid-click.
+		appendDemand(start)
+	} finally {
+		loading.value = false
 	}
-
-	setDemand()
-	listKey.value++
 }
 
-const setDemand = () => {
-	dates.value = []
-	demandList.value = []
-
-	// TODO: move this to the server
-	for (const row of demand.value) {
-		// add day-divider config when date changes
+const appendDemand = (fromIndex: number) => {
+	for (const row of demand.value.slice(fromIndex)) {
 		addDivider(row.allocated_date)
 
 		demandList.value.push({
+			// ListView keys on barcode||label; labels collide across demand rows.
+			barcode: row.name || row.key || `${row.parent}:${row.item_code}:${row.idx}`,
 			label: `${row.item_code} from ${row.item_warehouse}`,
 			linkComponent: 'ListAnchor',
 			route: `#/${frappe.scrub(row.doctype)}/${row.parent}`,
@@ -89,6 +96,7 @@ const addDivider = (date: string | null) => {
 		if (!dates.value.includes(scheduledDate.toDateString())) {
 			dates.value.push(scheduledDate.toDateString())
 			demandList.value.push({
+				barcode: `divider:${scheduledDate.toDateString()}`,
 				date: scheduledDate.toISOString(),
 				linkComponent: 'BeamDayDivider',
 			})
@@ -97,6 +105,7 @@ const addDivider = (date: string | null) => {
 		if (!dates.value.includes(null)) {
 			dates.value.push(null)
 			demandList.value.push({
+				barcode: 'divider:none',
 				date: 'No Date Set',
 				linkComponent: 'BeamDayDivider',
 			})
@@ -108,7 +117,9 @@ const resetDemand = () => {
 	page.value = 1
 	dates.value = []
 	demand.value = []
+	demandList.value = []
 	canLoadMore.value = true
+	listKey.value++
 }
 
 const setFilters = (demandFilters: DemandFilter) => {

@@ -3,6 +3,7 @@
 
 import pathlib
 import sqlite3
+from typing import Any
 
 import frappe
 from erpnext.stock.doctype.inventory_dimension.inventory_dimension import get_inventory_dimensions
@@ -138,12 +139,14 @@ def create_demand_db(cursor: sqlite3.Cursor) -> sqlite3.Connection:
 
 
 def reset_demand_db() -> None:
+	# Leaves `receiving` alone: build_demand_allocation_map, the only caller, does
+	# not rebuild that table, so clearing it here empties it until something else
+	# happens to call reset_build_receiving_map. reset_receiving_db owns it.
 	with get_demand_db() as conn:
 		cursor = conn.cursor()
 		# sqlite does not implement a TRUNCATE command
 		cursor.execute("DELETE FROM demand")
 		cursor.execute("DELETE FROM allocation")
-		cursor.execute("DELETE FROM receiving")
 
 
 def reset_receiving_db() -> None:
@@ -153,7 +156,7 @@ def reset_receiving_db() -> None:
 		cursor.execute("DELETE FROM receiving")
 
 
-def dict_factory(cursor: sqlite3.Cursor, row: sqlite3.Row) -> frappe._dict:
+def dict_factory(cursor: sqlite3.Cursor, row: tuple[Any, ...]) -> frappe._dict:
 	_dict = frappe._dict()
 	for idx, col in enumerate(cursor.description):
 		_dict[col[0]] = row[idx]

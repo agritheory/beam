@@ -26,6 +26,7 @@ class BEAMSettings(Document):
 		receiving_workstation: DF.Link | None
 		restrict_ip: DF.SmallText | None
 		routes: DF.Table[BEAMMobileRoute]
+		scan_serial_no: DF.Check
 		shipping_workstation: DF.Link | None
 		show_scan_output: DF.Check
 		warehouse_types: DF.TableMultiSelect[WarehouseTypes]
@@ -54,6 +55,7 @@ class BEAMSettings(Document):
 def create_beam_settings(company: str) -> str:
 	beam_settings = frappe.new_doc("BEAM Settings")
 	beam_settings.company = company
+	beam_settings.auto_barcode_doctypes = '["Item", "Warehouse"]'
 	beam_settings.save()
 	return beam_settings
 
@@ -72,3 +74,20 @@ def get_configuration_hooks():
 	bm = frappe.get_hooks().get("beam_mobile")
 	components = sorted(list(set(bm.get("components").keys())))
 	return frappe._dict({"components": components})
+
+
+@frappe.whitelist()
+def get_doctypes_with_item_barcodes() -> list[str]:
+	"""Return all doctypes that have a Table field with options 'Item Barcode'."""
+	existing_doctypes = set(frappe.get_all("DocType", pluck="name"))
+	standard = frappe.get_all(
+		"DocField",
+		filters={"fieldtype": "Table", "options": "Item Barcode"},
+		pluck="parent",
+	)
+	custom = frappe.get_all(
+		"Custom Field",
+		filters={"fieldtype": "Table", "options": "Item Barcode"},
+		pluck="dt",
+	)
+	return sorted(existing_doctypes.intersection(standard + custom))

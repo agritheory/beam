@@ -1,6 +1,7 @@
 FROM debian:testing-slim
 
 # Install Packages (basic tools, cups, basic drivers, HP drivers)
+# printer-driver-all and printer-driver-gutenprint omitted (unavailable on Debian arm64)
 RUN apt-get update \
     && apt-get install -y \
         sudo \
@@ -11,7 +12,6 @@ RUN apt-get update \
         cups-bsd \
         cups-filters \
         foomatic-db-compressed-ppds \
-        printer-driver-all \
         openprinting-ppds \
         hpijs-ppds \
         hp-ppd \
@@ -19,13 +19,12 @@ RUN apt-get update \
         smbclient \
         printer-driver-cups-pdf \
         hplip \
-        printer-driver-gutenprint \
         avahi-daemon \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-ARG CUPS_ADMIN_USER
-ARG CUPS_ADMIN_PASSWORD
+ARG CUPS_ADMIN_USER=admin
+ARG CUPS_ADMIN_PASSWORD=root
 RUN useradd \
         --create-home \
         --groups sudo,lp,lpadmin \
@@ -38,8 +37,6 @@ USER $CUPS_ADMIN_USER
 COPY cupsd.conf /etc/cups/cupsd.conf
 RUN sudo chmod -R a+rwx /var/spool \
     && sudo chmod -R a+rwx /etc/cups
-
-COPY avahi-daemon.conf /etc/avahi/avahi-daemon.conf
 
 CMD [\
     "/usr/sbin/cupsd", \

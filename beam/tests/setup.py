@@ -17,6 +17,8 @@ from erpnext.setup.utils import enable_all_roles_and_domains, set_defaults_for_t
 from erpnext.stock.get_item_details import get_item_details
 from frappe.desk.page.setup_wizard.setup_wizard import setup_complete
 
+from beam.beam.demand.demand import build_demand_allocation_map
+from beam.beam.demand.receiving import reset_build_receiving_map
 from beam.tests.fixtures import (
 	boms,
 	customers,
@@ -57,6 +59,8 @@ def before_test():
 		frappe.db.set_value("Module Onboarding", module, "is_complete", True)
 	frappe.set_value("Website Settings", "Website Settings", "home_page", "login")
 	create_test_data()
+	build_demand_allocation_map()
+	reset_build_receiving_map()
 
 
 def create_test_data():
@@ -98,6 +102,7 @@ def create_test_data():
 	create_employees(settings)
 	create_items(settings)
 	create_boms(settings)
+	create_finished_goods_stock(settings)
 	prod_plan_from_doc = "Sales Order"
 	if prod_plan_from_doc == "Sales Order":
 		create_sales_order(settings)
@@ -192,12 +197,16 @@ def setup_manufacturing_settings(settings):
 
 
 def setup_beam_settings(settings):
-	beams = frappe.new_doc("BEAM Settings")
-	beams.company = settings.company
+	if frappe.db.exists("BEAM Settings", settings.company):
+		beams = frappe.get_doc("BEAM Settings", settings.company)
+	else:
+		beams = frappe.new_doc("BEAM Settings")
+		beams.company = settings.company
 	beams.enable_demand = True
 	beams.enable_handling_units = True
 	beams.receiving_workstation = "Receiving"
 	beams.shipping_workstation = "Shipping"
+	beams.auto_barcode_doctypes = '["Item", "User", "Warehouse"]'
 	beams.set("warehouse_types", [{"warehouse_type": "Quarantine"}])
 	beams.set(
 		"routes",
@@ -306,8 +315,15 @@ def create_items(settings):
 			"Purchase" if item.get("item_group") in ("Bakery Supplies", "Ingredients") else "Manufacture"
 		)
 		i.valuation_method = "FIFO"
-		i.is_purchase_item = item.get("item_group") in ("Bakery Supplies", "Ingredients")
-		i.is_sales_item = item.get("item_group") == "Baked Goods"
+		i.is_purchase_item = (
+			1
+			if item.get("item_group") in ("Bakery Supplies", "Ingredients")
+			or item.get("is_purchase_item", 0)
+			else 0
+		)
+		i.is_sales_item = (
+			1 if item.get("item_group") == "Baked Goods" or item.get("is_sales_item", 0) else 0
+		)
 		i.append(
 			"item_defaults",
 			{"company": settings.company, "default_warehouse": item.get("default_warehouse")},
@@ -321,6 +337,9 @@ def create_items(settings):
 			i.append("uoms", {"uom": "Gallon Liquid (US)", "conversion_factor": 15.142})
 			i.purchase_uom = "Gallon Liquid (US)"
 			i.valuation_rate = 0.01 if i.item_code == "Water" else 0.02
+
+		i.has_serial_no = item.get("has_serial_no", 0) or 0
+		i.serial_no_series = item.get("serial_no_series", "") or ""
 		i.save()
 		if item.get("item_price"):
 			ip = frappe.new_doc("Item Price")
@@ -358,6 +377,35 @@ def create_items(settings):
 	)
 	water.save()
 	water.submit()
+
+
+def create_finished_goods_stock(settings):
+	"""Create initial stock of finished goods for testing.
+	Used by test_shipping.py::test_complete_partial_shipment and other shipping tests.
+	"""
+	finished_goods_items = [
+		{"item_code": "Ambrosia Pie", "qty": 50, "rate": 10.00},
+		{"item_code": "Double Plum Pie", "qty": 50, "rate": 9.00},
+		{"item_code": "Gooseberry Pie", "qty": 50, "rate": 12.00},
+		{"item_code": "Kaduka Key Lime Pie", "qty": 50, "rate": 9.00},
+	]
+
+	for item_data in finished_goods_items:
+		stock_entry = frappe.new_doc("Stock Entry")
+		stock_entry.stock_entry_type = stock_entry.purpose = "Material Receipt"
+		stock_entry.append(
+			"items",
+			{
+				"item_code": item_data["item_code"],
+				"qty": item_data["qty"],
+				"t_warehouse": "Baked Goods - APC",
+				"uom": "Nos",
+				"basic_rate": item_data["rate"],
+				"expense_account": "5111 - Cost of Goods Sold - APC",
+			},
+		)
+		stock_entry.save()
+		stock_entry.submit()
 
 
 def create_warehouses(settings):
@@ -698,9 +746,12 @@ def create_production_plan(settings, prod_plan_from_doc):
 		wo.save()
 		wo.submit()
 		frappe.db.set_value("Work Order", wo.name, "creation", start_time)
-		job_cards = frappe.get_all("Job Card", {"work_order": wo.name})
-		for job_card in job_cards:
-			job_card = frappe.get_doc("Job Card", job_card)
+		# Get job cards and sort by sequence_id to process in order
+		job_cards = frappe.get_all(
+			"Job Card", {"work_order": wo.name}, ["name", "sequence_id"], order_by="sequence_id asc"
+		)
+		for jc in job_cards:
+			job_card = frappe.get_doc("Job Card", jc.name)
 			batch_size, total_operation_time = frappe.get_value(
 				"Operation", job_card.operation, ["batch_size", "total_operation_time"]
 			)
@@ -715,6 +766,8 @@ def create_production_plan(settings, prod_plan_from_doc):
 					"remaining_time_in_mins": time_in_mins,
 				},
 			)
+			# Complete the job card
+			job_card.total_completed_qty = wo.qty
 			job_card.save()
 			start_time = job_card.time_logs[0].to_time + datetime.timedelta(minutes=2)
 			# job_card.submit() # TODO: don't submit for demand tests
@@ -763,7 +816,37 @@ def create_network_printer_settings(settings):
 			nps.save()
 
 
+def ensure_department(department, company):
+	if not department or frappe.db.exists("Department", department):
+		return
+
+	company_doc = frappe.get_doc("Company", company)
+	company_doc.create_default_departments()
+
+	if frappe.db.exists("Department", department):
+		return
+
+	from frappe.utils.nestedset import get_root_of
+
+	abbr = company_doc.abbr
+	suffix = f" - {abbr}"
+	department_name = department[: -len(suffix)] if department.endswith(suffix) else department
+
+	frappe.get_doc(
+		{
+			"doctype": "Department",
+			"department_name": department_name,
+			"company": company,
+			"parent_department": get_root_of("Department"),
+		}
+	).insert(ignore_permissions=True)
+
+
 def create_employees(settings, only_create=None):
+	departments = {employee.get("department") for employee in employees if employee.get("department")}
+	for department in departments:
+		ensure_department(department, settings.company)
+
 	for employee in employees:
 		if only_create and employee.get("employee_name") not in only_create:
 			continue

@@ -1,10 +1,12 @@
 # Copyright (c) 2024, AgriTheory and contributors
 # For license information, please see license.txt
 
+pytest_plugins = ["beam.tests.playwright_fixtures"]
+
 # To test locally:
 #  active the virtual environment
 #  bench start, and then run:
-#  pytest ./beam/tests/mobile/test_manufacture.py --browser firefox --headed --disable-warnings
+#  pytest ./beam/tests/test_beam_manufacture.py --browser firefox --headed --disable-warnings
 
 import re
 
@@ -12,10 +14,10 @@ import frappe
 import pytest
 from playwright.sync_api import expect
 
-from beam.tests.test_utils import use_current_db_transaction
+from beam.tests.playwright_utils import use_current_db_transaction
 
 
-@pytest.mark.order(1)
+@pytest.mark.order(300)
 def test_complete_partial_stock_entry(page):
 	"""
 	This test needs to disable handling units on Beam Settings and
@@ -50,12 +52,15 @@ def test_complete_partial_stock_entry(page):
 
 	# navigate in the following order: Home -> Manufacture -> Work Order
 	page.get_by_text("Manufacture").click()
+
+	expect(page.locator("css=.beam_list-item").first).to_be_visible()
 	page.locator("css=.beam_list-item").first.click()
 
 	# get the selected Work Order
 	order_id = page.url.split("/")[-1]
 	assert order_id
 
+	expect(page.locator("css=.box .beam_list-item").first).to_be_visible()
 	# ensure there are no existing Stock Entries against this Work Order
 	entry = frappe.db.exists(
 		"Stock Entry",

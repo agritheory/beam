@@ -5,7 +5,9 @@ import { defineStore } from 'pinia'
 import { computed } from 'vue'
 
 import { useBeamStore } from '@/stores/beam.js'
+import { useBeamToast } from '@/utils/toast.js'
 import type {
+	DeliveryNoteItem,
 	FormContext,
 	ListContext,
 	ParentDoctypesForStockTransfer,
@@ -17,6 +19,7 @@ import type {
 
 export const useScanStore = defineStore('scan', () => {
 	const store = useBeamStore()
+	const toast = useBeamToast()
 
 	const documentId = computed(() => {
 		const currentRoute = store.router.currentRoute.value
@@ -52,7 +55,18 @@ export const useScanStore = defineStore('scan', () => {
 		}
 	}
 
+	const hasScanTarget = () => {
+		if (mappedDoc.value?.items) return true
+		// The page owning this route has not registered its document yet, so the
+		// scan has nowhere to land. Dropping it silently reads to an operator as a
+		// scanner that misfired, and to a test as a failure several steps later.
+		toast.error('This page is not ready to accept scans yet, please scan again')
+		return false
+	}
+
 	const add_or_associate = (barcode_context: FormContext[]) => {
+		if (!hasScanTarget()) return
+
 		const is_stock_entry =
 			mappedDoc.value.doctype === 'Stock Entry' &&
 			[
@@ -68,19 +82,22 @@ export const useScanStore = defineStore('scan', () => {
 				if (is_stock_entry) {
 					return row.item_code === action.context.item_code || row.handling_unit
 				} else {
+					// For HU scans, match by item_code alone — HU stock_qty may differ from SO qty
+					const isHuScan = action.context.handling_unit != null
 					return (
-						(row.item_code === action.context.item_code && row.stock_qty === action.context.stock_qty) ||
-						row.handling_unit === action.context.handling_unit
+						row.handling_unit === action.context.handling_unit ||
+						(row.item_code === action.context.item_code && (isHuScan || row.stock_qty === action.context.stock_qty))
 					)
 				}
 			})
-
 			if (existing_rows.length > 0) {
 				for (const row of existing_rows) {
 					if (action.field === 'qty') {
 						if (row.doctype === 'Stock Entry Detail') {
 							row[action.field] = Math.min((row as StockEntryItem).transfer_qty!, action.target)
 						}
+					} else if (action.field === 'delivered_qty' && (row as DeliveryNoteItem).qty != null) {
+						;(row as DeliveryNoteItem).delivered_qty = Math.min(action.target, (row as DeliveryNoteItem).qty)
 					} else {
 						row[action.field] = action.target
 					}
@@ -89,12 +106,14 @@ export const useScanStore = defineStore('scan', () => {
 				if (mappedDoc.value.doctype === 'Purchase Receipt') {
 					;(mappedDoc.value as PurchaseReceipt).items.push({
 						item_code: action.context.item_code,
+						item_name: action.context.item_name,
 						received_qty: 1,
 						[action.field]: action.target,
 					})
 				} else {
 					;(mappedDoc.value as Exclude<ParentDoctypesForStockTransfer, PurchaseReceipt>).items.push({
 						item_code: action.context.item_code,
+						item_name: action.context.item_name,
 						qty: 1,
 						[action.field]: action.target,
 					})
@@ -106,6 +125,8 @@ export const useScanStore = defineStore('scan', () => {
 	}
 
 	const add_or_increment = (barcode_context: FormContext[]) => {
+		if (!hasScanTarget()) return
+
 		for (const action of barcode_context) {
 			const existing_rows = mappedDoc.value.items.filter(
 				row =>
@@ -123,7 +144,11 @@ export const useScanStore = defineStore('scan', () => {
 			if (existing_rows.length > 0) {
 				const field = itemQtyFieldMap[action.doctype] || 'qty'
 				for (const row of existing_rows) {
-					row[field] = row[field] + 1
+					if (row.qty) {
+						row[field] = Math.min(row[field] + 1, row.qty)
+					} else {
+						row[field] = row[field] + 1
+					}
 				}
 			} else if (action.doctype === 'Stock Entry') {
 				const source_warehouses = ['Material Consumption for Manufacture', 'Material Issue']
@@ -228,6 +253,7 @@ export const useScanStore = defineStore('scan', () => {
 				})
 			} else {
 				const warehouse = barcode_context[0].context.doc?.name
+				if (!mappedDoc.value) return
 				if (!(mappedDoc.value as StockEntry).from_warehouse) {
 					;(mappedDoc.value as StockEntry).from_warehouse = warehouse
 				} else if (!(mappedDoc.value as StockEntry).to_warehouse) {

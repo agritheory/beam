@@ -3,6 +3,11 @@ For license information, please see license.txt-->
 
 # Handling Unit Traceability Report
 
+<div class="byline">
+  Rohan Bansal, Ishwarya, Lautaro Juarez, Heather Kusmierz, Tyler Matteson, and Francisco Roldán 2026-08-10
+</div>
+
+
 The Handling Unit Traceability report provides a simple interface to track a Handling Unit over its life cycle through your company's processes. Filters for the Handling Unit ID, Delivery Note name, and Sales Invoice name allow for fine-tuning of the report's results.
 
 ![Screen shot of the Handling Unit Traceability report's filter fields, including Handling Unit, Delivery Note, and Sales Invoice](./assets/hu_trace_filters.png)

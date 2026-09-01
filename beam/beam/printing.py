@@ -13,10 +13,13 @@ from frappe.utils.safe_exec import get_safe_globals
 from jinja2 import DebugUndefined, Environment
 from pypdf import PdfWriter
 
+from beam.beam.overrides.network_printer_settings import cups_connection, require_cups
+
 try:
-	import cups
-except Exception as e:
-	frappe.log_error(e, "CUPS is not installed on this server")
+	cups = require_cups()
+except Exception:
+	cups = None
+	frappe.log_error("CUPS is not installed on this server", "CUPS Import Error")
 
 
 @frappe.whitelist()
@@ -31,14 +34,19 @@ def print_by_server(
 ):
 	print_settings = frappe.get_doc("Network Printer Settings", printer_setting)
 	if isinstance(doc, str):
-		doc = frappe._dict(json.loads(doc))
+		_doc = frappe._dict(json.loads(doc))
+		doc = frappe.get_doc(_doc.doctype, _doc.name)
+		doc.update(_doc)
 	if not print_format:
 		print_format = frappe.get_meta(doctype).get("default_print_format")
+	# Default to "Standard" print format if still empty
+	if not print_format:
+		print_format = "Standard"
 	print_format = frappe.get_doc("Print Format", print_format)
+	if not cups:
+		frappe.throw(frappe._("CUPS is not installed on this server"))
 	try:
-		cups.setServer(print_settings.server_ip)
-		cups.setPort(print_settings.port)
-		conn = cups.Connection()
+		conn = cups_connection(print_settings.server_ip, print_settings.port)
 		if print_format.raw_printing == 1:
 			output = ""
 			# using a custom jinja environment so we don't have to use frappe's formatting
@@ -99,8 +107,9 @@ def print_handling_units(
 	doctype=None, name=None, printer_setting=None, print_format=None, doc=None
 ):
 	if isinstance(doc, str):
-		doc = frappe._dict(json.loads(doc))
-
+		_doc = frappe._dict(json.loads(doc))
+		doc = frappe.get_doc(_doc.doctype, _doc.name)
+		doc.update(_doc)
 	for row in doc.get("items"):
 		if not row.get("handling_unit"):
 			continue
@@ -145,6 +154,18 @@ def labelary_api(doc, print_format, settings=None):
 		e.globals.update(methods)
 	template = e.from_string(print_format.raw_commands)
 	output = template.render(doc=doc)
-	url = "http://api.labelary.com/v1/printers/8dpmm/labels/6x4/0/"
+
+	# Extract label dimensions and DPI from settings
+	# dpmm: dots per millimeter (default 8 = ~203 DPI)
+	# width: label width in inches (default 6)
+	# height: label height in inches (default 4)
+	# index: label index for multi-label formats (default 0)
+	dpmm = settings.get("dpmm", 8)  # 8 dpmm ≈ 203 DPI, 12 dpmm ≈ 300 DPI
+	width = settings.get("width", 6)
+	height = settings.get("height", 4)
+	index = settings.get("index", 0)
+
+	url = f"http://api.labelary.com/v1/printers/{dpmm}dpmm/labels/{width}x{height}/{index}/"
 	r = requests.post(url, files={"file": output})
-	return base64.b64encode(r.content).decode("ascii")
+	content = r.content
+	return base64.b64encode(content).decode("ascii")

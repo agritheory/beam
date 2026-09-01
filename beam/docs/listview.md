@@ -3,6 +3,11 @@ For license information, please see license.txt-->
 
 # Listview
 
+<div class="byline">
+  Rohan Bansal, Ishwarya, Lautaro Juarez, Heather Kusmierz, Tyler Matteson, and Francisco Roldán 2026-08-10
+</div>
+
+
 The result of scanning a barcode in the listview depends on several factors:
 
  - Is the barcode recognized?
@@ -22,6 +27,6 @@ Another example: If an Item is scanned while viewing the Purchase Receipt list, 
 |Item|Purchase Receipt|filter|item_code|
 
 
-Beam uses a [decision matrix](./matrix.md) to decide what action to take based on what kind of doctype has been scanned.
+BEAM uses a [decision matrix](./matrix.md) to decide what action to take based on what kind of doctype has been scanned.
 
 Custom actions and client side functions can be added by using [hooks](./hooks.md)
