@@ -7,24 +7,54 @@
 
 	<!-- setup scan input listeners -->
 	<ScanInput :scanHandler="scan" @scanInstance="registerInstance" />
+	<Camera ref="cameraRef" :allow-photo="allowPhoto" @scan="scan" @photos-captured="handlePhotosCaptured" />
 
 	<!-- setup main view -->
 	<RouterView />
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 
+import Camera from '@/components/Camera.vue'
+import { useBeamStore } from '@/stores/beam'
 import { useScanStore } from '@/stores/scan'
 import type { BeamWindow } from '@/types'
 
 declare const window: BeamWindow
 
-const store = useScanStore()
+const router = useRouter()
+const beamStore = useBeamStore()
+const scanStore = useScanStore()
 const showModal = ref(false)
+const cameraRef = ref<InstanceType<typeof Camera> | null>(null)
+
+// Route meta (including cameraPhoto) comes from hooks.py via yarn build.
+// Prefer useRouter() here — pinia's markRaw(router) is for stores, not this component.
+const allowPhoto = computed(() => Boolean(router.currentRoute.value.meta.cameraPhoto))
+
+const documentKey = computed(() => {
+	const { meta, params, query } = router.currentRoute.value
+	const id = query.id || params.id || ''
+	return `${meta.doctype ?? ''}:${id}`
+})
+
+watch(documentKey, () => {
+	cameraRef.value?.resetPhotos()
+})
+
+watch(
+	() => beamStore.camera.pendingPhotos,
+	files => cameraRef.value?.syncCapturedPhotos(files)
+)
 
 const scan = async (barcode: string, qty: number) => {
-	await store.scan(barcode, qty)
+	await scanStore.scan(barcode, qty)
+}
+
+const handlePhotosCaptured = (files: File[]) => {
+	beamStore.setPendingPhotos(files)
 }
 
 const closeModal = () => (showModal.value = false)

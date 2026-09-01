@@ -37,34 +37,41 @@ const filters = ref<Record<string, any>>({ doctype: 'Sales Order' })
 const canLoadMore = ref(true)
 const page = ref(1)
 const listKey = ref(0)
+const loading = ref(false)
 
 const getShipments = async () => {
-	const { data } = await store.getDemand({
-		...(Object.keys(filters.value).length && { filters: JSON.stringify(filters.value) }),
-		page: page.value,
-	})
+	if (loading.value || !canLoadMore.value) {
+		return
+	}
+	loading.value = true
+	const start = ship.value.length
+	try {
+		const { data } = await store.getDemand({
+			...(Object.keys(filters.value).length && { filters: JSON.stringify(filters.value) }),
+			page: page.value,
+		})
 
-	if (!data || data.length === 0) {
-		canLoadMore.value = false
-	} else {
+		if (!data || data.length === 0) {
+			canLoadMore.value = false
+			return
+		}
+
 		ship.value = [...ship.value, ...data]
 		page.value++
+		// Append only — rebuilding the whole list (or bumping :key) remounts rows mid-click.
+		appendShipments(start)
+	} finally {
+		loading.value = false
 	}
-
-	setShipments()
-	listKey.value++
 }
 
-const setShipments = () => {
-	dates.value = []
-	shipList.value = []
-
-	// TODO: move this to the server
-	for (const row of ship.value) {
-		// add day-divider config when date changes
+const appendShipments = (fromIndex: number) => {
+	for (const row of ship.value.slice(fromIndex)) {
 		addDivider(row.delivery_date)
 
 		shipList.value.push({
+			// ListView keys on barcode||label; keep stable unique keys per demand row.
+			barcode: row.name || row.key || `${row.parent}:${row.item_code}:${row.idx}`,
 			count: { count: row.allocated_qty, of: row.total_required_qty },
 			label: `${row.doctype} - ${row.parent}`,
 			linkComponent: 'ListAnchor',
@@ -84,6 +91,7 @@ const addDivider = (date: string | null) => {
 		if (!dates.value.includes(scheduledDate.toDateString())) {
 			dates.value.push(scheduledDate.toDateString())
 			shipList.value.push({
+				barcode: `divider:${scheduledDate.toDateString()}`,
 				date: scheduledDate.toISOString(),
 				linkComponent: 'BeamDayDivider',
 			})
@@ -92,6 +100,7 @@ const addDivider = (date: string | null) => {
 		if (!dates.value.includes(null)) {
 			dates.value.push(null)
 			shipList.value.push({
+				barcode: 'divider:none',
 				date: 'No Date Set',
 				linkComponent: 'BeamDayDivider',
 			})
@@ -102,7 +111,10 @@ const addDivider = (date: string | null) => {
 const resetShipments = () => {
 	page.value = 1
 	ship.value = []
+	shipList.value = []
+	dates.value = []
 	canLoadMore.value = true
+	listKey.value++
 }
 
 const setFilters = (demandFilters: DemandFilter) => {

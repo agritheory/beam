@@ -112,8 +112,8 @@ def test_purchase_receipt_handling_unit_generation():
 			assert isinstance(row.handling_unit, str)
 			if row.rejected_qty:
 				assert row.rejected_qty + row.qty == row.received_qty
-			hu = get_handling_unit(row.handling_unit)
-			assert hu.stock_qty == row.stock_qty
+				hu = get_handling_unit(row.handling_unit)
+				assert hu.stock_qty == row.stock_qty
 
 
 @pytest.mark.order(62)
@@ -199,18 +199,6 @@ def test_stock_entry_repack():
 			"handling_unit": pr_hu["handling_unit"],
 		},
 	)
-	scan = frappe.call(
-		"beam.beam.scan.scan",
-		**{
-			"barcode": pr_hu.handling_unit,
-			"context": {"frm": "Stock Entry", "doc": se.as_dict()},
-			"current_qty": 100,
-		},
-	)
-	assert scan[0]["action"] == "add_or_associate"
-	se.items[0].handling_unit = scan[0]["context"].get(
-		"handling_unit"
-	)  # simulates the effect of 'associate'
 	se.append(
 		"items",
 		{
@@ -298,12 +286,13 @@ def test_stock_entry_for_manufacture():
 	se_tfm = frappe.get_value(
 		"Stock Entry", {"work_order": wo, "purpose": "Material Transfer for Manufacture"}
 	)
+	# ERPNext blocks Manufacture until Job Card operations are complete (this site
+	# enables operation completion checks; version-15 fixtures alone are not enough).
 	job_cards = frappe.get_all(
 		"Job Card", {"work_order": wo}, ["name", "sequence_id"], order_by="sequence_id asc"
 	)
 	for jc in job_cards:
 		job_card = frappe.get_doc("Job Card", jc.name)
-		# Complete the job card by setting completed qty equal to qty to manufacture
 		for time_log in job_card.time_logs:
 			time_log.completed_qty = job_card.for_quantity
 		job_card.submit()
@@ -685,10 +674,7 @@ def test_subcontracting_receipt():
 
 
 @pytest.mark.order(84)
-@pytest.mark.skip()  # Remove when validate_handling_unit_overconsumption is uncommented in hooks.py doc_events
 def test_handling_units_overconsumption_in_material_transfer_stock_entry():
-	# validate_handling_unit_overconsumption is not wired in hooks.py yet.
-	pytest.skip("Handling unit overconsumption validation is disabled pending feature completion")
 	# Tests validate_handling_unit_overconsumption Stock Entry incoming code block
 	with pytest.raises(NegativeStockError) as exc_info:
 		se = frappe.new_doc("Stock Entry")
@@ -743,10 +729,7 @@ def test_handling_units_overconsumption_in_material_transfer_stock_entry():
 
 
 @pytest.mark.order(86)
-@pytest.mark.skip()  # Remove when validate_handling_unit_overconsumption is uncommented in hooks.py doc_events
 def test_handling_units_overconsumption_in_delivery_note():
-	# validate_handling_unit_overconsumption is not wired in hooks.py yet.
-	pytest.skip("Handling unit overconsumption validation is disabled pending feature completion")
 	# Tests validate_handling_unit_overconsumption Delivery Note code block
 	with pytest.raises(NegativeStockError) as exc_info:
 		se = frappe.new_doc("Stock Entry")

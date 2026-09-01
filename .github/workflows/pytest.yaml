@@ -131,9 +131,6 @@ jobs:
             ${{ runner.os }}-pip-
             ${{ runner.os }}-
 
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-
       - name: Install JS Dependencies
         run: yarn --prefer-offline
 
@@ -147,17 +144,22 @@ jobs:
         run: bash ${{ github.workspace }}/.github/helper/install.sh
 
       - name: Run Tests
-        working-directory: ${{ env.BENCH_ROOT }}
+        # shell: bash sets -o pipefail, without which the tee below would mask a
+        # pytest failure and report the job green.
+        shell: bash
         env:
-          POETRY_VIRTUALENVS_CREATE: "false"
+          BENCH_ROOT: ${{ env.BENCH_ROOT }}
           BEAM_TEST_TELEMETRY: "true"
           BEAM_TEST_STACK_DUMP_SECONDS: "60"
         run: |
-          set -o pipefail
+          bash ${{ github.workspace }}/.github/helper/ensure_bench_web.sh
+          cd "${BENCH_ROOT}"
           source env/bin/activate
+          python -m playwright install --with-deps chromium
           cd apps/beam
-          poetry install
-          pytest --cov=beam --cov-report=xml --cov-report=term-missing:skip-covered ./beam --ignore=./beam/tests/mobile --disable-warnings -s | tee pytest-coverage.txt
+          pytest --cov=beam --cov-report=xml --cov-report=term-missing:skip-covered ./beam \
+            --browser chromium \
+            --disable-warnings -s | tee pytest-coverage.txt
 
       - name: Pytest coverage comment
         if: ${{ !env.ACT }}

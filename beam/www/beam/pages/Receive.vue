@@ -37,34 +37,41 @@ const filters = ref<Record<string, any>>({})
 const canLoadMore = ref(true)
 const page = ref(1)
 const listKey = ref(0)
+const loading = ref(false)
 
 const getReceive = async () => {
-	const { data } = await store.getReceiving({
-		...(Object.keys(filters.value).length && { filters: JSON.stringify(filters.value) }),
-		page: page.value,
-	})
+	if (loading.value || !canLoadMore.value) {
+		return
+	}
+	loading.value = true
+	const start = receive.value.length
+	try {
+		const { data } = await store.getReceiving({
+			...(Object.keys(filters.value).length && { filters: JSON.stringify(filters.value) }),
+			page: page.value,
+		})
 
-	if (!data || data.length === 0) {
-		canLoadMore.value = false
-	} else {
+		if (!data || data.length === 0) {
+			canLoadMore.value = false
+			return
+		}
+
 		receive.value = [...receive.value, ...data]
 		page.value++
+		// Append only — rebuilding the whole list (or bumping :key) remounts rows mid-click.
+		appendReceive(start)
+	} finally {
+		loading.value = false
 	}
-
-	setReceive()
-	listKey.value++
 }
 
-const setReceive = () => {
-	dates.value = []
-	receiveList.value = []
-
-	// TODO: move this to the server
-	for (const row of receive.value) {
-		// add day-divider config when date changes
+const appendReceive = (fromIndex: number) => {
+	for (const row of receive.value.slice(fromIndex)) {
 		addDivider(row.schedule_date)
 
 		receiveList.value.push({
+			// ListView keys on barcode||label; labels collide across PO lines.
+			barcode: row.name || row.key || `${row.parent}:${row.item_code}:${row.idx}`,
 			count: { count: row.received_qty, of: row.stock_qty },
 			label: `${row.item_code} from ${row.warehouse}`,
 			linkComponent: 'ListAnchor',
@@ -84,6 +91,7 @@ const addDivider = (date: string | null) => {
 		if (!dates.value.includes(scheduledDate.toDateString())) {
 			dates.value.push(scheduledDate.toDateString())
 			receiveList.value.push({
+				barcode: `divider:${scheduledDate.toDateString()}`,
 				date: scheduledDate.toISOString(),
 				linkComponent: 'BeamDayDivider',
 			})
@@ -92,6 +100,7 @@ const addDivider = (date: string | null) => {
 		if (!dates.value.includes(null)) {
 			dates.value.push(null)
 			receiveList.value.push({
+				barcode: 'divider:none',
 				date: 'No Date Set',
 				linkComponent: 'BeamDayDivider',
 			})
@@ -102,7 +111,10 @@ const addDivider = (date: string | null) => {
 const resetReceive = () => {
 	page.value = 1
 	receive.value = []
+	receiveList.value = []
+	dates.value = []
 	canLoadMore.value = true
+	listKey.value++
 }
 
 const setFilters = (demandFilters: DemandFilter) => {

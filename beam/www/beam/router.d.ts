@@ -8,6 +8,7 @@ declare module 'vue-router' {
 		doctype: string
 		requiresAuth: boolean
 		view: 'list' | 'form'
+		cameraPhoto?: boolean
 	}
 }
 

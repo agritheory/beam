@@ -20,7 +20,12 @@ export type HookRoute = {
 	path: string
 	name: string
 	component: string
-	meta: { requiresAuth: boolean; doctype: string; view: 'list' | 'form' }
+	meta: {
+		requiresAuth: boolean
+		doctype: string | null
+		view: 'list' | 'form'
+		cameraPhoto?: boolean
+	}
 }
 
 export type HookConfig = {

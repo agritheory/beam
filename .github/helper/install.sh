@@ -84,6 +84,9 @@ bench --site test_site reinstall --yes --admin-password admin
 bench --site test_site migrate
 bench --site test_site build
 
+# Python test deps from each app's [tool.bench.dev-dependencies] (beam: pytest*, pycups, test_utils, pytest-playwright).
+# Playwright browser binaries still need `python -m playwright install`, which the
+# workflow's Run Tests step does.
 bench setup requirements --dev
 
 echo "BENCH VERSION NUMBERS:"

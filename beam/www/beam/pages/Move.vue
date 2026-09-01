@@ -35,9 +35,6 @@ import ControlButtons from '@/components/ControlButtons.vue'
 import { useBeamStore } from '@/stores/beam'
 import type { ControlButton, DocActionResponse, StockEntry } from '@/types'
 import { watch } from 'vue'
-type Warehouse = {
-	name: string
-}
 
 const store = useBeamStore()
 const items = ref<ListViewItem[]>([])
