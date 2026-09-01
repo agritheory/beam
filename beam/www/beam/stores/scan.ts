@@ -5,6 +5,7 @@ import { defineStore } from 'pinia'
 import { computed } from 'vue'
 
 import { useBeamStore } from '@/stores/beam.js'
+import { useBeamToast } from '@/utils/toast.js'
 import type {
 	DeliveryNoteItem,
 	FormContext,
@@ -17,6 +18,7 @@ import type {
 
 export const useScanStore = defineStore('scan', () => {
 	const store = useBeamStore()
+	const toast = useBeamToast()
 
 	const documentId = computed(() => {
 		const currentRoute = store.router.currentRoute.value
@@ -52,8 +54,17 @@ export const useScanStore = defineStore('scan', () => {
 		}
 	}
 
+	const hasScanTarget = () => {
+		if (mappedDoc.value?.items) return true
+		// The page owning this route has not registered its document yet, so the
+		// scan has nowhere to land. Dropping it silently reads to an operator as a
+		// scanner that misfired, and to a test as a failure several steps later.
+		toast.error('This page is not ready to accept scans yet, please scan again')
+		return false
+	}
+
 	const add_or_associate = (barcode_context: FormContext[]) => {
-		if (!mappedDoc.value?.items) return
+		if (!hasScanTarget()) return
 
 		const is_stock_entry =
 			mappedDoc.value.doctype === 'Stock Entry' &&
@@ -113,7 +124,7 @@ export const useScanStore = defineStore('scan', () => {
 	}
 
 	const add_or_increment = (barcode_context: FormContext[]) => {
-		if (!mappedDoc.value?.items) return
+		if (!hasScanTarget()) return
 
 		for (const action of barcode_context) {
 			const existing_rows = mappedDoc.value.items.filter(

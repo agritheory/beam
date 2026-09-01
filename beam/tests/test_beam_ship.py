@@ -10,6 +10,7 @@ import pytest
 from playwright.sync_api import expect
 
 from beam.tests.playwright_utils import (
+	error_toast_text,
 	open_desk_form,
 	open_first_beam_list_row,
 	order_id_from_beam_url,
@@ -284,6 +285,13 @@ def test_cancel_submitted_delivery_note_workflow(page):
 
 	# Click CANCEL button
 	cancel_button.click()
+	page.wait_for_timeout(1000)
+
+	# The portal reports a refused cancel only as a toast, so read it before
+	# polling; otherwise a server-side rejection looks like a 20s timeout.
+	rejected = error_toast_text(page)
+	assert rejected is None, f"CANCEL was rejected: {rejected}"
+
 	wait_for_docstatus("Delivery Note", dn_name, 2)
 
 	with use_current_db_transaction():

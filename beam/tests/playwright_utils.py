@@ -301,6 +301,37 @@ def open_first_beam_list_row(page, home_label: str, url_pattern: str):
 	expect(page).to_have_url(re.compile(url_pattern), timeout=10000)
 
 
+def open_beam_form_page(page, home_label: str, url_pattern: str, ready_selector: str):
+	"""Home tile → form page, blocking until the page can accept a scan.
+
+	Beam routes on the hash, so clicking a tile causes no document load and
+	wait_for_load_state can settle before Vue mounts the page. The store slot the
+	scanner writes into is created by the page's own mount hook, and a scan that
+	lands before that is dropped without an error, so wait on a control the page
+	renders rather than on the network going quiet.
+	"""
+	import re
+
+	from playwright.sync_api import expect
+
+	page.get_by_text(home_label).click()
+	expect(page).to_have_url(re.compile(url_pattern), timeout=15000)
+	expect(page.locator(ready_selector).first).to_be_visible(timeout=15000)
+
+
+def simulate_scan(page, barcode: str):
+	"""Fire a scanner read and wait for the scan request to leave the browser.
+
+	This only proves the request was sent. The server returns no actions when the
+	scan context is missing, and the store ignores actions when the page has no
+	mapped document, so callers must additionally assert the effect they expect.
+	"""
+	with page.expect_request(
+		lambda request: request.headers.get("x-frappe-cmd") == "beam.beam.scan.scan"
+	):
+		page.evaluate("barcode => scanner.simulate(window, barcode)", barcode)
+
+
 def order_id_from_beam_url(url: str) -> str:
 	"""Extract doc name from Beam hash routes (#/purchase-receipt/PO) or (?id=SO)."""
 	from urllib.parse import parse_qs, urlparse
