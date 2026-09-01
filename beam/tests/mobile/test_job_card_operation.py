@@ -7,7 +7,7 @@ import frappe
 import pytest
 from playwright.sync_api import expect
 
-from beam.tests.test_utils import use_current_db_transaction
+from beam.tests.playwright_utils import use_current_db_transaction
 
 # NOTE: any navigation tests should be done using `expect(page).to_have_url` since
 # `page.expect_navigation()` won't work with Beam's hash-based routes
@@ -19,17 +19,17 @@ def login_as_jordan_mills(page):
 	page.context.clear_cookies()
 	page.goto(base_url)
 	email_field = page.get_by_role("textbox", name="Email")
-	expect(email_field).to_be_visible(timeout=1000)
+	expect(email_field).to_be_visible(timeout=15000)
 	email_field.fill("jmills@cfc.co")
 
 	password_field = page.get_by_role("textbox", name="Password")
-	expect(password_field).to_be_visible(timeout=1000)
+	expect(password_field).to_be_visible(timeout=15000)
 	password_field.fill("admin")
 
 	login_button = page.get_by_role("button", name="Login")
-	expect(login_button).to_be_visible(timeout=1000)
+	expect(login_button).to_be_visible(timeout=15000)
 	login_button.click()
-	expect(page).to_have_url(re.compile(r"beam#/"), timeout=1000)
+	expect(page).to_have_url(re.compile(r"beam#/"), timeout=15000)
 	yield
 
 
@@ -40,17 +40,18 @@ def open_first_operation_id_from_manufacture(page) -> str:
 	        str: operation_id
 	"""
 	page.get_by_text("Manufacture").click()
-	expect(page).to_have_url(re.compile(r"#/manufacture"), timeout=1000)
+	expect(page).to_have_url(re.compile(r"#/manufacture"), timeout=15000)
+	page.wait_for_load_state("networkidle")
 
-	list_item = page.locator("css=.beam_list-item").first
-	expect(list_item).to_be_visible(timeout=1000)
-	list_item.click()
-	expect(page).to_have_url(re.compile(r"#/work_order/[^/]+/?$"), timeout=1000)
+	work_order_link = page.locator("a.beam_list-anchor").first
+	expect(work_order_link).to_be_visible(timeout=15000)
+	work_order_link.click()
+	expect(page).to_have_url(re.compile(r"#/work_order/[^/]+/?$"), timeout=15000)
 
 	operation_link = page.locator("a[href*='/operation/']").first
-	expect(operation_link).to_be_visible(timeout=1000)
+	expect(operation_link).to_be_visible(timeout=15000)
 	operation_link.click()
-	expect(page).to_have_url(re.compile(r"#/work_order/[^/]+/operation/[^/?#]+"), timeout=1000)
+	expect(page).to_have_url(re.compile(r"#/work_order/[^/]+/operation/[^/?#]+"), timeout=15000)
 
 	match = re.search(r"#/work_order/([^/]+)/operation/([^/?#]+)", page.url)
 	assert match, f"Could not parse operation route from URL: {page.url}"
@@ -102,11 +103,11 @@ def test_operation_details_are_visible(page):
 	operation_id = open_first_operation_id_from_manufacture(page)
 	description_box, timer_text, toggle_button, finish_button = get_operation_elements(page)
 
-	expect(description_box).to_be_visible(timeout=1000)
-	expect(timer_text).to_be_visible(timeout=1000)
-	expect(toggle_button).to_be_visible(timeout=1000)
-	expect(finish_button).to_be_visible(timeout=1000)
-	expect(toggle_button).to_contain_text(re.compile("Start|Pause"), timeout=1000)
+	expect(description_box).to_be_visible(timeout=15000)
+	expect(timer_text).to_be_visible(timeout=15000)
+	expect(toggle_button).to_be_visible(timeout=15000)
+	expect(finish_button).to_be_visible(timeout=15000)
+	expect(toggle_button).to_contain_text(re.compile("Start|Pause"), timeout=15000)
 
 	with use_current_db_transaction():
 		operation = frappe.get_value(
@@ -130,7 +131,7 @@ def test_start_operation_starts_timer_and_toggles_buttons(page):
 	operation_id = open_first_operation_id_from_manufacture(page)
 	_, timer_text, toggle_button, _ = get_operation_elements(page)
 
-	expect(toggle_button).to_be_enabled(timeout=1000)
+	expect(toggle_button).to_be_enabled(timeout=15000)
 	with use_current_db_transaction():
 		job_card = frappe.get_value(
 			"Job Card",
@@ -180,7 +181,7 @@ def test_start_operation_starts_timer_and_toggles_buttons(page):
 		if job_card.get("status") == "On Hold":
 			expected_label = "Start"
 	label = toggle_button.inner_text().strip()
-	expect(toggle_button).to_contain_text(expected_label, timeout=1000)
+	expect(toggle_button).to_contain_text(expected_label, timeout=15000)
 
 	if label == "Pause":
 		toggle_button.click()

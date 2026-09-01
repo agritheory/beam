@@ -50,9 +50,12 @@ def test_complete_partial_stock_entry(page):
 
 	# navigate in the following order: Home -> Manufacture -> Work Order
 	page.get_by_text("Manufacture").click()
-
-	expect(page.locator("css=.beam_list-item").first).to_be_visible()
-	page.locator("css=.beam_list-item").first.click()
+	expect(page).to_have_url(re.compile(r"#/manufacture"), timeout=15000)
+	page.wait_for_load_state("networkidle")
+	work_order_link = page.locator("a.beam_list-anchor").first
+	expect(work_order_link).to_be_visible(timeout=15000)
+	work_order_link.click()
+	expect(page).to_have_url(re.compile(r"#/work_order/[^/]+"), timeout=15000)
 
 	# get the selected Work Order
 	order_id = page.url.split("/")[-1]

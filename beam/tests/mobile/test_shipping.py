@@ -16,7 +16,12 @@ def test_ship_without_scanning(page):
 	"""Test trying to ship without scanning any items"""
 	# navigate to Ship -> Sales Order
 	page.get_by_text("Ship").click()
-	page.locator("css=.beam_list-item").first.click()
+	expect(page).to_have_url(re.compile(r"#/ship"), timeout=15000)
+	page.wait_for_load_state("networkidle")
+	ship_link = page.locator("a.beam_list-anchor").first
+	expect(ship_link).to_be_visible(timeout=15000)
+	ship_link.click()
+	expect(page).to_have_url(re.compile(r"#/delivery-note"), timeout=15000)
 
 	parsed_url = urlparse(page.url.replace("#", ""))
 	order_id = parsed_url.query.replace("id=", "")
@@ -75,7 +80,12 @@ def test_ship_without_scanning(page):
 def test_complete_partial_shipment(page):
 	"""Test completing a partial shipment"""
 	page.get_by_text("Ship").click()
-	page.locator("css=.beam_list-item").first.click()
+	expect(page).to_have_url(re.compile(r"#/ship"), timeout=15000)
+	page.wait_for_load_state("networkidle")
+	ship_link = page.locator("a.beam_list-anchor").first
+	expect(ship_link).to_be_visible(timeout=15000)
+	ship_link.click()
+	expect(page).to_have_url(re.compile(r"#/delivery-note"), timeout=15000)
 
 	parsed_url = urlparse(page.url.replace("#", ""))
 	order_id = parsed_url.query.replace("id=", "")
@@ -168,7 +178,12 @@ def test_complete_partial_shipment(page):
 def test_prevent_over_delivery(page):
 	"""Test that system prevents over-delivery beyond ordered quantity"""
 	page.get_by_text("Ship").click()
-	page.locator("css=.beam_list-item").first.click()
+	expect(page).to_have_url(re.compile(r"#/ship"), timeout=15000)
+	page.wait_for_load_state("networkidle")
+	ship_link = page.locator("a.beam_list-anchor").first
+	expect(ship_link).to_be_visible(timeout=15000)
+	ship_link.click()
+	expect(page).to_have_url(re.compile(r"#/delivery-note"), timeout=15000)
 
 	parsed_url = urlparse(page.url.replace("#", ""))
 	order_id = parsed_url.query.replace("id=", "")
@@ -230,7 +245,12 @@ def test_prevent_over_delivery(page):
 def test_cancel_submitted_delivery_note_workflow(page):
 	"""Test cancelling a submitted Delivery Note through the complete workflow"""
 	page.get_by_text("Ship").click()
-	page.locator("css=.beam_list-item").first.click()
+	expect(page).to_have_url(re.compile(r"#/ship"), timeout=15000)
+	page.wait_for_load_state("networkidle")
+	ship_link = page.locator("a.beam_list-anchor").first
+	expect(ship_link).to_be_visible(timeout=15000)
+	ship_link.click()
+	expect(page).to_have_url(re.compile(r"#/delivery-note"), timeout=15000)
 
 	parsed_url = urlparse(page.url.replace("#", ""))
 	order_id = parsed_url.query.replace("id=", "")
@@ -348,7 +368,12 @@ def test_cancel_submitted_delivery_note(page):
 def test_unsaved_changes_warning(page):
 	"""Test that user is warned when navigating away with unsaved changes"""
 	page.get_by_text("Ship").click()
-	page.locator("css=.beam_list-item").first.click()
+	expect(page).to_have_url(re.compile(r"#/ship"), timeout=15000)
+	page.wait_for_load_state("networkidle")
+	ship_link = page.locator("a.beam_list-anchor").first
+	expect(ship_link).to_be_visible(timeout=15000)
+	ship_link.click()
+	expect(page).to_have_url(re.compile(r"#/delivery-note"), timeout=15000)
 
 	parsed_url = urlparse(page.url.replace("#", ""))
 	order_id = parsed_url.query.replace("id=", "")
@@ -411,7 +436,12 @@ def test_unsaved_changes_warning(page):
 def test_scan_handling_unit_on_delivery_note(page):
 	"""Test scanning a handling unit barcode instead of item barcode"""
 	page.get_by_text("Ship").click()
-	page.locator("css=.beam_list-item").first.click()
+	expect(page).to_have_url(re.compile(r"#/ship"), timeout=15000)
+	page.wait_for_load_state("networkidle")
+	ship_link = page.locator("a.beam_list-anchor").first
+	expect(ship_link).to_be_visible(timeout=15000)
+	ship_link.click()
+	expect(page).to_have_url(re.compile(r"#/delivery-note"), timeout=15000)
 
 	parsed_url = urlparse(page.url.replace("#", ""))
 	order_id = parsed_url.query.replace("id=", "")

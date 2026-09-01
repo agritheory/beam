@@ -22,9 +22,12 @@ from beam.tests.playwright_utils import use_current_db_transaction
 @pytest.mark.order(1)
 def test_scan_invalid_barcode(page):
 	page.get_by_text("Receive").click()
-	# wait for list to load
-	expect(page.locator("css=.beam_list-item").first).to_be_visible()
-	page.locator("css=.beam_list-item").first.click()
+	expect(page).to_have_url(re.compile(r"#/receive"), timeout=15000)
+	page.wait_for_load_state("networkidle")
+	po_link = page.locator("a.beam_list-anchor").first
+	expect(po_link).to_be_visible(timeout=15000)
+	po_link.click()
+	expect(page).to_have_url(re.compile(r"#/purchase-receipt/"), timeout=15000)
 
 	# get the selected Purchase Order
 	parsed_url = urlparse(page.url.replace("#", ""))
@@ -88,9 +91,12 @@ def test_receive_without_scanning(page):
 	"""Test trying to receive without scanning any items"""
 	# navigate to a Purchase Order
 	page.get_by_text("Receive").click()
-	# wait for list to load
-	expect(page.locator("css=.beam_list-item").first).to_be_visible()
-	page.locator("css=.beam_list-item").first.click()
+	expect(page).to_have_url(re.compile(r"#/receive"), timeout=15000)
+	page.wait_for_load_state("networkidle")
+	po_link = page.locator("a.beam_list-anchor").first
+	expect(po_link).to_be_visible(timeout=15000)
+	po_link.click()
+	expect(page).to_have_url(re.compile(r"#/purchase-receipt/"), timeout=15000)
 
 	# get the selected Purchase Order
 	parsed_url = urlparse(page.url.replace("#", ""))
@@ -146,9 +152,12 @@ def test_receive_without_scanning(page):
 def test_complete_partial_receipt(page):
 	# navigate in the following order: Home -> Receive -> Purchase Order
 	page.get_by_text("Receive").click()
-
-	expect(page.locator("css=.beam_list-item").first).to_be_visible()
-	page.locator("css=.beam_list-item").first.click()
+	expect(page).to_have_url(re.compile(r"#/receive"), timeout=15000)
+	page.wait_for_load_state("networkidle")
+	po_link = page.locator("a.beam_list-anchor").first
+	expect(po_link).to_be_visible(timeout=15000)
+	po_link.click()
+	expect(page).to_have_url(re.compile(r"#/purchase-receipt/"), timeout=15000)
 
 	# get the selected Purchase Order
 	# NOTE: URL format changed: the id lives in the path after the hash (e.g. #/purchase-receipt/PUR-ORD-...)
@@ -232,9 +241,12 @@ def test_rapid_barcode_scanning(page):
 	"""Test scanning multiple barcodes quickly"""
 	# navigate to a Purchase Order
 	page.get_by_text("Receive").click()
-	# wait for list to load
-	expect(page.locator("css=.beam_list-item").first).to_be_visible()
-	page.locator("css=.beam_list-item").first.click()
+	expect(page).to_have_url(re.compile(r"#/receive"), timeout=15000)
+	page.wait_for_load_state("networkidle")
+	po_link = page.locator("a.beam_list-anchor").first
+	expect(po_link).to_be_visible(timeout=15000)
+	po_link.click()
+	expect(page).to_have_url(re.compile(r"#/purchase-receipt/"), timeout=15000)
 
 	# get the selected Purchase Order
 	parsed_url = urlparse(page.url.replace("#", ""))

@@ -21,9 +21,12 @@ from playwright.sync_api import expect
 def test_scan_item_barcode(page, route):
 	# navigate in the following order: Home -> List -> Form
 	page.get_by_text(route).click()
-	# wait for list to load
-	expect(page.locator("css=.beam_list-item").first).to_be_visible()
-	page.locator("css=.beam_list-item").first.click()
+	expect(page).to_have_url(re.compile(rf"#/{route.lower()}"), timeout=15000)
+	page.wait_for_load_state("networkidle")
+	list_link = page.locator("a.beam_list-anchor").first
+	expect(list_link).to_be_visible(timeout=15000)
+	list_link.click()
+	expect(page).to_have_url(re.compile(r"#/delivery-note"), timeout=15000)
 
 	# wait for items to load after navigation
 	expect(page.locator("css=.box .beam_list-item").first).to_be_visible()
