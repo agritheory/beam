@@ -1,23 +1,28 @@
 # Copyright (c) 2026, AgriTheory and contributors
 # For license information, please see license.txt
 
+pytest_plugins = ["beam.tests.playwright_fixtures"]
+
 import re
 
 import frappe
 import pytest
 from playwright.sync_api import expect
 
-from beam.tests.playwright_utils import use_current_db_transaction
+from beam.tests.playwright_utils import (
+	get_playwright_base_url,
+	open_first_beam_list_row,
+	use_current_db_transaction,
+)
 
 # NOTE: any navigation tests should be done using `expect(page).to_have_url` since
 # `page.expect_navigation()` won't work with Beam's hash-based routes
 
 
 @pytest.fixture(autouse=True)
-def login_as_jordan_mills(page):
-	base_url = frappe.utils.get_url()
+def login_as_jordan_mills(page, setup):
 	page.context.clear_cookies()
-	page.goto(base_url)
+	page.goto(get_playwright_base_url())
 	email_field = page.get_by_role("textbox", name="Email")
 	expect(email_field).to_be_visible(timeout=15000)
 	email_field.fill("jmills@cfc.co")
@@ -39,14 +44,7 @@ def open_first_operation_id_from_manufacture(page) -> str:
 	Returns:
 	        str: operation_id
 	"""
-	page.get_by_text("Manufacture").click()
-	expect(page).to_have_url(re.compile(r"#/manufacture"), timeout=15000)
-	page.wait_for_load_state("networkidle")
-
-	work_order_link = page.locator("a.beam_list-anchor").first
-	expect(work_order_link).to_be_visible(timeout=15000)
-	work_order_link.click()
-	expect(page).to_have_url(re.compile(r"#/work_order/[^/]+/?$"), timeout=15000)
+	open_first_beam_list_row(page, "Manufacture", r"work_order/")
 
 	operation_link = page.locator("a[href*='/operation/']").first
 	expect(operation_link).to_be_visible(timeout=15000)
@@ -98,7 +96,7 @@ def ensure_operation_running(page, toggle_button):
 	expect(toggle_button).to_contain_text("Pause", timeout=10000)
 
 
-@pytest.mark.order(1)
+@pytest.mark.order(355)
 def test_operation_details_are_visible(page):
 	operation_id = open_first_operation_id_from_manufacture(page)
 	description_box, timer_text, toggle_button, finish_button = get_operation_elements(page)
@@ -126,7 +124,7 @@ def test_operation_details_are_visible(page):
 	assert re.fullmatch(r"\d{2}:\d{2}:\d{2}", elapsed), f"Unexpected elapsed time format: {elapsed}"
 
 
-@pytest.mark.order(2)
+@pytest.mark.order(356)
 def test_start_operation_starts_timer_and_toggles_buttons(page):
 	operation_id = open_first_operation_id_from_manufacture(page)
 	_, timer_text, toggle_button, _ = get_operation_elements(page)
@@ -208,7 +206,7 @@ def test_start_operation_starts_timer_and_toggles_buttons(page):
 	assert job_card_name, f"Expected a Job Card linked to operation {operation_id}"
 
 
-@pytest.mark.order(3)
+@pytest.mark.order(357)
 def test_stop_operation_stops_timer_and_records_time_log(page):
 	operation_id = open_first_operation_id_from_manufacture(page)
 	_, timer_text, toggle_button, _ = get_operation_elements(page)

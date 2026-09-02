@@ -14,7 +14,11 @@ import frappe
 import pytest
 from playwright.sync_api import expect
 
-from beam.tests.playwright_utils import use_current_db_transaction
+from beam.tests.playwright_utils import (
+	open_first_beam_list_row,
+	order_id_from_beam_url,
+	use_current_db_transaction,
+)
 
 
 @pytest.mark.order(300)
@@ -51,16 +55,10 @@ def test_complete_partial_stock_entry(page):
 	frappe.db.commit()
 
 	# navigate in the following order: Home -> Manufacture -> Work Order
-	page.get_by_text("Manufacture").click()
-	expect(page).to_have_url(re.compile(r"#/manufacture"), timeout=15000)
-	page.wait_for_load_state("networkidle")
-	work_order_link = page.locator("a.beam_list-anchor").first
-	expect(work_order_link).to_be_visible(timeout=15000)
-	work_order_link.click()
-	expect(page).to_have_url(re.compile(r"#/work_order/[^/]+"), timeout=15000)
+	open_first_beam_list_row(page, "Manufacture", r"work_order/")
 
 	# get the selected Work Order
-	order_id = page.url.split("/")[-1]
+	order_id = order_id_from_beam_url(page.url)
 	assert order_id
 
 	expect(page.locator("css=.box .beam_list-item").first).to_be_visible()
@@ -73,10 +71,9 @@ def test_complete_partial_stock_entry(page):
 
 	# find the first item in the list
 	item = page.locator("css=.box .beam_list-item").first
-	expect(item).to_be_visible(timeout=15000)
 	item_code, *others = item.inner_text().split("\n")
 	item_count = page.locator("css=.box .beam_item-count").first
-	expect(item_count).to_have_text(re.compile("0/"), timeout=15000)
+	expect(item_count).to_have_text(re.compile("0/"))
 
 	assert item_code == "Butter"
 
@@ -91,7 +88,7 @@ def test_complete_partial_stock_entry(page):
 		lambda request: request.headers.get("x-frappe-cmd") == "beam.beam.scan.scan"
 	):
 		page.evaluate("barcode => scanner.simulate(window, barcode)", barcodes[0])
-		expect(item_count).to_have_text(re.compile("1/"), timeout=15000)
+		expect(item_count).to_have_text(re.compile("1/"))
 
 	# check that a draft Stock Entry is created
 	page.get_by_text("SAVE", exact=True).click()

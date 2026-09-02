@@ -14,6 +14,8 @@ import frappe
 import pytest
 from playwright.sync_api import expect
 
+from beam.tests.playwright_utils import open_first_beam_list_row
+
 # NOTE: any navigation tests should be done using `expect(page).to_have_url` since
 # `page.expect_navigation()` since the latter won't work with Beam's hash-based routes
 
@@ -22,22 +24,15 @@ from playwright.sync_api import expect
 @pytest.mark.parametrize("route", ["Ship"])
 def test_scan_item_barcode(page, route):
 	# navigate in the following order: Home -> List -> Form
-	page.get_by_text(route).click()
-	expect(page).to_have_url(re.compile(rf"#/{route.lower()}"), timeout=15000)
-	page.wait_for_load_state("networkidle")
-	list_link = page.locator("a.beam_list-anchor").first
-	expect(list_link).to_be_visible(timeout=15000)
-	list_link.click()
-	expect(page).to_have_url(re.compile(r"#/delivery-note"), timeout=15000)
+	open_first_beam_list_row(page, route, r"delivery-note")
 
 	# wait for items to load after navigation
 	expect(page.locator("css=.box .beam_list-item").first).to_be_visible()
 	# find the first item in the list
 	item = page.locator("css=.box .beam_list-item").first
-	expect(item).to_be_visible(timeout=15000)
 	item_name, *others = item.inner_text().split("\n")
 	item_count = page.locator("css=.box .beam_item-count").first
-	expect(item_count).to_have_text(re.compile("0/"), timeout=15000)
+	expect(item_count).to_have_text(re.compile("0/"))
 
 	# ensure that the item has barcodes
 	barcodes = frappe.get_all(
@@ -50,4 +45,4 @@ def test_scan_item_barcode(page, route):
 		lambda request: request.headers.get("x-frappe-cmd") == "beam.beam.scan.scan"
 	):
 		page.evaluate("barcode => scanner.simulate(window, barcode)", barcodes[0])
-		expect(item_count).to_have_text(re.compile("1/"), timeout=15000)
+		expect(item_count).to_have_text(re.compile("1/"))

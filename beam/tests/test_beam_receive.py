@@ -34,7 +34,6 @@ def test_scan_invalid_barcode(page):
 	expect(page.locator("css=.box .beam_item-count").first).to_be_visible()
 	# find all items in the list
 	all_item_counts = page.locator("css=.box .beam_item-count")
-	expect(all_item_counts.first).to_be_visible(timeout=15000)
 
 	# get all item counts before scanning invalid barcode
 	initial_counts = []
@@ -91,7 +90,6 @@ def test_receive_without_scanning(page):
 	# wait for items to load after navigation
 	expect(page.locator("css=.box .beam_list-item").first).to_be_visible()
 	item = page.locator("css=.box .beam_list-item").first
-	expect(item).to_be_visible(timeout=15000)
 	item_code, *others = item.inner_text().split("\n")
 
 	# find all items in the list
@@ -141,10 +139,9 @@ def test_complete_partial_receipt(page):
 	expect(page.locator("css=.box .beam_list-item").first).to_be_visible()
 	# find the first item in the list
 	item = page.locator("css=.box .beam_list-item").first
-	expect(item).to_be_visible(timeout=15000)
 	item_code, *others = item.inner_text().split("\n")
 	item_count = page.locator("css=.box .beam_item-count").first
-	expect(item_count).to_have_text(re.compile("0/"), timeout=15000)
+	expect(item_count).to_have_text(re.compile("0/"))
 
 	assert item_code == "Cloudberry"
 
@@ -216,10 +213,9 @@ def test_rapid_barcode_scanning(page):
 	expect(page.locator("css=.box .beam_list-item").first).to_be_visible()
 	# find the first item in the list
 	item = page.locator("css=.box .beam_list-item").first
-	expect(item).to_be_visible(timeout=15000)
 	item_code, *others = item.inner_text().split("\n")
 	item_count = page.locator("css=.box .beam_item-count").first
-	expect(item_count).to_have_text(re.compile("0/"), timeout=15000)
+	expect(item_count).to_have_text(re.compile("0/"))
 
 	# get barcode for the item
 	with use_current_db_transaction():
