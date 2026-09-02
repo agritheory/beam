@@ -17,6 +17,8 @@ from erpnext.setup.utils import enable_all_roles_and_domains, set_defaults_for_t
 from erpnext.stock.get_item_details import get_item_details
 from frappe.desk.page.setup_wizard.setup_wizard import setup_complete
 
+from beam.beam.demand.demand import build_demand_allocation_map
+from beam.beam.demand.receiving import reset_build_receiving_map
 from beam.tests.fixtures import (
 	boms,
 	customers,
@@ -57,6 +59,8 @@ def before_test():
 		frappe.db.set_value("Module Onboarding", module, "is_complete", True)
 	frappe.set_value("Website Settings", "Website Settings", "home_page", "login")
 	create_test_data()
+	build_demand_allocation_map()
+	reset_build_receiving_map()
 
 
 def create_test_data():
@@ -806,7 +810,37 @@ def create_network_printer_settings(settings):
 			nps.save()
 
 
+def ensure_department(department, company):
+	if not department or frappe.db.exists("Department", department):
+		return
+
+	company_doc = frappe.get_doc("Company", company)
+	company_doc.create_default_departments()
+
+	if frappe.db.exists("Department", department):
+		return
+
+	from frappe.utils.nestedset import get_root_of
+
+	abbr = company_doc.abbr
+	suffix = f" - {abbr}"
+	department_name = department[: -len(suffix)] if department.endswith(suffix) else department
+
+	frappe.get_doc(
+		{
+			"doctype": "Department",
+			"department_name": department_name,
+			"company": company,
+			"parent_department": get_root_of("Department"),
+		}
+	).insert(ignore_permissions=True)
+
+
 def create_employees(settings, only_create=None):
+	departments = {employee.get("department") for employee in employees if employee.get("department")}
+	for department in departments:
+		ensure_department(department, settings.company)
+
 	for employee in employees:
 		if only_create and employee.get("employee_name") not in only_create:
 			continue

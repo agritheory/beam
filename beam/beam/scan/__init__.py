@@ -95,6 +95,9 @@ def get_barcode_context(barcode: str) -> frappe._dict | None:
 
 
 def get_handling_unit(handling_unit: str, parent_doctype: str | None = None) -> frappe._dict:
+	if not handling_unit:
+		return
+
 	sl_entries = frappe.get_all(
 		"Stock Ledger Entry",
 		filters={"handling_unit": handling_unit, "is_cancelled": 0},

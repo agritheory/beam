@@ -1,13 +1,20 @@
 # Copyright (c) 2024, AgriTheory and contributors
 # For license information, please see license.txt
 
-import re
+pytest_plugins = ["beam.tests.playwright_fixtures"]
 
 import frappe
 import pytest
 from playwright.sync_api import expect
 
-from beam.tests.playwright_utils import use_current_db_transaction
+from beam.tests.playwright_utils import (
+	error_toast_text,
+	open_beam_form_page,
+	simulate_scan,
+	use_current_db_transaction,
+)
+
+REPACK_QTY_INPUT = "input.aform_input-field[type='number']"
 
 
 def fill_warehouse_dropdown(page, label: str, value: str):
@@ -21,23 +28,43 @@ def fill_warehouse_dropdown(page, label: str, value: str):
 	result.click()
 
 
-@pytest.fixture(autouse=True, scope="session")
+def open_repack_page(page):
+	open_beam_form_page(page, "Repack", r"#/repack", REPACK_QTY_INPUT)
+
+
+def repack_item_input(page):
+	wrapper = page.locator(".input-wrapper", has=page.locator("label", has_text="Item to Repack"))
+	return wrapper.locator("input")
+
+
+def scan_into_repack(page, barcode: str, item_code: str):
+	"""Scan an item and confirm the form actually consumed it.
+
+	A scan the page never received leaves the form untouched, which otherwise
+	surfaces several steps later as a rejected ADD or a missing Stock Entry.
+	"""
+	simulate_scan(page, barcode)
+	expect(repack_item_input(page)).to_have_value(item_code)
+
+
+@pytest.fixture(autouse=True, scope="module")
 def disable_handling_unit_for_tests():
-	"""Disable handling unit validation for all items during tests."""
+	"""Disable handling unit validation for repack tests in this module only."""
 	items = frappe.get_all("Item", filters={"enable_handling_unit": 1}, pluck="name")
-	for item in items:
-		frappe.db.set_value("Item", item, "enable_handling_unit", 0)
-	frappe.db.commit()
-	yield
-	for item in items:
-		frappe.db.set_value("Item", item, "enable_handling_unit", 1)
-	frappe.db.commit()
+	try:
+		for item in items:
+			frappe.db.set_value("Item", item, "enable_handling_unit", 0)
+		frappe.db.commit()
+		yield
+	finally:
+		for item in items:
+			frappe.db.set_value("Item", item, "enable_handling_unit", 1)
+		frappe.db.commit()
 
 
-@pytest.mark.order(1)
+@pytest.mark.order(320)
 def test_repack_items_manually(page):
-	page.get_by_text("Repack").click()
-	expect(page).to_have_url(re.compile(r"#/repack"), timeout=15000)
+	open_repack_page(page)
 
 	with use_current_db_transaction():
 		source_barcode = frappe.get_all(
@@ -59,15 +86,10 @@ def test_repack_items_manually(page):
 		source_wh = "Refrigerator - APC"
 		target_wh = "Baked Goods - APC"
 
-	qty_input = page.locator("input.aform_input-field[type='number']")
+	qty_input = page.locator(REPACK_QTY_INPUT)
 	expect(qty_input).to_have_value("0")
 
-	with page.expect_request(
-		lambda request: request.headers.get("x-frappe-cmd") == "beam.beam.scan.scan"
-	):
-		page.evaluate("barcode => scanner.simulate(window, barcode)", source_barcode[0])
-
-	page.wait_for_timeout(800)
+	scan_into_repack(page, source_barcode[0], "Butter")
 
 	expect(qty_input).to_have_value("1")
 
@@ -84,12 +106,7 @@ def test_repack_items_manually(page):
 
 	expect(page.locator("css=.beam_list-item").first).to_be_visible()
 
-	with page.expect_request(
-		lambda request: request.headers.get("x-frappe-cmd") == "beam.beam.scan.scan"
-	):
-		page.evaluate("barcode => scanner.simulate(window, barcode)", finished_barcode[0])
-
-	page.wait_for_timeout(800)
+	scan_into_repack(page, finished_barcode[0], "Ambrosia Pie")
 
 	page.get_by_role("button", name="+").click()
 	fill_warehouse_dropdown(page, "Target Warehouse", target_wh)
@@ -124,11 +141,9 @@ def test_repack_items_manually(page):
 	assert submitted, f"Expected Stock Entry {stock_entry_name} to be submitted"
 
 
-@pytest.mark.order(2)
+@pytest.mark.order(321)
 def test_repack_using_bom(page):
-	page.get_by_text("Repack").click()
-	page.wait_for_load_state("networkidle")
-	assert "/repack" in page.url
+	open_repack_page(page)
 
 	bom_name = "BOM-Gooseberry Pie Filling-001"
 	target_wh = "Refrigerator - APC"
@@ -142,12 +157,7 @@ def test_repack_using_bom(page):
 		)
 		assert finished_barcode, "Gooseberry Pie must have a barcode"
 
-	with page.expect_request(
-		lambda request: request.headers.get("x-frappe-cmd") == "beam.beam.scan.scan"
-	):
-		page.evaluate("barcode => scanner.simulate(window, barcode)", finished_barcode[0])
-
-	page.wait_for_timeout(800)
+	scan_into_repack(page, finished_barcode[0], "Gooseberry Pie")
 
 	page.get_by_role("button", name="+").click()
 	page.wait_for_timeout(300)
@@ -163,6 +173,9 @@ def test_repack_using_bom(page):
 	page.get_by_role("button", name="SAVE", exact=True).click()
 	page.wait_for_timeout(1500)
 
+	rejected = error_toast_text(page)
+	assert rejected is None, f"SAVE was rejected: {rejected}"
+
 	with use_current_db_transaction():
 		entries = frappe.get_all(
 			"Stock Entry",
@@ -174,11 +187,9 @@ def test_repack_using_bom(page):
 	assert entries, "Expected a draft Stock Entry to be created from BOM repack"
 
 
-@pytest.mark.order(3)
+@pytest.mark.order(322)
 def test_scan_item_for_repack(page):
-	page.get_by_text("Repack").click()
-	page.wait_for_load_state("networkidle")
-	assert "/repack" in page.url
+	open_repack_page(page)
 
 	with use_current_db_transaction():
 		item_barcodes = frappe.get_all(
@@ -191,63 +202,45 @@ def test_scan_item_for_repack(page):
 	item_code = item_barcodes[0]["parent"]
 	barcode = item_barcodes[0]["barcode"]
 
-	with page.expect_request(
-		lambda request: request.headers.get("x-frappe-cmd") == "beam.beam.scan.scan"
-	):
-		page.evaluate("barcode => scanner.simulate(window, barcode)", barcode)
-	page.wait_for_timeout(800)
+	scan_into_repack(page, barcode, item_code)
 
-	item_wrapper = page.locator(
-		".input-wrapper", has=page.locator("label", has_text="Item to Repack")
-	)
-	expect(item_wrapper.locator("input")).to_have_value(item_code)
-
-	qty_input = page.locator("input.aform_input-field[type='number']")
+	qty_input = page.locator(REPACK_QTY_INPUT)
 	expect(qty_input).to_have_value("1")
 
-	with page.expect_request(
-		lambda request: request.headers.get("x-frappe-cmd") == "beam.beam.scan.scan"
-	):
-		page.evaluate("barcode => scanner.simulate(window, barcode)", barcode)
-	page.wait_for_timeout(800)
+	scan_into_repack(page, barcode, item_code)
 
 	expect(qty_input).to_have_value("2")
 
 
-@pytest.mark.order(4)
+@pytest.mark.order(323)
 def test_clear_repack_form(page):
-	page.get_by_text("Repack").click()
-	page.wait_for_load_state("networkidle")
-	assert "/repack" in page.url
+	open_repack_page(page)
 
 	with use_current_db_transaction():
-		item_barcodes = frappe.get_all(
+		# Named fixture data rather than an unordered LIMIT 1. This test needs a
+		# pair that ADD accepts, and test_repack_items_manually proves this one is;
+		# an arbitrary first row is whatever the table happens to return and
+		# changes when the site is reseeded.
+		source_barcode = frappe.get_all(
 			"Item Barcode",
-			filters={"parenttype": "Item"},
-			fields=["parent", "barcode"],
+			filters={"parent": "Butter"},
+			pluck="barcode",
 			limit=1,
 		)
-		assert item_barcodes, "No Item barcodes found in test data"
-		barcode = item_barcodes[0]["barcode"]
+		assert source_barcode, "Butter must have a barcode"
+		barcode = source_barcode[0]
+		warehouse = "Refrigerator - APC"
 
-		warehouse = frappe.get_all(
-			"Warehouse",
-			filters={"is_group": 0, "company": "Ambrosia Pie Company"},
-			pluck="name",
-			limit=1,
-		)[0]
-
-	with page.expect_request(
-		lambda request: request.headers.get("x-frappe-cmd") == "beam.beam.scan.scan"
-	):
-		page.evaluate("barcode => scanner.simulate(window, barcode)", barcode)
-	page.wait_for_timeout(800)
+	scan_into_repack(page, barcode, "Butter")
 
 	page.get_by_role("button", name="+").click()
 	fill_warehouse_dropdown(page, "Source Warehouse", warehouse)
 
 	page.get_by_role("button", name="ADD", exact=True).click()
 	page.wait_for_timeout(500)
+
+	rejected = error_toast_text(page)
+	assert rejected is None, f"ADD was rejected: {rejected}"
 
 	expect(page.locator("css=.beam_list-item").first).to_be_visible()
 	expect(page.get_by_role("button", name="CLEAN", exact=True)).to_be_visible()
@@ -260,11 +253,9 @@ def test_clear_repack_form(page):
 	expect(page.get_by_role("button", name="CLEAN", exact=True)).to_be_hidden()
 
 
-@pytest.mark.order(5)
+@pytest.mark.order(324)
 def test_repack_validation_single_warehouse_direction(page):
-	page.get_by_text("Repack").click()
-	page.wait_for_load_state("networkidle")
-	assert "/repack" in page.url
+	open_repack_page(page)
 
 	with use_current_db_transaction():
 		item_barcodes = frappe.get_all(
@@ -274,6 +265,7 @@ def test_repack_validation_single_warehouse_direction(page):
 			limit=1,
 		)
 		assert item_barcodes, "No Item barcodes found in test data"
+		item_code = item_barcodes[0]["parent"]
 		barcode = item_barcodes[0]["barcode"]
 
 		warehouses = frappe.get_all(
@@ -284,11 +276,7 @@ def test_repack_validation_single_warehouse_direction(page):
 		)
 		assert len(warehouses) >= 2, "Need at least 2 warehouses for this test"
 
-	with page.expect_request(
-		lambda request: request.headers.get("x-frappe-cmd") == "beam.beam.scan.scan"
-	):
-		page.evaluate("barcode => scanner.simulate(window, barcode)", barcode)
-	page.wait_for_timeout(800)
+	scan_into_repack(page, barcode, item_code)
 
 	page.get_by_role("button", name="+").click()
 

@@ -41,6 +41,9 @@ const JOB_CARD_START_URL = '/api/method/beam.beam.manufacturing.start_job_card'
 const JOB_CARD_PAUSE_URL = '/api/method/beam.beam.manufacturing.pause_job_card'
 const JOB_CARD_FINISH_URL = '/api/method/beam.beam.manufacturing.finish_job_card'
 
+// Route :id is a source document name (PO/SO), not the mapped form doc itself.
+const MAPPED_FORM_DOCTYPES = ['Purchase Receipt', 'Delivery Note']
+
 export const useBeamStore = defineStore('beam', () => {
 	const toast = useBeamToast()
 	const httpStore = useHttpStore()
@@ -56,6 +59,9 @@ export const useBeamStore = defineStore('beam', () => {
 		lastScan: '' as string,
 		lastDocType: '' as string,
 	})
+	const camera = reactive({
+		pendingPhotos: [] as File[],
+	})
 
 	const getScanDoctypes = async () => {
 		const response = await httpStore.get(SCAN_CONFIG_URL)
@@ -69,7 +75,11 @@ export const useBeamStore = defineStore('beam', () => {
 		if (!currentRoute.params.id) return
 
 		const meta = currentRoute.meta
+		if (!meta?.view || !meta?.doctype) return
 		if (meta.view === 'form' && scanner.config.frm.includes(meta.doctype)) {
+			if (MAPPED_FORM_DOCTYPES.includes(meta.doctype)) {
+				return
+			}
 			const docname = currentRoute.params.id.toString()
 			form.value = await getOne<ParentDoctypes>(meta.doctype, docname)
 		}
@@ -80,41 +90,49 @@ export const useBeamStore = defineStore('beam', () => {
 		if (!id) return
 
 		const meta = currentRoute.meta
-		if (meta.view === 'form' && scanner.config.frm.includes(meta.doctype)) {
-			const docname = id.toString()
-			let newDoc: ParentDoctypesForStockTransfer
-			if (meta.doctype === 'Work Order') {
-				// check if a draft Stock Entry already exists for this work order
-				const existingEntries = await getAll<ParentDoctypesForStockTransfer>('Stock Entry', {
-					filters: JSON.stringify({
-						docstatus: 0,
-						work_order: id,
-						purpose: 'Material Transfer for Manufacture',
-					}),
-				})
+		if (!meta?.view || !meta?.doctype) return
+		if (meta.view !== 'form' || !scanner.config.frm.includes(meta.doctype)) return
 
-				if (existingEntries.length) {
-					newDoc = await getOne<ParentDoctypesForStockTransfer>('Stock Entry', existingEntries[0].name!)
-				} else {
-					newDoc = await getMappedStockEntry({
-						work_order_id: id,
-						purpose: 'Material Transfer for Manufacture',
-					})
-				}
+		const docname = id.toString()
+		let newDoc: ParentDoctypesForStockTransfer | undefined
+
+		if (meta.doctype === 'Work Order') {
+			const existingEntries = await getAll<ParentDoctypesForStockTransfer>('Stock Entry', {
+				filters: JSON.stringify({
+					docstatus: 0,
+					work_order: id,
+					purpose: 'Material Transfer for Manufacture',
+				}),
+			})
+
+			if (existingEntries.length) {
+				newDoc = await getOne<ParentDoctypesForStockTransfer>('Stock Entry', existingEntries[0].name!)
 			} else {
-				newDoc = await makeNewDoc<ParentDoctypesForStockTransfer>(meta.doctype, docname)
-				if (newDoc.doctype === 'Delivery Note') {
-					for (const item of newDoc.items) {
-						;(item as DeliveryNoteItem).delivered_qty = 0
-					}
+				newDoc = await getMappedStockEntry({
+					work_order_id: id,
+					purpose: 'Material Transfer for Manufacture',
+				})
+			}
+		} else {
+			newDoc = await makeNewDoc<ParentDoctypesForStockTransfer>(meta.doctype, docname)
+			if (newDoc?.doctype === 'Delivery Note') {
+				for (const item of newDoc.items) {
+					;(item as DeliveryNoteItem).delivered_qty = 0
 				}
 			}
-			cache.value.mappers[docname] = newDoc
 		}
+
+		if (!newDoc) {
+			toast.error(`Could not load ${meta.doctype}`)
+			return
+		}
+
+		cache.value.mappers[docname] = newDoc
 	}
 
 	const setScanContext = async (currentRoute: RouteLocationNormalized) => {
 		const meta = currentRoute.meta
+		if (!meta?.view || !meta?.doctype) return
 		if (meta.view === 'list' && scanner.config.listview.includes(meta.doctype)) {
 			scanner.context = { listview: meta.doctype }
 		} else if (meta.view === 'form' && scanner.config.frm.includes(meta.doctype)) {
@@ -314,6 +332,10 @@ export const useBeamStore = defineStore('beam', () => {
 
 	const makeNewDoc = async <T>(doctype: string, docname?: string) => {
 		const response = await httpStore.post(NEW_DOC_URL, { doctype, docname })
+		if (!response.ok) {
+			toast.error(`Could not create ${doctype}`)
+			return undefined
+		}
 		const { message }: { message: T } = await response.json()
 		return message
 	}
@@ -361,6 +383,56 @@ export const useBeamStore = defineStore('beam', () => {
 		window.location.href = '/login?redirect-to=/beam#'
 	}
 
+	const setPendingPhotos = (files: File[]) => {
+		camera.pendingPhotos = files
+	}
+
+	const clearPendingPhotos = () => {
+		camera.pendingPhotos = []
+	}
+
+	const uploadFiles = async (doctype: string, docname: string, files: File[]) => {
+		const failed: File[] = []
+		if (files.length === 0) return { failed }
+
+		for (const file of files) {
+			const formData = new FormData()
+			formData.append('file', file, file.name)
+			formData.append('file_name', file.name)
+			formData.append('is_private', '0')
+			formData.append('doctype', doctype)
+			formData.append('docname', docname)
+			formData.append('fieldname', 'image')
+			formData.append('folder', 'Home')
+
+			try {
+				const response = await fetch('/api/method/upload_file', {
+					method: 'POST',
+					headers: {
+						'X-Frappe-CSRF-Token': frappe.csrf_token,
+						Accept: 'application/json',
+					},
+					body: formData,
+				})
+
+				if (response.ok) {
+					toast.success(`File ${file.name} attached successfully`)
+				} else {
+					const errorData = await response.json()
+					const errorMsg = errorData?.exception || errorData?.message || 'Unknown error'
+					toast.error(errorMsg)
+					failed.push(file)
+				}
+			} catch (error: any) {
+				const errorMsg = error?.message || 'Connection error'
+				toast.error(errorMsg)
+				failed.push(file)
+			}
+		}
+
+		return { failed }
+	}
+
 	const formatDate = (date: Date) => {
 		if (isNaN(Date.parse(date.toString()))) {
 			return ''
@@ -380,6 +452,7 @@ export const useBeamStore = defineStore('beam', () => {
 		cache,
 		form,
 		scanner,
+		camera,
 		warehouseList,
 		currentEmployee,
 		// store context actions
@@ -412,5 +485,8 @@ export const useBeamStore = defineStore('beam', () => {
 		logout,
 		makeNewDoc,
 		scan,
+		setPendingPhotos,
+		clearPendingPhotos,
+		uploadFiles,
 	}
 })

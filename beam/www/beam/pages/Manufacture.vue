@@ -80,6 +80,7 @@ const setItems = (orders: WorkOrder[]) => {
 		if (!dates.value.includes(plannedDate.toDateString())) {
 			dates.value.push(plannedDate.toDateString())
 			items.value.push({
+				barcode: `divider:${plannedDate.toDateString()}`,
 				date: plannedDate.toISOString(),
 				linkComponent: 'BeamDayDivider',
 			})
@@ -88,6 +89,7 @@ const setItems = (orders: WorkOrder[]) => {
 		const formattedDate = store.formatDate(plannedDate)
 		items.value.push({
 			...row,
+			barcode: row.name,
 			label: `${row.name} - ${row.item_name}`,
 			description: formattedDate ? `Start: ${formattedDate}` : '',
 			count: { count: row.produced_qty, of: row.qty },
