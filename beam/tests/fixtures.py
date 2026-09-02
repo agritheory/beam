@@ -899,7 +899,6 @@ employees = [
 		"roles": ["BEAM Mobile User", "Employee", "Manufacturing User"],
 		"reports_to": "Tristan Hawkins",
 		"department": "Management - APC",
-		"department": "Operations - APC",
 		"designation": "Baker",
 	},
 	{
