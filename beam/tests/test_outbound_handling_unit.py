@@ -18,11 +18,8 @@ ITEM = "Whipped Cream Canister"  # seeded with has_serial_no = 1, enable_handlin
 
 
 def receive_serials(serial_nos, posting_date=None, with_handling_unit=True):
-	"""Receive `serial_nos` on a single Purchase Receipt row (so one handling unit).
-
-	Returns the handling unit beam stamped on the row (None when `with_handling_unit`
-	is False, i.e. handling units disabled for the item during the receipt).
-	"""
+	"""Receive `serial_nos` on one Purchase Receipt row; returns the handling unit
+	beam stamped on it (None when `with_handling_unit` is False)."""
 	if not with_handling_unit:
 		frappe.db.set_value("Item", ITEM, "enable_handling_unit", 0)
 	try:
@@ -58,8 +55,8 @@ def receive_serial(serial_no, **kwargs):
 
 
 def transfer_serial(serial_no, source_handling_unit, s_warehouse, t_warehouse):
-	"""Move `serial_no` between warehouses; beam assigns a fresh handling unit on the
-	inward leg. Returns that new handling unit."""
+	"""Move `serial_no` between warehouses; returns the fresh handling unit beam
+	assigns on the inward leg."""
 	se = frappe.get_doc(
 		{
 			"doctype": "Stock Entry",
@@ -138,7 +135,7 @@ def test_single_serial_handling_unit_is_filled_by_hook_and_ships():
 	handling_unit = receive_serial("WCC-OB-1")
 
 	dn = draft_delivery_note(["WCC-OB-1"])
-	dn.submit()  # before_submit hook fills handling_unit; ERPNext validation must pass
+	dn.submit()
 
 	assert dn.docstatus == 1
 	assert dn.items[0].handling_unit == handling_unit
@@ -171,11 +168,11 @@ def test_uses_latest_handling_unit_after_a_transfer():
 
 @pytest.mark.order(71)
 def test_serials_in_different_handling_units_are_rejected():
-	receive_serial("WCC-OB-2A")  # own Purchase Receipt -> own handling unit
-	receive_serial("WCC-OB-2B")  # another Purchase Receipt -> a different handling unit
+	# two separate receipts -> two handling units
+	receive_serial("WCC-OB-2A")
+	receive_serial("WCC-OB-2B")
 
 	dn = draft_delivery_note(["WCC-OB-2A", "WCC-OB-2B"])
-	# hook cannot pick a single handling unit -> row stays empty -> ERPNext rejects
 	with pytest.raises(SerialNoInventoryDimensionError):
 		dn.submit()
 	assert not dn.items[0].handling_unit
@@ -183,8 +180,8 @@ def test_serials_in_different_handling_units_are_rejected():
 
 @pytest.mark.order(71)
 def test_mixed_serials_with_and_without_handling_unit_are_rejected():
-	receive_serial("WCC-OB-4A")  # has a handling unit
-	receive_serial("WCC-OB-4B", with_handling_unit=False)  # has none
+	receive_serial("WCC-OB-4A")
+	receive_serial("WCC-OB-4B", with_handling_unit=False)
 
 	dn = draft_delivery_note(["WCC-OB-4A", "WCC-OB-4B"])
 	with pytest.raises(SerialNoInventoryDimensionError):
@@ -197,7 +194,7 @@ def test_serial_received_without_handling_unit_ships_without_one():
 	assert receive_serial("WCC-OB-3", with_handling_unit=False) is None
 
 	dn = draft_delivery_note(["WCC-OB-3"])
-	dn.submit()  # expected dimension is "Not Set" on both sides -> ok
+	dn.submit()
 
 	assert dn.docstatus == 1
 	assert not dn.items[0].handling_unit
@@ -232,7 +229,7 @@ def test_common_inward_handling_unit_respects_posting_datetime():
 def test_legacy_serial_no_field_is_resolved():
 	handling_unit = receive_serials(["WCC-OB-L1", "WCC-OB-L2"])
 
-	# rewrite the inward SLE to the pre-bundle shape: no bundle, newline-joined serials
+	# rewrite the inward SLE to legacy shape (no bundle, newline-joined serial_no)
 	sle_name = frappe.db.get_value(
 		"Stock Ledger Entry", {"handling_unit": handling_unit, "actual_qty": (">", 0)}, "name"
 	)
@@ -242,17 +239,15 @@ def test_legacy_serial_no_field_is_resolved():
 		{"serial_and_batch_bundle": "", "serial_no": "WCC-OB-L1\nWCC-OB-L2"},
 	)
 
-	resolved = common_inward_handling_unit(
-		ITEM, ["WCC-OB-L1", "WCC-OB-L2"], f"{today()} 23:59:59"
-	)
+	resolved = common_inward_handling_unit(ITEM, ["WCC-OB-L1", "WCC-OB-L2"], f"{today()} 23:59:59")
 	assert resolved == handling_unit
 
 
 @pytest.mark.order(71)
 def test_partial_resolution_returns_none():
-	receive_serial("WCC-OB-P1")  # has a handling unit
+	receive_serial("WCC-OB-P1")
 
-	# one serial resolves, the other has no inward movement -> do not guess
+	# a serial with no inward movement -> do not guess
 	resolved = common_inward_handling_unit(
 		ITEM, ["WCC-OB-P1", "WCC-OB-NEVER-RECEIVED"], f"{today()} 23:59:59"
 	)
@@ -290,7 +285,7 @@ def test_sales_invoice_without_update_stock_is_untouched():
 
 @pytest.mark.order(71)
 def test_explicit_handling_unit_is_not_overwritten():
-	receive_serial("WCC-OB-9")  # lives in one handling unit
+	receive_serial("WCC-OB-9")
 
 	other_hu = frappe.new_doc("Handling Unit")
 	other_hu.save()
@@ -298,7 +293,7 @@ def test_explicit_handling_unit_is_not_overwritten():
 	dn = draft_delivery_note(["WCC-OB-9"])
 	dn.items[0].handling_unit = other_hu.name
 
-	# hook must leave the explicit value alone -> ERPNext then rejects the mismatch
+	# hook must not overwrite it; ERPNext then rejects the mismatch
 	with pytest.raises(SerialNoInventoryDimensionError):
 		dn.submit()
 	assert dn.items[0].handling_unit == other_hu.name

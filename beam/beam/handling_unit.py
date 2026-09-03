@@ -96,14 +96,10 @@ def generate_handling_units(doc, method=None):
 
 @frappe.whitelist()
 def set_outbound_handling_units(doc, method=None):
-	"""Populate `handling_unit` on Delivery Note / Sales Invoice rows for serialized
-	items so the outbound Stock Ledger Entry keeps the inventory dimension the serial
-	was received on (ERPNext's validate_serial_no_inventory_dimension).
-
-	Per row, the handling unit is only filled when every serial on that row shares
-	the same non-empty handling unit on its most recent inward movement (mirroring
-	ERPNext's get_last_inward_dimensions). Rows whose serials disagree, or that were
-	received without a handling unit, are left untouched.
+	"""Fill `handling_unit` on serialized Delivery Note / Sales Invoice rows so the
+	outbound movement keeps the dimension ERPNext's
+	validate_serial_no_inventory_dimension checks. Only when unambiguous: every serial
+	on the row shares one non-empty handling unit.
 	"""
 	company = doc.get("company") or frappe.defaults.get_defaults().company
 	settings = (
@@ -144,13 +140,9 @@ def row_serial_nos(row):
 
 
 def common_inward_handling_unit(item_code, serial_nos, posting_datetime):
-	"""The handling unit to stamp on an outbound row, or None.
-
-	Returns a handling unit only when *every* requested serial resolves to the same
-	non-empty handling unit on its most recent inward movement (at or before
-	``posting_datetime``). Returns None when a serial has no inward movement, when
-	the serials disagree, or when the shared value is empty (so the row stays empty
-	and ERPNext sees "Not Set" on both sides).
+	"""The handling unit shared by every serial's last inward movement (at or before
+	`posting_datetime`), or None when a serial has none, they disagree, or the
+	shared value is empty.
 	"""
 	by_serial = last_inward_handling_units(item_code, serial_nos, posting_datetime)
 	if len(by_serial) != len(set(serial_nos)):
@@ -162,13 +154,9 @@ def common_inward_handling_unit(item_code, serial_nos, posting_datetime):
 
 
 def last_inward_handling_units(item_code, serial_nos, posting_datetime):
-	"""``{serial_no: handling_unit}`` from each serial's most recent inward stock
-	movement at or before ``posting_datetime``.
-
-	Delegates to ERPNext's ``StockLedgerEntry.get_last_inward_dimensions`` — the exact
-	lookup ``validate_serial_no_inventory_dimension`` runs — so beam always resolves
-	what ERPNext will check against. If ERPNext changes that method this breaks
-	loudly instead of drifting.
+	"""`{serial_no: handling_unit}` via ERPNext's `get_last_inward_dimensions` — the
+	same lookup `validate_serial_no_inventory_dimension` runs, so beam resolves what
+	ERPNext checks (and breaks loudly if that method changes).
 	"""
 	dimensions = [d for d in get_inventory_dimensions() if d.fieldname == "handling_unit"]
 	if not dimensions:
