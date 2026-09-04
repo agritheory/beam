@@ -16,7 +16,7 @@
 	</div>
 
 	<!-- body section -->
-	<ListView v-if="items.length > 0" :items="items" :key="componentKey" @update="updateItem" />
+	<ListView v-if="items.length > 0" :items="items" :key="componentKey" />
 	<div class="begin" v-else>
 		<span>Scan or Select Warehouses to Begin</span>
 	</div>
@@ -29,7 +29,10 @@ import { ref, computed, onMounted, watch } from 'vue'
 import ControlButtons from '@/components/ControlButtons.vue'
 import { useBeamStore } from '@/stores/beam'
 import type { ControlButton, StockReconciliation, StockEntryItem } from '@/types'
-type StockEntryItemWithCount = StockEntryItem & { count?: { count: number; of: number; uom?: string } }
+type StockEntryItemWithCount = StockEntryItem & {
+	warehouse?: string
+	count?: { count: number; of: number; uom?: string }
+}
 
 const store = useBeamStore()
 const componentKey = ref(0)
@@ -51,30 +54,26 @@ const clearField = () => {
 	items.value = []
 }
 
+const resetItems = () => {
+	store.$patch(state => ((state.cache.mappers['stock-reconciliation'] as StockReconciliation).items = []))
+	items.value = []
+}
+
 const mergeItems = (newItems: StockEntryItem[], fromWarehouse?: Boolean) => {
 	if (!newItems) return
 
 	newItems.forEach(newItem => {
-		const existingIndex = items.value.findIndex(item => item.item_code === newItem.item_code)
+		const existingItem = items.value.find(item => item.item_code === newItem.item_code) as
+			| StockEntryItemWithCount
+			| undefined
 
-		if (existingIndex !== -1) {
-			const existingItem = items.value[existingIndex] as StockEntryItemWithCount
-			const currentCount = existingItem.count?.count || 0
-			const incrementBy = fromWarehouse ? newItem.qty || 1 : 1
-			const count = currentCount > 0 ? currentCount + incrementBy : newItem.qty || 1
-
-			items.value[existingIndex] = {
-				...existingItem,
-				...newItem,
-				label: newItem.item_code,
-				count: {
-					count,
-					of: 0,
-					uom: existingItem.count?.uom || newItem.stock_uom,
-				},
-				debounce: 1000,
-				linkComponent: 'ListCount',
-			} as StockEntryItemWithCount
+		if (existingItem) {
+			Object.assign(existingItem, newItem)
+			existingItem.label = newItem.item_code
+			existingItem.debounce = 1000
+			if (!fromWarehouse && existingItem.count) {
+				existingItem.count.count += 1
+			}
 		} else {
 			items.value.push({
 				...newItem,
@@ -85,42 +84,38 @@ const mergeItems = (newItems: StockEntryItem[], fromWarehouse?: Boolean) => {
 					uom: newItem.stock_uom,
 				},
 				debounce: 1000,
-				linkComponent: 'ListCount',
 			} as StockEntryItemWithCount)
 		}
 	})
-
-	componentKey.value++
 }
+
+let activeWarehouse = ''
 
 const loadItemsFromWarehouse = async warehouse => {
 	if (!warehouse) return
+	activeWarehouse = warehouse
 	try {
 		let response = await store.getStockReconciliationItems(warehouse)
+		if (warehouse !== activeWarehouse) return
 		mergeItems(response || [], true)
 	} catch (error) {
 		console.error('Error loading items:', error)
 	}
 }
 
-const updateItem = (value: StockEntryItemWithCount) => {
-	if (!value || !value.count || !value.count.count) return
-	for (const item of reconciliation.value.items) {
-		if (item.item_code === value.item_code && item.qty !== value.count.count) {
-			item.qty = value.count.count
-			break
-		}
-	}
-}
-
 const create = async () => {
+	const warehouse = reconciliation.value.set_warehouse
 	const body = {
 		purpose: 'Stock Reconciliation',
-		set_warehouse: reconciliation.value.set_warehouse,
-		items: (items.value as StockEntryItemWithCount[]).map(i => ({
-			...i,
-			qty: typeof i.count === 'object' ? i.count.count : i.qty,
-		})),
+		set_warehouse: warehouse,
+		items: (items.value as StockEntryItemWithCount[]).map(i => {
+			const { count, label, debounce, ...rest } = i
+			return {
+				...rest,
+				warehouse: rest.warehouse || warehouse,
+				qty: typeof count === 'object' ? count.count : rest.qty,
+			}
+		}),
 		name: reconciliation.value.name,
 	}
 
@@ -191,7 +186,10 @@ const controlButtons = computed((): ControlButton[] => {
 
 watch(
 	() => reconciliation.value.set_warehouse,
-	warehouse => loadItemsFromWarehouse(warehouse)
+	warehouse => {
+		resetItems()
+		loadItemsFromWarehouse(warehouse)
+	}
 )
 
 watch(
@@ -221,5 +219,9 @@ onMounted(async () => {
 
 .reconciliation .input-wrapper label {
 	margin: calc(-2.5rem - calc(2.15rem / 2)) 0 0 1ch !important;
+}
+
+.beam_item-count {
+	white-space: nowrap;
 }
 </style>

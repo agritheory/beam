@@ -144,10 +144,10 @@ export const useScanStore = defineStore('scan', () => {
 			if (existing_rows.length > 0) {
 				const field = itemQtyFieldMap[action.doctype] || 'qty'
 				for (const row of existing_rows) {
-					if (row.qty) {
+					if (field !== 'qty' && row.qty) {
 						row[field] = Math.min(row[field] + 1, row.qty)
 					} else {
-						row[field] = row[field] + 1
+						row[field] = (row[field] || 0) + 1
 					}
 				}
 			} else if (action.doctype === 'Stock Entry') {
