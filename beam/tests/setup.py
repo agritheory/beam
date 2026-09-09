@@ -867,10 +867,12 @@ def create_employees(settings, only_create=None):
 		user.email = f"{empl.first_name[0].lower()}{empl.last_name.lower()}@cfc.co"
 		user.first_name = empl.first_name
 		user.last_name = empl.last_name
+		user.new_password = "admin"
 		user.send_welcome_email = 0
 		user.enabled = 1
 		user.language = settings.language
 		user.time_zone = settings.time_zone
+		user.flags.ignore_password_policy = True
 		for r in employee.get("roles", []):
 			user.append("roles", {"role": r})
 

@@ -14,7 +14,11 @@ import frappe
 import pytest
 from playwright.sync_api import expect
 
-from beam.tests.playwright_utils import use_current_db_transaction
+from beam.tests.playwright_utils import (
+	open_first_beam_list_row,
+	order_id_from_beam_url,
+	use_current_db_transaction,
+)
 
 
 @pytest.mark.order(300)
@@ -51,13 +55,10 @@ def test_complete_partial_stock_entry(page):
 	frappe.db.commit()
 
 	# navigate in the following order: Home -> Manufacture -> Work Order
-	page.get_by_text("Manufacture").click()
-
-	expect(page.locator("css=.beam_list-item").first).to_be_visible()
-	page.locator("css=.beam_list-item").first.click()
+	open_first_beam_list_row(page, "Manufacture", r"work_order/")
 
 	# get the selected Work Order
-	order_id = page.url.split("/")[-1]
+	order_id = order_id_from_beam_url(page.url)
 	assert order_id
 
 	expect(page.locator("css=.box .beam_list-item").first).to_be_visible()

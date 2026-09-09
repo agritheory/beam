@@ -56,9 +56,25 @@ export type User = ParentDoctype & {
 	full_name?: string
 }
 
+export type JobCardTimeLog = ChildDoctypeMeta & {
+	from_time?: string
+	to_time?: string
+	time_in_mins?: number
+	completed_qty?: number
+	employee?: string
+}
+
 export type JobCard = ParentDoctype & {
+	current_time?: number
 	total_time_in_mins: number
+	for_quantity?: number
+	started_time?: string
+	status?: 'Open' | 'Work In Progress' | 'Material Transferred' | 'On Hold' | 'Submitted' | 'Cancelled' | 'Complete' | 'Completed'
+	total_completed_qty?: number
+	active_job_card_for_employee?: string | null
+	locked_by_employee?: string | null
 	items?: JobCardItem[]
+	time_logs?: JobCardTimeLog[]
 }
 
 export type JobCardItem = ChildDoctype & {

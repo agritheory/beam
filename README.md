@@ -81,11 +81,20 @@ For a complete database reset to re-run tests, run the following
 bench reinstall --yes --admin-password admin --mariadb-root-password admin && bench execute 'beam.tests.setup.before_test'
 ```
 
-To run mypy and pytest
+To run backend tests
+
 ```shell
 source env/bin/activate
-mypy ./apps/beam/beam --ignore-missing-imports
-pytest ./apps/beam/beam/tests -s --disable-warnings
+pytest ./apps/beam/beam/tests --ignore=./apps/beam/beam/tests/mobile/ --disable-warnings -s --tracing=retain-on-failure
+```
+
+To run frontend tests
+
+Start bench in a separate terminal, then run:
+
+```shell
+source env/bin/activate
+pytest ./apps/beam/beam/tests/mobile --browser chromium --disable-warnings
 ```
 
 ### BEAM Portal setup

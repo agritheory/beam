@@ -14,6 +14,7 @@ export const useInitStore = defineStore('init', () => {
 		const resolvedRoute = currentRoute || route
 
 		await store.getScanDoctypes()
+		await store.setCurrentEmployee()
 		await store.setForm(resolvedRoute)
 		await store.setMappedDoc(resolvedRoute)
 		await store.setScanContext(resolvedRoute)

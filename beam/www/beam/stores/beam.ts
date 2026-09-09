@@ -13,6 +13,7 @@ import type {
 	DeliveryNoteItem,
 	Demand,
 	FormContext,
+	JobCard,
 	FrappeResponse,
 	ListContext,
 	ParentDoctypes,
@@ -35,6 +36,10 @@ const PURCHASE_DEMAND_URL = '/api/method/beam.beam.demand.receiving.get_receivin
 const SALES_DEMAND_URL = '/api/method/beam.beam.demand.demand.get_demand'
 const SCAN_CONFIG_URL = '/api/method/beam.beam.scan.config.get_scan_doctypes'
 const SCAN_URL = 'beam.beam.scan.scan' // frappe.xcall doesn't require prefix
+const JOB_CARD_URL = '/api/method/beam.beam.manufacturing.get_job_card'
+const JOB_CARD_START_URL = '/api/method/beam.beam.manufacturing.start_job_card'
+const JOB_CARD_PAUSE_URL = '/api/method/beam.beam.manufacturing.pause_job_card'
+const JOB_CARD_FINISH_URL = '/api/method/beam.beam.manufacturing.finish_job_card'
 
 // Route :id is a source document name (PO/SO), not the mapped form doc itself.
 const MAPPED_FORM_DOCTYPES = ['Purchase Receipt', 'Delivery Note']
@@ -47,6 +52,7 @@ export const useBeamStore = defineStore('beam', () => {
 	const cache = ref<BeamCache>({ mappers: {} })
 	const form = ref<Partial<ParentDoctypes>>({})
 	const warehouseList = ref()
+	const currentEmployee = ref<string | null>(null)
 	const scanner = reactive({
 		config: {} as ScanConfig,
 		context: {} as ScanContext,
@@ -140,6 +146,27 @@ export const useBeamStore = defineStore('beam', () => {
 		})
 	}
 
+	const setCurrentEmployee = async () => {
+		try {
+			if (currentEmployee.value) return
+			const currentUser = frappe?.session?.user
+			const employees = await getAll<{ name: string }>('Employee', {
+				filters: JSON.stringify([
+					['user_id', '=', currentUser],
+					['status', '=', 'Active'],
+				]),
+				fields: JSON.stringify(['name']),
+				limit_page_length: 1,
+			})
+
+			const employee = employees?.[0]?.name
+			currentEmployee.value = employee
+		} catch (error) {
+			console.error('Failed to resolve current employee:', error)
+			throw error
+		}
+	}
+
 	const getOne = async <T>(doctype: string, name: string) => {
 		const url = `/api/resource/${doctype}/${name}`
 		const response = await httpStore.get(url)
@@ -200,6 +227,55 @@ export const useBeamStore = defineStore('beam', () => {
 		}
 
 		return []
+	}
+
+	const getJobCard = async (jobCardId: string): Promise<JobCard> => {
+		const response = await httpStore.get(JOB_CARD_URL, { job_card_id: jobCardId })
+		if (!response.ok) {
+			await handleErrors(response)
+			throw new Error('Failed to fetch job card')
+		}
+		const { message }: { message: JobCard } = await response.json()
+		return message
+	}
+
+	const startJobCard = async (jobCardId: string): Promise<JobCard> => {
+		const response = await httpStore.post(JOB_CARD_START_URL, { job_card_id: jobCardId })
+		if (!response.ok) {
+			await handleErrors(response)
+			throw new Error('Failed to start job card')
+		}
+		const { message }: { message: JobCard } = await response.json()
+		toast.success('Job started')
+		return message
+	}
+
+	const pauseJobCard = async (jobCardId: string, completedQty: number = 0): Promise<JobCard> => {
+		const response = await httpStore.post(JOB_CARD_PAUSE_URL, {
+			job_card_id: jobCardId,
+			completed_qty: completedQty,
+		})
+		if (!response.ok) {
+			await handleErrors(response)
+			throw new Error('Failed to pause job card')
+		}
+		const { message }: { message: JobCard } = await response.json()
+		toast.success('Job paused')
+		return message
+	}
+
+	const finishJobCard = async (jobCardId: string, completedQty: number): Promise<JobCard> => {
+		const response = await httpStore.post(JOB_CARD_FINISH_URL, {
+			job_card_id: jobCardId,
+			completed_qty: completedQty,
+		})
+		if (!response.ok) {
+			await handleErrors(response)
+			throw new Error('Failed to finish job card')
+		}
+		const { message }: { message: JobCard } = await response.json()
+		toast.success('Job finished')
+		return message
 	}
 
 	const insert = async <T extends Record<string, any>>(doctype: string, body: T) => {
@@ -378,12 +454,14 @@ export const useBeamStore = defineStore('beam', () => {
 		scanner,
 		camera,
 		warehouseList,
+		currentEmployee,
 		// store context actions
 		getScanDoctypes,
 		setForm,
 		setMappedDoc,
 		setScanContext,
 		setWarehouses,
+		setCurrentEmployee,
 
 		// document workflow actions
 		cancel,
@@ -400,6 +478,10 @@ export const useBeamStore = defineStore('beam', () => {
 		getOne,
 		getReceiving,
 		getStockEntryItems,
+		getJobCard,
+		startJobCard,
+		pauseJobCard,
+		finishJobCard,
 		logout,
 		makeNewDoc,
 		scan,
