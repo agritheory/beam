@@ -14,6 +14,7 @@ import type {
 	PurchaseReceipt,
 	StockEntry,
 	StockEntryItem,
+	StockReconciliation,
 } from '@/types/index.js'
 
 export const useScanStore = defineStore('scan', () => {
@@ -143,10 +144,10 @@ export const useScanStore = defineStore('scan', () => {
 			if (existing_rows.length > 0) {
 				const field = itemQtyFieldMap[action.doctype] || 'qty'
 				for (const row of existing_rows) {
-					if (row.qty) {
+					if (field !== 'qty' && row.qty) {
 						row[field] = Math.min(row[field] + 1, row.qty)
 					} else {
-						row[field] = row[field] + 1
+						row[field] = (row[field] || 0) + 1
 					}
 				}
 			} else if (action.doctype === 'Stock Entry') {
@@ -174,11 +175,11 @@ export const useScanStore = defineStore('scan', () => {
 					item.s_warehouse = action.context.warehouse
 					item.t_warehouse = action.context.warehouse
 				}
-
 				;(mappedDoc.value as StockEntry).items.push(item)
 			} else {
 				const item: StockEntryItem = {
 					item_code: action.context.doc?.item_code,
+					stock_uom: action.context.doc?.stock_uom,
 					qty: 1,
 				}
 
@@ -210,9 +211,13 @@ export const useScanStore = defineStore('scan', () => {
 
 	const set_warehouse = (barcode_context: FormContext[]) => {
 		for (const action of barcode_context) {
-			if (action.doctype !== 'Stock Entry') {
-				return
+			if (action.doctype === 'Stock Reconciliation Item') {
+				const warehouse = action.context.doc.name
+				;(mappedDoc.value as StockReconciliation).set_warehouse = warehouse
+				store.$patch(state => (state.cache.mappers[documentId.value] = mappedDoc.value))
 			}
+
+			if (action.doctype !== 'Stock Entry') return
 
 			const source_warehouses = ['Material Consumption for Manufacture', 'Material Issue']
 			const target_warehouses = ['Material Receipt', 'Manufacture']

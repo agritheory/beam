@@ -135,9 +135,18 @@ export const useBeamStore = defineStore('beam', () => {
 	}
 
 	const setWarehouses = async () => {
-		warehouseList.value = await getAll<{ name: string }[]>('Warehouse', {
-			fields: JSON.stringify(['company', 'disabled', 'is_group', 'name', 'warehouse_name']),
-		})
+		if (warehouseList.value && warehouseList.value.length) return
+
+		try {
+			const warehouses = await getAll<{ name: string }[]>('Warehouse', {
+				fields: JSON.stringify(['company', 'disabled', 'is_group', 'name', 'warehouse_name']),
+			})
+			console.log('Warehouses fetched:', warehouses)
+			warehouseList.value = warehouses
+		} catch (error) {
+			console.error('Error fetching warehouses:', error)
+			warehouseList.value = []
+		}
 	}
 
 	const getOne = async <T>(doctype: string, name: string) => {
@@ -302,6 +311,27 @@ export const useBeamStore = defineStore('beam', () => {
 		}
 	}
 
+	const getStockReconciliationItems = async (warehouse: string) => {
+		if (!warehouse) return []
+		try {
+			const homeData = await getHome()
+			const company = homeData.data.company
+			const response = await httpStore.get('/api/method/beam.beam.overrides.stock_reconciliation.get_items', {
+				warehouse,
+				company,
+				posting_date: new Date().toLocaleDateString(),
+				posting_time: new Date().toLocaleTimeString(),
+				ignore_empty_stock: true,
+			})
+
+			const { message } = await response.json()
+			return message
+		} catch (error) {
+			console.error(error)
+			return []
+		}
+	}
+
 	const logout = async () => {
 		await httpStore.get(LOGOUT_URL)
 		window.location.href = '/login?redirect-to=/beam#'
@@ -400,6 +430,7 @@ export const useBeamStore = defineStore('beam', () => {
 		getOne,
 		getReceiving,
 		getStockEntryItems,
+		getStockReconciliationItems,
 		logout,
 		makeNewDoc,
 		scan,

@@ -25,6 +25,7 @@ export type ParentDoctype = StoreMetadata & {
 	modified?: string
 	name?: string
 	owner?: string
+	company?: string
 	__islocal?: number
 }
 
@@ -44,6 +45,7 @@ export type ChildDoctype = ChildDoctypeMeta & {
 	qty?: number
 	stock_qty?: number
 	warehouse?: string
+	stock_uom?: string
 	doc?: Omit<ChildDoctype, 'doc'>
 }
 
@@ -68,6 +70,20 @@ export type JobCardItem = ChildDoctype & {
 	transferred_qty?: number
 }
 
+export type StockReconciliation = ParentDoctype & {
+	purpose: 'Stock Reconciliation' | 'Opening Stock'
+
+	set_warehouse: string
+	items: StockEntryItem[]
+}
+
+export type StockReconciliationItem = ChildDoctype & {
+	warehouse?: string
+	qty: number
+	valuation_rate: number
+	item_code: string
+}
+
 export type StockEntry = ParentDoctype & {
 	stock_entry_type: string
 	items: StockEntryItem[]
@@ -78,12 +94,14 @@ export type StockEntry = ParentDoctype & {
 }
 
 export type StockEntryItem = ChildDoctype & {
+	is_finished_item?: boolean
+	is_scrap_item?: boolean
 	s_warehouse?: string
+	stock_uom?: string
 	t_warehouse?: string
 	transfer_qty?: number
 	transferred_qty?: number
-	is_finished_item?: boolean
-	is_scrap_item?: boolean
+	stock_uom?: string
 }
 
 export type WorkOrder = ParentDoctype & {
