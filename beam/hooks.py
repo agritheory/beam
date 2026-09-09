@@ -159,6 +159,9 @@ doc_events = {
 	("Purchase Receipt", "Purchase Invoice", "Subcontracting Receipt"): {
 		"before_submit": ["beam.beam.handling_unit.generate_handling_units"],
 	},
+	("Delivery Note", "Sales Invoice"): {
+		"before_submit": ["beam.beam.handling_unit.set_outbound_handling_units"],
+	},
 	"Stock Entry": {
 		"before_submit": [
 			"beam.beam.handling_unit.generate_handling_units",
