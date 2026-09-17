@@ -174,6 +174,11 @@ def get_stock_entry_item_details(doc: dict, item_code: str) -> frappe._dict:
 
 def get_list_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[dict[str, Any]]:
 	target = barcode_doc.doc.name
+	beam_override = frappe.get_hooks("beam_listview")
+	has_list_override = bool(
+		beam_override and beam_override.get(barcode_doc.doc.doctype, {}).get(context.get("listview"))
+	)
+
 	if barcode_doc.doc.doctype == "Handling Unit":
 		if barcode_doc.doc.get("parenttype") == "Packing Slip":
 			# TODO: is this check correct and/or required?
@@ -192,13 +197,14 @@ def get_list_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 		if context.get("listview") in ["Item", "Putaway Rule"]:
 			target = barcode_doc.doc.item_code
 		else:
-			target = get_serial_no(barcode_doc.doc.name, context.get("listview"))
-			target = target.get("voucher_no") if target else None
+			serial_no_details = get_serial_no(barcode_doc.doc.name, context.get("listview"))
+			if serial_no_details:
+				target = serial_no_details.get("voucher_no")
+			elif not has_list_override:
+				target = None
 
 	if not target:
 		return []
-
-	beam_override = frappe.get_hooks("beam_listview")
 
 	if beam_override:
 		override_doctype = beam_override.get(barcode_doc.doc.doctype)
@@ -319,7 +325,15 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 		target.barcode = barcode_doc.barcode
 	elif barcode_doc.doc.doctype == "Serial No":
 		serial_no_details = get_serial_no(barcode_doc.doc.name, context.frm)
-		if context.frm == "Stock Entry":
+		if not serial_no_details and has_frm_override:
+			target = frappe._dict(
+				{
+					"doctype": context.frm,
+					"item_code": barcode_doc.doc.item_code,
+				}
+			)
+			set_item_stock_uom(target, barcode_doc.doc.item_code)
+		elif context.frm == "Stock Entry":
 			target = get_stock_entry_item_details(context.doc, serial_no_details.item_code)
 			target.warehouse = serial_no_details.warehouse
 		elif context.frm in ("Putaway Rule", "Warranty Claim", "Item Price", "Quality Inspection"):
@@ -338,18 +352,19 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 					"currency": frappe.defaults.get_user_default("Currency"),
 				}
 			)
-		target.update(
-			{
-				"handling_unit": serial_no_details.handling_unit,
-				"voucher_no": serial_no_details.voucher_no,
-				"stock_qty": serial_no_details.stock_qty,
-				"qty": serial_no_details.stock_qty / target.conversion_factor
-				if target.conversion_factor
-				else serial_no_details.stock_qty,
-				"posting_datetime": serial_no_details.posting_datetime,
-				"dn_detail": serial_no_details.dn_detail,
-			}
-		)
+		if serial_no_details:
+			target.update(
+				{
+					"handling_unit": serial_no_details.handling_unit,
+					"voucher_no": serial_no_details.voucher_no,
+					"stock_qty": serial_no_details.stock_qty,
+					"qty": serial_no_details.stock_qty / target.conversion_factor
+					if target.conversion_factor
+					else serial_no_details.stock_qty,
+					"posting_datetime": serial_no_details.posting_datetime,
+					"dn_detail": serial_no_details.dn_detail,
+				}
+			)
 	elif has_frm_override:
 		target = frappe._dict(
 			{
