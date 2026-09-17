@@ -36,6 +36,47 @@ frappe.ui.form.on('Delivery Note', {
 	},
 })
 
+function update_printer_default_checks(d) {
+	const selected = d.get_value('printer_setting')
+	const configured = frappe.boot.beam?.default_network_printer_settings
+	const prefer_save = !!selected && !configured
+	const prefer_session = !!selected && !!configured && selected !== configured
+	d.set_value('save_as_default', prefer_save ? 1 : 0)
+	d.set_value('set_session_default', prefer_session ? 1 : 0)
+}
+
+function apply_printer_defaults(selection) {
+	const calls = []
+	if (selection.save_as_default) {
+		calls.push(
+			frappe
+				.call({
+					method: 'beam.beam.printer_defaults.save_default_printer',
+					args: { printer_setting: selection.printer_setting },
+				})
+				.then(r => {
+					if (r.message) {
+						frappe.boot.beam = frappe.boot.beam || {}
+						frappe.boot.beam.default_network_printer_settings = r.message
+					}
+				})
+		)
+	}
+	if (selection.set_session_default) {
+		calls.push(
+			frappe
+				.call({
+					method: 'beam.beam.printer_defaults.set_session_printer',
+					args: { printer_setting: selection.printer_setting },
+				})
+				.then(() => {
+					frappe.defaults.set_user_default_local('network_printer_settings', selection.printer_setting)
+				})
+		)
+	}
+	return Promise.all(calls)
+}
+
 function custom_print_button(frm) {
 	if (frm.doc.docstatus != 1) {
 		return
@@ -54,6 +95,9 @@ function custom_print_button(frm) {
 					fieldtype: 'Link',
 					options: 'Network Printer Settings',
 					default: frappe.defaults.get_user_default('Network Printer Settings'),
+					onchange() {
+						update_printer_default_checks(d)
+					},
 				},
 				{
 					label: __('Print Format'),
@@ -66,6 +110,18 @@ function custom_print_button(frm) {
 							filters: { doc_type: 'Handling Unit' },
 						}
 					},
+				},
+				{
+					label: __('Save as my default printer'),
+					fieldname: 'save_as_default',
+					fieldtype: 'Check',
+					default: 0,
+				},
+				{
+					label: __('Set as session default'),
+					fieldname: 'set_session_default',
+					fieldtype: 'Check',
+					default: 0,
 				},
 			],
 			primary_action_label: 'Select',
@@ -80,9 +136,13 @@ function custom_print_button(frm) {
 						print_format: selection.print_format,
 						doc: frm.doc,
 					},
+					callback() {
+						apply_printer_defaults(selection)
+					},
 				})
 			},
 		})
 		d.show()
+		update_printer_default_checks(d)
 	})
 }
