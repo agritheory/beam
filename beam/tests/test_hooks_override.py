@@ -70,7 +70,13 @@ def patch_frappe_get_hooks_serial_no(monkeymodule, *args, **kwargs):
 				}
 			}
 		if "beam_listview" in args:
-			return {"Serial No": {"Quality Inspection": [{"action": "filter", "doctype": "Quality Inspection", "field": "serial_no"}]}}
+			return {
+				"Serial No": {
+					"Quality Inspection": [
+						{"action": "filter", "doctype": "Quality Inspection", "field": "serial_no"}
+					]
+				}
+			}
 		return hooks
 
 	monkeymodule.setattr("frappe.get_hooks", patched_hooks)
@@ -118,7 +124,7 @@ def test_beam_frm_hooks_override(patch_frappe_get_hooks):
 			"barcode": str(item_barcode),
 			"context": {"frm": dn.doctype, "doc": dn.as_dict()},
 			"current_qty": 1,
-		}
+		},
 	)
 
 	assert len(scan) == 2
@@ -137,7 +143,7 @@ def test_beam_listview_hooks_override(patch_frappe_get_hooks):
 	item_barcode = frappe.get_value("Item Barcode", {"parent": "Kaduka Key Lime Pie"}, "barcode")
 	scan = frappe.call(
 		"beam.beam.scan.scan",
-		**{"barcode": str(item_barcode), "context": {"listview": "Delivery Note"}, "current_qty": 1}
+		**{"barcode": str(item_barcode), "context": {"listview": "Delivery Note"}, "current_qty": 1},
 	)
 
 	assert len(scan) == 2
@@ -221,5 +227,9 @@ def test_serial_no_scan_without_sle_and_without_override(monkeypatch):
 	with pytest.raises(AttributeError):
 		frappe.call(
 			"beam.beam.scan.scan",
-			**{"barcode": serial_no, "context": {"frm": "Quality Inspection", "doc": None}, "current_qty": 1},
+			**{
+				"barcode": serial_no,
+				"context": {"frm": "Quality Inspection", "doc": None},
+				"current_qty": 1,
+			},
 		)
