@@ -82,10 +82,7 @@ def patch_frappe_get_hooks_serial_no(monkeymodule, *args, **kwargs):
 	monkeymodule.setattr("frappe.get_hooks", patched_hooks)
 
 
-def _serial_no_without_sle(item_code):
-	"""Create (if needed) a serialized item and a Serial No for it with no Stock
-	Ledger Entry, reproducing a serial minted before its inward stock transaction
-	is submitted (see issue #350)."""
+def serial_no_without_sle(item_code):
 	if not frappe.db.exists("Item", item_code):
 		frappe.get_doc(
 			{
@@ -106,7 +103,7 @@ def _serial_no_without_sle(item_code):
 	return serial_no
 
 
-def _enable_scan_serial_no():
+def enable_scan_serial_no():
 	company = frappe.defaults.get_defaults().get("company")
 	settings = frappe.get_doc("BEAM Settings", {"company": company})
 	settings.scan_serial_no = 1
@@ -160,13 +157,9 @@ def test_beam_listview_hooks_override(patch_frappe_get_hooks):
 @pytest.mark.order(50)
 @pytest.mark.parametrize("frm", ["Stock Entry", "Quality Inspection"])
 def test_beam_frm_hooks_override_serial_no_without_sle(patch_frappe_get_hooks_serial_no, frm):
-	# frm="Stock Entry" and frm="Quality Inspection" each used to be handled by
-	# their own branch in get_form_action *before* has_frm_override was checked,
-	# so a beam_frm override could never run for them when the serial had no
-	# Stock Ledger Entry yet. Covers issue #350.
-	_enable_scan_serial_no()
+	enable_scan_serial_no()
 	item_code = "BEAM Test No-SLE Item"
-	serial_no = _serial_no_without_sle(item_code)
+	serial_no = serial_no_without_sle(item_code)
 
 	scan = frappe.call(
 		"beam.beam.scan.scan",
@@ -177,17 +170,14 @@ def test_beam_frm_hooks_override_serial_no_without_sle(patch_frappe_get_hooks_se
 	assert scan[0].get("action") == "set_item_code_and_handling_unit"
 	assert scan[0].get("context", {}).get("item_code") == item_code
 	assert scan[0].get("context", {}).get("stock_uom") == "Nos"
-	# fields only populated from an existing Stock Ledger Entry must be absent
 	assert "voucher_no" not in scan[0].get("context", {})
 
 
 @pytest.mark.order(51)
 def test_beam_listview_hooks_override_serial_no_without_sle(patch_frappe_get_hooks_serial_no):
-	# get_list_action used to return [] as soon as get_serial_no() came back None,
-	# before frappe.get_hooks("beam_listview") was even read. Covers issue #350.
-	_enable_scan_serial_no()
+	enable_scan_serial_no()
 	item_code = "BEAM Test No-SLE Item"
-	serial_no = _serial_no_without_sle(item_code)
+	serial_no = serial_no_without_sle(item_code)
 
 	scan = frappe.call(
 		"beam.beam.scan.scan",
@@ -203,20 +193,15 @@ def test_beam_listview_hooks_override_serial_no_without_sle(patch_frappe_get_hoo
 
 @pytest.mark.order(52)
 def test_serial_no_scan_without_sle_and_without_override(monkeypatch):
-	# With no beam_frm/beam_listview hook registered, a Serial No with no Stock
-	# Ledger Entry must behave exactly as it did before issue #350 was fixed:
-	# get_list_action returns [] and get_form_action still raises, since there is
-	# no override to fall back on. Force frappe.get_hooks to report no overrides
-	# so this doesn't depend on which other apps happen to be installed.
 	def no_override_hooks(*args, **kwargs):
 		if "beam_frm" in args or "beam_listview" in args:
 			return {}
 		return get_hooks(*args, **kwargs)
 
 	monkeypatch.setattr("frappe.get_hooks", no_override_hooks)
-	_enable_scan_serial_no()
+	enable_scan_serial_no()
 	item_code = "BEAM Test No-SLE Item"
-	serial_no = _serial_no_without_sle(item_code)
+	serial_no = serial_no_without_sle(item_code)
 
 	scan = frappe.call(
 		"beam.beam.scan.scan",
