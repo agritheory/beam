@@ -18,7 +18,7 @@ REPACK_QTY_INPUT = "input.aform_input-field[type='number']"
 
 
 def fill_warehouse_dropdown(page, label: str, value: str):
-	wrapper = page.locator(".input-wrapper", has=page.locator("label", has_text=label))
+	wrapper = page.locator(".autocomplete", has=page.locator("label", has_text=label))
 	inp = wrapper.locator("input")
 	inp.click()
 	inp.fill(value)
@@ -33,7 +33,7 @@ def open_repack_page(page):
 
 
 def repack_item_input(page):
-	wrapper = page.locator(".input-wrapper", has=page.locator("label", has_text="Item to Repack"))
+	wrapper = page.locator(".autocomplete", has=page.locator("label", has_text="Item to Repack"))
 	return wrapper.locator("input")
 
 

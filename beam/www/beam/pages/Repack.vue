@@ -16,7 +16,7 @@
 						:key="itemCodeKey"
 						label="Item to Repack"
 						:options="itemList"
-						v-model="currentItem.item_code"
+						v-model="itemCodeModel"
 						:isAsync="true"
 						:filterFunction="loadItems" />
 					<template #suffix>
@@ -27,13 +27,13 @@
 					<template #prefix>
 						<BeamBtn @click="substractCurrentItem"> - </BeamBtn>
 					</template>
-					<ANumericInput label="Quantity" v-model="currentItem.qty" />
+					<ANumericInput label="Quantity" v-model="qtyModel" />
 					<template #suffix>
 						<BeamBtn @click="addCurrentItem"> + </BeamBtn>
 					</template>
 				</FieldRow>
 				<FieldRow>
-					<ADropdown :key="bomKey" label="BOM (Optional)" :options="bomList" v-model="currentItem.bom" />
+					<ADropdown :key="bomKey" label="BOM (Optional)" :options="bomList" v-model="bomModel" />
 					<template #suffix>
 						<BeamBtn @click="clearCurrentItem('bom')"> X </BeamBtn>
 					</template>
@@ -84,6 +84,27 @@ const store = useBeamStore()
 const currentItem = ref({ item_code: '', qty: 0, bom: '' })
 const items = ref([])
 const componentKey = ref(0)
+
+const itemCodeModel = computed<string | undefined>({
+	get: () => currentItem.value.item_code,
+	set: value => {
+		currentItem.value.item_code = value ?? ''
+	},
+})
+
+const bomModel = computed<string | undefined>({
+	get: () => currentItem.value.bom,
+	set: value => {
+		currentItem.value.bom = value ?? ''
+	},
+})
+
+const qtyModel = computed<number | null | undefined>({
+	get: () => currentItem.value.qty,
+	set: value => {
+		currentItem.value.qty = value ?? 0
+	},
+})
 const stockEntry = computed(
 	() =>
 		store.cache.mappers.repack || {
@@ -265,7 +286,7 @@ function flattenItems(items: ListViewItem[]): ListViewItem[] {
 				from_warehouse: item.s_warehouse || '',
 			})
 		} else {
-			mergedMap.set(item.item_code, { ...item })
+			mergedMap.set(item.item_code, { ...item, from_warehouse: item.s_warehouse || '' })
 		}
 	})
 
