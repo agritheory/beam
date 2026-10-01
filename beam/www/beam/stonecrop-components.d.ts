@@ -7,7 +7,7 @@ declare module 'vue' {
 	export interface GlobalComponents {
 		ActionFooter: (typeof import('@stonecrop/beam'))['ActionFooter']
 		BeamArrow: (typeof import('@stonecrop/beam'))['BeamArrow']
-		BeamBtn: (typeof import('@stonecrop/beam'))['BeamBtn']
+		BeamBtn: new () => { $props: import('vue').ButtonHTMLAttributes }
 		BeamDayDivider: (typeof import('@stonecrop/beam'))['BeamDayDivider']
 		BeamFilter: (typeof import('@stonecrop/beam'))['BeamFilter']
 		BeamFilterOption: (typeof import('@stonecrop/beam'))['BeamFilterOption']
