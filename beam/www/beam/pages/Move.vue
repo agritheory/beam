@@ -8,14 +8,26 @@
 		</template>
 	</Navbar>
 	<div class="move">
-		<div class="dropdown-container">
-			<ADropdown label="Source Warehouse" :items="warehouseList" v-model="stockEntry.from_warehouse" />
-			<BeamBtn class="clear-button" @click="clearField('from_warehouse')"> X </BeamBtn>
-		</div>
-		<div class="dropdown-container">
-			<ADropdown label="Target Warehouse" :items="warehouseList" v-model="stockEntry.to_warehouse" />
-			<BeamBtn class="clear-button" @click="clearField('to_warehouse')"> X </BeamBtn>
-		</div>
+		<FieldRow>
+			<ADropdown
+				:key="fromWarehouseKey"
+				label="Source Warehouse"
+				:options="warehouseList"
+				v-model="stockEntry.from_warehouse" />
+			<template #suffix>
+				<BeamBtn @click="clearField('from_warehouse')"> X </BeamBtn>
+			</template>
+		</FieldRow>
+		<FieldRow>
+			<ADropdown
+				:key="toWarehouseKey"
+				label="Target Warehouse"
+				:options="warehouseList"
+				v-model="stockEntry.to_warehouse" />
+			<template #suffix>
+				<BeamBtn @click="clearField('to_warehouse')"> X </BeamBtn>
+			</template>
+		</FieldRow>
 	</div>
 
 	<!-- body section -->
@@ -32,6 +44,7 @@ import type { ListViewItem } from '@stonecrop/beam'
 import { ref, onMounted, computed } from 'vue'
 
 import ControlButtons from '@/components/ControlButtons.vue'
+import FieldRow from '@/components/FieldRow.vue'
 import { useBeamStore } from '@/stores/beam'
 import type { ControlButton, DocActionResponse, StockEntry } from '@/types'
 import { watch } from 'vue'
@@ -49,6 +62,8 @@ const stockEntry = computed(
 		}
 )
 const componentKey = ref(0)
+const fromWarehouseKey = ref(0)
+const toWarehouseKey = ref(0)
 
 const warehouseList = ref<string[]>([])
 
@@ -63,6 +78,8 @@ const clearField = (field: 'from_warehouse' | 'to_warehouse') => {
 		const mapper = state.cache.mappers['move']
 		if (mapper) mapper[field] = ''
 	})
+	if (field === 'from_warehouse') fromWarehouseKey.value++
+	else toWarehouseKey.value++
 }
 
 const update = () => {
@@ -161,25 +178,16 @@ watch(
 
 <style>
 .move {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
 	margin-bottom: 1.5em;
+	padding: 20px;
 }
 
-.move .autocomplete input,
 .autocomplete-results {
 	font-size: 150%;
-}
-
-.autocomplete-results {
 	padding-inline: 3px !important;
-}
-
-.move .input-wrapper label {
-	margin: calc(-2.5rem - calc(2.15rem / 2)) 0 0 1ch !important;
-}
-
-.clear-button {
-	margin-bottom: 2px;
-	padding: 0.9rem 1rem !important;
 }
 
 .begin {
@@ -187,14 +195,5 @@ watch(
 	text-align: center;
 	font-size: 150%;
 	text-wrap: balance;
-}
-
-.dropdown-container {
-	display: flex;
-	align-items: flex-end !important;
-	justify-content: center;
-	position: relative;
-	margin-top: 1rem;
-	gap: 8px;
 }
 </style>

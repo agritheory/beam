@@ -11,33 +11,54 @@
 	<div class="repack">
 		<div class="container">
 			<template v-if="itemList">
-				<div class="dd-container">
+				<FieldRow>
 					<ADropdown
+						:key="itemCodeKey"
 						label="Item to Repack"
-						:items="itemList"
+						:options="itemList"
 						v-model="currentItem.item_code"
 						:isAsync="true"
 						:filterFunction="loadItems" />
-					<BeamBtn class="clear-button" @click="clearCurrentItem('item_code')"> X </BeamBtn>
-				</div>
-				<div class="dd-container">
-					<BeamBtn class="clear-button" @click="substractCurrentItem"> - </BeamBtn>
+					<template #suffix>
+						<BeamBtn @click="clearCurrentItem('item_code')"> X </BeamBtn>
+					</template>
+				</FieldRow>
+				<FieldRow>
+					<template #prefix>
+						<BeamBtn @click="substractCurrentItem"> - </BeamBtn>
+					</template>
 					<ANumericInput label="Quantity" v-model="currentItem.qty" />
-					<BeamBtn class="clear-button" @click="addCurrentItem"> + </BeamBtn>
-				</div>
-				<div class="dd-container">
-					<ADropdown label="BOM (Optional)" :items="bomList" v-model="currentItem.bom" />
-					<BeamBtn class="clear-button" @click="clearCurrentItem('bom')"> X </BeamBtn>
-				</div>
+					<template #suffix>
+						<BeamBtn @click="addCurrentItem"> + </BeamBtn>
+					</template>
+				</FieldRow>
+				<FieldRow>
+					<ADropdown :key="bomKey" label="BOM (Optional)" :options="bomList" v-model="currentItem.bom" />
+					<template #suffix>
+						<BeamBtn @click="clearCurrentItem('bom')"> X </BeamBtn>
+					</template>
+				</FieldRow>
 			</template>
-			<div class="dd-container">
-				<ADropdown label="Source Warehouse" :items="warehouseList" v-model="stockEntry.from_warehouse" />
-				<BeamBtn class="clear-button" @click="clearField('from_warehouse')"> X </BeamBtn>
-			</div>
-			<div class="dd-container">
-				<ADropdown label="Target Warehouse" :items="warehouseList" v-model="stockEntry.to_warehouse" />
-				<BeamBtn class="clear-button" @click="clearField('to_warehouse')"> X </BeamBtn>
-			</div>
+			<FieldRow>
+				<ADropdown
+					:key="fromWarehouseKey"
+					label="Source Warehouse"
+					:options="warehouseList"
+					v-model="stockEntry.from_warehouse" />
+				<template #suffix>
+					<BeamBtn @click="clearField('from_warehouse')"> X </BeamBtn>
+				</template>
+			</FieldRow>
+			<FieldRow>
+				<ADropdown
+					:key="toWarehouseKey"
+					label="Target Warehouse"
+					:options="warehouseList"
+					v-model="stockEntry.to_warehouse" />
+				<template #suffix>
+					<BeamBtn @click="clearField('to_warehouse')"> X </BeamBtn>
+				</template>
+			</FieldRow>
 		</div>
 	</div>
 
@@ -53,6 +74,7 @@ import type { ListViewItem } from '@stonecrop/beam'
 import { ref, computed, onMounted, watch } from 'vue'
 
 import ControlButtons from '@/components/ControlButtons.vue'
+import FieldRow from '@/components/FieldRow.vue'
 import { useBeamStore } from '@/stores/beam'
 import type { ControlButton, DocActionResponse, StockEntry } from '@/types'
 import { useBeamToast } from '@/utils/toast.js'
@@ -76,6 +98,10 @@ const stockEntry = computed(
 const itemList = ref<string[]>([])
 const bomList = ref<string[]>([])
 const warehouseList = ref<string[]>([])
+const itemCodeKey = ref(0)
+const bomKey = ref(0)
+const fromWarehouseKey = ref(0)
+const toWarehouseKey = ref(0)
 
 onMounted(async () => {
 	store.$patch(state => (state.cache.mappers.repack = stockEntry.value))
@@ -97,12 +123,19 @@ const loadBOMs = async () => {
 	bomList.value = boms.map(bom => bom.name)
 }
 
-const clearField = (field: 'from_warehouse' | 'to_warehouse') =>
+const clearField = (field: 'from_warehouse' | 'to_warehouse') => {
 	store.$patch(state => (state.cache.mappers.repack[field] = ''))
+	if (field === 'from_warehouse') fromWarehouseKey.value++
+	else toWarehouseKey.value++
+}
 
 const addCurrentItem = () => currentItem.value.qty++
 const substractCurrentItem = () => (currentItem.value.qty > 0 ? currentItem.value.qty-- : 0)
-const clearCurrentItem = (field: 'item_code' | 'bom') => (currentItem.value[field] = '')
+const clearCurrentItem = (field: 'item_code' | 'bom') => {
+	currentItem.value[field] = ''
+	if (field === 'item_code') itemCodeKey.value++
+	else bomKey.value++
+}
 
 const create = async () => {
 	const body: StockEntry = {
@@ -289,13 +322,8 @@ watch(
 	padding: 20px;
 }
 
-.repack .autocomplete input,
 .autocomplete-results {
 	font-size: 150%;
-}
-
-.repack .input-wrapper label {
-	margin: calc(-2.5rem - calc(2.15rem / 2)) 0 0 1ch !important;
 }
 
 .max-h-300 {
@@ -308,31 +336,6 @@ watch(
 	display: flex;
 	flex-direction: column;
 	width: 80vh;
-}
-
-.dd-container {
-	display: flex;
-	width: 100%;
-	margin-top: 1rem;
-	gap: 10px;
-	justify-content: space-between;
-}
-
-.dd-container .aform_form-element input {
-	border-color: red;
-	font-size: 150% !important;
-	outline: 1px solid transparent !important;
-	border: 1px solid var(--sc-input-border-color) !important;
-	border-radius: 0.25rem !important;
-	width: 90% !important;
-}
-
-.dd-container .aform_form-element {
-	margin-bottom: 0 !important;
-	margin-top: 10px !important;
-}
-
-.clear-button {
-	margin-top: 10px;
+	gap: 1rem;
 }
 </style>

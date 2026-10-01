@@ -88,8 +88,12 @@ const registerInstance = (instance: any) => (window.scanner = instance)
 }
 
 :root {
-	--sc-input-active-border-color: #000000;
 	--sc-input-border-color: #cccccc;
 	--sc-row-color-zebra-light: #eeeeee;
+	--sc-border-radius: 0.25rem;
+}
+
+.autocomplete-results:empty {
+	display: none;
 }
 </style>
