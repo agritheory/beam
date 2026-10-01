@@ -46,11 +46,11 @@ import { ref, onMounted, computed } from 'vue'
 import ControlButtons from '@/components/ControlButtons.vue'
 import FieldRow from '@/components/FieldRow.vue'
 import { useBeamStore } from '@/stores/beam'
-import type { ControlButton, DocActionResponse, StockEntry } from '@/types'
+import type { ControlButton, DocActionResponse, StockEntry, StockEntryItem } from '@/types'
 import { watch } from 'vue'
 
 const store = useBeamStore()
-const items = ref<ListViewItem[]>([])
+const items = ref<(ListViewItem & Partial<StockEntryItem>)[]>([])
 const stockEntry = computed(
 	(): StockEntry =>
 		(store.cache.mappers['move'] as StockEntry) || {
@@ -168,7 +168,7 @@ watch(
 		items.value = (newItems || []).map(s => ({
 			...s,
 			label: s.item_code,
-			count: { count: s.qty },
+			count: { count: s.qty ?? 0, of: 0 },
 		}))
 		componentKey.value++
 	},
