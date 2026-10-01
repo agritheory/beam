@@ -1,6 +1,10 @@
 // Copyright (c) 2024, AgriTheory and contributors
 // For license information, please see license.txt
 
+import '@stonecrop/themes/default.css'
+import '@stonecrop/aform/styles'
+import '@stonecrop/beam/styles'
+
 import { install as BeamPlugin } from '@stonecrop/beam'
 import { install as AformPlugin } from '@stonecrop/aform'
 import { createPinia } from 'pinia'

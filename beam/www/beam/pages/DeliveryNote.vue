@@ -58,13 +58,15 @@ onBeforeRouteLeave((to, from, next) => {
 })
 
 const items = computed((): (DeliveryNoteItem & ListViewItem)[] => {
+	if (!deliveryNote.value?.items) return []
+
 	return deliveryNote.value.items.map(item => {
 		return {
 			...item,
 			label: item.item_name,
 			description: `${item.warehouse}`,
 			count: {
-				count: item.delivered_qty,
+				count: item.delivered_qty ?? 0,
 				of: item.qty,
 			},
 		}

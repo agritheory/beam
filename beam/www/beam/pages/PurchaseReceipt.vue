@@ -68,7 +68,7 @@ const items = computed((): (PurchaseReceiptItem & ListViewItem)[] => {
 			description: `${item.warehouse}`,
 			count: {
 				count: item.received_qty,
-				of: item.qty,
+				of: item.qty ?? 0,
 			},
 		}
 	})
