@@ -15,7 +15,7 @@
 	"margin_left": 15.0,
 	"margin_right": 15.0,
 	"margin_top": 15.0,
-	"modified": "2024-07-01 18:53:58.230171",
+	"modified": "2026-07-29 12:00:00.000000",
 	"modified_by": "Administrator",
 	"module": "BEAM",
 	"name": "Handling Unit 6x4 ZPL Format",
@@ -24,7 +24,7 @@
 	"print_format_builder": 0,
 	"print_format_builder_beta": 0,
 	"print_format_type": "Jinja",
-	"raw_commands": "{% set hu = get_handling_unit(doc.name) %}\n{% set label = zebra_zpl_label(width=4*203, length=6*203, dpi=203) -%}\n\n{{ label.add(zebra_zpl_barcode(hu.handling_unit, width=4, height=260, position=(20, 40), justification=\"C\", ratio=1, human_readable='N')) -}}\n{{ label.add(zebra_zpl_text(hu.handling_unit, position=(40, 320), width=(4*203-80), font_size=40, justification=\"C\")) }}\n{{ label.add(zebra_zpl_text(frappe.utils.cstr(hu.qty) + \" \" + hu.uom, position=(40, 400), width=(4*203-80), font_size=40)) }}\n{{ label.add(zebra_zpl_text(hu.item_code, position=(40, 480), width=(4*203-80), font_size=40)) }}\n{{ label.add(zebra_zpl_text(hu.warehouse, position=(40, 560), width=(4*203-80), font_size=40)) }}\n{{ label.add(zebra_zpl_text(frappe.utils.format_datetime(hu.posting_datetime), position=(40, 640), width=(4*203-80), font_size=40)) }}\n\n{{ label.dump_contents() }}",
+	"raw_commands": "{#- Every label.add(...) is invoked as a statement, never `{{ ... }}`: add() mutates the label and\n   returns None, and rendering that None puts literal text ahead of ^XA. Zebra firmware discards a\n   format when anything precedes ^XA, so the job completes and the printer does nothing. -#}\n{%- set hu = get_handling_unit(doc.name) -%}\n{%- set label = zebra_zpl_label(width=4*203, length=6*203, dpi=203) -%}\n{%- set _ = label.add(zebra_zpl_barcode(hu.handling_unit, width=4, height=260, position=(20, 40), justification=\"C\", ratio=1, human_readable='N')) -%}\n{%- set _ = label.add(zebra_zpl_text(hu.handling_unit, position=(40, 320), width=(4*203-80), font_size=40, justification=\"C\")) -%}\n{%- set _ = label.add(zebra_zpl_text(frappe.utils.cstr(hu.qty) + \" \" + hu.uom, position=(40, 400), width=(4*203-80), font_size=40)) -%}\n{%- set _ = label.add(zebra_zpl_text(hu.item_code, position=(40, 480), width=(4*203-80), font_size=40)) -%}\n{%- set _ = label.add(zebra_zpl_text(hu.warehouse, position=(40, 560), width=(4*203-80), font_size=40)) -%}\n{%- set _ = label.add(zebra_zpl_text(frappe.utils.format_datetime(hu.posting_datetime), position=(40, 640), width=(4*203-80), font_size=40)) -%}\n{{ label.dump_contents() }}",
 	"raw_printing": 1,
 	"show_section_headings": 0,
 	"standard": "Yes"

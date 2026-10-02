@@ -4,6 +4,7 @@
 
 import frappe
 from erpnext.stock.stock_ledger import NegativeStockError
+from frappe.utils import flt
 
 from beam.beam.doctype.beam_settings.beam_settings import create_beam_settings
 from beam.beam.scan import get_handling_unit
@@ -11,6 +12,17 @@ from beam.beam.scan import get_handling_unit
 """
 See docs/handling_unit.md
 """
+
+
+def is_scrap_item(row):
+	# ERPNext is migrating the Stock Entry Detail scrap marker across versions, so check every
+	# form: v15 (and transitional v16 builds that still ship `BOM Scrap Item`) populate the
+	# `is_scrap_item` field; later v16 removed that field and marks scrap outputs via
+	# `type == "Scrap"`, preserving the old flag as `is_legacy_scrap_item`. `row.get` returns
+	# None for fields absent on the running version, so this stays safe everywhere.
+	return bool(
+		row.get("is_scrap_item") or row.get("is_legacy_scrap_item") or row.get("type") == "Scrap"
+	)
 
 
 @frappe.whitelist()
@@ -44,9 +56,16 @@ def generate_handling_units(doc, method=None):
 			in ("Material Transfer", "Send to Subcontractor", "Material Transfer for Manufacture")
 			and row.handling_unit
 		):
-			handling_unit = frappe.new_doc("Handling Unit")
-			handling_unit.save()
-			row.to_handling_unit = handling_unit.name
+			if not row.to_handling_unit:
+				handling_unit = frappe.new_doc("Handling Unit")
+				handling_unit.save()
+				row.to_handling_unit = handling_unit.name
+			elif row.to_handling_unit == row.handling_unit:
+				hu = get_handling_unit(row.handling_unit)
+				if hu and flt(hu.stock_qty) != flt(row.transfer_qty):
+					handling_unit = frappe.new_doc("Handling Unit")
+					handling_unit.save()
+					row.to_handling_unit = handling_unit.name
 			continue
 
 		if doc.doctype == "Subcontracting Receipt" and not row.handling_unit:
@@ -54,7 +73,7 @@ def generate_handling_units(doc, method=None):
 			handling_unit.save()
 			row.handling_unit = handling_unit.name
 
-		if doc.doctype == "Stock Entry" and doc.purpose == "Manufacture" and row.is_scrap_item:
+		if doc.doctype == "Stock Entry" and doc.purpose == "Manufacture" and is_scrap_item(row):
 			create_handling_unit = frappe.get_value(
 				"BOM Scrap Item", {"item_code": row.item_code, "parent": doc.bom_no}, "create_handling_unit"
 			)
@@ -68,7 +87,7 @@ def generate_handling_units(doc, method=None):
 			continue
 
 		if doc.doctype == "Stock Entry" and not (
-			any([row.is_finished_item, doc.purpose == "Material Receipt", row.is_scrap_item])
+			any([row.is_finished_item, doc.purpose == "Material Receipt", is_scrap_item(row)])
 		):
 			continue
 
@@ -119,7 +138,7 @@ def validate_handling_unit_overconsumption(doc, method=None):
 				if (
 					abs(hu.stock_qty - row.get(qty_field)) > 0.0
 					and (hu.stock_qty - row.get(qty_field) > precision_denominator)
-					and not row.is_scrap_item
+					and not is_scrap_item(row)
 				):
 					error = True
 			else:  # incoming and transfer / same warehouse

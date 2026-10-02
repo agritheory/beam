@@ -6,6 +6,7 @@ from erpnext.stock.doctype.stock_entry.stock_entry import StockEntry
 from frappe.utils import cstr, flt
 
 from beam.beam.doctype.beam_settings.beam_settings import create_beam_settings
+from beam.beam.handling_unit import is_scrap_item
 
 
 class BEAMStockEntry(StockEntry):
@@ -172,7 +173,7 @@ def validate_items_with_handling_unit(doc, method=None):
 		for row in doc.items:
 			if not frappe.get_value("Item", row.item_code, "enable_handling_unit"):
 				continue
-			elif row.is_scrap_item and not frappe.get_value(
+			elif is_scrap_item(row) and not frappe.get_value(
 				"BOM Scrap Item",
 				{"item_code": row.item_code, "parent": doc.get("bom_no")},
 				"create_handling_unit",
@@ -180,7 +181,7 @@ def validate_items_with_handling_unit(doc, method=None):
 				continue
 			elif (
 				doc.stock_entry_type in ("Repack", "Manufacture")
-				and not (row.t_warehouse or row.is_finished_item or row.is_scrap_item)
+				and not (row.t_warehouse or row.is_finished_item or is_scrap_item(row))
 				and not row.handling_unit
 			):
 				frappe.throw(frappe._(f"Row #{row.idx}: Handling Unit is missing for item {row.item_code}"))
