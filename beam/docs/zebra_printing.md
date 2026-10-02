@@ -4,7 +4,7 @@ For license information, please see license.txt-->
 # Zebra Printing
 
 <div class="byline">
-  Rohan Bansal, Robert Duncan, and Tyler Matteson 2026-07-28
+  Claude Opus 5.5, Rohan Bansal, Robert Duncan, and Tyler Matteson 2026-10-02
 </div>
 
 
