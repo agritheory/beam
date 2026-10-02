@@ -36,13 +36,13 @@ def setup_inventory_dimensions(inv_dim_dict_list: list[dict]) -> None:
 		inv_dim.save()
 
 		for custom_field in frappe.get_all("Custom Field", {"label": f"Source {name}"}):
-			frappe.set_value("Custom Field", custom_field, "label", name)
+			frappe.set_value("Custom Field", custom_field.name, "label", name)
 
 		for custom_field in frappe.get_all("Custom Field", {"label": f"Target {name}"}, ["name", "dt"]):
 			if custom_field.dt == "Purchase Invoice Item":
-				frappe.set_value("Custom Field", custom_field, "label", name)
+				frappe.set_value("Custom Field", custom_field.name, "label", name)
 			else:
-				frappe.set_value("Custom Field", custom_field, "read_only", 1)
+				frappe.set_value("Custom Field", custom_field.name, "read_only", 1)
 				frappe.set_value("Custom Field", custom_field["name"], "no_copy", 1)
 
 		frm_doctypes = get_scan_doctypes()["frm"]
