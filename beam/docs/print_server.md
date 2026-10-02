@@ -4,7 +4,7 @@ For license information, please see license.txt-->
 # Print Server
 
 <div class="byline">
-  Rohan Bansal, Heather Kusmierz, and Tyler Matteson 2026-06-23
+  Rohan Bansal, Heather Kusmierz, and Tyler Matteson 2026-06-25
 </div>
 
 
@@ -48,9 +48,11 @@ pytest beam/beam/tests/test_printer_logic.py
 pytest beam/beam/tests/test_printer_cups_integration.py
 ```
 
-CI builds and runs `ghcr.io/agritheory/beam-cups:sha-<git-sha>` as a workflow service on port 631. Locally, run the image with `-p 631:631` and set `BEAM_CUPS_HOST` / `BEAM_CUPS_PORT`. Optional env vars: `CUPS_ADMIN_USER`, `CUPS_ADMIN_PASSWORD` (defaults match `cups/.env.example`).
+Locally, the integration tests use system cupsd on `:631` (user in `lpadmin`). Admin calls go through the Unix socket — HTTP to `127.0.0.1:631` hangs on `addPrinter`. Device URIs stay on `127.0.0.1` so cupsd can reach the mock printers.
 
-Pure logic tests run without CUPS. Integration tests use `test_utils.printers` mock servers (TCP raw + IPP) plus real pycups/CUPS queue creation against the container on a mapped HTTP port.
+CI builds and runs `ghcr.io/agritheory/beam-cups:sha-<git-sha>` as a workflow service published on host port **1631** (`BEAM_CUPS_HOST` / `BEAM_CUPS_PORT`). The container reaches mocks via the runner IP / `host.docker.internal`. Override with `BEAM_CUPS_SAME_HOST=1|0` or `BEAM_CUPS_MOCK_HOST=<ip>`. Optional: `CUPS_ADMIN_USER`, `CUPS_ADMIN_PASSWORD` (defaults match `cups/.env.example`).
+
+Pure logic tests run without CUPS. Integration tests use `test_utils.printers` mock servers (TCP raw + IPP) plus real pycups/CUPS queue creation.
 
 ---
 

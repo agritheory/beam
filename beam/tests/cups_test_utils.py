@@ -17,16 +17,40 @@ from beam.beam.overrides.network_printer_settings import (
 )
 
 CUPS_HOST_FROM_CONTAINER = "host.docker.internal"
-# Mock printers must listen on all interfaces so the CUPS container can reach them
+# Mock printers must listen on all interfaces so a CUPS *container* can reach them
 # via host.docker.internal / host-gateway (127.0.0.1-only listeners reject those connections).
+# Same-host system cupsd uses 127.0.0.1 in the device URI instead (see mock_host_for_cups).
 MOCK_PRINTER_BIND_HOST = "0.0.0.0"
 
+LOOPBACK_HOSTS = frozenset({"127.0.0.1", "localhost", "::1", "0.0.0.0"})
 
-def mock_host_for_cups_container():
-	"""Host that the CUPS service container uses to reach mock printers in the test runner."""
+
+def cups_runs_on_same_host(host: str, port: int) -> bool:
+	"""True when CUPS is system cupsd on this machine (not a published container port).
+
+	CI publishes beam-cups as 127.0.0.1:1631 — still a container that must reach mocks
+	via host-gateway. Default local cupsd is :631 on the same host as the mock printers.
+	"""
+	flag = os.environ.get("BEAM_CUPS_SAME_HOST", "").strip().lower()
+	if flag in ("1", "true", "yes"):
+		return True
+	if flag in ("0", "false", "no"):
+		return False
+	return host in LOOPBACK_HOSTS and int(port) == 631
+
+
+def mock_host_for_cups(host: str = "127.0.0.1", port: int = 631) -> str:
+	"""Hostname CUPS should use in device URIs to reach mock printers in the test process.
+
+	- Same-host system cupsd: 127.0.0.1 (no Docker; host.docker.internal would hang).
+	- CI / container CUPS: runner IP or host.docker.internal.
+	- Override anytime with BEAM_CUPS_MOCK_HOST.
+	"""
 	explicit = os.environ.get("BEAM_CUPS_MOCK_HOST", "").strip()
 	if explicit:
 		return explicit
+	if cups_runs_on_same_host(host, port):
+		return "127.0.0.1"
 	if os.environ.get("CI") == "true" or os.environ.get("ACT") == "true":
 		import subprocess
 
@@ -39,13 +63,38 @@ def mock_host_for_cups_container():
 	return CUPS_HOST_FROM_CONTAINER
 
 
+def mock_host_for_cups_container():
+	"""Backward-compatible alias; uses BEAM_CUPS_HOST/PORT when set."""
+	host = os.environ.get("BEAM_CUPS_HOST", "127.0.0.1")
+	port = int(os.environ.get("BEAM_CUPS_PORT", "631"))
+	return mock_host_for_cups(host, port)
+
+
 def cups_test_connection(server):
+	"""Admin connection to the CUPS under test.
+
+	Same-host system cupsd must use the Unix socket — HTTP to 127.0.0.1:631
+	accepts getPrinters but hangs forever on addPrinter/deletePrinter (matches
+	beam.beam.overrides.network_printer_settings.cups_connection).
+	"""
 	cups = require_cups()
 	password = server["password"]
-	cups.setServer(server["host"])
-	cups.setPort(int(server["port"]))
 	cups.setUser(server["user"])
 	cups.setPasswordCB(lambda prompt: password)
+
+	host = (server.get("host") or "").strip()
+	port = int(server.get("port") or 631)
+	same_host = server.get("same_host")
+	if same_host is None:
+		same_host = cups_runs_on_same_host(host, port)
+
+	if same_host or (port == 631 and host.lower() in LOOPBACK_HOSTS):
+		cups.setServer("")
+		cups.setPort(631)
+		return cups.Connection()
+
+	cups.setServer(host)
+	cups.setPort(port)
 	return cups.Connection()
 
 
@@ -60,13 +109,15 @@ def cups_available(server):
 
 def device_uri_for_cups(printer, server):
 	uri = printer.uri
-	replacement_host = server.get("cups_host_from_container", CUPS_HOST_FROM_CONTAINER)
+	replacement_host = server.get("cups_host_from_container") or mock_host_for_cups(
+		server.get("host", "127.0.0.1"), int(server.get("port", 631))
+	)
 	parsed = urlparse(uri)
-	if parsed.hostname not in ("127.0.0.1", "localhost", "::1", "0.0.0.0"):
+	if parsed.hostname not in LOOPBACK_HOSTS:
 		return uri
 
 	hostname = replacement_host
-	if parsed.hostname == "::1":
+	if parsed.hostname == "::1" and replacement_host not in LOOPBACK_HOSTS:
 		hostname = f"[{replacement_host}]"
 
 	netloc = hostname
