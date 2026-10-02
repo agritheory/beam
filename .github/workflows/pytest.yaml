@@ -140,9 +140,6 @@ jobs:
             ${{ runner.os }}-pip-
             ${{ runner.os }}-
 
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-
       - name: Install JS Dependencies
         run: yarn --prefer-offline
 
@@ -160,14 +157,12 @@ jobs:
       - name: Run Tests
         working-directory: ${{ env.BENCH_ROOT }}
         env:
-          POETRY_VIRTUALENVS_CREATE: "false"
           BEAM_TEST_TELEMETRY: "true"
           BEAM_TEST_STACK_DUMP_SECONDS: "60"
         run: |
           set -o pipefail
           source env/bin/activate
           cd apps/beam
-          poetry install
           pytest --cov=beam --cov-report=xml --cov-report=term-missing:skip-covered --disable-warnings -s | tee pytest-coverage.txt
 
       - name: Pytest coverage comment
