@@ -29,6 +29,7 @@ import ControlButtons from '@/components/ControlButtons.vue'
 import ScanOutput from '@/components/ScanOutput.vue'
 import { useBeamStore } from '@/stores/beam'
 import type { ControlButton, DeliveryNote, DeliveryNoteItem } from '@/types'
+import { itemListLine } from '@/utils/itemListLine'
 
 const route = useRoute()
 const store = useBeamStore()
@@ -59,10 +60,11 @@ onBeforeRouteLeave((to, from, next) => {
 
 const items = computed((): (DeliveryNoteItem & ListViewItem)[] => {
 	return deliveryNote.value.items.map(item => {
+		const line = itemListLine(item)
 		return {
 			...item,
-			label: item.item_name,
-			description: `${item.warehouse}`,
+			label: line.label,
+			description: line.description,
 			count: {
 				count: item.delivered_qty,
 				of: item.qty,

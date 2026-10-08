@@ -80,6 +80,40 @@ def pause_form_is_visible(page) -> bool:
 	return page.locator(".qty-input-row input").first.is_visible()
 
 
+def work_order_name_from_operation_page(page) -> str:
+	match = re.search(r"#/work_order/([^/]+)/operation/", page.url)
+	assert match, f"Could not parse work order from URL: {page.url}"
+	return match.group(1)
+
+
+def work_order_has_wip_material(work_order_name: str) -> bool:
+	row = frappe.get_value(
+		"Work Order",
+		work_order_name,
+		["skip_transfer", "status", "material_transferred_for_manufacturing"],
+		as_dict=True,
+	)
+	if not row:
+		return False
+	if row.skip_transfer or row.status == "In Process":
+		return True
+	return float(row.material_transferred_for_manufacturing or 0) > 0
+
+
+def assert_start_rejected_without_wip(page, toggle_button, job_card_name: str) -> None:
+	with use_current_db_transaction():
+		before = frappe.get_all("Job Card Time Log", filters={"parent": job_card_name}, pluck="name")
+
+	toggle_button.click()
+	expect(page.locator(".action-error")).to_contain_text("Failed to start job card", timeout=10000)
+	expect(toggle_button).to_contain_text("Start", timeout=10000)
+
+	with use_current_db_transaction():
+		after = frappe.get_all("Job Card Time Log", filters={"parent": job_card_name}, pluck="name")
+
+	assert after == before, "Start wrote a time log before materials were in WIP"
+
+
 def ensure_operation_running(page, toggle_button):
 	current_label = toggle_button.inner_text().strip()
 	if current_label == "Pause":
@@ -191,6 +225,12 @@ def test_start_operation_starts_timer_and_toggles_buttons(page):
 	initial_elapsed = timer_text.inner_text().strip()
 	assert re.fullmatch(r"\d{2}:\d{2}:\d{2}", initial_elapsed)
 
+	with use_current_db_transaction():
+		ready = work_order_has_wip_material(work_order_name_from_operation_page(page))
+	if not ready:
+		assert_start_rejected_without_wip(page, toggle_button, job_card.get("name"))
+		return
+
 	toggle_button.click()
 	expect(toggle_button).to_be_enabled(timeout=10000)
 	expect(toggle_button).to_contain_text("Pause", timeout=10000)
@@ -221,6 +261,12 @@ def test_stop_operation_stops_timer_and_records_time_log(page):
 
 	assert job_card_name, f"Expected a Job Card linked to operation {operation_id}"
 	initial_closed_logs = len([log for log in initial_logs if log.to_time])
+
+	with use_current_db_transaction():
+		ready = work_order_has_wip_material(work_order_name_from_operation_page(page))
+	if not ready:
+		assert_start_rejected_without_wip(page, toggle_button, job_card_name)
+		return
 
 	ensure_operation_running(page, toggle_button)
 

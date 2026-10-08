@@ -919,3 +919,69 @@ employees = [
 		"designation": "Warehouse Associate",
 	},
 ]
+
+DELIVERY_PICK_DEMO_PO = "BEAM-DELIVERY-PICK-DEMO"
+
+delivery_ship_pick_demo = {
+	"sales_order": {
+		"po_no": DELIVERY_PICK_DEMO_PO,
+		"customer": "Almacs Food Group",
+		"items": [
+			{"item_code": "Ambrosia Pie", "qty": 5, "warehouse": "Baked Goods - APC"},
+			{"item_code": "Double Plum Pie", "qty": 5, "warehouse": "Baked Goods - APC"},
+		],
+	},
+	"staging_warehouse": "Shipping - APC",
+	"material_transfer": {
+		"purpose": "Material Transfer",
+		"lines": [
+			{"item_code": "Ambrosia Pie", "qty": 5, "warehouse": "Baked Goods - APC", "uom": "Nos"},
+			{"item_code": "Double Plum Pie", "qty": 5, "warehouse": "Baked Goods - APC", "uom": "Nos"},
+		],
+	},
+}
+
+pie_crust_pick_demo = {
+	"work_order": {
+		"production_item": "Pie Crust",
+		"qty": 2,
+		"wip_warehouse": "Kitchen - APC",
+	},
+	"material_receipts": [
+		{
+			"item_code": "Butter",
+			"qty": 1,
+			"uom": "Pound",
+			"t_warehouse": "Refrigerator - APC",
+			"basic_rate": 4.50,
+		},
+		{
+			"item_code": "Flour",
+			"qty": 1.7,
+			"uom": "Pound",
+			"t_warehouse": "Storeroom - APC",
+			"basic_rate": 0.85,
+		},
+		{
+			"item_code": "Salt",
+			"qty": 0.02,
+			"uom": "Pound",
+			"t_warehouse": "Storeroom - APC",
+			"basic_rate": 0.10,
+		},
+		{
+			"item_code": "Parchment Paper",
+			"qty": 2,
+			"uom": "Nos",
+			"t_warehouse": "Storeroom - APC",
+			"basic_rate": 0.05,
+		},
+		{
+			"item_code": "Pie Tin",
+			"qty": 2,
+			"uom": "Nos",
+			"t_warehouse": "Storeroom - APC",
+			"basic_rate": 0.25,
+		},
+	],
+}

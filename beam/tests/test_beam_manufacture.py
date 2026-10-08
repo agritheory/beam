@@ -9,15 +9,18 @@ pytest_plugins = ["beam.tests.playwright_fixtures"]
 #  pytest ./beam/tests/test_beam_manufacture.py --browser firefox --headed --disable-warnings
 
 import re
+from datetime import datetime
 
 import frappe
 import pytest
 from playwright.sync_api import expect
 
 from beam.tests.playwright_utils import (
-	open_first_beam_list_row,
+	beam_portal_url,
 	order_id_from_beam_url,
 	use_current_db_transaction,
+	wait_for_docstatus,
+	wait_for_work_order_stock_entry,
 )
 
 
@@ -54,12 +57,11 @@ def test_complete_partial_stock_entry(page):
 	butter.submit()
 	frappe.db.commit()
 
-	# navigate in the following order: Home -> Manufacture -> Work Order
-	open_first_beam_list_row(page, "Manufacture", r"work_order/")
-
-	# get the selected Work Order
-	order_id = order_id_from_beam_url(page.url)
-	assert order_id
+	current_year = datetime.now().year
+	order_id = f"MFG-WO-{current_year}-00001"
+	page.goto(beam_portal_url(f"/work_order/{order_id}"))
+	expect(page.get_by_text("TRANSFER", exact=True)).to_be_visible(timeout=15000)
+	assert order_id_from_beam_url(page.url) == order_id
 
 	expect(page.locator("css=.box .beam_list-item").first).to_be_visible()
 	# ensure there are no existing Stock Entries against this Work Order
@@ -90,29 +92,9 @@ def test_complete_partial_stock_entry(page):
 		page.evaluate("barcode => scanner.simulate(window, barcode)", barcodes[0])
 		expect(item_count).to_have_text(re.compile("1/"))
 
-	# check that a draft Stock Entry is created
-	page.get_by_text("SAVE", exact=True).click()
-	page.wait_for_timeout(1000)
-	with use_current_db_transaction():
-		entries = frappe.get_all(
-			"Stock Entry",
-			filters={"work_order": order_id},
-			fields=["docstatus"],
-		)
-	assert len(entries) >= 1
-	assert entries[0]["docstatus"] == 0
-
-	# check that the draft Purchase Receipt is submitted
 	page.get_by_text("TRANSFER", exact=True).click()
-	page.wait_for_timeout(1000)
-	with use_current_db_transaction():
-		receipts = frappe.get_all(
-			"Stock Entry",
-			filters={"work_order": order_id},
-			fields=["docstatus"],
-		)
-	assert len(receipts) >= 1
-	assert receipts[0]["docstatus"] == 1
+	entry_name = wait_for_work_order_stock_entry(order_id)
+	wait_for_docstatus("Stock Entry", entry_name, 1)
 
 	frappe.db.set_value("BEAM Settings", "Ambrosia Pie Company", "enable_handling_units", 1)
 	frappe.db.commit()

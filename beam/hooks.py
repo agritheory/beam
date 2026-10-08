@@ -172,6 +172,9 @@ doc_events = {
 		"on_submit": ["beam.beam.demand.demand.modify_demand"],
 		"on_cancel": ["beam.beam.demand.demand.modify_demand"],
 	},
+	"Pick List": {
+		"on_submit": ["beam.beam.pick_list.create_stock_entry_on_submit"],
+	},
 	"Purchase Order": {
 		"on_submit": ["beam.beam.demand.receiving.modify_receiving"],
 		"on_cancel": ["beam.beam.demand.receiving.modify_receiving"],
@@ -559,6 +562,12 @@ demand = {
 }
 
 
+beam_frm = {
+	"Item": {"Pick List": []},
+	"Warehouse": {"Pick List": []},
+	"Handling Unit": {"Pick List": []},
+}
+
 beam_mobile = {
 	"components": {
 		"DeliveryNote": "./beam/beam/www/beam/pages/DeliveryNote.vue",
@@ -568,11 +577,13 @@ beam_mobile = {
 		"Manufacture": "./beam/beam/www/beam/pages/Manufacture.vue",
 		"Move": "./beam/beam/www/beam/pages/Move.vue",
 		"Operation": "./beam/beam/www/beam/pages/Operation.vue",
+		"Pick": "./beam/beam/www/beam/pages/Pick.vue",
 		"PurchaseReceipt": "./beam/beam/www/beam/pages/PurchaseReceipt.vue",
 		"Receive": "./beam/beam/www/beam/pages/Receive.vue",
 		"Repack": "./beam/beam/www/beam/pages/Repack.vue",
 		"Ship": "./beam/beam/www/beam/pages/Ship.vue",
 		"WorkOrder": "./beam/beam/www/beam/pages/WorkOrder.vue",
+		"PickList": "./beam/beam/www/beam/pages/PickList.vue",
 		"Workstation": "./beam/beam/www/beam/pages/Workstation.vue",
 		"404": "./beam/beam/www/beam/pages/404.vue",
 	},
@@ -659,6 +670,18 @@ beam_mobile = {
 			"name": "manufacture",
 			"component": "Manufacture",
 			"meta": {"requiresAuth": True, "doctype": "Work Order", "view": "list"},
+		},
+		{
+			"path": "/pick-list",
+			"name": "pick_lists",
+			"component": "Pick",
+			"meta": {"requiresAuth": True, "doctype": "Pick List", "view": "list"},
+		},
+		{
+			"path": "/pick-list/:id",
+			"name": "pick_list",
+			"component": "PickList",
+			"meta": {"requiresAuth": True, "doctype": "Pick List", "view": "form", "cameraPhoto": True},
 		},
 		{
 			"path": "/repack",

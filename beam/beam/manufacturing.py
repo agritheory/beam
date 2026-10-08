@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import frappe
+from frappe.utils import flt
 
 
 def check_manufacturing_permission() -> None:
@@ -27,6 +28,125 @@ def fetch_job_card(job_card_id: str):
 	finally:
 		frappe.flags.ignore_user_permissions = False
 	return doc
+
+
+def overproduction_percentage() -> float:
+	return frappe.utils.flt(
+		frappe.db.get_single_value("Manufacturing Settings", "overproduction_percentage_for_work_order")
+	)
+
+
+def production_qty_limits(for_quantity: float) -> tuple[float, float]:
+	"""Return the minimum and maximum completed qty for a job card.
+
+	Manufacturing Settings has one allowance, Overproduction Percentage For Work Order.
+	The same percentage is the under floor and the over ceiling around Qty to Manufacture.
+	"""
+	target = frappe.utils.flt(for_quantity)
+	allowance = target * overproduction_percentage() / 100
+	return target - allowance, target + allowance
+
+
+def projected_completed_qty(doc, session_qty: float) -> float:
+	"""Completed qty after writing session_qty onto the open time log."""
+	open_qty = sum(frappe.utils.flt(log.completed_qty) for log in doc.time_logs if not log.to_time)
+	return (
+		frappe.utils.flt(doc.total_completed_qty)
+		- frappe.utils.flt(open_qty)
+		+ frappe.utils.flt(session_qty)
+	)
+
+
+def materials_in_wip(doc) -> bool:
+	"""Whether time can start, matching the Job Card timer's WIP rule.
+
+	ERPNext only enforces that rule when the job card carries its own raw materials.
+	Beam transfers against the Work Order, so the job card has no items and the timer
+	check never runs. Require the work order itself to have material in WIP first.
+	"""
+	if doc.is_corrective_job_card or not doc.work_order:
+		return True
+
+	skip_transfer, status, transferred = frappe.db.get_value(
+		"Work Order",
+		doc.work_order,
+		["skip_transfer", "status", "material_transferred_for_manufacturing"],
+	)
+	if skip_transfer:
+		return True
+
+	if doc.items:
+		pending = any(flt(row.transferred_qty) < flt(row.required_qty) for row in doc.items)
+		if pending:
+			return False
+		return status == "In Process" or flt(doc.transferred_qty) > 0
+
+	if status == "In Process" or flt(transferred) > 0:
+		return True
+
+	work_order = frappe.get_doc("Work Order", doc.work_order)
+	return bool(work_order.has_transferred_material())
+
+
+def get_work_order_predecessors(work_order_id: str) -> list[dict]:
+	work_order = frappe.get_doc("Work Order", work_order_id)
+	if not work_order.production_plan:
+		return []
+
+	predecessors: list[dict] = []
+	for row in work_order.required_items:
+		if not row.item_code:
+			continue
+
+		candidates = frappe.get_all(
+			"Work Order",
+			filters={
+				"production_plan": work_order.production_plan,
+				"production_item": row.item_code,
+				"name": ["!=", work_order.name],
+				"status": ["not in", ["Cancelled", "Closed"]],
+			},
+			fields=["name", "production_item", "status", "produced_qty", "qty"],
+		)
+		for candidate in candidates:
+			predecessors.append(
+				{
+					"work_order": candidate.name,
+					"item_code": row.item_code,
+					"required_qty": flt(row.required_qty),
+					"produced_qty": flt(candidate.produced_qty),
+					"status": candidate.status,
+					"stock_uom": row.stock_uom,
+				}
+			)
+
+	return predecessors
+
+
+def predecessors_block(work_order_id: str) -> bool:
+	for row in get_work_order_predecessors(work_order_id):
+		if flt(row["produced_qty"]) < flt(row["required_qty"]):
+			return True
+	return False
+
+
+def require_predecessors_met(work_order_id: str) -> None:
+	if predecessors_block(work_order_id):
+		frappe.throw(
+			frappe._("Complete predecessor work orders before continuing."),
+			frappe.ValidationError,
+		)
+
+
+def require_materials_in_wip(doc) -> None:
+	if materials_in_wip(doc):
+		return
+
+	frappe.throw(
+		frappe._(
+			"Materials needs to be transferred to the work in progress warehouse for the job card {0}"
+		).format(doc.name)
+	)
 
 
 def get_locked_by_employee(doc) -> str | None:
@@ -76,6 +196,33 @@ def ensure_employee_on_job_card(doc, args: frappe._dict) -> None:
 
 
 @frappe.whitelist()
+def get_work_order_mobile_context(work_order_id: str) -> dict:
+	from beam.beam.pick_list import get_open_pick_list_for_work_order
+
+	check_manufacturing_permission()
+	predecessors = get_work_order_predecessors(work_order_id)
+	return {
+		"predecessors": predecessors,
+		"predecessors_block": any(
+			flt(row["produced_qty"]) < flt(row["required_qty"]) for row in predecessors
+		),
+		"overproduction_percentage": overproduction_percentage(),
+		"pick_list": get_open_pick_list_for_work_order(work_order_id),
+	}
+
+
+@frappe.whitelist()
+def set_work_order_status(work_order_id: str, status: str) -> str:
+	check_manufacturing_permission()
+	if status not in ("Stopped", "Resumed"):
+		frappe.throw(frappe._("Unsupported work order status change."), frappe.ValidationError)
+
+	from erpnext.manufacturing.doctype.work_order.work_order import stop_unstop
+
+	return stop_unstop(work_order_id, status)
+
+
+@frappe.whitelist()
 def get_job_card(job_card_id: str) -> dict:
 	"""
 	Fetch a Job Card bypassing User Permissions on the employee link field.
@@ -90,6 +237,7 @@ def get_job_card(job_card_id: str) -> dict:
 	doc = fetch_job_card(job_card_id)
 	result = doc.as_dict()
 	result["locked_by_employee"] = get_locked_by_employee(doc)
+	result["overproduction_percentage"] = overproduction_percentage()
 	return result
 
 
@@ -111,6 +259,9 @@ def start_job_card(job_card_id: str) -> dict:
 	)
 	args.employees = [{"employee": current_employee}]
 
+	doc = fetch_job_card(job_card_id)
+	require_predecessors_met(doc.work_order)
+	require_materials_in_wip(doc)
 	make_time_log(args)
 	return get_job_card(job_card_id)
 
@@ -118,6 +269,17 @@ def start_job_card(job_card_id: str) -> dict:
 @frappe.whitelist()
 def pause_job_card(job_card_id: str, completed_qty: float = 0) -> dict:
 	check_manufacturing_permission()
+
+	doc = fetch_job_card(job_card_id)
+	_, max_qty = production_qty_limits(doc.for_quantity)
+	projected = projected_completed_qty(doc, completed_qty)
+	if projected > max_qty:
+		frappe.throw(
+			frappe._("Completed quantity {0} cannot exceed {1}").format(
+				frappe.utils.flt(projected), frappe.utils.flt(max_qty)
+			),
+			frappe.ValidationError,
+		)
 
 	make_time_log(
 		frappe._dict(
@@ -134,6 +296,17 @@ def pause_job_card(job_card_id: str, completed_qty: float = 0) -> dict:
 def finish_job_card(job_card_id: str, completed_qty: float) -> dict:
 	check_manufacturing_permission()
 
+	doc = fetch_job_card(job_card_id)
+	min_qty, max_qty = production_qty_limits(doc.for_quantity)
+	projected = projected_completed_qty(doc, completed_qty)
+	if projected < min_qty or projected > max_qty:
+		frappe.throw(
+			frappe._("Completed quantity {0} must be between {1} and {2}").format(
+				frappe.utils.flt(projected), frappe.utils.flt(min_qty), frappe.utils.flt(max_qty)
+			),
+			frappe.ValidationError,
+		)
+
 	make_time_log(
 		frappe._dict(
 			job_card_id=job_card_id,
@@ -148,6 +321,13 @@ def finish_job_card(job_card_id: str, completed_qty: float) -> dict:
 		doc = frappe.get_doc("Job Card", job_card_id)
 		if doc.docstatus == 0:
 			doc.flags.ignore_permissions = True
+			completed = frappe.utils.flt(doc.total_completed_qty)
+			# Over the planned qty: raise Qty to Manufacture so submit can match it.
+			# Under the planned qty: book the shortfall as process loss.
+			if completed > frappe.utils.flt(doc.for_quantity):
+				doc.for_quantity = completed
+			elif completed < frappe.utils.flt(doc.for_quantity):
+				doc.process_loss_qty = frappe.utils.flt(doc.for_quantity) - completed
 			doc.submit()
 	finally:
 		frappe.flags.ignore_user_permissions = False

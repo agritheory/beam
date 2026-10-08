@@ -28,6 +28,26 @@ def use_current_db_transaction():
 	yield
 
 
+def wait_for_work_order_stock_entry(work_order_id: str, timeout: float = 20.0) -> str:
+	"""Return the newest Stock Entry name for this work order after a portal TRANSFER."""
+	deadline = time.monotonic() + timeout
+	while True:
+		frappe.db.rollback()
+		frappe.db.begin()
+		entries = frappe.get_all(
+			"Stock Entry",
+			filters={"work_order": work_order_id},
+			pluck="name",
+			order_by="creation desc",
+			limit=1,
+		)
+		if entries:
+			return entries[0]
+		if time.monotonic() >= deadline:
+			raise AssertionError(f"No Stock Entry for Work Order {work_order_id} after {timeout}s")
+		time.sleep(0.25)
+
+
 def wait_for_docstatus(doctype: str, name: str, expected: int, timeout: float = 20.0) -> None:
 	"""Block until the live bench has committed `expected` for this document.
 
@@ -221,6 +241,19 @@ def get_playwright_base_url() -> str:
 	if _url_state.get("playwright_base_url"):
 		return _url_state["playwright_base_url"]
 	return frappe.utils.get_url().rstrip("/")
+
+
+def beam_portal_url(route: str = "") -> str:
+	"""Hash route under the Beam portal (``/beam#/…``), matching post-login navigation."""
+	base = get_playwright_base_url().rstrip("/")
+	if not base.endswith("/beam"):
+		base = f"{base}/beam"
+	route = route.strip()
+	if route.startswith("#"):
+		route = route[1:]
+	if route and not route.startswith("/"):
+		route = f"/{route}"
+	return f"{base}#{route}" if route else f"{base}#/"
 
 
 def login_playwright(page, email: str = "support@agritheory.dev", password: str = "admin"):

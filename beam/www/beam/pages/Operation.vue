@@ -20,6 +20,7 @@
 			<p v-if="sequenceBlockedBy" class="sequence-warning">
 				Complete more of {{ sequenceBlockedBy }} before continuing.
 			</p>
+			<p v-if="predecessorsBlock" class="sequence-warning">Complete predecessor work orders before continuing.</p>
 		</div>
 		<div class="box timer-box">
 			<b class="timer-value">{{ elapsedTime }}</b>
@@ -37,12 +38,17 @@
 					<button @click="cancelPause">Cancel</button>
 				</div>
 			</div>
+			<div v-else-if="isCompleted" class="actions actions-single">
+				<button v-if="nextOperation" @click="goToNextOperation">Next Operation</button>
+				<button v-else-if="isLastOperation" @click="goToComplete">Complete</button>
+			</div>
 			<div v-else class="actions">
 				<button
 					:disabled="
 						actionsDisabled ||
-						isCompleted ||
+						workOrder.status === 'Stopped' ||
 						Boolean(sequenceBlockedBy) ||
+						predecessorsBlock ||
 						hasActiveConflict ||
 						Boolean(lockedByEmployee) ||
 						!canToggle
@@ -57,8 +63,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 import { useBeamStore } from '@/stores/beam'
 import { useBeamToast } from '@/utils/toast'
@@ -74,11 +80,15 @@ interface RouteParams {
 }
 
 const route = useRoute()
+const router = useRouter()
 const store = useBeamStore()
 const toast = useBeamToast()
 const workOrderId = computed((): string => String((route.params as RouteParams).id || ''))
 const operationId = computed((): string => String((route.params as RouteParams).operationId || ''))
 const workOrder = computed(() => store.form as Partial<WorkOrder>)
+const predecessorsBlock = computed((): boolean =>
+	Boolean(store.workOrderContext[workOrderId.value]?.predecessors_block)
+)
 
 const operation = ref<Partial<WorkOrderOperation>>({})
 const jobCard = ref<Partial<JobCard>>({})
@@ -135,35 +145,51 @@ const activeJobCardForEmployee = computed((): string => jobCard.value.active_job
 const hasActiveConflict = computed((): boolean => Boolean(jobCard.value.active_job_card_for_employee))
 const lockedByEmployee = computed((): string => jobCard.value.locked_by_employee || '')
 const isSubmitted = computed((): boolean => jobCard.value.docstatus !== 0)
-const isQtyCompleted = computed((): boolean => {
-	const completed = Number(jobCard.value.total_completed_qty || 0)
-	const required = Number(jobCard.value.for_quantity || 0)
-	return completed >= required && required > 0
-})
+const plannedQty = computed((): number => Number(jobCard.value.for_quantity || 0))
+const overproductionPercentage = computed((): number => Number(jobCard.value.overproduction_percentage || 0))
+const minFinishQty = computed((): number => plannedQty.value * (1 - overproductionPercentage.value / 100))
+const maxFinishQty = computed((): number => plannedQty.value * (1 + overproductionPercentage.value / 100))
+const completedQty = computed((): number => Number(jobCard.value.total_completed_qty || 0))
+const isQtyCompleted = computed((): boolean => plannedQty.value > 0 && completedQty.value >= minFinishQty.value)
+const atMaxQty = computed((): boolean => plannedQty.value > 0 && completedQty.value >= maxFinishQty.value)
 
 const actionsDisabled = computed(
 	(): boolean => isBusy.value || hasLoadError.value || !jobCardName.value || isSubmitted.value
 )
 const toggleLabel = computed((): string => (isRunning.value ? 'Pause' : 'Start'))
-const canToggle = computed((): boolean => !isQtyCompleted.value)
-const remainingQty = computed((): number =>
-	Math.max(0, Number(jobCard.value.for_quantity || 0) - Number(jobCard.value.total_completed_qty || 0))
+const canToggle = computed((): boolean => isRunning.value || !atMaxQty.value)
+const remainingQty = computed((): number => Math.max(0, plannedQty.value - completedQty.value))
+const orderedOperations = computed((): Partial<WorkOrderOperation>[] =>
+	[...(workOrder.value.operations || [])].sort(
+		(a: Partial<WorkOrderOperation>, b: Partial<WorkOrderOperation>) => Number(a.idx || 0) - Number(b.idx || 0)
+	)
+)
+const currentOperationIndex = computed((): number =>
+	orderedOperations.value.findIndex((op: Partial<WorkOrderOperation>) => op.name === operationId.value)
+)
+const nextOperation = computed((): Partial<WorkOrderOperation> | undefined => {
+	if (currentOperationIndex.value < 0) return undefined
+	return orderedOperations.value[currentOperationIndex.value + 1]
+})
+const isLastOperation = computed(
+	(): boolean => currentOperationIndex.value >= 0 && currentOperationIndex.value === orderedOperations.value.length - 1
 )
 const availableQty = computed((): number => {
+	const qtyRoom = Math.max(0, maxFinishQty.value - completedQty.value)
 	const operations: Partial<WorkOrderOperation>[] = workOrder.value.operations || []
 	const current = operations.find((op: Partial<WorkOrderOperation>) => op.name === operationId.value)
-	if (!current || !current.idx) return remainingQty.value
+	if (!current || !current.idx) return qtyRoom
 
-	const currentCompleted = Math.max(Number(current.completed_qty || 0), Number(jobCard.value.total_completed_qty || 0))
 	const previousOperations = operations.filter(
 		(op: Partial<WorkOrderOperation>) => Number(op.idx || 0) < Number(current.idx || 0)
 	)
-	if (!previousOperations.length) return remainingQty.value
+	if (!previousOperations.length) return qtyRoom
 
+	const currentCompleted = Math.max(Number(current.completed_qty || 0), completedQty.value)
 	const previousCompletedQty = Math.min(
 		...previousOperations.map((op: Partial<WorkOrderOperation>) => Number(op.completed_qty || 0))
 	)
-	return Math.max(0, Math.min(remainingQty.value, previousCompletedQty - currentCompleted))
+	return Math.max(0, Math.min(qtyRoom, previousCompletedQty - currentCompleted))
 })
 
 const startTicking = (): void => {
@@ -298,10 +324,26 @@ const syncFromBackendOnReturn = async (): Promise<void> => {
 	await refreshJobCard()
 }
 
-onMounted(async (): Promise<void> => {
+const loadOperation = async (): Promise<void> => {
+	showQtyInput.value = false
+	pendingQty.value = 0
+	actionError.value = ''
 	operation.value =
 		workOrder.value.operations?.find((op: Partial<WorkOrderOperation>) => op.name === operationId.value) || {}
+	jobCard.value = {}
+	jobCardName.value = ''
+	elapsedSeconds.value = 0
+	stopTicking()
+	await store.getWorkOrderMobileContext(workOrderId.value)
 	await refreshJobCard()
+}
+
+watch(operationId, (): void => {
+	void loadOperation()
+})
+
+onMounted(async (): Promise<void> => {
+	await loadOperation()
 	document.addEventListener('visibilitychange', syncFromBackendOnReturn)
 	window.addEventListener('focus', syncFromBackendOnReturn)
 })
@@ -372,14 +414,30 @@ const cancelPause = (): void => {
 	pendingQty.value = 0
 }
 
+const goToNextOperation = async (): Promise<void> => {
+	const next = nextOperation.value
+	if (!next?.name) return
+	await router.push({
+		name: 'operation',
+		params: { id: workOrderId.value, operationId: next.name },
+	})
+}
+
+const goToComplete = async (): Promise<void> => {
+	await router.push({
+		name: 'work_order',
+		params: { id: workOrderId.value },
+		query: { purpose: 'Manufacture' },
+	})
+}
+
 const finishOperation = async (): Promise<void> => {
 	if (!jobCardName.value || isBusy.value || !isQtyCompleted.value) return
 
 	isBusy.value = true
 	actionError.value = ''
 	try {
-		const currentQty = Number(jobCard.value.total_completed_qty || 0)
-		const card = await store.finishJobCard(jobCardName.value, currentQty)
+		const card = await store.finishJobCard(jobCardName.value, 0)
 		applyJobCard(card)
 	} catch (error) {
 		const message = (error as Error)?.message || 'Unknown error'
@@ -519,6 +577,10 @@ button:disabled {
 @media (min-width: 760px) {
 	.actions {
 		grid-template-columns: repeat(3, 1fr);
+	}
+
+	.actions.actions-single {
+		grid-template-columns: 1fr;
 	}
 }
 </style>

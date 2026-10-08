@@ -34,6 +34,7 @@ import { ref, onMounted, computed } from 'vue'
 import ControlButtons from '@/components/ControlButtons.vue'
 import { useBeamStore } from '@/stores/beam'
 import type { ControlButton, DocActionResponse, StockEntry } from '@/types'
+import { itemListLine } from '@/utils/itemListLine'
 import { watch } from 'vue'
 
 const store = useBeamStore()
@@ -148,11 +149,18 @@ const controlButtons = computed((): ControlButton[] => {
 watch(
 	() => store.cache.mappers['move']?.items,
 	newItems => {
-		items.value = (newItems || []).map(s => ({
-			...s,
-			label: s.item_code,
-			count: { count: s.qty },
-		}))
+		items.value = (newItems || []).map(s => {
+			const line = itemListLine({
+				...s,
+				warehouse: s.s_warehouse || s.t_warehouse,
+			})
+			return {
+				...s,
+				label: line.label || s.item_code,
+				description: line.description,
+				count: { count: s.qty },
+			}
+		})
 		componentKey.value++
 	},
 	{ immediate: true, deep: true }

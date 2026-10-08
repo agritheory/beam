@@ -5,6 +5,11 @@ import { defineStore } from 'pinia'
 import { computed } from 'vue'
 
 import { useBeamStore } from '@/stores/beam.js'
+import type { PickList } from '@/types/frappe.js'
+
+declare const frappe: any
+
+const pickListWarehouseGates: Record<string, string | null> = {}
 import { useBeamToast } from '@/utils/toast.js'
 import type {
 	DeliveryNoteItem,
@@ -30,6 +35,46 @@ export const useScanStore = defineStore('scan', () => {
 	const scan = async (barcode: string, qty: number) => {
 		store.scanner.lastScan = barcode
 		store.scanner.lastDocType = ''
+		const currentRoute = store.router.currentRoute.value
+		if (currentRoute.name === 'pick_list') {
+			const pickListId = currentRoute.params.id.toString()
+			const mapped = store.cache.mappers[pickListId] as PickList | undefined
+			const pickedQuantities = Object.fromEntries(
+				(mapped?.locations || []).map(location => [String(location.idx), location.picked_qty || 0])
+			)
+			const result = await frappe.xcall('beam.beam.pick_list.apply_pick_list_scan', {
+				pick_list_name: pickListId,
+				barcode,
+				warehouse_gate: pickListWarehouseGates[pickListId] || null,
+				picked_quantities: JSON.stringify(pickedQuantities),
+			})
+			if (!result?.ok) {
+				if (result?.message) {
+					toast.error(result.message)
+				}
+				return
+			}
+			if (result.warehouse_gate) {
+				pickListWarehouseGates[pickListId] = result.warehouse_gate
+				store.scanner.lastDocType = `Warehouse: ${result.warehouse_gate}`
+				return
+			}
+			const doc = store.cache.mappers[pickListId] as PickList | undefined
+			if (doc && result.idx != null && result.picked_qty != null) {
+				pickListWarehouseGates[pickListId] = null
+				const row = doc.locations.find(location => location.idx == result.idx)
+				if (row) {
+					row.picked_qty = result.picked_qty
+					store.$patch(state => {
+						const mapped = state.cache.mappers[pickListId] as PickList
+						mapped.dirty = true
+					})
+					store.scanner.lastDocType = `${row.item_code}: ${result.picked_qty}`
+				}
+			}
+			return
+		}
+
 		const response = await store.scan(barcode, qty)
 		if (response && response.length > 0) {
 			let fn: Function

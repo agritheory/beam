@@ -17,7 +17,7 @@ from erpnext.setup.utils import enable_all_roles_and_domains, set_defaults_for_t
 from erpnext.stock.get_item_details import get_item_details
 from frappe.desk.page.setup_wizard.setup_wizard import setup_complete
 
-from beam.beam.demand.demand import build_demand_allocation_map
+from beam.beam.demand.demand import build_demand_allocation_map, remove_demand_allocation
 from beam.beam.demand.receiving import reset_build_receiving_map
 from beam.tests.fixtures import (
 	boms,
@@ -25,6 +25,8 @@ from beam.tests.fixtures import (
 	employees,
 	items,
 	operations,
+	delivery_ship_pick_demo,
+	pie_crust_pick_demo,
 	suppliers,
 	workstations,
 )
@@ -92,6 +94,7 @@ def create_test_data():
 	company_address.save()
 	frappe.set_value("Company", settings.company, "tax_id", "04-1871930")
 	create_warehouses(settings)
+	ensure_shipping_warehouse(settings)
 	setup_manufacturing_settings(settings)
 	create_workstations()
 	setup_beam_settings(settings)
@@ -111,6 +114,8 @@ def create_test_data():
 	create_production_plan(settings, prod_plan_from_doc)
 	create_purchase_receipt_for_received_qty_test(settings)
 	create_network_printer_settings(settings)
+	create_pie_crust_pick_demo(settings)
+	create_delivery_ship_pick_demo(settings)
 
 
 def create_suppliers(settings):
@@ -208,6 +213,9 @@ def setup_beam_settings(settings):
 	beams.shipping_workstation = "Shipping"
 	beams.auto_barcode_doctypes = '["Item", "User", "Warehouse"]'
 	beams.set("warehouse_types", [{"warehouse_type": "Quarantine"}])
+	beams.create_stock_entry_on_pick_list_submit = 0
+	if frappe.db.exists("Warehouse", "Shipping - APC"):
+		beams.shipping_warehouse = "Shipping - APC"
 	beams.set(
 		"routes",
 		[
@@ -222,6 +230,7 @@ def setup_beam_settings(settings):
 			{"label": "Receive", "route": "#/receive", "dt": "Purchase Receipt", "component": "Receive"},
 			{"label": "Ship", "route": "#/ship", "dt": "Delivery Note", "component": "Ship"},
 			{"label": "Repack", "route": "#/repack", "dt": "Stock Entry", "component": "Repack"},
+			{"label": "Pick", "route": "#/pick-list", "dt": "Pick List", "component": "Pick"},
 		],
 	)
 	beams.save()
@@ -419,6 +428,19 @@ def create_warehouses(settings):
 		wh.company = settings.company
 		wh.save()
 	create_quarantine_warehouse(settings, parent_wh=root_wh)
+
+
+def ensure_shipping_warehouse(settings):
+	warehouse_name = "Shipping - APC"
+	if frappe.db.exists("Warehouse", warehouse_name):
+		return warehouse_name
+	root_wh = frappe.get_value("Warehouse", {"company": settings.company, "is_group": 1})
+	wh = frappe.new_doc("Warehouse")
+	wh.warehouse_name = "Shipping"
+	wh.parent_warehouse = root_wh
+	wh.company = settings.company
+	wh.save()
+	return warehouse_name
 
 
 # TODO: replace with test utils functionality
@@ -834,6 +856,141 @@ def ensure_department(department, company):
 			"parent_department": get_root_of("Department"),
 		}
 	).insert(ignore_permissions=True)
+
+
+def create_pie_crust_pick_demo(settings):
+	demo = pie_crust_pick_demo
+	wo_filters = {
+		"production_item": demo["work_order"]["production_item"],
+		"qty": demo["work_order"]["qty"],
+		"docstatus": 1,
+	}
+	existing_wo = frappe.db.exists("Work Order", wo_filters)
+	if existing_wo:
+		if frappe.db.exists("Pick List", {"work_order": existing_wo, "docstatus": 0}):
+			return
+
+	from erpnext.manufacturing.doctype.work_order.work_order import create_pick_list
+
+	bom_no = frappe.db.get_value(
+		"BOM",
+		{"item": demo["work_order"]["production_item"], "docstatus": 1, "is_active": 1},
+		"name",
+	)
+	if not bom_no:
+		return
+
+	wo = frappe.new_doc("Work Order")
+	wo.production_item = demo["work_order"]["production_item"]
+	wo.bom_no = bom_no
+	wo.qty = demo["work_order"]["qty"]
+	wo.company = settings.company
+	wo.wip_warehouse = demo["work_order"]["wip_warehouse"]
+	wo.fg_warehouse = frappe.db.get_single_value("Manufacturing Settings", "default_fg_warehouse")
+	wo.planned_start_date = settings.day
+	wo.get_items_and_operations_from_bom()
+	wo.save()
+	wo.submit()
+
+	creation = frappe.utils.add_to_date(frappe.utils.now_datetime(), days=2)
+	frappe.db.set_value("Work Order", wo.name, "creation", creation)
+
+	receipt = frappe.new_doc("Stock Entry")
+	receipt.stock_entry_type = receipt.purpose = "Material Receipt"
+	for row in demo["material_receipts"]:
+		receipt.append(
+			"items",
+			{
+				"item_code": row["item_code"],
+				"qty": row["qty"],
+				"uom": row["uom"],
+				"t_warehouse": row["t_warehouse"],
+				"basic_rate": row["basic_rate"],
+				"expense_account": "5119 - Stock Adjustment - APC",
+			},
+		)
+	receipt.save()
+	receipt.submit()
+
+	pick_list = create_pick_list(wo.name, for_qty=demo["work_order"]["qty"])
+	pick_list.scan_mode = 1
+	for location in pick_list.locations:
+		location.picked_qty = 0
+	pick_list.save()
+	# Submit hook ran before the pick list existed; drop any stray demand rows.
+	remove_demand_allocation(wo.name)
+
+
+def create_delivery_ship_pick_demo(settings):
+	demo = delivery_ship_pick_demo
+	ensure_shipping_warehouse(settings)
+	beams = frappe.get_doc("BEAM Settings", settings.company)
+	beams.shipping_warehouse = demo["staging_warehouse"]
+	beams.save()
+
+	so_name = frappe.db.get_value("Sales Order", {"po_no": demo["sales_order"]["po_no"]}, "name")
+	if so_name and frappe.db.exists(
+		"Pick List Item", {"sales_order": so_name, "parenttype": "Pick List"}
+	):
+		if frappe.db.exists(
+			"Pick List",
+			{"purpose": "Material Transfer", "docstatus": 0, "company": settings.company},
+		):
+			return
+
+	from erpnext.selling.doctype.sales_order.sales_order import (
+		create_pick_list as create_delivery_pick_list,
+	)
+
+	if not so_name:
+		so = frappe.new_doc("Sales Order")
+		so.po_no = demo["sales_order"]["po_no"]
+		so.transaction_date = settings.day
+		so.customer = demo["sales_order"]["customer"]
+		so.order_type = "Sales"
+		so.currency = "USD"
+		so.selling_price_list = "Bakery Wholesale"
+		for row in demo["sales_order"]["items"]:
+			so.append(
+				"items",
+				{
+					"item_code": row["item_code"],
+					"qty": row["qty"],
+					"warehouse": row["warehouse"],
+					"delivery_date": settings.day,
+				},
+			)
+		so.save()
+		so.submit()
+		so_name = so.name
+		remove_demand_allocation(so_name)
+
+	delivery_pick = create_delivery_pick_list(so_name)
+	delivery_pick.scan_mode = 1
+	for location in delivery_pick.locations:
+		location.picked_qty = 0
+	delivery_pick.save()
+
+	staging_pick = frappe.new_doc("Pick List")
+	staging_pick.company = settings.company
+	staging_pick.purpose = demo["material_transfer"]["purpose"]
+	staging_pick.scan_mode = 1
+	for row in demo["material_transfer"]["lines"]:
+		staging_pick.append(
+			"locations",
+			{
+				"item_code": row["item_code"],
+				"item_name": frappe.get_value("Item", row["item_code"], "item_name"),
+				"qty": row["qty"],
+				"stock_qty": row["qty"],
+				"warehouse": row["warehouse"],
+				"uom": row["uom"],
+				"stock_uom": row["uom"],
+				"conversion_factor": 1,
+				"picked_qty": 0,
+			},
+		)
+	staging_pick.save()
 
 
 def create_employees(settings, only_create=None):

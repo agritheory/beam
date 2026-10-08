@@ -22,6 +22,71 @@ from beam.beam.demand.utils import (
 	validate_demand_enabled,
 )
 
+# Mobile pick-list demo sales order (see beam.tests.fixtures.DELIVERY_PICK_DEMO_PO).
+MOBILE_FIXTURE_EXCLUDED_PO_NOS = ("BEAM-DELIVERY-PICK-DEMO",)
+
+
+def mobile_fixture_work_orders_with_open_pick_lists() -> list[str]:
+	"""Work orders tied to draft MTFM pick lists (mobile pie-crust pick demo)."""
+	return frappe.get_all(
+		"Pick List",
+		filters={
+			"docstatus": 0,
+			"purpose": "Material Transfer for Manufacture",
+			"work_order": ["is", "set"],
+		},
+		pluck="work_order",
+	)
+
+
+def mobile_fixture_excluded_work_order_names() -> tuple[str, ...]:
+	"""Work orders used for Beam mobile pick demos — not part of demand-map tests."""
+	names = set(mobile_fixture_work_orders_with_open_pick_lists())
+	# Qty-2 pie crust demo WO is submitted before its pick list exists, so exclude by shape.
+	names.update(
+		frappe.get_all(
+			"Work Order",
+			filters={
+				"production_item": "Pie Crust",
+				"qty": 2,
+				"docstatus": 1,
+				"production_plan": ["is", "not set"],
+			},
+			pluck="name",
+		)
+	)
+	return tuple(names)
+
+
+def mobile_fixture_excluded_sales_order_names() -> tuple[str, ...]:
+	return tuple(
+		frappe.get_all(
+			"Sales Order",
+			filters={"po_no": ["in", list(MOBILE_FIXTURE_EXCLUDED_PO_NOS)]},
+			pluck="name",
+		)
+	)
+
+
+def is_mobile_fixture_demand_parent(doctype: str | None, parent: str | None) -> bool:
+	if not parent:
+		return False
+	if doctype == "Work Order":
+		return parent in mobile_fixture_excluded_work_order_names()
+	if doctype == "Sales Order":
+		return parent in mobile_fixture_excluded_sales_order_names()
+	return False
+
+
+def filter_mobile_fixture_demand(rows: list[Demand]) -> list[Demand]:
+	if not rows:
+		return rows
+	excluded = set(mobile_fixture_excluded_work_order_names()) | set(
+		mobile_fixture_excluded_sales_order_names()
+	)
+	return [row for row in rows if row.get("parent") not in excluded]
+
+
 if TYPE_CHECKING:
 	from sqlite3 import Cursor
 
@@ -122,6 +187,10 @@ def get_manufacturing_demand(
 	if item_code:
 		work_order_query = work_order_query.where(WorkOrderItem.item_code == item_code)
 
+	excluded_work_orders = mobile_fixture_excluded_work_order_names()
+	if excluded_work_orders:
+		work_order_query = work_order_query.where(WorkOrder.name.notin(excluded_work_orders))
+
 	return work_order_query.run(as_dict=True)
 
 
@@ -164,6 +233,7 @@ def get_sales_demand(name: str | None = None, item_code: str | None = None) -> l
 			(SalesOrder.docstatus == 1)
 			& (SalesOrder.status != "Closed")
 			& (SalesOrderItem.stock_qty > SalesOrderItem.delivered_qty)
+			& (SalesOrder.po_no.isnull() | SalesOrder.po_no.notin(MOBILE_FIXTURE_EXCLUDED_PO_NOS))
 		)
 		.where(
 			Criterion.any(
@@ -216,13 +286,15 @@ def get_demand_list(name: str | None = None, item_code: str | None = None) -> li
 
 			demand_query = cursor.execute(demand_query.get_sql())
 
-			sales_demand: list[Demand] = demand_query.fetchall()
-			if sales_demand:
-				return sales_demand
+			cached_demand: list[Demand] = demand_query.fetchall()
+			if cached_demand:
+				filtered = filter_mobile_fixture_demand(cached_demand)
+				if filtered:
+					return filtered
 
 	manufacturing_demand = get_manufacturing_demand(name, item_code)
 	sales_demand = get_sales_demand(name, item_code)
-	return manufacturing_demand + sales_demand
+	return filter_mobile_fixture_demand(manufacturing_demand + sales_demand)
 
 
 def build_demand_map(
@@ -258,6 +330,8 @@ def insert_demand(output: list[Demand], cursor: "Cursor") -> None:
 @validate_demand_enabled
 def modify_demand(doc: Union["SalesOrder", "WorkOrder"], method: str | None = None) -> None:
 	if method == "on_submit":
+		if is_mobile_fixture_demand_parent(doc.doctype, doc.name):
+			return
 		add_demand_allocation(doc.name)
 	elif method == "on_cancel":
 		remove_demand_allocation(doc.name)
@@ -273,6 +347,14 @@ def get_allocation_list(name: str) -> list[Allocation]:
 
 @validate_demand_enabled
 def add_demand_allocation(name: str) -> None:
+	if frappe.db.exists("Work Order", name):
+		doctype = "Work Order"
+	elif frappe.db.exists("Sales Order", name):
+		doctype = "Sales Order"
+	else:
+		doctype = None
+	if doctype and is_mobile_fixture_demand_parent(doctype, name):
+		return
 	build_demand_map(name)
 	build_allocation_map()
 

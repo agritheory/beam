@@ -27,6 +27,7 @@ import { useRoute } from 'vue-router'
 import ControlButtons from '@/components/ControlButtons.vue'
 import { useBeamStore } from '@/stores/beam'
 import type { ControlButton, PurchaseReceipt, PurchaseReceiptItem } from '@/types'
+import { itemListLine } from '@/utils/itemListLine'
 
 const route = useRoute()
 const store = useBeamStore()
@@ -62,10 +63,11 @@ const items = computed((): (PurchaseReceiptItem & ListViewItem)[] => {
 	if (!purchaseReceipt.value?.items) return []
 
 	return purchaseReceipt.value.items.map(item => {
+		const line = itemListLine(item)
 		return {
 			...item,
-			label: item.item_name,
-			description: `${item.warehouse}`,
+			label: line.label,
+			description: line.description,
 			count: {
 				count: item.received_qty,
 				of: item.qty,

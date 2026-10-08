@@ -28,6 +28,7 @@ import ScanOutput from '@/components/ScanOutput.vue'
 import DemandFilters from '@/components/DemandFilters.vue'
 import { useBeamStore } from '@/stores/beam'
 import type { Demand, DemandFilter } from '@/types'
+import { appendUomText } from '@/utils/itemListLine'
 
 declare const frappe: any
 
@@ -74,7 +75,7 @@ const appendDemand = (fromIndex: number) => {
 		demandList.value.push({
 			// ListView keys on barcode||label; labels collide across demand rows.
 			barcode: row.name || row.key || `${row.parent}:${row.item_code}:${row.idx}`,
-			label: `${row.item_code} from ${row.item_warehouse}`,
+			label: appendUomText(`${row.item_code} from ${row.item_warehouse}`, row),
 			linkComponent: 'ListAnchor',
 			route: `#/${frappe.scrub(row.doctype)}/${row.parent}`,
 			description: `

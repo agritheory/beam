@@ -22,6 +22,7 @@ def execute(company=None):
 		{"label": "Receive", "route": "#/receive", "dt": "Purchase Receipt", "component": "Receive"},
 		{"label": "Ship", "route": "#/ship", "dt": "Delivery Note", "component": "Ship"},
 		{"label": "Repack", "route": "#/repack", "dt": "Stock Entry", "component": "Repack"},
+		{"label": "Pick", "route": "#/pick-list", "dt": "Pick List", "component": "Pick"},
 	]
 
 	beam_configs = frappe.get_all("BEAM Settings", pluck="name")

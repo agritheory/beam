@@ -91,5 +91,7 @@ const registerInstance = (instance: any) => (window.scanner = instance)
 	--sc-input-active-border-color: #000000;
 	--sc-input-border-color: #cccccc;
 	--sc-row-color-zebra-light: #eeeeee;
+	--beam-footer-rows: 1;
+	--beam-footer-height: calc(var(--beam-footer-rows) * 3.25rem + 1rem + env(safe-area-inset-bottom, 0px));
 }
 </style>

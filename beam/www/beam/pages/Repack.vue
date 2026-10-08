@@ -55,11 +55,12 @@ import { ref, computed, onMounted, watch } from 'vue'
 import ControlButtons from '@/components/ControlButtons.vue'
 import { useBeamStore } from '@/stores/beam'
 import type { ControlButton, DocActionResponse, StockEntry } from '@/types'
+import { appendUomText, itemListLine } from '@/utils/itemListLine'
 import { useBeamToast } from '@/utils/toast.js'
 
 const toast = useBeamToast()
 const store = useBeamStore()
-const currentItem = ref({ item_code: '', qty: 0, bom: '' })
+const currentItem = ref({ item_code: '', qty: 0, bom: '', stock_uom: '', uom: '' })
 const items = ref([])
 const componentKey = ref(0)
 const stockEntry = computed(
@@ -152,19 +153,31 @@ const addItem = () => {
 		toast.error('Please select only source or target warehouse')
 		return
 	}
+	const warehouse = stockEntry.value.from_warehouse || stockEntry.value.to_warehouse
+	const line = itemListLine({
+		item_code: currentItem.value.item_code,
+		warehouse,
+		stock_uom: currentItem.value.stock_uom,
+		uom: currentItem.value.uom,
+	})
 	items.value.push({
-		label: currentItem.value.item_code,
+		label: line.label || currentItem.value.item_code,
 		count: { count: currentItem.value.qty },
-		description: stockEntry.value.from_warehouse
-			? `From ${stockEntry.value.from_warehouse}`
-			: `To ${stockEntry.value.to_warehouse}`,
+		description: appendUomText(
+			stockEntry.value.from_warehouse
+				? `From ${stockEntry.value.from_warehouse}`
+				: `To ${stockEntry.value.to_warehouse}`,
+			currentItem.value
+		),
 		item_code: currentItem.value.item_code,
 		qty: currentItem.value.qty,
 		s_warehouse: stockEntry.value.from_warehouse,
 		t_warehouse: stockEntry.value.to_warehouse,
+		stock_uom: currentItem.value.stock_uom,
+		uom: currentItem.value.uom,
 	})
 
-	currentItem.value = { item_code: '', qty: 0, bom: '' }
+	currentItem.value = { item_code: '', qty: 0, bom: '', stock_uom: '', uom: '' }
 	clearField('from_warehouse')
 	clearField('to_warehouse')
 }
@@ -256,7 +269,13 @@ watch(
 		itemList.value = [newItem.item_code] // ADropdown needs the list to keep the selected item
 		const qty = newItem.item_code === currentItem.value.item_code ? currentItem.value.qty + newItem.qty : newItem.qty
 
-		currentItem.value = { ...newItem, qty }
+		currentItem.value = {
+			item_code: newItem.item_code || '',
+			qty,
+			bom: '',
+			stock_uom: newItem.stock_uom || '',
+			uom: newItem.uom || '',
+		}
 		if (newItem.from_warehouse) stockEntry.value.from_warehouse = newItem.from_warehouse
 		store.$patch(state => (state.cache.mappers.repack.items = []))
 	},
@@ -269,14 +288,23 @@ watch(
 		// Update items list on BOM selection
 		if (!currentItem.value.bom) return
 		const listBom = await store.getStockEntryItems(bom)
-		items.value = listBom.map(bomItem => ({
-			label: bomItem.description,
-			count: { count: bomItem.qty },
-			description: `From ${bomItem.default_warehouse}`,
-			item_code: bomItem.description,
-			qty: bomItem.qty,
-			s_warehouse: bomItem.default_warehouse,
-		}))
+		items.value = listBom.map(bomItem => {
+			const line = itemListLine({
+				item_code: bomItem.item_code,
+				item_name: bomItem.item_name,
+				warehouse: bomItem.default_warehouse,
+				stock_uom: bomItem.stock_uom,
+			})
+			return {
+				label: line.label,
+				count: { count: bomItem.qty },
+				description: appendUomText(`From ${bomItem.default_warehouse}`, bomItem),
+				item_code: bomItem.item_code,
+				qty: bomItem.qty,
+				s_warehouse: bomItem.default_warehouse,
+				stock_uom: bomItem.stock_uom,
+			}
+		})
 	}
 )
 </script>
