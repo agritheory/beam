@@ -94,4 +94,5 @@ bench version
 echo "SITE LIST-APPS:"
 bench list-apps
 
+wait_for_redis
 bench execute 'beam.tests.setup.before_test'
