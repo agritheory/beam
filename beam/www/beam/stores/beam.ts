@@ -39,6 +39,14 @@ const SCAN_URL = 'beam.beam.scan.scan' // frappe.xcall doesn't require prefix
 // Route :id is a source document name (PO/SO), not the mapped form doc itself.
 const MAPPED_FORM_DOCTYPES = ['Purchase Receipt', 'Delivery Note']
 
+export type ReconciliationItemScanPayload = {
+	item_code: string
+	item_name?: string
+	stock_uom?: string
+	valuation_rate?: number
+	warehouse?: string
+}
+
 export const useBeamStore = defineStore('beam', () => {
 	const toast = useBeamToast()
 	const httpStore = useHttpStore()
@@ -47,6 +55,13 @@ export const useBeamStore = defineStore('beam', () => {
 	const cache = ref<BeamCache>({ mappers: {} })
 	const form = ref<Partial<ParentDoctypes>>({})
 	const warehouseList = ref()
+
+	const reconciliationItemScan = ref<((payload: ReconciliationItemScanPayload) => void) | null>(null)
+
+	const setReconciliationItemScan = (handler: ((payload: ReconciliationItemScanPayload) => void) | null) => {
+		reconciliationItemScan.value = handler
+	}
+
 	const scanner = reactive({
 		config: {} as ScanConfig,
 		context: {} as ScanContext,
@@ -141,7 +156,6 @@ export const useBeamStore = defineStore('beam', () => {
 			const warehouses = await getAll<{ name: string }[]>('Warehouse', {
 				fields: JSON.stringify(['company', 'disabled', 'is_group', 'name', 'warehouse_name']),
 			})
-			console.log('Warehouses fetched:', warehouses)
 			warehouseList.value = warehouses
 		} catch (error) {
 			console.error('Error fetching warehouses:', error)
@@ -408,6 +422,8 @@ export const useBeamStore = defineStore('beam', () => {
 		scanner,
 		camera,
 		warehouseList,
+		reconciliationItemScan,
+		setReconciliationItemScan,
 		// store context actions
 		getScanDoctypes,
 		setForm,

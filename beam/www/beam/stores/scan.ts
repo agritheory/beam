@@ -127,6 +127,20 @@ export const useScanStore = defineStore('scan', () => {
 	const add_or_increment = (barcode_context: FormContext[]) => {
 		if (!hasScanTarget()) return
 
+		if (documentId.value === 'stock-reconciliation' && store.reconciliationItemScan) {
+			for (const action of barcode_context) {
+				const ctx = action.context
+				store.reconciliationItemScan({
+					item_code: ctx.item_code ?? ctx.doc?.item_code ?? '',
+					item_name: ctx.item_name ?? ctx.doc?.item_name,
+					stock_uom: ctx.stock_uom ?? ctx.doc?.stock_uom,
+					valuation_rate: ctx.valuation_rate,
+					warehouse: (mappedDoc.value as StockReconciliation)?.set_warehouse,
+				})
+			}
+			return
+		}
+
 		for (const action of barcode_context) {
 			const existing_rows = mappedDoc.value.items.filter(
 				row =>
