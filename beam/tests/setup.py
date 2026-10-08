@@ -222,6 +222,12 @@ def setup_beam_settings(settings):
 			{"label": "Receive", "route": "#/receive", "dt": "Purchase Receipt", "component": "Receive"},
 			{"label": "Ship", "route": "#/ship", "dt": "Delivery Note", "component": "Ship"},
 			{"label": "Repack", "route": "#/repack", "dt": "Stock Entry", "component": "Repack"},
+			{
+				"label": "Reconciliation",
+				"route": "#/stock-reconciliation",
+				"dt": "Stock Reconciliation",
+				"component": "Reconciliation",
+			},
 		],
 	)
 	beams.save()

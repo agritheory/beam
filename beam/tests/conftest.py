@@ -17,7 +17,7 @@
 # 166–168 | Printer setup — wizard API permissions
 # 170–200 | Print queue panel — job snapshots, client polling, permissions
 # 210–220 | Live CUPS — ZD621 at Chelsea dock (workflow CUPS service container)
-# 300–354 | BEAM portal (Playwright) — manufacture, receive, repack, login, ship, camera
+# 300–354 | BEAM portal (Playwright) — manufacture, receive, repack, reconciliation, login, ship, camera
 #
 # Manual testing helpers
 # ----------------------

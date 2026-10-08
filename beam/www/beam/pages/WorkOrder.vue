@@ -90,7 +90,6 @@ const items = computed((): OrderItem[] => {
 			...item,
 			label: item.item_code,
 			count: { count: stockEntryItem?.qty || item.transferred_qty, of: item.required_qty },
-			linkComponent: 'ListCount',
 		}
 	})
 })

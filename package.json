@@ -14,7 +14,7 @@
 	},
 	"dependencies": {
 		"@stonecrop/aform": "^0.4.11",
-		"@stonecrop/beam": "^0.4.11",
+		"@stonecrop/beam": "^0.4.20",
 		"@vueuse/core": "^13.0.0",
 		"acorn": "^8.14.1",
 		"barcode-detector": "^3.2.1",
