@@ -99,7 +99,7 @@ def get_handling_unit(handling_unit: str, parent_doctype: str | None = None) -> 
 		filters={"handling_unit": handling_unit, "is_cancelled": 0},
 		fields=[
 			"item_code",
-			"SUM(actual_qty) AS stock_qty",
+			{"SUM": "actual_qty", "as": "stock_qty"},
 			"company",
 			"handling_unit",
 			"voucher_no",

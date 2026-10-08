@@ -172,15 +172,15 @@ def validate_items_with_handling_unit(doc, method=None):
 		for row in doc.items:
 			if not frappe.get_value("Item", row.item_code, "enable_handling_unit"):
 				continue
-			elif row.is_scrap_item and not frappe.get_value(
-				"BOM Scrap Item",
-				{"item_code": row.item_code, "parent": doc.get("bom_no")},
+			elif row.type == "Scrap" and not frappe.get_value(
+				"BOM Secondary Item",
+				{"item_code": row.item_code, "parent": doc.get("bom_no"), "type": "Scrap"},
 				"create_handling_unit",
 			):
 				continue
 			elif (
 				doc.stock_entry_type in ("Repack", "Manufacture")
-				and not (row.t_warehouse or row.is_finished_item or row.is_scrap_item)
+				and not (row.t_warehouse or row.is_finished_item or row.type == "Scrap")
 				and not row.handling_unit
 			):
 				frappe.throw(frappe._(f"Row #{row.idx}: Handling Unit is missing for item {row.item_code}"))
