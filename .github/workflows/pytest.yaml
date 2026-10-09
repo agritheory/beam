@@ -114,7 +114,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           check-latest: true
           cache: 'yarn'
 
@@ -144,19 +144,20 @@ jobs:
         run: bash ${{ github.workspace }}/.github/helper/install.sh
 
       - name: Run Tests
-        # shell: bash sets -o pipefail, without which the tee below would mask a
-        # pytest failure and report the job green.
         shell: bash
         env:
           BENCH_ROOT: ${{ env.BENCH_ROOT }}
+          POETRY_VIRTUALENVS_CREATE: "false"
           BEAM_TEST_TELEMETRY: "true"
           BEAM_TEST_STACK_DUMP_SECONDS: "60"
         run: |
           bash ${{ github.workspace }}/.github/helper/ensure_bench_web.sh
+          set -o pipefail
           cd "${BENCH_ROOT}"
           source env/bin/activate
           python -m playwright install --with-deps chromium
           cd apps/beam
+          poetry install
           pytest --cov=beam --cov-report=xml --cov-report=term-missing:skip-covered ./beam \
             --browser chromium \
             --disable-warnings -s | tee pytest-coverage.txt

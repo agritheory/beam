@@ -231,6 +231,12 @@ def setup_beam_settings(settings):
 			{"label": "Ship", "route": "#/ship", "dt": "Delivery Note", "component": "Ship"},
 			{"label": "Repack", "route": "#/repack", "dt": "Stock Entry", "component": "Repack"},
 			{"label": "Pick", "route": "#/pick-list", "dt": "Pick List", "component": "Pick"},
+			{
+				"label": "Reconciliation",
+				"route": "#/stock-reconciliation",
+				"dt": "Stock Reconciliation",
+				"component": "Reconciliation",
+			},
 		],
 	)
 	beams.save()

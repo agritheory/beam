@@ -4,7 +4,7 @@ For license information, please see license.txt-->
 # Handling Unit Traceability Report
 
 <div class="byline">
-  Rohan Bansal, Ishwarya, Lautaro Juarez, Heather Kusmierz, Tyler Matteson, and Francisco Roldán 2026-08-10
+  Tyler Matteson 2026-02-23
 </div>
 
 

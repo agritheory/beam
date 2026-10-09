@@ -52,6 +52,14 @@ const WORK_ORDER_STATUS_URL = '/api/method/beam.beam.manufacturing.set_work_orde
 // Route :id is a source document name (PO/SO), not the mapped form doc itself.
 const MAPPED_FORM_DOCTYPES = ['Purchase Receipt', 'Delivery Note']
 
+export type ReconciliationItemScanPayload = {
+	item_code: string
+	item_name?: string
+	stock_uom?: string
+	valuation_rate?: number
+	warehouse?: string
+}
+
 export const useBeamStore = defineStore('beam', () => {
 	const toast = useBeamToast()
 	const httpStore = useHttpStore()
@@ -61,6 +69,13 @@ export const useBeamStore = defineStore('beam', () => {
 	const form = ref<Partial<ParentDoctypes>>({})
 	const warehouseList = ref()
 	const currentEmployee = ref<string | null>(null)
+
+	const reconciliationItemScan = ref<((payload: ReconciliationItemScanPayload) => void) | null>(null)
+
+	const setReconciliationItemScan = (handler: ((payload: ReconciliationItemScanPayload) => void) | null) => {
+		reconciliationItemScan.value = handler
+	}
+
 	const scanner = reactive({
 		config: {} as ScanConfig,
 		context: {} as ScanContext,
@@ -187,9 +202,17 @@ export const useBeamStore = defineStore('beam', () => {
 	}
 
 	const setWarehouses = async () => {
-		warehouseList.value = await getAll<{ name: string }[]>('Warehouse', {
-			fields: JSON.stringify(['company', 'disabled', 'is_group', 'name', 'warehouse_name']),
-		})
+		if (warehouseList.value && warehouseList.value.length) return
+
+		try {
+			const warehouses = await getAll<{ name: string }[]>('Warehouse', {
+				fields: JSON.stringify(['company', 'disabled', 'is_group', 'name', 'warehouse_name']),
+			})
+			warehouseList.value = warehouses
+		} catch (error) {
+			console.error('Error fetching warehouses:', error)
+			warehouseList.value = []
+		}
 	}
 
 	const setCurrentEmployee = async () => {
@@ -461,6 +484,27 @@ export const useBeamStore = defineStore('beam', () => {
 		}
 	}
 
+	const getStockReconciliationItems = async (warehouse: string) => {
+		if (!warehouse) return []
+		try {
+			const homeData = await getHome()
+			const company = homeData.data.company
+			const response = await httpStore.get('/api/method/beam.beam.overrides.stock_reconciliation.get_items', {
+				warehouse,
+				company,
+				posting_date: new Date().toLocaleDateString(),
+				posting_time: new Date().toLocaleTimeString(),
+				ignore_empty_stock: true,
+			})
+
+			const { message } = await response.json()
+			return message
+		} catch (error) {
+			console.error(error)
+			return []
+		}
+	}
+
 	const logout = async () => {
 		await httpStore.get(LOGOUT_URL)
 		window.location.href = '/login?redirect-to=/beam#'
@@ -539,6 +583,8 @@ export const useBeamStore = defineStore('beam', () => {
 		workOrderContext,
 		warehouseList,
 		currentEmployee,
+		reconciliationItemScan,
+		setReconciliationItemScan,
 		// store context actions
 		getScanDoctypes,
 		setForm,
@@ -569,6 +615,7 @@ export const useBeamStore = defineStore('beam', () => {
 		getWorkOrderMobileContext,
 		refreshWorkOrderForm,
 		setWorkOrderStatus,
+		getStockReconciliationItems,
 		logout,
 		makeNewDoc,
 		scan,

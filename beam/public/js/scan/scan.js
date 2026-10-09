@@ -81,8 +81,22 @@ class ScanHandler {
 	async get_scanned_context(sCode, iQty) {
 		return new Promise(resolve => {
 			if (isLoginPath) {
-				frappe.xcall('beam.beam.scan.user_login.scan_login', { barcode: sCode }).then(r => {
-					if (r.success) window.location.href = '/beam'
+				if (typeof frappe === 'undefined' || typeof frappe.call !== 'function') {
+					return resolve()
+				}
+				frappe.call({
+					method: 'beam.beam.scan.user_login.scan_login',
+					args: { barcode: sCode },
+					callback: function (r) {
+						if (r?.exc_type || !r?.message?.success) return resolve()
+						const redirect =
+							frappe.utils.sanitise_redirect(frappe.utils.get_url_arg('redirect-to')) ||
+							r.message.redirect_to ||
+							r.message.home_page ||
+							'/beam'
+						window.location.href = redirect
+						resolve()
+					},
 				})
 			} else {
 				const context = this.reduceContext()

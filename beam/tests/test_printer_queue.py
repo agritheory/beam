@@ -27,7 +27,6 @@ def insert_test_nps(doc):
 	mock_conn = mock_cups_connection()
 	with patch.object(nps, "cups_connection", return_value=mock_conn):
 		doc.insert()
-	return mock_conn
 
 
 @pytest.mark.order(180)

@@ -117,7 +117,7 @@ def setup(request):
 
 	# Only resolve Playwright's page fixture for portal tests.
 	page = request.getfixturevalue("page")
-	delete_draft_records(["Purchase Receipt", "Stock Entry", "Delivery Note"])
+	delete_draft_records(["Purchase Receipt", "Stock Entry", "Delivery Note", "Stock Reconciliation"])
 
 	page.set_default_timeout(5000)
 

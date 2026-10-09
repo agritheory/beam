@@ -3,6 +3,7 @@
 
 import frappe
 from erpnext import get_default_company
+from frappe.auth import CookieManager
 from frappe.core.doctype.user.user import get_restricted_ip_list
 
 from beam.beam.scan import get_barcode_context
@@ -21,27 +22,50 @@ def scan_login(barcode):
 	if user["doc"].doctype != "User":
 		frappe.throw("Wrong barcode", title="Login Error")
 
-	employee = frappe.get_doc("Employee", {"user_id": user["doc"].name})
-	company = employee.company or get_default_company()
+	user_doc = user["doc"]
 
-	BEAMSettings = frappe.get_doc("BEAM Settings", {"company": company})
-	if BEAMSettings.enable_scan_to_login == "Not Allowed":
+	company = get_default_company()
+	if not company:
+		frappe.throw("Unable to determine company for login", title="Login Error")
+
+	frappe.flags.ignore_permissions = True
+	try:
+		beam_settings = frappe.db.get_value(
+			"BEAM Settings",
+			{"company": company},
+			["enable_scan_to_login", "restrict_ip"],
+			as_dict=True,
+		)
+	finally:
+		frappe.flags.ignore_permissions = False
+
+	if not beam_settings:
+		frappe.throw("BEAM Settings not found for company", title="Login Error")
+
+	beam_settings = frappe._dict(beam_settings)
+
+	if beam_settings.enable_scan_to_login == "Not Allowed":
 		frappe.throw("Login scanning is not allowed", title="Scanner Login Disabled")
 
-	ip_list = get_restricted_ip_list(BEAMSettings)
+	ip_list = get_restricted_ip_list(beam_settings)
 	if ip_list and not any(client_ip.startswith(ip) for ip in ip_list):
 		frappe.throw("Network not available", title="Login Error")
 
-	user_doc = frappe.get_doc("User", user["doc"].name)
 	roles = [role.role for role in user_doc.get("roles")]
-	if BEAMSettings.enable_scan_to_login == "Mobile Users Only" and not "BEAM Mobile User" in roles:
+	if beam_settings.enable_scan_to_login == "Mobile Users Only" and "BEAM Mobile User" not in roles:
 		frappe.throw("Not Beam mobile user", title="Login Error")
 
 	try:
+		if not getattr(frappe.local, "cookie_manager", None):
+			frappe.local.cookie_manager = CookieManager()
 		frappe.local.login_manager = frappe.auth.LoginManager()
 		frappe.local.login_manager.user = user_doc.name
 		frappe.local.login_manager.post_login()
 	except Exception as e:
 		frappe.throw(f"Error logging in: {str(e)}", title="Login Error")
 
-	return {"success": True, "message": f"User {user_doc.name} logged in successfully"}
+	return {
+		"success": True,
+		"home_page": frappe.local.response.get("home_page"),
+		"redirect_to": frappe.local.response.get("redirect_to"),
+	}
