@@ -17,6 +17,7 @@ import type {
 	ListContext,
 	ParentDoctypesForStockTransfer,
 	PurchaseReceipt,
+	ScanContext,
 	StockEntry,
 	StockEntryItem,
 	StockReconciliation,
@@ -32,6 +33,23 @@ export const useScanStore = defineStore('scan', () => {
 	})
 
 	const mappedDoc = computed(() => store.cache.mappers[documentId.value])
+
+	const scanContextForRequest = (): ScanContext => {
+		const base: ScanContext = { ...store.scanner.context }
+		const mapKey = documentId.value
+		if (!mapKey) {
+			return base
+		}
+		const mapped = store.cache.mappers[mapKey] as ParentDoctypesForStockTransfer | undefined
+		if (!mapped) {
+			return base
+		}
+		const context: ScanContext = { ...base, doc: mapped as Record<string, unknown> }
+		if (context.frm === 'Work Order' && mapped.doctype === 'Stock Entry') {
+			context.frm = 'Stock Entry'
+		}
+		return context
+	}
 
 	const scan = async (barcode: string, qty: number) => {
 		store.scanner.lastScan = barcode
@@ -76,7 +94,7 @@ export const useScanStore = defineStore('scan', () => {
 			return
 		}
 
-		const response = await store.scan(barcode, qty)
+		const response = await store.scan(barcode, qty, scanContextForRequest())
 		if (response && response.length > 0) {
 			let fn: Function
 			const action = response[0].action

@@ -276,12 +276,16 @@ export const useBeamStore = defineStore('beam', () => {
 		return { data: message }
 	}
 
-	const scan = async (barcode: string, qty: number): Promise<(FormContext | ListContext)[] | undefined> => {
+	const scan = async (
+		barcode: string,
+		qty: number,
+		context: ScanContext = scanner.context
+	): Promise<(FormContext | ListContext)[] | undefined> => {
 		try {
 			const response = await frappe.xcall(SCAN_URL, {
 				barcode,
 				current_qty: qty,
-				context: scanner.context,
+				context,
 			})
 
 			if (!response) {

@@ -89,11 +89,14 @@ class ScanHandler {
 					args: { barcode: sCode },
 					callback: function (r) {
 						if (r?.exc_type || !r?.message?.success) return resolve()
-						const redirect =
+						let redirect =
 							frappe.utils.sanitise_redirect(frappe.utils.get_url_arg('redirect-to')) ||
 							r.message.redirect_to ||
 							r.message.home_page ||
 							'/beam'
+						if (redirect.startsWith('/app')) {
+							redirect = '/beam'
+						}
 						window.location.href = redirect
 						resolve()
 					},
