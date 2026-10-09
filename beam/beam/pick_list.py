@@ -121,12 +121,16 @@ def apply_pick_list_scan(
 		frappe.throw(frappe._("This pick list can no longer be edited."), frappe.ValidationError)
 
 	if picked_quantities:
-		if isinstance(picked_quantities, str):
-			picked_quantities = frappe.parse_json(picked_quantities)
-		for location in doc.locations:
-			client_qty = picked_quantities.get(str(location.idx))
-			if client_qty is not None:
-				location.picked_qty = flt(client_qty)
+		parsed = (
+			frappe.parse_json(picked_quantities)
+			if isinstance(picked_quantities, str)
+			else picked_quantities
+		)
+		if isinstance(parsed, dict):
+			for location in doc.locations:
+				client_qty = parsed.get(str(location.idx))
+				if client_qty is not None:
+					location.picked_qty = flt(client_qty)
 
 	open_rows = sorted_open_locations(doc)
 	if not open_rows:

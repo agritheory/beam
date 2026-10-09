@@ -136,7 +136,9 @@ def simulate_scan(page, barcode: str) -> None:
 
 def line_is_full(count_loc) -> bool:
 	match = re.match(r"([\d.]+)/([\d.]+)", count_loc.inner_text().strip())
-	return bool(match) and flt(match.group(1)) >= flt(match.group(2))
+	if not match:
+		return False
+	return flt(match.group(1)) >= flt(match.group(2))
 
 
 def expect_line_fully_picked(page, count_loc, label: str, timeout_ms: float = 15000) -> None:
@@ -169,6 +171,7 @@ def pick_all_lines_via_scan(page, pick_list_name: str) -> None:
 
 		simulate_scan(page, warehouse_barcode(warehouse))
 		if use_hu:
+			assert hu
 			simulate_scan(page, hu)
 		else:
 			for _ in range(int(target) + 1):

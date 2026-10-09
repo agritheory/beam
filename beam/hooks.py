@@ -562,7 +562,7 @@ demand = {
 }
 
 
-beam_frm = {
+beam_frm: dict[str, dict[str, list]] = {
 	"Item": {"Pick List": []},
 	"Warehouse": {"Pick List": []},
 	"Handling Unit": {"Pick List": []},
