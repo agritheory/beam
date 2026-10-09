@@ -147,7 +147,6 @@ jobs:
         shell: bash
         env:
           BENCH_ROOT: ${{ env.BENCH_ROOT }}
-          POETRY_VIRTUALENVS_CREATE: "false"
           BEAM_TEST_TELEMETRY: "true"
           BEAM_TEST_STACK_DUMP_SECONDS: "60"
         run: |
@@ -157,7 +156,6 @@ jobs:
           source env/bin/activate
           python -m playwright install --with-deps chromium
           cd apps/beam
-          poetry install
           pytest --cov=beam --cov-report=xml --cov-report=term-missing:skip-covered ./beam \
             --browser chromium \
             --disable-warnings -s | tee pytest-coverage.txt
