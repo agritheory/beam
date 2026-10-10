@@ -45,21 +45,4 @@ const homeList = computed(() => {
 nav {
 	padding-top: 0.5rem;
 }
-
-li {
-	list-style: none;
-	padding: 2rem;
-	margin: 0.5rem;
-	font-size: 150%;
-	border: 2px solid gray;
-	outline: 2px solid transparent;
-}
-
-li:active {
-	outline: 2px solid gray;
-}
-
-.home-nav {
-	display: block;
-}
 </style>

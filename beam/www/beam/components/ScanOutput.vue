@@ -33,7 +33,7 @@ const store = useBeamStore()
 	padding-left: 2em;
 	padding-right: 2em;
 	text-align: right;
-	color: var(--sc-alert);
+	color: var(--sc-beam-danger-fill);
 	font-family: monospace, monospace !important;
 	font-size: 18px;
 }

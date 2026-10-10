@@ -51,6 +51,7 @@ import ControlButtons from '@/components/ControlButtons.vue'
 import ReconciliationListRow from '@/components/ReconciliationListRow.vue'
 import { useBeamStore, type ReconciliationItemScanPayload } from '@/stores/beam'
 import type { ControlButton, StockReconciliation, StockEntryItem } from '@/types'
+import { itemListLine } from '@/utils/itemListLine'
 import { useBeamToast } from '@/utils/toast'
 import {
 	buildReconciliationItems,
@@ -126,15 +127,16 @@ const handleReconciliationScan = (payload: ReconciliationItemScanPayload) => {
 	})
 
 	if (existingIndex === -1) {
+		const warehouse = payload.warehouse || reconciliation.value.set_warehouse
 		items.value.push({
 			item_code: payload.item_code,
 			label: payload.item_code,
-			warehouse: payload.warehouse || reconciliation.value.set_warehouse,
+			description: itemListLine({ warehouse, stock_uom: payload.stock_uom }).description,
+			warehouse,
 			stock_uom: payload.stock_uom,
 			valuation_rate: payload.valuation_rate,
 			count: {
 				count: 1,
-				uom: payload.stock_uom,
 			},
 			debounce: 1000,
 		})
@@ -275,7 +277,6 @@ const controlButtons = computed((): ControlButton[] => {
 		{
 			label: 'SAVE',
 			disabled: items.value.length === 0,
-			color: { background: '#4791FF', text: 'var(--sc-btn-color)' },
 			action: trySave,
 		},
 		{
@@ -287,7 +288,6 @@ const controlButtons = computed((): ControlButton[] => {
 		},
 		{
 			label: 'CANCEL',
-			color: { background: 'white', text: 'black' },
 			action: cancel,
 		},
 	]
@@ -324,33 +324,40 @@ onUnmounted(() => {
 }
 
 .reconciliation .clear-button {
-	margin-bottom: 2px;
-	padding: 0.9rem 1rem !important;
+	align-self: stretch;
+	margin: 0;
+	padding: 0 0.75rem;
+	min-width: 2.75rem;
 }
 
 .reconciliation .dropdown-container {
 	display: flex;
-	align-items: flex-end !important;
+	align-items: flex-end;
 	justify-content: center;
 	position: relative;
 	margin-top: 1rem;
-	gap: 8px;
+	gap: 0.5rem;
+	padding: 0 var(--sc-list-margin);
+	box-sizing: border-box;
 }
 
-.reconciliation .autocomplete input,
-.autocomplete-results {
-	font-size: 150%;
+.reconciliation .dropdown-container .autocomplete {
+	flex: 1 1 auto;
+	min-width: 0;
+	max-width: 50ch;
+	width: 100%;
 }
 
-.autocomplete-results {
-	padding-inline: 3px !important;
+.begin {
+	width: 100%;
+	text-align: center;
+	font-size: 1rem;
+	color: var(--sc-primary-text-color);
+	padding: 1rem var(--sc-list-margin);
+	box-sizing: border-box;
 }
 
-.reconciliation .input-wrapper label {
-	margin: calc(-2.5rem - calc(2.15rem / 2)) 0 0 1ch !important;
-}
-
-.beam_item-count {
+.reconciliation .beam_item-count {
 	white-space: nowrap;
 }
 
@@ -366,9 +373,10 @@ onUnmounted(() => {
 }
 
 .reconciliation-modal {
-	background: white;
+	background: var(--sc-btn-color);
 	padding: 1.25rem;
-	border-radius: 4px;
+	border-radius: 0;
+	border: 1px solid var(--sc-row-border-color);
 	max-width: 24rem;
 	width: 100%;
 }

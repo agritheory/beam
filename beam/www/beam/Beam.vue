@@ -88,10 +88,39 @@ const registerInstance = (instance: any) => (window.scanner = instance)
 }
 
 :root {
-	--sc-input-active-border-color: #000000;
+	--sc-input-active-border-color: #333333;
 	--sc-input-border-color: #cccccc;
-	--sc-row-color-zebra-light: #eeeeee;
+	--sc-row-color-zebra-light: #f2f2f2;
+	--sc-focus-cell-outline: #333333;
+	--sc-focus-cell-background: #f2f2f2;
+	--sc-beam-danger-fill: #c02718;
+	--sc-beam-warning-text: #6b4a00;
+	--sc-form-background: #fafafa;
+	--sc-input-field-background: #f2f2f2;
+	--sc-cell-text-color: #3a3c41;
+	--sc-input-label-color: #666666;
+	--sc-input-active-label-color: #333333;
+	--sc-overlay-background: #ffffff;
+	--sc-row-hover-color: #e6e6e6;
+	--sc-btn-hover: #f2f2f2;
 	--beam-footer-rows: 1;
 	--beam-footer-height: calc(var(--beam-footer-rows) * 3.25rem + 1rem + env(safe-area-inset-bottom, 0px));
+}
+
+.beam_btn {
+	transition: background-color 120ms ease-out;
+}
+
+.beam_btn:focus-visible {
+	outline: 2px solid var(--sc-focus-cell-outline);
+	outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.beam_btn,
+	.control-buttons > button,
+	.operation-action-btn {
+		transition: none !important;
+	}
 }
 </style>

@@ -133,7 +133,6 @@ const controlButtons = computed((): ControlButton[] => {
 		{
 			label: 'SAVE',
 			disabled: items.value.length === 0,
-			color: { background: '#4791FF', text: 'var(--sc-btn-color)' },
 			action: create,
 		},
 		{
@@ -172,37 +171,35 @@ watch(
 	margin-bottom: 1.5em;
 }
 
-.move .autocomplete input,
-.autocomplete-results {
-	font-size: 150%;
+.move .dropdown-container .autocomplete {
+	flex: 1 1 auto;
+	min-width: 0;
+	max-width: 50ch;
+	width: 100%;
 }
 
-.autocomplete-results {
-	padding-inline: 3px !important;
+.move .clear-button {
+	align-self: stretch;
+	margin: 0;
+	padding: 0 0.75rem;
+	min-width: 2.75rem;
 }
 
-.move .input-wrapper label {
-	margin: calc(-2.5rem - calc(2.15rem / 2)) 0 0 1ch !important;
-}
-
-.clear-button {
-	margin-bottom: 2px;
-	padding: 0.9rem 1rem !important;
-}
-
-.begin {
+.move .begin {
 	width: 100%;
 	text-align: center;
 	font-size: 150%;
 	text-wrap: balance;
 }
 
-.dropdown-container {
+.move .dropdown-container {
 	display: flex;
-	align-items: flex-end !important;
+	align-items: flex-end;
 	justify-content: center;
 	position: relative;
 	margin-top: 1rem;
-	gap: 8px;
+	gap: 0.5rem;
+	padding: 0 var(--sc-list-margin);
+	box-sizing: border-box;
 }
 </style>

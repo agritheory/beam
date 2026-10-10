@@ -17,25 +17,6 @@ const store = useBeamStore()
 </script>
 
 <style scoped>
-div {
-	padding-top: 0.5rem;
-}
-
-li {
-	list-style: none;
-	padding: 2rem;
-	margin: 0.5rem;
-	font-size: 150%;
-	border-bottom: 2px solid grey;
-	display: flex;
-	justify-content: space-between;
-	padding: 10px;
-}
-
-li:active {
-	border-bottom: 2px solid ble;
-}
-
 .right-align {
 	margin-left: auto;
 }

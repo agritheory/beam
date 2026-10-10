@@ -29,7 +29,6 @@ export const useInitStore = defineStore('init', () => {
 		await store.setForm(resolvedRoute)
 		await store.setMappedDoc(resolvedRoute)
 		await store.setScanContext(resolvedRoute)
-		console.log('init: setting warehouses')
 		await store.setWarehouses()
 
 		const scanStore = useScanStore()

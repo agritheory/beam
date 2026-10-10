@@ -10,7 +10,7 @@ import pytest
 from playwright.sync_api import expect
 
 from beam.tests.playwright_utils import (
-	get_playwright_base_url,
+	login_beam_portal_user,
 	open_first_beam_list_row,
 	use_current_db_transaction,
 )
@@ -21,20 +21,7 @@ from beam.tests.playwright_utils import (
 
 @pytest.fixture(autouse=True)
 def login_as_jordan_mills(page, setup):
-	page.context.clear_cookies()
-	page.goto(get_playwright_base_url())
-	email_field = page.get_by_role("textbox", name="Email")
-	expect(email_field).to_be_visible(timeout=15000)
-	email_field.fill("jmills@cfc.co")
-
-	password_field = page.get_by_role("textbox", name="Password")
-	expect(password_field).to_be_visible(timeout=15000)
-	password_field.fill("admin")
-
-	login_button = page.get_by_role("button", name="Login")
-	expect(login_button).to_be_visible(timeout=15000)
-	login_button.click()
-	expect(page).to_have_url(re.compile(r"beam#/"), timeout=15000)
+	login_beam_portal_user(page, "jmills@cfc.co")
 	yield
 
 

@@ -2,12 +2,14 @@
 // For license information, please see license.txt
 
 import type { StockEntryItem } from '@/types'
+import { itemListLine } from '@/utils/itemListLine'
 
 export type ReconciliationListRow = StockEntryItem & {
 	warehouse?: string
 	label?: string
+	description?: string
 	debounce?: number
-	count?: { count: number | null; uom?: string }
+	count?: { count: number | null }
 }
 
 export type ReconciliationSaveMode = 'counted_only' | 'include_zero_uncounted'
@@ -42,9 +44,10 @@ export function buildReconciliationItems(
 }
 
 function reconciliationItemPayload(row: ReconciliationListRow, warehouse: string, qty: number) {
-	const { count, label, debounce, qty: systemQty, ...rest } = row
+	const { count, label, description, debounce, qty: systemQty, ...rest } = row
 	void count
 	void label
+	void description
 	void debounce
 	void systemQty
 
@@ -59,13 +62,16 @@ export function warehouseRowFromApi(apiItem: StockEntryItem, warehouse: string):
 	const { qty, ...rest } = apiItem
 	void qty
 
+	const rowWarehouse = rest.warehouse || warehouse
+	const line = itemListLine({ ...apiItem, warehouse: rowWarehouse })
+
 	return {
 		...rest,
-		warehouse: rest.warehouse || warehouse,
-		label: apiItem.item_name || apiItem.item_code,
+		warehouse: rowWarehouse,
+		label: line.label,
+		description: line.description,
 		count: {
 			count: null,
-			uom: apiItem.stock_uom,
 		},
 		debounce: 1000,
 	}

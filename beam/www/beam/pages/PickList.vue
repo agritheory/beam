@@ -129,7 +129,6 @@ const controlButtons = computed((): ControlButton[] => {
 		{
 			label: 'SAVE',
 			disabled: items.value.length === 0,
-			color: { background: '#4791FF', text: 'var(--sc-btn-color)' },
 			action: save,
 		},
 		{
@@ -142,7 +141,7 @@ const controlButtons = computed((): ControlButton[] => {
 			label: 'CANCEL',
 			hidden: true,
 			disabled: true,
-			color: { background: 'var(--sc-alert)', text: 'var(--sc-btn-color)' },
+			color: { background: 'var(--sc-beam-danger-fill)', text: 'var(--sc-btn-color)' },
 			action: () => {},
 		},
 	]
@@ -154,14 +153,15 @@ const controlButtons = computed((): ControlButton[] => {
 	padding: 2rem;
 	margin: 0.5rem;
 	font-size: 100%;
-	border: 2px solid gray;
+	border: 1px solid var(--sc-row-border-color);
+	border-radius: 0;
 	outline: 2px solid transparent;
 	flex: 1;
 	min-width: 100px;
 }
 
 .dirty {
-	color: tomato;
+	color: var(--sc-beam-danger-fill);
 	font-weight: 700;
 }
 </style>

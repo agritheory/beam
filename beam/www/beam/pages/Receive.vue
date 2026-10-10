@@ -77,11 +77,11 @@ const appendReceive = (fromIndex: number) => {
 				count: row.received_qty,
 				of: row.stock_qty,
 			},
-			label: appendUomText(`${row.item_code} from ${row.warehouse}`, row),
+			label: `${row.item_code} from ${row.warehouse}`,
 			linkComponent: 'ListAnchor',
 			description: `
 					[${row.parent}]
-					Warehouse: ${row.warehouse}
+					Warehouse: ${appendUomText(row.warehouse, row)}
 					Supplier: ${row.supplier}
 				`.trim(),
 			route: `#/purchase-receipt/${row.parent || 'new-purchase-receipt'}`,

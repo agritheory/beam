@@ -297,6 +297,24 @@ def login_playwright(page, email: str = "support@agritheory.dev", password: str 
 	expect(page).not_to_have_url(re.compile(r"/login"), timeout=20000)
 
 
+def login_beam_portal_user(page, email: str, password: str = "admin"):
+	"""Log out, sign in as ``email``, and land on the Beam home hash."""
+	import re
+
+	from playwright.sync_api import expect
+
+	base_url = get_playwright_base_url().rstrip("/")
+	page.context.clear_cookies()
+	page.goto(f"{base_url}/api/method/logout")
+	page.wait_for_timeout(500)
+	page.goto(f"{base_url}/login")
+	expect(page.get_by_role("textbox", name="Email")).to_be_visible(timeout=15000)
+	page.get_by_role("textbox", name="Email").fill(email)
+	page.get_by_role("textbox", name="Password").fill(password)
+	page.get_by_role("button", name="Login").click()
+	expect(page).to_have_url(re.compile(r"beam#/"), timeout=20000)
+
+
 def clear_beam_service_workers(page):
 	"""Beam PWA registers SW at scope `/`, which can break Desk `/app` navigations."""
 	page.evaluate(

@@ -269,7 +269,6 @@ const controlButtons = computed((): ControlButton[] => {
 	if (workOrder.value.docstatus === 1 && workOrder.value.status === 'Stopped') {
 		buttons.push({
 			label: 'RESUME',
-			color: { background: '#4791FF', text: 'var(--sc-btn-color)' },
 			action: async () => {
 				await store.setWorkOrderStatus(workOrderId, 'Resumed')
 				await reloadAfterWorkOrderChange()
@@ -298,7 +297,7 @@ const controlButtons = computed((): ControlButton[] => {
 		) {
 			buttons.push({
 				label: 'STOP',
-				color: { background: 'var(--sc-alert)', text: 'var(--sc-btn-color)' },
+				color: { background: 'var(--sc-beam-danger-fill)', text: 'var(--sc-btn-color)' },
 				action: async () => {
 					await store.setWorkOrderStatus(workOrderId, 'Stopped')
 					await reloadAfterWorkOrderChange()
@@ -313,7 +312,7 @@ const controlButtons = computed((): ControlButton[] => {
 		label: 'CANCEL',
 		disabled: !form?.name,
 		hidden: !form?.name || form.docstatus !== 1,
-		color: { background: 'var(--sc-alert)', text: 'var(--sc-btn-color)' },
+		color: { background: 'var(--sc-beam-danger-fill)', text: 'var(--sc-btn-color)' },
 		action: async () => {
 			if (!form?.name) return
 			await store.cancel<StockEntry>('Stock Entry', form.name)
@@ -383,7 +382,8 @@ b {
 	padding: 0rem;
 	margin: 0.5rem;
 	font-size: 100%;
-	border: 2px solid gray;
+	border: 1px solid var(--sc-row-border-color);
+	border-radius: 0;
 	outline: 2px solid transparent;
 	flex: 1;
 	min-width: 0;
@@ -392,7 +392,7 @@ b {
 }
 
 .dirty {
-	color: tomato;
+	color: var(--sc-beam-danger-fill);
 	font-weight: 700;
 }
 
@@ -402,14 +402,14 @@ b {
 
 .predecessor-warning {
 	margin: 0 0.75rem 0.5rem;
-	color: #9a6a00;
+	color: var(--sc-beam-warning-text);
 	font-size: 0.9rem;
 }
 
 .pick-list-link {
 	padding: 1rem;
 	text-align: center;
-	border-top: 1px solid gray;
+	border-top: 1px solid var(--sc-row-border-color);
 }
 
 .pick-list-link a {

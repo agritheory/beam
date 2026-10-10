@@ -8,6 +8,7 @@ import { createApp, markRaw } from 'vue'
 import { createRouter, createWebHashHistory } from 'vue-router'
 import { routes, handleHotUpdate } from 'vue-router/auto-routes'
 
+import '@/styles/stonecrop-aform.css'
 import Beam from '@/Beam.vue'
 import { useInitStore } from '@/stores/init.js'
 import { BeamWindow } from '@/types/index.js'

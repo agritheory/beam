@@ -34,16 +34,22 @@
 			<div v-if="showQtyInput" class="qty-input-row">
 				<ANumericInput label="Qty completed this session" v-model="pendingQty" />
 				<div class="qty-input-actions">
-					<button @click="confirmPause">Confirm</button>
-					<button @click="cancelPause">Cancel</button>
+					<button type="button" class="operation-action-btn" @click="confirmPause">Confirm</button>
+					<button type="button" class="operation-action-btn" @click="cancelPause">Cancel</button>
 				</div>
 			</div>
 			<div v-else-if="isCompleted" class="actions actions-single">
-				<button v-if="nextOperation" @click="goToNextOperation">Next Operation</button>
-				<button v-else-if="isLastOperation" @click="goToComplete">Complete</button>
+				<button v-if="nextOperation" type="button" class="operation-action-btn" @click="goToNextOperation">
+					Next Operation
+				</button>
+				<button v-else-if="isLastOperation" type="button" class="operation-action-btn" @click="goToComplete">
+					Complete
+				</button>
 			</div>
 			<div v-else class="actions">
 				<button
+					type="button"
+					class="operation-action-btn"
 					:disabled="
 						actionsDisabled ||
 						workOrder.status === 'Stopped' ||
@@ -56,7 +62,13 @@
 					@click="toggleOperation">
 					{{ toggleLabel }}
 				</button>
-				<button :disabled="actionsDisabled || !isQtyCompleted" @click="finishOperation">Finish</button>
+				<button
+					type="button"
+					class="operation-action-btn"
+					:disabled="actionsDisabled || !isQtyCompleted"
+					@click="finishOperation">
+					Finish
+				</button>
 			</div>
 		</div>
 	</div>
@@ -463,7 +475,8 @@ const finishOperation = async (): Promise<void> => {
 	padding: 0.9rem;
 	margin: 0;
 	font-size: 1rem;
-	border: 2px solid gray;
+	border: 1px solid var(--sc-row-border-color);
+	border-radius: 0;
 	outline: 2px solid transparent;
 	min-width: 0;
 	box-sizing: border-box;
@@ -518,7 +531,7 @@ const finishOperation = async (): Promise<void> => {
 .sequence-warning {
 	margin: 0;
 	font-size: 0.85rem;
-	color: #9a6a00;
+	color: var(--sc-beam-warning-text);
 }
 
 .timer-box {
@@ -546,13 +559,13 @@ const finishOperation = async (): Promise<void> => {
 	margin: 0;
 	font-size: 0.9rem;
 	font-weight: 600;
-	color: #333;
+	color: var(--sc-primary-text-color);
 }
 
 .action-error {
 	margin: 0;
 	font-size: 0.85rem;
-	color: #b30000;
+	color: var(--sc-beam-danger-fill);
 }
 
 .actions {
@@ -561,17 +574,30 @@ const finishOperation = async (): Promise<void> => {
 	gap: 0.4rem;
 }
 
-button {
+.operation-action-btn {
 	width: 100%;
 	padding: 0.9rem 0.8rem;
 	font-size: 1rem;
-	border: 1px solid #6c6c6c;
-	background: #f3f3f3;
-	color: #111;
+	border: 1px solid var(--sc-btn-border);
+	background: var(--sc-btn-color);
+	color: var(--sc-btn-label-color);
+	cursor: pointer;
+	transition: background-color 120ms ease-out;
 }
 
-button:disabled {
+.operation-action-btn:hover:not(:disabled),
+.operation-action-btn:active:not(:disabled) {
+	background: var(--sc-btn-hover);
+}
+
+.operation-action-btn:focus-visible {
+	outline: 2px solid var(--sc-focus-cell-outline);
+	outline-offset: 2px;
+}
+
+.operation-action-btn:disabled {
 	opacity: 0.55;
+	cursor: not-allowed;
 }
 
 @media (min-width: 760px) {

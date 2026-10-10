@@ -25,10 +25,10 @@
 					<ANumericInput label="Quantity" v-model="currentItem.qty" />
 					<BeamBtn class="clear-button" @click="addCurrentItem"> + </BeamBtn>
 				</div>
-				<div class="dd-container">
+				<fieldset class="dd-container bom-field" :disabled="bomDisabled">
 					<ADropdown label="BOM (Optional)" :items="bomList" v-model="currentItem.bom" />
 					<BeamBtn class="clear-button" @click="clearCurrentItem('bom')"> X </BeamBtn>
-				</div>
+				</fieldset>
 			</template>
 			<div class="dd-container">
 				<ADropdown label="Source Warehouse" :items="warehouseList" v-model="stockEntry.from_warehouse" />
@@ -63,16 +63,17 @@ const store = useBeamStore()
 const currentItem = ref({ item_code: '', qty: 0, bom: '', stock_uom: '', uom: '' })
 const items = ref([])
 const componentKey = ref(0)
-const stockEntry = computed(
-	() =>
-		store.cache.mappers.repack || {
-			name: '',
-			stock_entry_type: 'Repack',
-			items: [],
-			from_warehouse: '',
-			to_warehouse: '',
-		}
-)
+const defaultRepackEntry = (): StockEntry => ({
+	doctype: 'Stock Entry',
+	name: '',
+	stock_entry_type: 'Repack',
+	purpose: 'Repack',
+	items: [],
+	from_warehouse: '',
+	to_warehouse: '',
+})
+
+const stockEntry = computed(() => (store.cache.mappers.repack as StockEntry | undefined) || defaultRepackEntry())
 
 const itemList = ref<string[]>([])
 const bomList = ref<string[]>([])
@@ -84,14 +85,42 @@ onMounted(async () => {
 	warehouseList.value = store.warehouseList.filter(w => !w.is_group).map(w => w.name)
 })
 
-const loadItems = async (search: string) => {
-	if (!search) return []
-	const items = await store.getAll<{ name: string }[]>('Item', {
+const itemUoms = new Map<string, string>()
+let latestItemQuery = 0
+
+const loadItems = async () => {
+	// ADropdown passes its pre-keystroke value to filterFunction; the v-model already holds the typed text.
+	const search = currentItem.value.item_code
+	const query = ++latestItemQuery
+	if (!search) {
+		itemList.value = []
+		return []
+	}
+	const items = await store.getAll<{ name: string; stock_uom: string }[]>('Item', {
 		filters: JSON.stringify([['item_code', 'like', `${search}%`]]),
+		fields: JSON.stringify(['name', 'stock_uom']),
 	})
+	if (query !== latestItemQuery) return itemList.value
+	for (const item of items) itemUoms.set(item.name, item.stock_uom)
 	itemList.value = items.map(item => item.name)
-	return itemList.value.filter(item => item.toLocaleLowerCase().startsWith(search.toLocaleLowerCase()))
+	return itemList.value
 }
+
+const bomDisabled = computed(
+	() => !currentItem.value.item_code || !itemList.value.includes(currentItem.value.item_code)
+)
+
+watch(bomDisabled, disabled => {
+	if (disabled) currentItem.value.bom = ''
+})
+
+watch(
+	() => currentItem.value.item_code,
+	itemCode => {
+		const stockUom = itemUoms.get(itemCode)
+		if (stockUom) currentItem.value.stock_uom = stockUom
+	}
+)
 
 const loadBOMs = async () => {
 	const boms = await store.getAll<{ name: string }[]>('BOM')
@@ -128,13 +157,7 @@ const repack = async () => {
 	const res = await store.submit<StockEntry>('Stock Entry', stockEntry.value.name || '')
 	if (res?.data) {
 		store.$patch(state => {
-			state.cache.mappers.repack = {
-				name: '',
-				stock_entry_type: 'Repack',
-				items: [],
-				from_warehouse: '',
-				to_warehouse: '',
-			}
+			state.cache.mappers.repack = defaultRepackEntry()
 		})
 		items.value = []
 	}
@@ -192,19 +215,11 @@ const controlButtons = computed((): ControlButton[] => {
 	const buttons = [
 		{
 			label: 'CLEAN',
-			color: {
-				background: '#4791FF',
-				text: 'var(--sc-btn-color)',
-			},
 			action: clearItem,
 			hidden: items.value.length === 0,
 		},
 		{
 			label: 'ADD',
-			color: {
-				background: '#4791FF',
-				text: 'var(--sc-btn-color)',
-			},
 			action: addItem,
 		},
 	]
@@ -215,18 +230,10 @@ const controlButtons = computed((): ControlButton[] => {
 			label: 'REPACK',
 			disabled: !stockEntry.value.name,
 			hidden: !stockEntry.value.name,
-			color: {
-				background: '#4791FF',
-				text: 'var(--sc-btn-color)',
-			},
 			action: repack,
 		},
 		{
 			label: 'SAVE',
-			color: {
-				background: '#4791FF',
-				text: 'var(--sc-btn-color)',
-			},
 			action: create,
 		},
 		...buttons,
@@ -314,16 +321,23 @@ watch(
 	justify-content: center;
 	align-items: center;
 	min-height: 200px;
-	padding: 20px;
+	padding: 0 var(--sc-list-margin);
+	box-sizing: border-box;
 }
 
-.repack .autocomplete input,
-.autocomplete-results {
-	font-size: 150%;
+.repack .begin {
+	width: 100%;
+	text-align: center;
+	font-size: 1rem;
+	color: var(--sc-primary-text-color);
+	padding: 1rem var(--sc-list-margin);
+	box-sizing: border-box;
 }
 
-.repack .input-wrapper label {
-	margin: calc(-2.5rem - calc(2.15rem / 2)) 0 0 1ch !important;
+.repack .autocomplete {
+	flex: 1 1 auto;
+	min-width: 0;
+	width: 100%;
 }
 
 .max-h-300 {
@@ -332,35 +346,49 @@ watch(
 	padding-bottom: 0px !important;
 }
 
-.container {
+.repack .container {
 	display: flex;
 	flex-direction: column;
-	width: 80vh;
+	width: min(80vh, 100%);
+	max-width: 100%;
+	padding: 0;
+	box-sizing: border-box;
 }
 
-.dd-container {
+.repack .dd-container {
 	display: flex;
+	align-items: flex-end;
 	width: 100%;
 	margin-top: 1rem;
-	gap: 10px;
+	gap: 0.5rem;
 	justify-content: space-between;
 }
 
-.dd-container .aform_form-element input {
-	border-color: red;
-	font-size: 150% !important;
-	outline: 1px solid transparent !important;
-	border: 1px solid var(--sc-input-border-color) !important;
-	border-radius: 0.25rem !important;
-	width: 90% !important;
+.repack .dd-container .aform_form-element {
+	margin: 0;
 }
 
-.dd-container .aform_form-element {
-	margin-bottom: 0 !important;
-	margin-top: 10px !important;
+.repack fieldset.bom-field {
+	border: 0;
+	padding: 0;
+	margin-left: 0;
+	margin-right: 0;
+	min-width: 0;
 }
 
-.clear-button {
-	margin-top: 10px;
+.repack fieldset.bom-field:disabled {
+	opacity: 0.55;
+}
+
+.repack fieldset.bom-field:disabled input,
+.repack fieldset.bom-field:disabled button {
+	cursor: not-allowed;
+}
+
+.repack .clear-button {
+	align-self: stretch;
+	margin: 0;
+	padding: 0 0.75rem;
+	min-width: 2.75rem;
 }
 </style>

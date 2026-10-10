@@ -46,6 +46,18 @@ export const useScanStore = defineStore('scan', () => {
 		}
 		// Plain JSON for frappe.xcall — reactive proxies often omit fields on CI.
 		const doc = JSON.parse(JSON.stringify(mapped)) as Record<string, unknown>
+		if (base.frm === 'Stock Entry') {
+			if (!doc.doctype) {
+				doc.doctype = 'Stock Entry'
+			}
+			if (!doc.purpose && doc.stock_entry_type) {
+				doc.purpose = doc.stock_entry_type
+			}
+			if (!doc.company && typeof frappe !== 'undefined') {
+				doc.company =
+					frappe.defaults?.get_user_default?.('Company') || frappe.boot?.sysdefaults?.company
+			}
+		}
 		const context: ScanContext = { ...base, doc }
 		if (context.frm === 'Work Order' && mapped.doctype === 'Stock Entry') {
 			context.frm = 'Stock Entry'
@@ -163,6 +175,14 @@ export const useScanStore = defineStore('scan', () => {
 						}
 					} else if (action.field === 'delivered_qty' && (row as DeliveryNoteItem).qty != null) {
 						;(row as DeliveryNoteItem).delivered_qty = Math.min(action.target, (row as DeliveryNoteItem).qty)
+					} else if (
+						action.field === 'handling_unit' &&
+						mappedDoc.value.doctype === 'Delivery Note' &&
+						(row as DeliveryNoteItem).qty != null
+					) {
+						row.handling_unit = action.target
+						const huQty = action.context.stock_qty ?? action.context.qty ?? 0
+						;(row as DeliveryNoteItem).delivered_qty = Math.min((row as DeliveryNoteItem).qty, huQty)
 					} else {
 						row[action.field] = action.target
 					}
@@ -229,7 +249,7 @@ export const useScanStore = defineStore('scan', () => {
 						row[field] = (row[field] || 0) + 1
 					}
 				}
-			} else if (action.doctype === 'Stock Entry') {
+			} else if (action.doctype === 'Stock Entry Detail' || action.doctype === 'Stock Entry') {
 				const source_warehouses = ['Material Consumption for Manufacture', 'Material Issue']
 				const target_warehouses = ['Material Receipt', 'Manufacture']
 				const both_warehouses = [
@@ -257,9 +277,10 @@ export const useScanStore = defineStore('scan', () => {
 				;(mappedDoc.value as StockEntry).items.push(item)
 			} else {
 				const item: StockEntryItem = {
-					item_code: action.context.doc?.item_code,
-					stock_uom: action.context.doc?.stock_uom,
+					item_code: action.context.item_code ?? action.context.doc?.item_code,
+					stock_uom: action.context.stock_uom ?? action.context.doc?.stock_uom,
 					qty: 1,
+					[action.field]: action.target,
 				}
 
 				;(mappedDoc.value as StockEntry).items.push(item)

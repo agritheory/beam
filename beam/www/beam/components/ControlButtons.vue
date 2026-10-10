@@ -74,8 +74,8 @@ onUnmounted(() => syncFooterCssVars(1))
 	right: 0;
 	bottom: 0;
 	justify-content: space-between;
-	background: var(--sc-background-color, #fff);
-	border-top: 1px solid var(--sc-row-border-color, #ccc);
+	background: var(--sc-btn-color);
+	border-top: 1px solid var(--sc-row-border-color);
 	z-index: 100;
 }
 
@@ -85,6 +85,12 @@ onUnmounted(() => syncFooterCssVars(1))
 	max-width: calc(50% - 0.25rem);
 	letter-spacing: 0.05rem;
 	font-weight: bold;
+	transition: background-color 120ms ease-out;
+}
+
+.control-buttons > button:focus-visible {
+	outline: 2px solid var(--sc-focus-cell-outline);
+	outline-offset: 2px;
 }
 
 .control-buttons > button.footer-full-row {

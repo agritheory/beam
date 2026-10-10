@@ -75,11 +75,12 @@ const appendDemand = (fromIndex: number) => {
 		demandList.value.push({
 			// ListView keys on barcode||label; labels collide across demand rows.
 			barcode: row.name || row.key || `${row.parent}:${row.item_code}:${row.idx}`,
-			label: appendUomText(`${row.item_code} from ${row.item_warehouse}`, row),
+			label: `${row.item_code} from ${row.item_warehouse}`,
 			linkComponent: 'ListAnchor',
 			route: `#/${frappe.scrub(row.doctype)}/${row.parent}`,
 			description: `
 					[${row.parent}]
+					Warehouse: ${appendUomText(row.item_warehouse, row)}
 					Production Item: ${row.production_item}
 					BOM No: ${row.bom_no}
 				`.trim(),
