@@ -16,7 +16,7 @@ import pytest
 from playwright.sync_api import expect
 
 from beam.tests.playwright_utils import (
-	beam_portal_url,
+	goto_beam_portal_route,
 	order_id_from_beam_url,
 	use_current_db_transaction,
 	wait_for_docstatus,
@@ -59,7 +59,7 @@ def test_complete_partial_stock_entry(page):
 
 	current_year = datetime.now().year
 	order_id = f"MFG-WO-{current_year}-00001"
-	page.goto(beam_portal_url(f"/work_order/{order_id}"))
+	goto_beam_portal_route(page, f"/work_order/{order_id}")
 	expect(page.get_by_text("TRANSFER", exact=True)).to_be_visible(timeout=15000)
 	assert order_id_from_beam_url(page.url) == order_id
 

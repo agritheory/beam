@@ -44,7 +44,9 @@ export const useScanStore = defineStore('scan', () => {
 		if (!mapped) {
 			return base
 		}
-		const context: ScanContext = { ...base, doc: mapped as Record<string, unknown> }
+		// Plain JSON for frappe.xcall — reactive proxies often omit fields on CI.
+		const doc = JSON.parse(JSON.stringify(mapped)) as Record<string, unknown>
+		const context: ScanContext = { ...base, doc }
 		if (context.frm === 'Work Order' && mapped.doctype === 'Stock Entry') {
 			context.frm = 'Stock Entry'
 		}

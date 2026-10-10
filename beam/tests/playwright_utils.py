@@ -256,6 +256,32 @@ def beam_portal_url(route: str = "") -> str:
 	return f"{base}#{route}" if route else f"{base}#/"
 
 
+def goto_beam_portal_route(page, route: str = "", timeout: float = 15000):
+	"""Open a Beam hash route and wait until Vue Router has applied it.
+
+	Playwright sometimes completes ``goto`` without updating the hash when the Beam
+	app is already loaded (common on CI), which leaves tests on ``#/`` while they
+	expect a form or list page.
+	"""
+	import re
+
+	from playwright.sync_api import expect
+
+	route = route.strip()
+	if route.startswith("#"):
+		route = route[1:]
+	if route and not route.startswith("/"):
+		route = f"/{route}"
+
+	page.goto(beam_portal_url(route), wait_until="domcontentloaded", timeout=30000)
+	hash_pattern = re.compile(rf"beam#{re.escape(route)}")
+	try:
+		expect(page).to_have_url(hash_pattern, timeout=3000)
+	except AssertionError:
+		page.evaluate("(hashRoute) => { window.location.hash = hashRoute; }", route)
+		expect(page).to_have_url(hash_pattern, timeout=timeout)
+
+
 def login_playwright(page, email: str = "support@agritheory.dev", password: str = "admin"):
 	"""Fill the Frappe login form and wait until past /login."""
 	import re

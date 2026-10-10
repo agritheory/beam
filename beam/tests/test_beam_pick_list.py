@@ -15,9 +15,9 @@ from playwright.sync_api import expect
 from beam.tests.fixtures import DELIVERY_PICK_DEMO_PO
 from beam.tests.fixtures import pie_crust_pick_demo
 from beam.tests.playwright_utils import (
-	beam_portal_url,
 	error_toast_text,
 	get_playwright_base_url,
+	goto_beam_portal_route,
 	use_current_db_transaction,
 	wait_for_docstatus,
 )
@@ -55,7 +55,7 @@ def demo_pie_crust_pick_ids():
 
 def open_demo_work_order(page):
 	work_order, _pick_list = demo_pie_crust_pick_ids()
-	page.goto(beam_portal_url(f"/work_order/{work_order}"))
+	goto_beam_portal_route(page, f"/work_order/{work_order}")
 	expect(page.get_by_text("View Pick List", exact=True)).to_be_visible(timeout=15000)
 	return work_order
 
@@ -256,7 +256,7 @@ def test_butter_pick_list_scan_save_submit(page):
 	with use_current_db_transaction():
 		location_count = frappe.db.count("Pick List Item", {"parent": pick_list_name})
 
-	page.goto(beam_portal_url(f"/pick-list/{pick_list_name}"))
+	goto_beam_portal_route(page, f"/pick-list/{pick_list_name}")
 	expect(page.get_by_role("heading", name="Pick List", exact=True)).to_be_visible(timeout=15000)
 
 	pick_all_lines_via_scan(page, pick_list_name)
@@ -293,9 +293,9 @@ def test_butter_pick_list_scan_save_submit(page):
 		assert work_order
 
 
-@pytest.mark.order(313)
+@pytest.mark.order(316)
 def test_pick_queue_lists_open_pick_lists(page):
-	page.goto(beam_portal_url("/pick-list"))
+	goto_beam_portal_route(page, "/pick-list")
 	expect(page.get_by_role("heading", name="Pick", exact=True)).to_be_visible(timeout=15000)
 
 	with use_current_db_transaction():
@@ -310,7 +310,7 @@ def test_pick_queue_lists_open_pick_lists(page):
 		expect(page.get_by_text(name, exact=True)).to_be_visible(timeout=15000)
 
 
-@pytest.mark.order(314)
+@pytest.mark.order(317)
 def test_delivery_pick_list_opens_from_queue(page):
 	with use_current_db_transaction():
 		assert frappe.db.get_value("Sales Order", {"po_no": DELIVERY_PICK_DEMO_PO}, "name")
@@ -321,7 +321,7 @@ def test_delivery_pick_list_opens_from_queue(page):
 		)
 	assert delivery_pick
 
-	page.goto(beam_portal_url("/pick-list"))
+	goto_beam_portal_route(page, "/pick-list")
 	page.get_by_text(delivery_pick, exact=True).click()
 	expect(page).to_have_url(re.compile(rf"pick-list/{re.escape(delivery_pick)}"), timeout=15000)
 	expect(page.get_by_role("heading", name="Pick List", exact=True)).to_be_visible()
@@ -329,10 +329,10 @@ def test_delivery_pick_list_opens_from_queue(page):
 	expect(page.get_by_text("Double Plum Pie", exact=False)).to_be_visible()
 
 
-@pytest.mark.order(315)
+@pytest.mark.order(318)
 def test_work_order_with_pick_list_shows_read_only_material_counts(page):
 	work_order, _pick_list = demo_pie_crust_pick_ids()
-	page.goto(beam_portal_url(f"/work_order/{work_order}"))
+	goto_beam_portal_route(page, f"/work_order/{work_order}")
 	expect(page.get_by_text("View Pick List", exact=True)).to_be_visible(timeout=15000)
 
 	butter_line = page.locator(".box .beam_list-item").filter(has_text="Butter").first
