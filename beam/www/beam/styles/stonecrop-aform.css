@@ -1,0 +1,98 @@
+/*
+ * Legacy ADropdown (@stonecrop/aform 0.4.x) uses the old autocomplete shell.
+ * Restyle it to match Stonecrop field tokens (square, gray fill, hairline outline).
+ *
+ * Frappe renders every .css/.js under www/ as a Jinja template, so the built output
+ * must never contain "{#", "{{" or "{%". Do not start a selector with an id here:
+ * minified, "@media (...){#id ..." opens a Jinja comment and the sheet 417s.
+ */
+
+.autocomplete .input-wrapper {
+	position: relative;
+	min-width: 0;
+	width: 100%;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	box-sizing: border-box;
+}
+
+.autocomplete .input-wrapper input {
+	width: 100%;
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0.5rem;
+	font-size: 1rem;
+	font-family: var(--sc-font-family);
+	border: none;
+	border-radius: 0;
+	outline: 1px solid var(--sc-input-border-color);
+	outline-offset: -1px;
+	background: var(--sc-input-field-background);
+	color: var(--sc-cell-text-color);
+	transition: outline-color 120ms ease-out;
+}
+
+.autocomplete .input-wrapper input:focus {
+	outline: 1px solid var(--sc-input-active-border-color);
+	border-radius: 0;
+	border-bottom: none;
+}
+
+.autocomplete .input-wrapper label {
+	display: inline-block;
+	position: absolute;
+	top: 0;
+	left: 10px;
+	transform: translateY(-50%);
+	margin: 0;
+	padding: 0 0.25rem;
+	font-size: 0.7rem;
+	font-weight: 300;
+	letter-spacing: 0.05rem;
+	color: var(--sc-input-label-color);
+	background: linear-gradient(var(--sc-form-background) 50%, var(--sc-input-field-background) 50%);
+	z-index: 2;
+	min-height: auto;
+	border: none;
+}
+
+.autocomplete .input-wrapper:focus-within label {
+	color: var(--sc-input-active-label-color);
+}
+
+.autocomplete .input-wrapper .autocomplete-results {
+	width: 100%;
+	box-sizing: border-box;
+	padding: 0;
+	margin: 0;
+	border-radius: 0;
+	border: 1px solid var(--sc-input-active-border-color);
+	border-top: none;
+	background: var(--sc-overlay-background);
+	color: var(--sc-cell-text-color);
+}
+
+.autocomplete .input-wrapper .autocomplete-result {
+	padding: 0.5rem 0.625rem;
+	border-bottom: 1px solid var(--sc-row-border-color);
+	color: var(--sc-cell-text-color);
+}
+
+.autocomplete .input-wrapper .autocomplete-result.is-active,
+.autocomplete .input-wrapper .autocomplete-result:hover {
+	background: var(--sc-row-hover-color);
+	color: var(--sc-input-active-border-color);
+}
+
+.aform_form-element .aform_input-field {
+	box-sizing: border-box;
+	border: none;
+	border-radius: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.autocomplete .input-wrapper input {
+		transition: none;
+	}
+}

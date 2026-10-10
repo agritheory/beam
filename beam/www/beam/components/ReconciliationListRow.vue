@@ -7,7 +7,6 @@
 
 		<div v-if="item.count && item.count.count == null" class="beam_item-count reconciliation-count-pending">
 			<span class="reconciliation-count-empty" aria-hidden="true"></span>
-			<span v-if="item.count.uom">&nbsp; {{ item.count.uom }}</span>
 		</div>
 		<ItemCount
 			v-else-if="item.count"
@@ -16,7 +15,6 @@
 			:debounce="item.debounce"
 			:denominator="0"
 			:editable="true"
-			:uom="item.count.uom"
 			@update:model-value="onCountChange" />
 
 		<BeamBtn

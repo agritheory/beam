@@ -60,6 +60,7 @@ export type ListContext = BaseContext & {
 export type ScanContext = {
 	frm?: string
 	listview?: string
+	doc?: Record<string, unknown>
 }
 
 export type ScanConfig = {

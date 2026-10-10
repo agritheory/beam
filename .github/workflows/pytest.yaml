@@ -18,7 +18,7 @@ jobs:
       cups_admin_password: ${{ steps.creds.outputs.password }}
     steps:
       - name: Clone
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Resolve CUPS admin credentials
         id: creds
@@ -104,26 +104,26 @@ jobs:
 
     steps:
       - name: Clone
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.10'
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 24
           check-latest: true
-          cache: 'yarn'
+          cache: yarn
 
       - name: Add to Hosts
         if: ${{ !env.ACT }}
         run: echo "127.0.0.1 test_site" | sudo tee -a /etc/hosts
 
       - name: Cache pip
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
@@ -147,7 +147,6 @@ jobs:
         shell: bash
         env:
           BENCH_ROOT: ${{ env.BENCH_ROOT }}
-          POETRY_VIRTUALENVS_CREATE: "false"
           BEAM_TEST_TELEMETRY: "true"
           BEAM_TEST_STACK_DUMP_SECONDS: "60"
         run: |
@@ -157,7 +156,6 @@ jobs:
           source env/bin/activate
           python -m playwright install --with-deps chromium
           cd apps/beam
-          poetry install
           pytest --cov=beam --cov-report=xml --cov-report=term-missing:skip-covered ./beam \
             --browser chromium \
             --disable-warnings -s | tee pytest-coverage.txt
@@ -172,7 +170,7 @@ jobs:
           report-only-changed-files: true
           xml-skip-covered: true
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: ${{ !cancelled() }}
         with:
           name: playwright-traces

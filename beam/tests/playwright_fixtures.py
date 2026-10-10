@@ -58,8 +58,8 @@ def browser_context_args(browser_context_args, request, playwright_bench_web):
 	args = {
 		**browser_context_args,
 		"viewport": {
-			"width": 400,
-			"height": 900,
+			"width": 480,
+			"height": 854,
 		},
 	}
 	base_url = getattr(request.config.option, "base_url", None)
@@ -127,7 +127,7 @@ def setup(request):
 	is_login_test = "scan_to_login" in request.node.name
 
 	if not is_login_test:
-		page.goto(base_url)
+		page.goto(base_url, timeout=15000, wait_until="domcontentloaded")
 		# visiting the home page redirects to login page
 		login_playwright(page)
 

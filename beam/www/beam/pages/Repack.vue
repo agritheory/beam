@@ -25,10 +25,10 @@
 					<ANumericInput label="Quantity" v-model="currentItem.qty" />
 					<BeamBtn class="clear-button" @click="addCurrentItem"> + </BeamBtn>
 				</div>
-				<div class="dd-container">
+				<fieldset class="dd-container bom-field" :disabled="bomDisabled">
 					<ADropdown label="BOM (Optional)" :items="bomList" v-model="currentItem.bom" />
 					<BeamBtn class="clear-button" @click="clearCurrentItem('bom')"> X </BeamBtn>
-				</div>
+				</fieldset>
 			</template>
 			<div class="dd-container">
 				<ADropdown label="Source Warehouse" :items="warehouseList" v-model="stockEntry.from_warehouse" />
@@ -55,23 +55,25 @@ import { ref, computed, onMounted, watch } from 'vue'
 import ControlButtons from '@/components/ControlButtons.vue'
 import { useBeamStore } from '@/stores/beam'
 import type { ControlButton, DocActionResponse, StockEntry } from '@/types'
+import { appendUomText, itemListLine } from '@/utils/itemListLine'
 import { useBeamToast } from '@/utils/toast.js'
 
 const toast = useBeamToast()
 const store = useBeamStore()
-const currentItem = ref({ item_code: '', qty: 0, bom: '' })
+const currentItem = ref({ item_code: '', qty: 0, bom: '', stock_uom: '', uom: '' })
 const items = ref([])
 const componentKey = ref(0)
-const stockEntry = computed(
-	() =>
-		store.cache.mappers.repack || {
-			name: '',
-			stock_entry_type: 'Repack',
-			items: [],
-			from_warehouse: '',
-			to_warehouse: '',
-		}
-)
+const defaultRepackEntry = (): StockEntry => ({
+	doctype: 'Stock Entry',
+	name: '',
+	stock_entry_type: 'Repack',
+	purpose: 'Repack',
+	items: [],
+	from_warehouse: '',
+	to_warehouse: '',
+})
+
+const stockEntry = computed(() => (store.cache.mappers.repack as StockEntry | undefined) || defaultRepackEntry())
 
 const itemList = ref<string[]>([])
 const bomList = ref<string[]>([])
@@ -79,22 +81,77 @@ const warehouseList = ref<string[]>([])
 
 onMounted(async () => {
 	store.$patch(state => (state.cache.mappers.repack = stockEntry.value))
-	await loadBOMs()
 	warehouseList.value = store.warehouseList.filter(w => !w.is_group).map(w => w.name)
 })
 
-const loadItems = async (search: string) => {
-	if (!search) return []
-	const items = await store.getAll<{ name: string }[]>('Item', {
+const itemUoms = new Map<string, string>()
+let latestItemQuery = 0
+
+const loadItems = async () => {
+	// ADropdown passes its pre-keystroke value to filterFunction; the v-model already holds the typed text.
+	const search = currentItem.value.item_code
+	const query = ++latestItemQuery
+	if (!search) {
+		itemList.value = []
+		return []
+	}
+	const items = await store.getAll<{ name: string; stock_uom: string }[]>('Item', {
 		filters: JSON.stringify([['item_code', 'like', `${search}%`]]),
+		fields: JSON.stringify(['name', 'stock_uom']),
 	})
+	if (query !== latestItemQuery) return itemList.value
+	for (const item of items) itemUoms.set(item.name, item.stock_uom)
 	itemList.value = items.map(item => item.name)
-	return itemList.value.filter(item => item.toLocaleLowerCase().startsWith(search.toLocaleLowerCase()))
+	return itemList.value
 }
 
-const loadBOMs = async () => {
-	const boms = await store.getAll<{ name: string }[]>('BOM')
+const itemChosenForBom = computed(
+	() =>
+		itemList.value.includes(currentItem.value.item_code) ||
+		(Boolean(currentItem.value.item_code.trim()) && itemUoms.has(currentItem.value.item_code))
+)
+
+const bomDisabled = computed(() => !itemChosenForBom.value)
+
+watch(bomDisabled, disabled => {
+	if (disabled) currentItem.value.bom = ''
+})
+
+watch(
+	() => currentItem.value.item_code,
+	async itemCode => {
+		if (itemCode && !itemUoms.has(itemCode)) {
+			const rows = await store.getAll<{ name: string; stock_uom: string }[]>('Item', {
+				filters: JSON.stringify([['name', '=', itemCode]]),
+				fields: JSON.stringify(['name', 'stock_uom']),
+				limit_page_length: 1,
+			})
+			if (rows[0]) itemUoms.set(rows[0].name, rows[0].stock_uom)
+		}
+		const stockUom = itemUoms.get(itemCode)
+		if (stockUom) currentItem.value.stock_uom = stockUom
+		await loadBOMs(itemCode)
+	}
+)
+
+const loadBOMs = async (itemCode: string) => {
+	if (!itemCode.trim()) {
+		bomList.value = []
+		currentItem.value.bom = ''
+		return
+	}
+	const boms = await store.getAll<{ name: string }[]>('BOM', {
+		filters: JSON.stringify([
+			['item', '=', itemCode],
+			['is_active', '=', 1],
+			['docstatus', '=', 1],
+		]),
+		fields: JSON.stringify(['name']),
+	})
 	bomList.value = boms.map(bom => bom.name)
+	if (currentItem.value.bom && !bomList.value.includes(currentItem.value.bom)) {
+		currentItem.value.bom = ''
+	}
 }
 
 const clearField = (field: 'from_warehouse' | 'to_warehouse') =>
@@ -127,13 +184,7 @@ const repack = async () => {
 	const res = await store.submit<StockEntry>('Stock Entry', stockEntry.value.name || '')
 	if (res?.data) {
 		store.$patch(state => {
-			state.cache.mappers.repack = {
-				name: '',
-				stock_entry_type: 'Repack',
-				items: [],
-				from_warehouse: '',
-				to_warehouse: '',
-			}
+			state.cache.mappers.repack = defaultRepackEntry()
 		})
 		items.value = []
 	}
@@ -152,19 +203,31 @@ const addItem = () => {
 		toast.error('Please select only source or target warehouse')
 		return
 	}
+	const warehouse = stockEntry.value.from_warehouse || stockEntry.value.to_warehouse
+	const line = itemListLine({
+		item_code: currentItem.value.item_code,
+		warehouse,
+		stock_uom: currentItem.value.stock_uom,
+		uom: currentItem.value.uom,
+	})
 	items.value.push({
-		label: currentItem.value.item_code,
+		label: line.label || currentItem.value.item_code,
 		count: { count: currentItem.value.qty },
-		description: stockEntry.value.from_warehouse
-			? `From ${stockEntry.value.from_warehouse}`
-			: `To ${stockEntry.value.to_warehouse}`,
+		description: appendUomText(
+			stockEntry.value.from_warehouse
+				? `From ${stockEntry.value.from_warehouse}`
+				: `To ${stockEntry.value.to_warehouse}`,
+			currentItem.value
+		),
 		item_code: currentItem.value.item_code,
 		qty: currentItem.value.qty,
 		s_warehouse: stockEntry.value.from_warehouse,
 		t_warehouse: stockEntry.value.to_warehouse,
+		stock_uom: currentItem.value.stock_uom,
+		uom: currentItem.value.uom,
 	})
 
-	currentItem.value = { item_code: '', qty: 0, bom: '' }
+	currentItem.value = { item_code: '', qty: 0, bom: '', stock_uom: '', uom: '' }
 	clearField('from_warehouse')
 	clearField('to_warehouse')
 }
@@ -179,19 +242,11 @@ const controlButtons = computed((): ControlButton[] => {
 	const buttons = [
 		{
 			label: 'CLEAN',
-			color: {
-				background: '#4791FF',
-				text: 'var(--sc-btn-color)',
-			},
 			action: clearItem,
 			hidden: items.value.length === 0,
 		},
 		{
 			label: 'ADD',
-			color: {
-				background: '#4791FF',
-				text: 'var(--sc-btn-color)',
-			},
 			action: addItem,
 		},
 	]
@@ -202,18 +257,10 @@ const controlButtons = computed((): ControlButton[] => {
 			label: 'REPACK',
 			disabled: !stockEntry.value.name,
 			hidden: !stockEntry.value.name,
-			color: {
-				background: '#4791FF',
-				text: 'var(--sc-btn-color)',
-			},
 			action: repack,
 		},
 		{
 			label: 'SAVE',
-			color: {
-				background: '#4791FF',
-				text: 'var(--sc-btn-color)',
-			},
 			action: create,
 		},
 		...buttons,
@@ -256,7 +303,13 @@ watch(
 		itemList.value = [newItem.item_code] // ADropdown needs the list to keep the selected item
 		const qty = newItem.item_code === currentItem.value.item_code ? currentItem.value.qty + newItem.qty : newItem.qty
 
-		currentItem.value = { ...newItem, qty }
+		currentItem.value = {
+			item_code: newItem.item_code || '',
+			qty,
+			bom: '',
+			stock_uom: newItem.stock_uom || '',
+			uom: newItem.uom || '',
+		}
 		if (newItem.from_warehouse) stockEntry.value.from_warehouse = newItem.from_warehouse
 		store.$patch(state => (state.cache.mappers.repack.items = []))
 	},
@@ -269,14 +322,23 @@ watch(
 		// Update items list on BOM selection
 		if (!currentItem.value.bom) return
 		const listBom = await store.getStockEntryItems(bom)
-		items.value = listBom.map(bomItem => ({
-			label: bomItem.description,
-			count: { count: bomItem.qty },
-			description: `From ${bomItem.default_warehouse}`,
-			item_code: bomItem.description,
-			qty: bomItem.qty,
-			s_warehouse: bomItem.default_warehouse,
-		}))
+		items.value = listBom.map(bomItem => {
+			const line = itemListLine({
+				item_code: bomItem.item_code,
+				item_name: bomItem.item_name,
+				warehouse: bomItem.default_warehouse,
+				stock_uom: bomItem.stock_uom,
+			})
+			return {
+				label: line.label,
+				count: { count: bomItem.qty },
+				description: appendUomText(`From ${bomItem.default_warehouse}`, bomItem),
+				item_code: bomItem.item_code,
+				qty: bomItem.qty,
+				s_warehouse: bomItem.default_warehouse,
+				stock_uom: bomItem.stock_uom,
+			}
+		})
 	}
 )
 </script>
@@ -286,16 +348,23 @@ watch(
 	justify-content: center;
 	align-items: center;
 	min-height: 200px;
-	padding: 20px;
+	padding: 0 var(--sc-list-margin);
+	box-sizing: border-box;
 }
 
-.repack .autocomplete input,
-.autocomplete-results {
-	font-size: 150%;
+.repack .begin {
+	width: 100%;
+	text-align: center;
+	font-size: 1rem;
+	color: var(--sc-primary-text-color);
+	padding: 1rem var(--sc-list-margin);
+	box-sizing: border-box;
 }
 
-.repack .input-wrapper label {
-	margin: calc(-2.5rem - calc(2.15rem / 2)) 0 0 1ch !important;
+.repack .autocomplete {
+	flex: 1 1 auto;
+	min-width: 0;
+	width: 100%;
 }
 
 .max-h-300 {
@@ -304,35 +373,49 @@ watch(
 	padding-bottom: 0px !important;
 }
 
-.container {
+.repack .container {
 	display: flex;
 	flex-direction: column;
-	width: 80vh;
+	width: min(80vh, 100%);
+	max-width: 100%;
+	padding: 0;
+	box-sizing: border-box;
 }
 
-.dd-container {
+.repack .dd-container {
 	display: flex;
+	align-items: flex-end;
 	width: 100%;
 	margin-top: 1rem;
-	gap: 10px;
+	gap: 0.5rem;
 	justify-content: space-between;
 }
 
-.dd-container .aform_form-element input {
-	border-color: red;
-	font-size: 150% !important;
-	outline: 1px solid transparent !important;
-	border: 1px solid var(--sc-input-border-color) !important;
-	border-radius: 0.25rem !important;
-	width: 90% !important;
+.repack .dd-container .aform_form-element {
+	margin: 0;
 }
 
-.dd-container .aform_form-element {
-	margin-bottom: 0 !important;
-	margin-top: 10px !important;
+.repack fieldset.bom-field {
+	border: 0;
+	padding: 0;
+	margin-left: 0;
+	margin-right: 0;
+	min-width: 0;
 }
 
-.clear-button {
-	margin-top: 10px;
+.repack fieldset.bom-field:disabled {
+	opacity: 0.55;
+}
+
+.repack fieldset.bom-field:disabled input,
+.repack fieldset.bom-field:disabled button {
+	cursor: not-allowed;
+}
+
+.repack .clear-button {
+	align-self: stretch;
+	margin: 0;
+	padding: 0 0.75rem;
+	min-width: 2.75rem;
 }
 </style>

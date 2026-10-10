@@ -684,7 +684,7 @@ onUnmounted(() => {
 	position: fixed;
 	left: 1rem;
 	right: auto;
-	bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+	bottom: calc(var(--beam-footer-height, 5.5rem) + 0.5rem);
 	z-index: 150; /* floating control */
 	width: 3rem;
 	height: 3rem;

@@ -675,9 +675,6 @@ def test_subcontracting_receipt():
 
 @pytest.mark.order(84)
 def test_handling_units_overconsumption_in_material_transfer_stock_entry():
-	# validate_handling_unit_overconsumption is not wired in hooks.py yet.
-	pytest.skip("Handling unit overconsumption validation is disabled pending feature completion")
-	# Tests validate_handling_unit_overconsumption Stock Entry incoming code block
 	with pytest.raises(NegativeStockError) as exc_info:
 		se = frappe.new_doc("Stock Entry")
 		se.stock_entry_type = se.purpose = "Material Receipt"
@@ -732,9 +729,6 @@ def test_handling_units_overconsumption_in_material_transfer_stock_entry():
 
 @pytest.mark.order(86)
 def test_handling_units_overconsumption_in_delivery_note():
-	# validate_handling_unit_overconsumption is not wired in hooks.py yet.
-	pytest.skip("Handling unit overconsumption validation is disabled pending feature completion")
-	# Tests validate_handling_unit_overconsumption Delivery Note code block
 	with pytest.raises(NegativeStockError) as exc_info:
 		se = frappe.new_doc("Stock Entry")
 		se.stock_entry_type = se.purpose = "Material Receipt"

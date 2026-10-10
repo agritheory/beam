@@ -58,9 +58,24 @@ export type User = ParentDoctype & {
 	full_name?: string
 }
 
+export type JobCardTimeLog = ChildDoctypeMeta & {
+	from_time?: string
+	to_time?: string
+	time_in_mins?: number
+	completed_qty?: number
+	employee?: string
+}
+
 export type JobCard = ParentDoctype & {
 	total_time_in_mins: number
+	for_quantity?: number
+	status?: 'Open' | 'Work In Progress' | 'Material Transferred' | 'On Hold' | 'Submitted' | 'Cancelled' | 'Complete' | 'Completed'
+	total_completed_qty?: number
+	overproduction_percentage?: number
+	active_job_card_for_employee?: string | null
+	locked_by_employee?: string | null
 	items?: JobCardItem[]
+	time_logs?: JobCardTimeLog[]
 }
 
 export type JobCardItem = ChildDoctype & {
@@ -101,7 +116,7 @@ export type StockEntryItem = ChildDoctype & {
 	t_warehouse?: string
 	transfer_qty?: number
 	transferred_qty?: number
-	stock_uom?: string
+	uom?: string
 }
 
 export type WorkOrder = ParentDoctype & {
@@ -111,7 +126,11 @@ export type WorkOrder = ParentDoctype & {
 	qty: number
 
 	item_name?: string
+	stock_uom?: string
 	produced_qty?: number
+	process_loss_qty?: number
+	production_plan?: string
+	company?: string
 	skip_transfer?: boolean
 	wip_warehouse?: string
 	operations?: WorkOrderOperation[]
@@ -129,6 +148,10 @@ export type WorkOrderOperation = ChildDoctype & {
 }
 
 export type WorkOrderItem = ChildDoctype & {
+	item_code?: string
+	item_name?: string
+	description?: string
+	stock_uom?: string
 	required_qty?: number
 	source_warehouse?: string
 	transferred_qty?: number
@@ -150,6 +173,24 @@ export type PurchaseReceiptItem = ChildDoctype & {
 
 	qty?: number
 	warehouse?: string
+}
+
+export type PickListLocation = ChildDoctype & {
+	item_code?: string
+	item_name?: string
+	picked_qty?: number
+	qty?: number
+	stock_qty?: number
+	stock_uom?: string
+	uom?: string
+	warehouse?: string
+}
+
+export type PickList = ParentDoctype & {
+	purpose: string
+	scan_mode?: number
+	locations: PickListLocation[]
+	work_order?: string
 }
 
 export type DeliveryNote = ParentDoctype & {
@@ -183,4 +224,4 @@ export type BomItem = {
 
 export type ParentDoctypesForStockTransfer = DeliveryNote | PurchaseReceipt | StockEntry
 export type ParentDoctypesWithItems = ParentDoctypesForStockTransfer | JobCard | WorkOrder
-export type ParentDoctypes = ParentDoctypesWithItems & Workstation
+export type ParentDoctypes = ParentDoctypesWithItems & Workstation & PickList

@@ -29,6 +29,7 @@ import ControlButtons from '@/components/ControlButtons.vue'
 import ScanOutput from '@/components/ScanOutput.vue'
 import { useBeamStore } from '@/stores/beam'
 import type { ControlButton, DeliveryNote, DeliveryNoteItem } from '@/types'
+import { itemListLine } from '@/utils/itemListLine'
 
 const route = useRoute()
 const store = useBeamStore()
@@ -59,10 +60,11 @@ onBeforeRouteLeave((to, from, next) => {
 
 const items = computed((): (DeliveryNoteItem & ListViewItem)[] => {
 	return deliveryNote.value.items.map(item => {
+		const line = itemListLine(item)
 		return {
 			...item,
-			label: item.item_name,
-			description: `${item.warehouse}`,
+			label: line.label,
+			description: line.description,
 			count: {
 				count: item.delivered_qty,
 				of: item.qty,
@@ -123,7 +125,6 @@ const controlButtons = computed((): ControlButton[] => {
 		{
 			label: 'SAVE',
 			disabled: items.value.length === 0,
-			color: { background: '#4791FF', text: 'var(--sc-btn-color)' },
 			action: create,
 		},
 		{
@@ -137,7 +138,7 @@ const controlButtons = computed((): ControlButton[] => {
 			label: 'CANCEL',
 			disabled: form.items.length === 0 || !form.name,
 			hidden: Boolean(form.__islocal) || form.docstatus !== 1,
-			color: { background: 'var(--sc-alert)', text: 'var(--sc-btn-color)' },
+			color: { background: 'var(--sc-beam-danger-fill)', text: 'var(--sc-btn-color)' },
 			action: cancel,
 		},
 	]
@@ -161,14 +162,15 @@ b {
 	padding: 2rem;
 	margin: 0.5rem;
 	font-size: 100%;
-	border: 2px solid gray;
+	border: 1px solid var(--sc-row-border-color);
+	border-radius: 0;
 	outline: 2px solid transparent;
 	flex: 1;
 	min-width: 100px;
 }
 
 .dirty {
-	color: tomato;
+	color: var(--sc-beam-danger-fill);
 	font-weight: 700;
 }
 </style>

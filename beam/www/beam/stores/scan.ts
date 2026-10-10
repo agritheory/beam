@@ -5,6 +5,8 @@ import { defineStore } from 'pinia'
 import { computed } from 'vue'
 
 import { useBeamStore } from '@/stores/beam.js'
+import type { PickList } from '@/types/frappe.js'
+import { defaultCompany } from '@/utils/company.js'
 import { useBeamToast } from '@/utils/toast.js'
 import type {
 	DeliveryNoteItem,
@@ -12,10 +14,15 @@ import type {
 	ListContext,
 	ParentDoctypesForStockTransfer,
 	PurchaseReceipt,
+	ScanContext,
 	StockEntry,
 	StockEntryItem,
 	StockReconciliation,
 } from '@/types/index.js'
+
+declare const frappe: any
+
+const pickListWarehouseGates: Record<string, string | null> = {}
 
 export const useScanStore = defineStore('scan', () => {
 	const store = useBeamStore()
@@ -28,10 +35,80 @@ export const useScanStore = defineStore('scan', () => {
 
 	const mappedDoc = computed(() => store.cache.mappers[documentId.value])
 
+	const scanContextForRequest = (): ScanContext => {
+		const base: ScanContext = { ...store.scanner.context }
+		const mapKey = documentId.value
+		if (!mapKey) {
+			return base
+		}
+		const mapped = store.cache.mappers[mapKey] as ParentDoctypesForStockTransfer | undefined
+		if (!mapped) {
+			return base
+		}
+		// Send a plain copy: reactive proxies don't serialize every field.
+		const doc = JSON.parse(JSON.stringify(mapped)) as Record<string, unknown>
+		if (base.frm === 'Stock Entry') {
+			if (!doc.doctype) {
+				doc.doctype = 'Stock Entry'
+			}
+			if (!doc.purpose && doc.stock_entry_type) {
+				doc.purpose = doc.stock_entry_type
+			}
+			if (!doc.company) {
+				doc.company = defaultCompany()
+			}
+		}
+		const context: ScanContext = { ...base, doc }
+		if (context.frm === 'Work Order' && mapped.doctype === 'Stock Entry') {
+			context.frm = 'Stock Entry'
+		}
+		return context
+	}
+
 	const scan = async (barcode: string, qty: number) => {
 		store.scanner.lastScan = barcode
 		store.scanner.lastDocType = ''
-		const response = await store.scan(barcode, qty)
+		const currentRoute = store.router.currentRoute.value
+		if (currentRoute.name === 'pick_list') {
+			const pickListId = currentRoute.params.id.toString()
+			const mapped = store.cache.mappers[pickListId] as PickList | undefined
+			const pickedQuantities = Object.fromEntries(
+				(mapped?.locations || []).map(location => [String(location.idx), location.picked_qty || 0])
+			)
+			const result = await frappe.xcall('beam.beam.pick_list.apply_pick_list_scan', {
+				pick_list_name: pickListId,
+				barcode,
+				warehouse_gate: pickListWarehouseGates[pickListId] || null,
+				picked_quantities: JSON.stringify(pickedQuantities),
+			})
+			if (!result?.ok) {
+				if (result?.message) {
+					toast.error(result.message)
+				}
+				return
+			}
+			if (result.warehouse_gate) {
+				pickListWarehouseGates[pickListId] = result.warehouse_gate
+				store.scanner.lastDocType = `Warehouse: ${result.warehouse_gate}`
+				return
+			}
+			const doc = store.cache.mappers[pickListId] as PickList | undefined
+			if (doc && result.idx != null && result.picked_qty != null) {
+				pickListWarehouseGates[pickListId] = null
+				const row = doc.locations.find(location => location.idx == result.idx)
+				if (row) {
+					row.picked_qty = result.picked_qty
+					store.$patch(state => {
+						const mapped = state.cache.mappers[pickListId] as PickList
+						mapped.dirty = true
+					})
+					store.scanner.lastDocType = `${row.item_code}: ${result.picked_qty}`
+				}
+			}
+			return
+		}
+
+		const response = await store.scan(barcode, qty, scanContextForRequest())
 		if (response && response.length > 0) {
 			let fn: Function
 			const action = response[0].action
@@ -98,6 +175,14 @@ export const useScanStore = defineStore('scan', () => {
 						}
 					} else if (action.field === 'delivered_qty' && (row as DeliveryNoteItem).qty != null) {
 						;(row as DeliveryNoteItem).delivered_qty = Math.min(action.target, (row as DeliveryNoteItem).qty)
+					} else if (
+						action.field === 'handling_unit' &&
+						mappedDoc.value.doctype === 'Delivery Note' &&
+						(row as DeliveryNoteItem).qty != null
+					) {
+						row.handling_unit = action.target
+						const huQty = action.context.stock_qty ?? action.context.qty ?? 0
+						;(row as DeliveryNoteItem).delivered_qty = Math.min((row as DeliveryNoteItem).qty, huQty)
 					} else {
 						row[action.field] = action.target
 					}
@@ -164,7 +249,7 @@ export const useScanStore = defineStore('scan', () => {
 						row[field] = (row[field] || 0) + 1
 					}
 				}
-			} else if (action.doctype === 'Stock Entry') {
+			} else if (action.doctype === 'Stock Entry Detail' || action.doctype === 'Stock Entry') {
 				const source_warehouses = ['Material Consumption for Manufacture', 'Material Issue']
 				const target_warehouses = ['Material Receipt', 'Manufacture']
 				const both_warehouses = [
@@ -192,9 +277,10 @@ export const useScanStore = defineStore('scan', () => {
 				;(mappedDoc.value as StockEntry).items.push(item)
 			} else {
 				const item: StockEntryItem = {
-					item_code: action.context.doc?.item_code,
-					stock_uom: action.context.doc?.stock_uom,
+					item_code: action.context.item_code ?? action.context.doc?.item_code,
+					stock_uom: action.context.stock_uom ?? action.context.doc?.stock_uom,
 					qty: 1,
+					[action.field]: action.target,
 				}
 
 				;(mappedDoc.value as StockEntry).items.push(item)

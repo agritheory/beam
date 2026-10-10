@@ -1036,7 +1036,41 @@ employees = [
 		"phone": "(041) 000-2569",
 		"roles": ["Stock User", "BEAM Mobile User"],
 		"reports_to": "Tristan Hawkins",
-		"department": "Operations - APC",
+		"department": "Management - APC",
+		"designation": "Baker",
+	},
+	{
+		"name": "Jordan Mills",
+		"gender": "Male",
+		"date_of_birth": "1996-04-15",
+		"date_of_joining": "2024-09-01",
+		"address": {
+			"address_line1": "440 Orchard Lane",
+			"city": "Nashua",
+			"state": "NH",
+			"postal_code": "03060",
+		},
+		"phone": "(603) 555-0134",
+		"roles": ["BEAM Mobile User", "Employee", "Manufacturing User"],
+		"reports_to": "Tristan Hawkins",
+		"department": "Management - APC",
+		"designation": "Baker",
+	},
+	{
+		"name": "Cassidy Reyes",
+		"gender": "Female",
+		"date_of_birth": "1993-11-28",
+		"date_of_joining": "2023-03-15",
+		"address": {
+			"address_line1": "217 Maple Street",
+			"city": "Concord",
+			"state": "NH",
+			"postal_code": "03301",
+		},
+		"phone": "(603) 555-0271",
+		"roles": ["BEAM Mobile User", "Employee", "Manufacturing User"],
+		"reports_to": "Tristan Hawkins",
+		"department": "Management - APC",
 		"designation": "Baker",
 	},
 	{
@@ -1057,3 +1091,69 @@ employees = [
 		"designation": "Warehouse Associate",
 	},
 ]
+
+DELIVERY_PICK_DEMO_PO = "BEAM-DELIVERY-PICK-DEMO"
+
+delivery_ship_pick_demo = {
+	"sales_order": {
+		"po_no": DELIVERY_PICK_DEMO_PO,
+		"customer": "Almacs Food Group",
+		"items": [
+			{"item_code": "Ambrosia Pie", "qty": 5, "warehouse": "Baked Goods - APC"},
+			{"item_code": "Double Plum Pie", "qty": 5, "warehouse": "Baked Goods - APC"},
+		],
+	},
+	"staging_warehouse": "Shipping - APC",
+	"material_transfer": {
+		"purpose": "Material Transfer",
+		"lines": [
+			{"item_code": "Ambrosia Pie", "qty": 5, "warehouse": "Baked Goods - APC", "uom": "Nos"},
+			{"item_code": "Double Plum Pie", "qty": 5, "warehouse": "Baked Goods - APC", "uom": "Nos"},
+		],
+	},
+}
+
+pie_crust_pick_demo = {
+	"work_order": {
+		"production_item": "Pie Crust",
+		"qty": 2,
+		"wip_warehouse": "Kitchen - APC",
+	},
+	"material_receipts": [
+		{
+			"item_code": "Butter",
+			"qty": 1,
+			"uom": "Pound",
+			"t_warehouse": "Refrigerator - APC",
+			"basic_rate": 4.50,
+		},
+		{
+			"item_code": "Flour",
+			"qty": 1.7,
+			"uom": "Pound",
+			"t_warehouse": "Storeroom - APC",
+			"basic_rate": 0.85,
+		},
+		{
+			"item_code": "Salt",
+			"qty": 0.02,
+			"uom": "Pound",
+			"t_warehouse": "Storeroom - APC",
+			"basic_rate": 0.10,
+		},
+		{
+			"item_code": "Parchment Paper",
+			"qty": 2,
+			"uom": "Nos",
+			"t_warehouse": "Storeroom - APC",
+			"basic_rate": 0.05,
+		},
+		{
+			"item_code": "Pie Tin",
+			"qty": 2,
+			"uom": "Nos",
+			"t_warehouse": "Storeroom - APC",
+			"basic_rate": 0.25,
+		},
+	],
+}

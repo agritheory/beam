@@ -3,6 +3,8 @@
 
 pytest_plugins = ["beam.tests.playwright_fixtures"]
 
+import re
+
 import frappe
 import pytest
 from playwright.sync_api import expect
@@ -35,6 +37,21 @@ def open_repack_page(page):
 def repack_item_input(page):
 	wrapper = page.locator(".input-wrapper", has=page.locator("label", has_text="Item to Repack"))
 	return wrapper.locator("input")
+
+
+def repack_item_results(page):
+	wrapper = page.locator(".input-wrapper", has=page.locator("label", has_text="Item to Repack"))
+	return wrapper.locator("li.autocomplete-result:not(.loading)")
+
+
+def repack_bom_input(page):
+	wrapper = page.locator(".input-wrapper", has=page.locator("label", has_text="BOM (Optional)"))
+	return wrapper.locator("input")
+
+
+def repack_bom_results(page):
+	wrapper = page.locator(".input-wrapper", has=page.locator("label", has_text="BOM (Optional)"))
+	return wrapper.locator("li.autocomplete-result:not(.loading)")
 
 
 def scan_into_repack(page, barcode: str, item_code: str):
@@ -145,7 +162,6 @@ def test_repack_items_manually(page):
 def test_repack_using_bom(page):
 	open_repack_page(page)
 
-	bom_name = "BOM-Gooseberry Pie Filling-001"
 	target_wh = "Refrigerator - APC"
 
 	with use_current_db_transaction():
@@ -156,6 +172,12 @@ def test_repack_using_bom(page):
 			limit=1,
 		)
 		assert finished_barcode, "Gooseberry Pie must have a barcode"
+		bom_name = frappe.db.get_value(
+			"BOM",
+			{"item": "Gooseberry Pie", "docstatus": 1, "is_active": 1},
+			"name",
+		)
+		assert bom_name, "Gooseberry Pie needs an active BOM"
 
 	scan_into_repack(page, finished_barcode[0], "Gooseberry Pie")
 
@@ -289,3 +311,50 @@ def test_repack_validation_single_warehouse_direction(page):
 	expect(page.get_by_text("Please select only source or target warehouse")).to_be_visible()
 
 	expect(page.get_by_text("Scan Items, Select Warehouses, and Set Qty to Begin")).to_be_visible()
+
+
+@pytest.mark.order(327)
+def test_repack_item_search_uses_typed_text(page):
+	"""ADropdown hands filterFunction the value from before the keystroke.
+
+	The query has to use the full typed text: one character behind, the first
+	keystroke returns nothing and "Gooseberry Pie F" also matches "Gooseberry Pie".
+	"""
+	open_repack_page(page)
+	item_input = repack_item_input(page)
+	results = repack_item_results(page)
+
+	item_input.click()
+	item_input.press_sequentially("G", delay=100)
+	expect(results.first).to_have_text(re.compile(r"^G", re.IGNORECASE))
+
+	item_input.press_sequentially("ooseberry Pie F", delay=100)
+	expect(results).to_have_text(["Gooseberry Pie Filling"])
+
+	results.first.click()
+	expect(item_input).to_have_value("Gooseberry Pie Filling")
+
+
+@pytest.mark.order(328)
+def test_repack_bom_disabled_until_item_set(page):
+	open_repack_page(page)
+	item_input = repack_item_input(page)
+	bom_input = repack_bom_input(page)
+
+	expect(bom_input).to_be_disabled()
+
+	item_input.click()
+	item_input.press_sequentially("Gooseberry Pi", delay=100)
+	expect(bom_input).to_be_disabled()
+
+	repack_item_results(page).filter(has_text=re.compile(r"^Gooseberry Pie$")).click()
+	expect(item_input).to_have_value("Gooseberry Pie")
+	expect(bom_input).to_be_enabled()
+	bom_input.click()
+	expect(repack_bom_results(page)).to_have_text([re.compile(r"^BOM-Gooseberry Pie")], timeout=10000)
+
+	item_row = page.locator(".dd-container", has=page.locator("label", has_text="Item to Repack"))
+	item_row.get_by_role("button", name="X").click()
+	expect(item_input).to_have_value("")
+	expect(bom_input).to_be_disabled()
+	expect(bom_input).to_have_value("")

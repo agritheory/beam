@@ -13,6 +13,7 @@ import type {
 	DeliveryNoteItem,
 	Demand,
 	FormContext,
+	JobCard,
 	FrappeResponse,
 	ListContext,
 	ParentDoctypes,
@@ -24,6 +25,12 @@ import type {
 } from '@/types/index.js'
 import { handleErrors } from '@/utils/error.js'
 import { useBeamToast } from '@/utils/toast.js'
+import {
+	computeWorkOrderStage,
+	stockEntryPurposeForStage,
+	type WorkOrderMobileContext,
+} from '@/utils/workOrderStage.js'
+import type { WorkOrder } from '@/types/frappe.js'
 
 declare const frappe: any
 
@@ -35,6 +42,12 @@ const PURCHASE_DEMAND_URL = '/api/method/beam.beam.demand.receiving.get_receivin
 const SALES_DEMAND_URL = '/api/method/beam.beam.demand.demand.get_demand'
 const SCAN_CONFIG_URL = '/api/method/beam.beam.scan.config.get_scan_doctypes'
 const SCAN_URL = 'beam.beam.scan.scan' // frappe.xcall doesn't require prefix
+const JOB_CARD_URL = '/api/method/beam.beam.manufacturing.get_job_card'
+const JOB_CARD_START_URL = '/api/method/beam.beam.manufacturing.start_job_card'
+const JOB_CARD_PAUSE_URL = '/api/method/beam.beam.manufacturing.pause_job_card'
+const JOB_CARD_FINISH_URL = '/api/method/beam.beam.manufacturing.finish_job_card'
+const WORK_ORDER_CONTEXT_URL = '/api/method/beam.beam.manufacturing.get_work_order_mobile_context'
+const WORK_ORDER_STATUS_URL = '/api/method/beam.beam.manufacturing.set_work_order_status'
 
 // Route :id is a source document name (PO/SO), not the mapped form doc itself.
 const MAPPED_FORM_DOCTYPES = ['Purchase Receipt', 'Delivery Note']
@@ -71,6 +84,7 @@ export const useBeamStore = defineStore('beam', () => {
 	const camera = reactive({
 		pendingPhotos: [] as File[],
 	})
+	const workOrderContext = reactive<Record<string, WorkOrderMobileContext>>({})
 
 	const getScanDoctypes = async () => {
 		const response = await httpStore.get(SCAN_CONFIG_URL)
@@ -91,6 +105,9 @@ export const useBeamStore = defineStore('beam', () => {
 			}
 			const docname = currentRoute.params.id.toString()
 			form.value = await getOne<ParentDoctypes>(meta.doctype, docname)
+			if (meta.doctype === 'Pick List') {
+				cache.value.mappers[docname] = form.value as ParentDoctypes
+			}
 		}
 	}
 
@@ -105,12 +122,36 @@ export const useBeamStore = defineStore('beam', () => {
 		const docname = id.toString()
 		let newDoc: ParentDoctypesForStockTransfer | undefined
 
-		if (meta.doctype === 'Work Order') {
+		if (meta.doctype === 'Pick List') {
+			newDoc = await getOne<ParentDoctypes>('Pick List', docname)
+		} else if (meta.doctype === 'Work Order') {
+			let workOrderDoc =
+				(form.value as WorkOrder)?.name === docname ? (form.value as WorkOrder) : undefined
+			if (!workOrderDoc?.name) {
+				workOrderDoc = await getOne<WorkOrder>('Work Order', docname)
+			}
+			const woContext = await getWorkOrderMobileContext(docname)
+			if (woContext.pick_list) {
+				return
+			}
+			let purpose =
+				currentRoute.query.purpose === 'Manufacture'
+					? 'Manufacture'
+					: 'Material Transfer for Manufacture'
+
+			if (currentRoute.query.purpose !== 'Manufacture' && workOrderDoc?.name) {
+				const stage = computeWorkOrderStage(workOrderDoc, woContext.overproduction_percentage)
+				const stagePurpose = stockEntryPurposeForStage(stage)
+				if (stagePurpose) {
+					purpose = stagePurpose
+				}
+			}
+
 			const existingEntries = await getAll<ParentDoctypesForStockTransfer>('Stock Entry', {
 				filters: JSON.stringify({
 					docstatus: 0,
 					work_order: id,
-					purpose: 'Material Transfer for Manufacture',
+					purpose,
 				}),
 			})
 
@@ -119,7 +160,7 @@ export const useBeamStore = defineStore('beam', () => {
 			} else {
 				newDoc = await getMappedStockEntry({
 					work_order_id: id,
-					purpose: 'Material Transfer for Manufacture',
+					purpose,
 				})
 			}
 		} else {
@@ -203,12 +244,16 @@ export const useBeamStore = defineStore('beam', () => {
 		return { data: message }
 	}
 
-	const scan = async (barcode: string, qty: number): Promise<(FormContext | ListContext)[] | undefined> => {
+	const scan = async (
+		barcode: string,
+		qty: number,
+		context: ScanContext = scanner.context
+	): Promise<(FormContext | ListContext)[] | undefined> => {
 		try {
 			const response = await frappe.xcall(SCAN_URL, {
 				barcode,
 				current_qty: qty,
-				context: scanner.context,
+				context,
 			})
 
 			if (!response) {
@@ -223,6 +268,71 @@ export const useBeamStore = defineStore('beam', () => {
 		}
 
 		return []
+	}
+
+	const callMethod = async <T>(
+		request: { method: 'get' | 'post'; url: string; params: Record<string, unknown> },
+		failure: string,
+		success?: string
+	): Promise<T> => {
+		const response = await httpStore[request.method](request.url, request.params)
+		if (!response.ok) {
+			await handleErrors(response)
+			throw new Error(failure)
+		}
+		const { message }: { message: T } = await response.json()
+		if (success) toast.success(success)
+		return message
+	}
+
+	const getJobCard = (jobCardId: string) =>
+		callMethod<JobCard>(
+			{ method: 'get', url: JOB_CARD_URL, params: { job_card_id: jobCardId } },
+			'Failed to fetch job card'
+		)
+
+	const startJobCard = (jobCardId: string) =>
+		callMethod<JobCard>(
+			{ method: 'post', url: JOB_CARD_START_URL, params: { job_card_id: jobCardId } },
+			'Failed to start job card',
+			'Job started'
+		)
+
+	const pauseJobCard = (jobCardId: string, completedQty: number = 0) =>
+		callMethod<JobCard>(
+			{ method: 'post', url: JOB_CARD_PAUSE_URL, params: { job_card_id: jobCardId, completed_qty: completedQty } },
+			'Failed to pause job card',
+			'Job paused'
+		)
+
+	const finishJobCard = (jobCardId: string, completedQty: number) =>
+		callMethod<JobCard>(
+			{ method: 'post', url: JOB_CARD_FINISH_URL, params: { job_card_id: jobCardId, completed_qty: completedQty } },
+			'Failed to finish job card',
+			'Job finished'
+		)
+
+	const getWorkOrderMobileContext = async (workOrderId: string) => {
+		const context = await callMethod<WorkOrderMobileContext>(
+			{ method: 'get', url: WORK_ORDER_CONTEXT_URL, params: { work_order_id: workOrderId } },
+			'Failed to fetch work order context'
+		)
+		workOrderContext[workOrderId] = context
+		return context
+	}
+
+	const setWorkOrderStatus = (workOrderId: string, status: 'Stopped' | 'Resumed') =>
+		callMethod<string>(
+			{ method: 'post', url: WORK_ORDER_STATUS_URL, params: { work_order_id: workOrderId, status } },
+			'Failed to update work order status',
+			status === 'Stopped' ? 'Work order stopped' : 'Work order resumed'
+		)
+
+	const refreshWorkOrderForm = async (workOrderId: string): Promise<WorkOrder> => {
+		const data = await getOne<WorkOrder>('Work Order', workOrderId)
+		form.value = data
+		await getWorkOrderMobileContext(workOrderId)
+		return data
 	}
 
 	const insert = async <T extends Record<string, any>>(doctype: string, body: T) => {
@@ -421,6 +531,7 @@ export const useBeamStore = defineStore('beam', () => {
 		form,
 		scanner,
 		camera,
+		workOrderContext,
 		warehouseList,
 		reconciliationItemScan,
 		setReconciliationItemScan,
@@ -446,6 +557,13 @@ export const useBeamStore = defineStore('beam', () => {
 		getOne,
 		getReceiving,
 		getStockEntryItems,
+		getJobCard,
+		startJobCard,
+		pauseJobCard,
+		finishJobCard,
+		getWorkOrderMobileContext,
+		refreshWorkOrderForm,
+		setWorkOrderStatus,
 		getStockReconciliationItems,
 		logout,
 		makeNewDoc,

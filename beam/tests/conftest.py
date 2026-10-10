@@ -94,6 +94,14 @@ from frappe.utils import get_bench_path
 
 from beam.beam.demand.demand import build_demand_allocation_map
 from beam.beam.demand.receiving import reset_build_receiving_map
+from beam.tests.fixtures import DELIVERY_PICK_DEMO_PO
+from beam.tests.setup import (
+	create_delivery_ship_pick_demo,
+	create_pie_crust_pick_demo,
+	seed_settings,
+)
+from beam.tests.manufacturing_test_utils import submit_material_transfer_for_manufacture
+from erpnext.manufacturing.doctype.work_order.work_order import stop_unstop
 from cups_test_utils import (
 	configure_pycups_credentials,
 	cups_runs_on_same_host,
@@ -124,6 +132,84 @@ def rebuild_demand_databases():
 	"""
 	build_demand_allocation_map()
 	reset_build_receiving_map()
+
+
+@pytest.fixture(scope="module")
+def pie_crust_pick_demo_work_order():
+	"""Qty-2 Pie Crust work order with a draft Material Transfer for Manufacture pick list.
+
+	Stopped on teardown so it leaves manufacturing demand; the demand and allocation
+	asserts elsewhere are written against the seeded orders only.
+	"""
+	work_order = create_pie_crust_pick_demo(seed_settings())
+	assert work_order, "Pie Crust needs an active BOM for the pick demo"
+	wo = frappe.get_doc("Work Order", work_order)
+	if wo.status == "Stopped":
+		stop_unstop(work_order, "Resumed")
+		wo.reload()
+	wo.update_status()
+	wo.update_planned_qty()
+	frappe.db.commit()
+
+	yield work_order
+
+	wo.reload()
+	wo.update_status("Stopped")
+	wo.update_planned_qty()
+	frappe.db.commit()
+	rebuild_demand_databases()
+
+
+@pytest.fixture(scope="module")
+def delivery_pick_demo_sales_order():
+	"""Sales order with a draft Delivery pick list, plus a draft staging Material Transfer pick.
+
+	Closed on teardown so it leaves sales demand; reopened before reuse because a
+	closed order can't take a pick list.
+	"""
+	existing = frappe.db.get_value("Sales Order", {"po_no": DELIVERY_PICK_DEMO_PO}, "name")
+	if existing and frappe.db.get_value("Sales Order", existing, "status") == "Closed":
+		frappe.get_doc("Sales Order", existing).update_status("Draft")
+	sales_order = create_delivery_ship_pick_demo(seed_settings())
+	frappe.db.commit()
+
+	yield sales_order
+
+	frappe.get_doc("Sales Order", sales_order).update_status("Closed")
+	frappe.db.commit()
+	rebuild_demand_databases()
+
+
+@pytest.fixture(scope="module")
+def job_card_operation_with_wip(pie_crust_pick_demo_work_order):
+	"""First Pie Crust operation with material in WIP for Start/Pause/Finish portal tests."""
+	work_order = pie_crust_pick_demo_work_order
+	operation_id = frappe.db.get_value(
+		"Job Card",
+		{"work_order": work_order},
+		"operation_id",
+		order_by="sequence_id asc",
+	)
+	assert operation_id, f"Expected a Job Card operation on {work_order}"
+
+	wo = frappe.get_doc("Work Order", work_order)
+	stock_entry_name = None
+	if not wo.skip_transfer and float(wo.material_transferred_for_manufacturing or 0) <= 0:
+		stock_entry_name = submit_material_transfer_for_manufacture(work_order, wo.qty)
+		frappe.db.commit()
+
+	yield {
+		"work_order": work_order,
+		"operation_id": operation_id,
+		"stock_entry_name": stock_entry_name,
+	}
+
+	if stock_entry_name:
+		se = frappe.get_doc("Stock Entry", stock_entry_name)
+		if se.docstatus == 1:
+			se.cancel()
+		frappe.db.commit()
+	rebuild_demand_databases()
 
 
 def _get_logger(*args, **kwargs):
