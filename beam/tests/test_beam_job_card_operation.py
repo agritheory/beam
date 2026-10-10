@@ -69,7 +69,10 @@ def get_operation_elements(page):
 def confirm_pause_with_qty(page, qty: str = "0"):
 	qty_input = page.locator(".qty-input-row input").first
 	expect(qty_input).to_be_visible(timeout=10000)
-	qty_input.fill(qty)
+	qty_input.click()
+	qty_input.press("Control+a")
+	qty_input.press_sequentially(qty, delay=80)
+	expect(qty_input).to_have_value(qty, timeout=5000)
 	page.get_by_role("button", name="Confirm").click()
 
 
@@ -237,7 +240,6 @@ def test_stop_operation_stops_timer_and_records_time_log(page, job_card_operatio
 
 	with use_current_db_transaction():
 		job_card_name = frappe.get_value("Job Card", {"operation_id": operation_id}, "name")
-		for_quantity = frappe.get_value("Job Card", job_card_name, "for_quantity")
 		initial_logs = frappe.get_all(
 			"Job Card Time Log",
 			filters={"parent": job_card_name},
@@ -255,10 +257,11 @@ def test_stop_operation_stops_timer_and_records_time_log(page, job_card_operatio
 	page.wait_for_timeout(1200)
 	timer_after_start = timer_text.inner_text().strip()
 
+	pause_qty = "0"
 	toggle_button.click()
-	confirm_pause_with_qty(page, qty=str(for_quantity))
+	confirm_pause_with_qty(page, qty=pause_qty)
 	expect(toggle_button).to_contain_text("Start", timeout=10000)
-	expect(finish_button).to_be_enabled()
+	expect(finish_button).to_be_disabled()
 
 	page.wait_for_timeout(1500)
 	timer_after_stop = timer_text.inner_text().strip()
@@ -285,7 +288,7 @@ def test_stop_operation_stops_timer_and_records_time_log(page, job_card_operatio
 	assert final_closed_logs >= initial_closed_logs + 1
 	newest_closed = next(log for log in final_logs if log.to_time)
 	assert newest_closed.time_in_mins and newest_closed.time_in_mins > 0
-	assert float(newest_closed.completed_qty or 0) == float(for_quantity)
+	assert float(newest_closed.completed_qty or 0) == float(pause_qty)
 
 
 @pytest.mark.order(359)
@@ -303,7 +306,8 @@ def test_finish_operation_submits_job_card(page, job_card_operation_with_wip):
 	ensure_at_start(page, toggle_button)
 	ensure_operation_running(page, toggle_button)
 	toggle_button.click()
-	confirm_pause_with_qty(page, qty=str(for_quantity))
+	confirm_pause_with_qty(page, qty=str(int(for_quantity)))
+	expect(finish_button).to_be_visible(timeout=10000)
 	expect(finish_button).to_be_enabled(timeout=10000)
 
 	finish_button.click()
@@ -319,4 +323,5 @@ def test_finish_operation_submits_job_card(page, job_card_operation_with_wip):
 
 	assert job_card.docstatus == 1
 	assert float(job_card.total_completed_qty or 0) == float(for_quantity)
-	assert logs and all(log.to_time for log in logs)
+	open_logs = [log for log in logs if not log.to_time]
+	assert not open_logs, f"Expected every time log closed after Finish, found open: {open_logs}"

@@ -6,7 +6,7 @@ from contextlib import contextmanager
 
 import frappe
 from erpnext.manufacturing.doctype.work_order.work_order import stop_unstop
-from frappe.utils import flt, now_datetime
+from frappe.utils import flt, now_datetime, time_diff_in_seconds
 
 from beam.beam.pick_list import get_open_pick_list_for_work_order
 
@@ -139,6 +139,35 @@ def require_predecessors_met(work_order_id: str) -> None:
 		frappe.throw(
 			frappe._("Complete predecessor work orders before continuing."),
 			frappe.ValidationError,
+		)
+
+
+def close_open_time_logs(doc) -> None:
+	now = now_datetime()
+	for log in doc.time_logs:
+		if log.to_time:
+			continue
+		log.to_time = now
+		if log.from_time:
+			log.time_in_mins = flt(time_diff_in_seconds(now, log.from_time)) / 60.0
+
+
+def persist_open_time_log_closures(job_card_id: str) -> None:
+	"""Close any open time log rows on the job card (works after submit)."""
+	now = now_datetime()
+	for row in frappe.get_all(
+		"Job Card Time Log",
+		filters={"parent": job_card_id, "to_time": ["is", "not set"]},
+		fields=["name", "from_time"],
+	):
+		time_in_mins = 0.0
+		if row.from_time:
+			time_in_mins = flt(time_diff_in_seconds(now, row.from_time)) / 60.0
+		frappe.db.set_value(
+			"Job Card Time Log",
+			row.name,
+			{"to_time": now, "time_in_mins": time_in_mins},
+			update_modified=False,
 		)
 
 
@@ -298,6 +327,8 @@ def finish_job_card(job_card_id: str, completed_qty: float) -> dict:
 			frappe.ValidationError,
 		)
 
+	persist_open_time_log_closures(job_card_id)
+
 	make_time_log(
 		frappe._dict(
 			job_card_id=job_card_id,
@@ -309,6 +340,7 @@ def finish_job_card(job_card_id: str, completed_qty: float) -> dict:
 
 	with ignoring_user_permissions():
 		doc = frappe.get_doc("Job Card", job_card_id)
+		close_open_time_logs(doc)
 		if doc.docstatus == 0:
 			doc.flags.ignore_permissions = True
 			completed = flt(doc.total_completed_qty)
@@ -319,5 +351,7 @@ def finish_job_card(job_card_id: str, completed_qty: float) -> dict:
 			elif completed < flt(doc.for_quantity):
 				doc.process_loss_qty = flt(doc.for_quantity) - completed
 			doc.submit()
+
+	persist_open_time_log_closures(job_card_id)
 
 	return get_job_card(job_card_id)
