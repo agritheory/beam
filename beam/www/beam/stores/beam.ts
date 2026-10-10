@@ -28,7 +28,7 @@ import { useBeamToast } from '@/utils/toast.js'
 import {
 	computeWorkOrderStage,
 	stockEntryPurposeForStage,
-	type WorkOrderPredecessor,
+	type WorkOrderMobileContext,
 } from '@/utils/workOrderStage.js'
 import type { WorkOrder } from '@/types/frappe.js'
 
@@ -68,7 +68,6 @@ export const useBeamStore = defineStore('beam', () => {
 	const cache = ref<BeamCache>({ mappers: {} })
 	const form = ref<Partial<ParentDoctypes>>({})
 	const warehouseList = ref()
-	const currentEmployee = ref<string | null>(null)
 
 	const reconciliationItemScan = ref<((payload: ReconciliationItemScanPayload) => void) | null>(null)
 
@@ -85,17 +84,7 @@ export const useBeamStore = defineStore('beam', () => {
 	const camera = reactive({
 		pendingPhotos: [] as File[],
 	})
-	const workOrderContext = reactive<
-		Record<
-			string,
-			{
-				predecessors: WorkOrderPredecessor[]
-				predecessors_block: boolean
-				overproduction_percentage: number
-				pick_list?: string | null
-			}
-		>
-	>({})
+	const workOrderContext = reactive<Record<string, WorkOrderMobileContext>>({})
 
 	const getScanDoctypes = async () => {
 		const response = await httpStore.get(SCAN_CONFIG_URL)
@@ -215,27 +204,6 @@ export const useBeamStore = defineStore('beam', () => {
 		}
 	}
 
-	const setCurrentEmployee = async () => {
-		try {
-			if (currentEmployee.value) return
-			const currentUser = frappe?.session?.user
-			const employees = await getAll<{ name: string }>('Employee', {
-				filters: JSON.stringify([
-					['user_id', '=', currentUser],
-					['status', '=', 'Active'],
-				]),
-				fields: JSON.stringify(['name']),
-				limit_page_length: 1,
-			})
-
-			const employee = employees?.[0]?.name
-			currentEmployee.value = employee
-		} catch (error) {
-			console.error('Failed to resolve current employee:', error)
-			throw error
-		}
-	}
-
 	const getOne = async <T>(doctype: string, name: string) => {
 		const url = `/api/resource/${doctype}/${name}`
 		const response = await httpStore.get(url)
@@ -302,90 +270,69 @@ export const useBeamStore = defineStore('beam', () => {
 		return []
 	}
 
-	const getJobCard = async (jobCardId: string): Promise<JobCard> => {
-		const response = await httpStore.get(JOB_CARD_URL, { job_card_id: jobCardId })
+	const callMethod = async <T>(
+		request: { method: 'get' | 'post'; url: string; params: Record<string, unknown> },
+		failure: string,
+		success?: string
+	): Promise<T> => {
+		const response = await httpStore[request.method](request.url, request.params)
 		if (!response.ok) {
 			await handleErrors(response)
-			throw new Error('Failed to fetch job card')
+			throw new Error(failure)
 		}
-		const { message }: { message: JobCard } = await response.json()
+		const { message }: { message: T } = await response.json()
+		if (success) toast.success(success)
 		return message
 	}
 
-	const startJobCard = async (jobCardId: string): Promise<JobCard> => {
-		const response = await httpStore.post(JOB_CARD_START_URL, { job_card_id: jobCardId })
-		if (!response.ok) {
-			await handleErrors(response)
-			throw new Error('Failed to start job card')
-		}
-		const { message }: { message: JobCard } = await response.json()
-		toast.success('Job started')
-		return message
-	}
+	const getJobCard = (jobCardId: string) =>
+		callMethod<JobCard>(
+			{ method: 'get', url: JOB_CARD_URL, params: { job_card_id: jobCardId } },
+			'Failed to fetch job card'
+		)
 
-	const pauseJobCard = async (jobCardId: string, completedQty: number = 0): Promise<JobCard> => {
-		const response = await httpStore.post(JOB_CARD_PAUSE_URL, {
-			job_card_id: jobCardId,
-			completed_qty: completedQty,
-		})
-		if (!response.ok) {
-			await handleErrors(response)
-			throw new Error('Failed to pause job card')
-		}
-		const { message }: { message: JobCard } = await response.json()
-		toast.success('Job paused')
-		return message
-	}
+	const startJobCard = (jobCardId: string) =>
+		callMethod<JobCard>(
+			{ method: 'post', url: JOB_CARD_START_URL, params: { job_card_id: jobCardId } },
+			'Failed to start job card',
+			'Job started'
+		)
+
+	const pauseJobCard = (jobCardId: string, completedQty: number = 0) =>
+		callMethod<JobCard>(
+			{ method: 'post', url: JOB_CARD_PAUSE_URL, params: { job_card_id: jobCardId, completed_qty: completedQty } },
+			'Failed to pause job card',
+			'Job paused'
+		)
+
+	const finishJobCard = (jobCardId: string, completedQty: number) =>
+		callMethod<JobCard>(
+			{ method: 'post', url: JOB_CARD_FINISH_URL, params: { job_card_id: jobCardId, completed_qty: completedQty } },
+			'Failed to finish job card',
+			'Job finished'
+		)
 
 	const getWorkOrderMobileContext = async (workOrderId: string) => {
-		const response = await httpStore.get(WORK_ORDER_CONTEXT_URL, { work_order_id: workOrderId })
-		if (!response.ok) {
-			await handleErrors(response)
-			throw new Error('Failed to fetch work order context')
-		}
-		const { message } = await response.json()
-		workOrderContext[workOrderId] = message
-		return message as {
-			predecessors: WorkOrderPredecessor[]
-			predecessors_block: boolean
-			overproduction_percentage: number
-			pick_list?: string | null
-		}
+		const context = await callMethod<WorkOrderMobileContext>(
+			{ method: 'get', url: WORK_ORDER_CONTEXT_URL, params: { work_order_id: workOrderId } },
+			'Failed to fetch work order context'
+		)
+		workOrderContext[workOrderId] = context
+		return context
 	}
 
-	const setWorkOrderStatus = async (workOrderId: string, status: 'Stopped' | 'Resumed'): Promise<string> => {
-		const response = await httpStore.post(WORK_ORDER_STATUS_URL, {
-			work_order_id: workOrderId,
-			status,
-		})
-		if (!response.ok) {
-			await handleErrors(response)
-			throw new Error('Failed to update work order status')
-		}
-		const { message }: { message: string } = await response.json()
-		toast.success(status === 'Stopped' ? 'Work order stopped' : 'Work order resumed')
-		return message
-	}
+	const setWorkOrderStatus = (workOrderId: string, status: 'Stopped' | 'Resumed') =>
+		callMethod<string>(
+			{ method: 'post', url: WORK_ORDER_STATUS_URL, params: { work_order_id: workOrderId, status } },
+			'Failed to update work order status',
+			status === 'Stopped' ? 'Work order stopped' : 'Work order resumed'
+		)
 
 	const refreshWorkOrderForm = async (workOrderId: string): Promise<WorkOrder> => {
 		const data = await getOne<WorkOrder>('Work Order', workOrderId)
 		form.value = data
 		await getWorkOrderMobileContext(workOrderId)
 		return data
-	}
-
-	const finishJobCard = async (jobCardId: string, completedQty: number): Promise<JobCard> => {
-		const response = await httpStore.post(JOB_CARD_FINISH_URL, {
-			job_card_id: jobCardId,
-			completed_qty: completedQty,
-		})
-		if (!response.ok) {
-			await handleErrors(response)
-			throw new Error('Failed to finish job card')
-		}
-		const { message }: { message: JobCard } = await response.json()
-		toast.success('Job finished')
-		return message
 	}
 
 	const insert = async <T extends Record<string, any>>(doctype: string, body: T) => {
@@ -586,7 +533,6 @@ export const useBeamStore = defineStore('beam', () => {
 		camera,
 		workOrderContext,
 		warehouseList,
-		currentEmployee,
 		reconciliationItemScan,
 		setReconciliationItemScan,
 		// store context actions
@@ -595,7 +541,6 @@ export const useBeamStore = defineStore('beam', () => {
 		setMappedDoc,
 		setScanContext,
 		setWarehouses,
-		setCurrentEmployee,
 
 		// document workflow actions
 		cancel,

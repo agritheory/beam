@@ -43,30 +43,21 @@ export function buildReconciliationItems(
 	return items
 }
 
-function reconciliationItemPayload(row: ReconciliationListRow, warehouse: string, qty: number) {
-	const { count, label, description, debounce, qty: systemQty, ...rest } = row
-	void count
-	void label
-	void description
-	void debounce
-	void systemQty
+const listOnlyFields = ['count', 'label', 'description', 'debounce'] as const
 
-	return {
-		...rest,
-		warehouse: rest.warehouse || warehouse,
-		qty,
-	}
+function reconciliationItemPayload(row: ReconciliationListRow, warehouse: string, qty: number) {
+	const payload: Record<string, unknown> = { ...row, warehouse: row.warehouse || warehouse, qty }
+	for (const field of listOnlyFields) delete payload[field]
+	return payload
 }
 
 export function warehouseRowFromApi(apiItem: StockEntryItem, warehouse: string): ReconciliationListRow {
-	const { qty, ...rest } = apiItem
-	void qty
-
-	const rowWarehouse = rest.warehouse || warehouse
+	const rowWarehouse = apiItem.warehouse || warehouse
 	const line = itemListLine({ ...apiItem, warehouse: rowWarehouse })
 
 	return {
-		...rest,
+		...apiItem,
+		qty: undefined,
 		warehouse: rowWarehouse,
 		label: line.label,
 		description: line.description,

@@ -81,7 +81,6 @@ const warehouseList = ref<string[]>([])
 
 onMounted(async () => {
 	store.$patch(state => (state.cache.mappers.repack = stockEntry.value))
-	await loadBOMs()
 	warehouseList.value = store.warehouseList.filter(w => !w.is_group).map(w => w.name)
 })
 
@@ -106,9 +105,13 @@ const loadItems = async () => {
 	return itemList.value
 }
 
-const bomDisabled = computed(
-	() => !currentItem.value.item_code || !itemList.value.includes(currentItem.value.item_code)
+const itemChosenForBom = computed(
+	() =>
+		itemList.value.includes(currentItem.value.item_code) ||
+		(Boolean(currentItem.value.item_code.trim()) && itemUoms.has(currentItem.value.item_code))
 )
+
+const bomDisabled = computed(() => !itemChosenForBom.value)
 
 watch(bomDisabled, disabled => {
 	if (disabled) currentItem.value.bom = ''
@@ -116,15 +119,39 @@ watch(bomDisabled, disabled => {
 
 watch(
 	() => currentItem.value.item_code,
-	itemCode => {
+	async itemCode => {
+		if (itemCode && !itemUoms.has(itemCode)) {
+			const rows = await store.getAll<{ name: string; stock_uom: string }[]>('Item', {
+				filters: JSON.stringify([['name', '=', itemCode]]),
+				fields: JSON.stringify(['name', 'stock_uom']),
+				limit_page_length: 1,
+			})
+			if (rows[0]) itemUoms.set(rows[0].name, rows[0].stock_uom)
+		}
 		const stockUom = itemUoms.get(itemCode)
 		if (stockUom) currentItem.value.stock_uom = stockUom
+		await loadBOMs(itemCode)
 	}
 )
 
-const loadBOMs = async () => {
-	const boms = await store.getAll<{ name: string }[]>('BOM')
+const loadBOMs = async (itemCode: string) => {
+	if (!itemCode.trim()) {
+		bomList.value = []
+		currentItem.value.bom = ''
+		return
+	}
+	const boms = await store.getAll<{ name: string }[]>('BOM', {
+		filters: JSON.stringify([
+			['item', '=', itemCode],
+			['is_active', '=', 1],
+			['docstatus', '=', 1],
+		]),
+		fields: JSON.stringify(['name']),
+	})
 	bomList.value = boms.map(bom => bom.name)
+	if (currentItem.value.bom && !bomList.value.includes(currentItem.value.bom)) {
+		currentItem.value.bom = ''
+	}
 }
 
 const clearField = (field: 'from_warehouse' | 'to_warehouse') =>

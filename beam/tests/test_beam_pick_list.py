@@ -12,7 +12,6 @@ from erpnext.manufacturing.doctype.work_order.work_order import create_pick_list
 from frappe.utils import flt
 from playwright.sync_api import expect
 
-from beam.tests.fixtures import DELIVERY_PICK_DEMO_PO
 from beam.tests.fixtures import pie_crust_pick_demo
 from beam.tests.playwright_utils import (
 	error_toast_text,
@@ -25,26 +24,26 @@ from beam.tests.playwright_utils import (
 COMPANY = "Ambrosia Pie Company"
 
 
+@pytest.fixture(scope="module", autouse=True)
+def pick_demos(pie_crust_pick_demo_work_order, delivery_pick_demo_sales_order):
+	yield
+
+
 @pytest.fixture(autouse=True)
 def login_as_jordan_mills(page, setup):
 	login_beam_portal_user(page, "jmills@cfc.co")
 	yield
 
 
-def demo_pie_crust_pick_ids():
+def draft_pick_list_for(work_order: str) -> str:
 	with use_current_db_transaction():
-		work_order = frappe.db.get_value(
-			"Work Order", {"production_item": "Pie Crust", "qty": 2, "docstatus": 1}
-		)
-		pick_list = frappe.db.get_value("Pick List", {"work_order": work_order, "docstatus": 0})
-	return work_order, pick_list
+		return frappe.db.get_value("Pick List", {"work_order": work_order, "docstatus": 0})
 
 
-def open_demo_work_order(page):
-	work_order, _pick_list = demo_pie_crust_pick_ids()
-	goto_beam_portal_route(page, f"/work_order/{work_order}")
+def open_work_order(page, work_order: str):
+	goto_beam_portal_route(page, f"work_order/{work_order}")
+	expect(page.get_by_role("heading", name=work_order, exact=True)).to_be_visible(timeout=15000)
 	expect(page.get_by_text("View Pick List", exact=True)).to_be_visible(timeout=15000)
-	return work_order
 
 
 def create_isolated_butter_pick_list():
@@ -168,18 +167,20 @@ def pick_all_lines_via_scan(page, pick_list_name: str) -> None:
 		expect_line_fully_picked(page, count_loc, label)
 
 
-@pytest.mark.order(310)
-def test_work_order_with_pick_list_shows_view_pick_list_not_transfer(page):
-	open_demo_work_order(page)
+@pytest.mark.order(314)
+def test_work_order_with_pick_list_shows_view_pick_list_not_transfer(
+	page, pie_crust_pick_demo_work_order
+):
+	open_work_order(page, pie_crust_pick_demo_work_order)
 	expect(page.get_by_text("TRANSFER", exact=True)).to_have_count(0)
 	page.get_by_text("View Pick List", exact=True).click()
 	expect(page).to_have_url(re.compile(r"pick-list/"), timeout=15000)
 
 
-@pytest.mark.order(311)
-def test_pick_list_warehouse_gate_and_butter_scan(page):
-	work_order, pick_list = demo_pie_crust_pick_ids()
-	open_demo_work_order(page)
+@pytest.mark.order(315)
+def test_pick_list_warehouse_gate_and_butter_scan(page, pie_crust_pick_demo_work_order):
+	pick_list = draft_pick_list_for(pie_crust_pick_demo_work_order)
+	open_work_order(page, pie_crust_pick_demo_work_order)
 	page.get_by_text("View Pick List", exact=True).click()
 	expect(page).to_have_url(re.compile(rf"pick-list/{re.escape(pick_list)}"), timeout=15000)
 
@@ -229,12 +230,12 @@ def test_pick_list_warehouse_gate_and_butter_scan(page):
 			frappe.db.set_value("Pick List Item", row, "picked_qty", 0)
 
 
-@pytest.mark.order(312)
+@pytest.mark.order(316)
 def test_butter_pick_list_scan_save_submit(page):
 	"""
 	Isolated qty-1 Pie Crust pick list: scan all lines, SAVE, SUBMIT (setting off).
 
-	Does not consume pie_crust_pick_demo (qty-2) draft used by tests 310–311.
+	Does not consume pie_crust_pick_demo (qty-2) draft used by tests 314–315.
 	"""
 	frappe.db.set_value("BEAM Settings", COMPANY, "create_stock_entry_on_pick_list_submit", 0)
 	frappe.db.commit()
@@ -280,7 +281,7 @@ def test_butter_pick_list_scan_save_submit(page):
 		assert work_order
 
 
-@pytest.mark.order(316)
+@pytest.mark.order(317)
 def test_pick_queue_lists_open_pick_lists(page):
 	goto_beam_portal_route(page, "/pick-list")
 	expect(page.get_by_role("heading", name="Pick", exact=True)).to_be_visible(timeout=15000)
@@ -297,14 +298,13 @@ def test_pick_queue_lists_open_pick_lists(page):
 		expect(page.get_by_text(name, exact=True)).to_be_visible(timeout=15000)
 
 
-@pytest.mark.order(317)
-def test_delivery_pick_list_opens_from_queue(page):
+@pytest.mark.order(318)
+def test_delivery_pick_list_opens_from_queue(page, delivery_pick_demo_sales_order):
 	with use_current_db_transaction():
-		assert frappe.db.get_value("Sales Order", {"po_no": DELIVERY_PICK_DEMO_PO}, "name")
 		delivery_pick = frappe.db.get_value(
-			"Pick List",
-			{"purpose": "Delivery", "docstatus": 0},
-			"name",
+			"Pick List Item",
+			{"sales_order": delivery_pick_demo_sales_order, "parenttype": "Pick List", "docstatus": 0},
+			"parent",
 		)
 	assert delivery_pick
 
@@ -316,11 +316,11 @@ def test_delivery_pick_list_opens_from_queue(page):
 	expect(page.get_by_text("Double Plum Pie", exact=False)).to_be_visible()
 
 
-@pytest.mark.order(318)
-def test_work_order_with_pick_list_shows_read_only_material_counts(page):
-	work_order, _pick_list = demo_pie_crust_pick_ids()
-	goto_beam_portal_route(page, f"/work_order/{work_order}")
-	expect(page.get_by_text("View Pick List", exact=True)).to_be_visible(timeout=15000)
+@pytest.mark.order(319)
+def test_work_order_with_pick_list_shows_read_only_material_counts(
+	page, pie_crust_pick_demo_work_order
+):
+	open_work_order(page, pie_crust_pick_demo_work_order)
 
 	butter_line = page.locator(".box .beam_list-item").filter(has_text="Butter").first
 	expect(butter_line.locator(".beam_item-count")).to_be_visible()

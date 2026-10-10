@@ -80,11 +80,11 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { useBeamStore } from '@/stores/beam'
 import { useBeamToast } from '@/utils/toast'
+import { parseFrappeDatetime } from '@/utils/parseFrappeDatetime'
+import { productionQtyLimits } from '@/utils/workOrderStage'
 import type { JobCard, JobCardTimeLog, WorkOrder, WorkOrderOperation } from '@/types'
 
 declare const frappe: any
-
-type TimeLog = JobCardTimeLog
 
 interface RouteParams {
 	id?: string
@@ -117,8 +117,8 @@ let timerHandle: ReturnType<typeof setInterval> | null = null
 
 const isCompleted = computed((): boolean => (jobCard.value.status || '') === 'Completed')
 
-const activeTimeLog = computed((): TimeLog | null => {
-	const logs: TimeLog[] = (jobCard.value.time_logs as TimeLog[]) || []
+const activeTimeLog = computed((): JobCardTimeLog | null => {
+	const logs: JobCardTimeLog[] = jobCard.value.time_logs || []
 	const last = logs[logs.length - 1]
 	return last && !last.to_time ? last : null
 })
@@ -159,11 +159,10 @@ const lockedByEmployee = computed((): string => jobCard.value.locked_by_employee
 const isSubmitted = computed((): boolean => jobCard.value.docstatus !== 0)
 const plannedQty = computed((): number => Number(jobCard.value.for_quantity || 0))
 const overproductionPercentage = computed((): number => Number(jobCard.value.overproduction_percentage || 0))
-const minFinishQty = computed((): number => plannedQty.value * (1 - overproductionPercentage.value / 100))
-const maxFinishQty = computed((): number => plannedQty.value * (1 + overproductionPercentage.value / 100))
+const finishQtyLimits = computed(() => productionQtyLimits(plannedQty.value, overproductionPercentage.value))
 const completedQty = computed((): number => Number(jobCard.value.total_completed_qty || 0))
-const isQtyCompleted = computed((): boolean => plannedQty.value > 0 && completedQty.value >= minFinishQty.value)
-const atMaxQty = computed((): boolean => plannedQty.value > 0 && completedQty.value >= maxFinishQty.value)
+const isQtyCompleted = computed((): boolean => plannedQty.value > 0 && completedQty.value >= finishQtyLimits.value.min)
+const atMaxQty = computed((): boolean => plannedQty.value > 0 && completedQty.value >= finishQtyLimits.value.max)
 
 const actionsDisabled = computed(
 	(): boolean => isBusy.value || hasLoadError.value || !jobCardName.value || isSubmitted.value
@@ -187,7 +186,7 @@ const isLastOperation = computed(
 	(): boolean => currentOperationIndex.value >= 0 && currentOperationIndex.value === orderedOperations.value.length - 1
 )
 const availableQty = computed((): number => {
-	const qtyRoom = Math.max(0, maxFinishQty.value - completedQty.value)
+	const qtyRoom = Math.max(0, finishQtyLimits.value.max - completedQty.value)
 	const operations: Partial<WorkOrderOperation>[] = workOrder.value.operations || []
 	const current = operations.find((op: Partial<WorkOrderOperation>) => op.name === operationId.value)
 	if (!current || !current.idx) return qtyRoom
@@ -228,14 +227,13 @@ const applyJobCard = (card: Partial<JobCard> | null | undefined): void => {
 	jobCard.value = card
 	if (isRunning.value && !hasActiveConflict.value) {
 		const closedMins = (jobCard.value.time_logs || [])
-			.filter((log: TimeLog) => log.to_time)
-			.reduce((sum: number, log: TimeLog) => sum + (log.time_in_mins || 0), 0)
+			.filter((log: JobCardTimeLog) => log.to_time)
+			.reduce((sum: number, log: JobCardTimeLog) => sum + (log.time_in_mins || 0), 0)
 
 		let activeMins = 0
 		if (activeTimeLog.value?.from_time) {
-			const fromTime = new Date(activeTimeLog.value.from_time).getTime()
-			const serverNowStr = frappe.datetime.now_datetime()
-			const serverNowMs = new Date(serverNowStr).getTime()
+			const fromTime = parseFrappeDatetime(activeTimeLog.value.from_time)
+			const serverNowMs = parseFrappeDatetime(frappe.datetime.now_datetime())
 			activeMins = (serverNowMs - fromTime) / (1000 * 60)
 		}
 
@@ -244,11 +242,35 @@ const applyJobCard = (card: Partial<JobCard> | null | undefined): void => {
 		startTicking()
 	} else {
 		const totalMins = (jobCard.value.time_logs || []).reduce(
-			(sum: number, log: TimeLog) => sum + (log.time_in_mins || 0),
+			(sum: number, log: JobCardTimeLog) => sum + (log.time_in_mins || 0),
 			0
 		)
 		elapsedSeconds.value = hasActiveConflict.value ? 0 : Math.max(0, Math.floor(totalMins * 60))
 		stopTicking()
+	}
+}
+
+const clearJobCard = (): void => {
+	jobCardName.value = ''
+	applyJobCard(null)
+}
+
+const showError = (message: string): void => {
+	actionError.value = message
+	toast.error(message)
+}
+
+const errorMessage = (error: unknown): string => (error as Error)?.message || 'Unknown error'
+
+const runJobCardAction = async (action: () => Promise<void>): Promise<void> => {
+	isBusy.value = true
+	actionError.value = ''
+	try {
+		await action()
+	} catch (error) {
+		showError(errorMessage(error))
+	} finally {
+		isBusy.value = false
 	}
 }
 
@@ -258,76 +280,32 @@ const refreshJobCard = async (): Promise<void> => {
 	hasLoadError.value = false
 	actionError.value = ''
 
-	let jobList: Partial<JobCard>[] = []
 	try {
-		jobList = await store.getAll<Partial<JobCard>>('Job Card', {
+		const jobList = await store.getAll<Partial<JobCard>>('Job Card', {
 			filters: JSON.stringify([
 				['operation_id', '=', operationId.value],
 				['work_order', '=', workOrderId.value],
 			]),
 		})
-	} catch (error) {
-		hasLoadError.value = true
-		jobCardName.value = ''
-		jobCard.value = {}
-		elapsedSeconds.value = 0
-		stopTicking()
-		const message = (error as Error)?.message || 'Unknown error'
-		actionError.value = message
-		toast.error(message)
-		isRefreshing.value = false
-		return
-	}
+		if (!jobList) throw new Error('Unknown error')
 
-	if (!jobList) {
-		hasLoadError.value = true
-		jobCardName.value = ''
-		jobCard.value = {}
-		elapsedSeconds.value = 0
-		stopTicking()
-		actionError.value = 'Unknown error'
-		toast.error(actionError.value)
-		isRefreshing.value = false
-		return
-	}
-
-	if (jobList.length > 0 && jobList[0].name) {
-		jobCardName.value = jobList[0].name
-		try {
-			const res = await store.getJobCard(jobCardName.value)
-			if (!res) {
-				hasLoadError.value = true
-				jobCardName.value = ''
-				jobCard.value = {}
-				elapsedSeconds.value = 0
-				stopTicking()
-				actionError.value = 'Unknown error'
-				toast.error(actionError.value)
-				isRefreshing.value = false
-				return
-			}
-
-			applyJobCard(res)
-		} catch (error) {
-			hasLoadError.value = true
-			jobCardName.value = ''
-			jobCard.value = {}
-			elapsedSeconds.value = 0
-			stopTicking()
-			const message = (error as Error)?.message || 'Unknown error'
-			actionError.value = message
-			toast.error(message)
-			isRefreshing.value = false
+		const name = jobList[0]?.name
+		if (!name) {
+			clearJobCard()
 			return
 		}
-	} else {
-		jobCardName.value = ''
-		jobCard.value = {}
-		elapsedSeconds.value = 0
-		stopTicking()
-	}
 
-	isRefreshing.value = false
+		jobCardName.value = name
+		const card = await store.getJobCard(name)
+		if (!card) throw new Error('Unknown error')
+		applyJobCard(card)
+	} catch (error) {
+		hasLoadError.value = true
+		clearJobCard()
+		showError(errorMessage(error))
+	} finally {
+		isRefreshing.value = false
+	}
 }
 
 const syncFromBackendOnReturn = async (): Promise<void> => {
@@ -342,10 +320,7 @@ const loadOperation = async (): Promise<void> => {
 	actionError.value = ''
 	operation.value =
 		workOrder.value.operations?.find((op: Partial<WorkOrderOperation>) => op.name === operationId.value) || {}
-	jobCard.value = {}
-	jobCardName.value = ''
-	elapsedSeconds.value = 0
-	stopTicking()
+	clearJobCard()
 	await store.getWorkOrderMobileContext(workOrderId.value)
 	await refreshJobCard()
 }
@@ -377,48 +352,29 @@ const toggleOperation = async (): Promise<void> => {
 		return
 	}
 
-	isBusy.value = true
-	try {
+	await runJobCardAction(async () => {
 		await refreshJobCard()
 		if (!jobCardName.value || isCompleted.value) return
-		const card = await store.startJobCard(jobCardName.value)
-		applyJobCard(card)
-	} catch (error) {
-		const message = (error as Error)?.message || 'Unknown error'
-		actionError.value = message
-		toast.error(message)
-	} finally {
-		isBusy.value = false
-	}
+		applyJobCard(await store.startJobCard(jobCardName.value))
+	})
 }
 
 const confirmPause = async (): Promise<void> => {
 	if (!Number.isFinite(pendingQty.value) || pendingQty.value < 0) {
-		actionError.value = 'Invalid quantity'
-		toast.error('Invalid quantity')
+		showError('Invalid quantity')
 		return
 	}
 	if (pendingQty.value > availableQty.value) {
-		actionError.value = `Quantity cannot exceed ${availableQty.value}`
-		toast.error(actionError.value)
+		showError(`Quantity cannot exceed ${availableQty.value}`)
 		return
 	}
 
 	showQtyInput.value = false
-	isBusy.value = true
-	actionError.value = ''
-	try {
+	await runJobCardAction(async () => {
 		await refreshJobCard()
 		if (!jobCardName.value || isCompleted.value) return
-		const card = await store.pauseJobCard(jobCardName.value, pendingQty.value)
-		applyJobCard(card)
-	} catch (error) {
-		const message = (error as Error)?.message || 'Unknown error'
-		actionError.value = message
-		toast.error(message)
-	} finally {
-		isBusy.value = false
-	}
+		applyJobCard(await store.pauseJobCard(jobCardName.value, pendingQty.value))
+	})
 }
 
 const cancelPause = (): void => {
@@ -446,18 +402,9 @@ const goToComplete = async (): Promise<void> => {
 const finishOperation = async (): Promise<void> => {
 	if (!jobCardName.value || isBusy.value || !isQtyCompleted.value) return
 
-	isBusy.value = true
-	actionError.value = ''
-	try {
-		const card = await store.finishJobCard(jobCardName.value, 0)
-		applyJobCard(card)
-	} catch (error) {
-		const message = (error as Error)?.message || 'Unknown error'
-		actionError.value = message
-		toast.error(message)
-	} finally {
-		isBusy.value = false
-	}
+	await runJobCardAction(async () => {
+		applyJobCard(await store.finishJobCard(jobCardName.value, 0))
+	})
 }
 </script>
 

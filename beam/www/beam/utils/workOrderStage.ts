@@ -20,6 +20,33 @@ export type WorkOrderPredecessor = {
 	stock_uom?: string
 }
 
+export type WorkOrderMobileContext = {
+	predecessors: WorkOrderPredecessor[]
+	predecessors_block: boolean
+	overproduction_percentage: number
+	pick_list?: string | null
+}
+
+const stageDetails: Record<WorkOrderStage, { label?: string; stockEntryPurpose?: string }> = {
+	draft: { label: 'Draft' },
+	stopped: { label: 'Stopped' },
+	terminal: {},
+	ready_to_transfer: {
+		label: 'Ready to transfer materials',
+		stockEntryPurpose: 'Material Transfer for Manufacture',
+	},
+	in_operations: { label: 'Operations in progress' },
+	ready_to_manufacture: { label: 'Ready to manufacture', stockEntryPurpose: 'Manufacture' },
+}
+
+/** Lowest quantity that counts as done and highest allowed, given Manufacturing Settings' overproduction %. */
+export function productionQtyLimits(qty: number, overproductionPercentage: number): { min: number; max: number } {
+	return {
+		min: qty * (1 - overproductionPercentage / 100),
+		max: qty * (1 + overproductionPercentage / 100),
+	}
+}
+
 export function computeWorkOrderStage(
 	workOrder: Partial<WorkOrder>,
 	overproductionPercentage: number
@@ -34,14 +61,11 @@ export function computeWorkOrderStage(
 		return 'terminal'
 	}
 
-	const targetQty = Number(workOrder.qty || 0)
-	const minOpQty = targetQty * (1 - overproductionPercentage / 100)
-	const maxProducedQty = targetQty * (1 + overproductionPercentage / 100)
+	const limits = productionQtyLimits(Number(workOrder.qty || 0), overproductionPercentage)
 	const operations = workOrder.operations || []
 	const hasOperations = operations.length > 0
 	const operationsComplete =
-		!hasOperations ||
-		operations.every(operation => Number(operation.completed_qty || 0) >= minOpQty)
+		!hasOperations || operations.every(operation => Number(operation.completed_qty || 0) >= limits.min)
 
 	const pendingTransfer =
 		!workOrder.skip_transfer &&
@@ -56,27 +80,18 @@ export function computeWorkOrderStage(
 		return 'in_operations'
 	}
 
-	const producedTotal =
-		Number(workOrder.produced_qty || 0) + Number((workOrder as { process_loss_qty?: number }).process_loss_qty || 0)
-	if (producedTotal < maxProducedQty) {
+	const producedTotal = Number(workOrder.produced_qty || 0) + Number(workOrder.process_loss_qty || 0)
+	if (producedTotal < limits.max) {
 		return 'ready_to_manufacture'
 	}
 
 	return 'terminal'
 }
 
-export function stockEntryPurposeForStage(stage: WorkOrderStage): string | null {
-	if (stage === 'ready_to_transfer') {
-		return 'Material Transfer for Manufacture'
-	}
-	if (stage === 'ready_to_manufacture') {
-		return 'Manufacture'
-	}
-	return null
+export function stageLabel(stage: WorkOrderStage): string | undefined {
+	return stageDetails[stage].label
 }
 
-export function predecessorsBlock(predecessors: WorkOrderPredecessor[]): boolean {
-	return predecessors.some(
-		row => Number(row.produced_qty || 0) < Number(row.required_qty || 0)
-	)
+export function stockEntryPurposeForStage(stage: WorkOrderStage): string | null {
+	return stageDetails[stage].stockEntryPurpose ?? null
 }

@@ -67,10 +67,8 @@ export type JobCardTimeLog = ChildDoctypeMeta & {
 }
 
 export type JobCard = ParentDoctype & {
-	current_time?: number
 	total_time_in_mins: number
 	for_quantity?: number
-	started_time?: string
 	status?: 'Open' | 'Work In Progress' | 'Material Transferred' | 'On Hold' | 'Submitted' | 'Cancelled' | 'Complete' | 'Completed'
 	total_completed_qty?: number
 	overproduction_percentage?: number

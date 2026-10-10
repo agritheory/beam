@@ -1,15 +1,12 @@
 <template>
-	<div
-		class="control-buttons-footer"
-		:class="{ 'has-full-row': showsFullWidthRow }"
-		:style="{ '--beam-footer-rows': showsFullWidthRow ? 2 : 1 }">
+	<div class="control-buttons-footer">
 		<div class="control-buttons-spacer" aria-hidden="true" />
 		<div class="control-buttons">
 			<BeamBtn
 				v-for="(button, index) in buttons"
 				v-show="!button.hidden"
 				:key="index"
-				:class="{ 'footer-full-row': isFullWidthSlot(index) }"
+				:class="{ 'footer-full-row': index === fullWidthIndex }"
 				@click="button.action"
 				:disabled="button.disabled"
 				:style="{
@@ -30,33 +27,27 @@ import type { ControlButton } from '@/types'
 
 const props = defineProps<{ buttons: ControlButton[] }>()
 
-const visibleCount = computed(() => props.buttons.filter(button => !button.hidden).length)
+const visibleIndexes = computed(() => props.buttons.flatMap((button, index) => (button.hidden ? [] : [index])))
 
-const showsFullWidthRow = computed(() => {
-	const last = props.buttons[props.buttons.length - 1]
-	return Boolean(last && !last.hidden && visibleCount.value > 1)
+// Buttons pair up two per row; an odd one out spans the row so the grid has no gap.
+const fullWidthIndex = computed(() => {
+	const visible = visibleIndexes.value
+	return visible.length % 2 === 1 ? visible[visible.length - 1] : -1
 })
 
-function isFullWidthSlot(index: number): boolean {
-	const lastIndex = props.buttons.length - 1
-	if (index !== lastIndex) return false
-	return !props.buttons[lastIndex]?.hidden
-}
+const footerRows = computed(() => Math.max(1, Math.ceil(visibleIndexes.value.length / 2)))
 
-function syncFooterCssVars(rows: number) {
-	const root = document.documentElement
-	root.style.setProperty('--beam-footer-rows', String(rows))
-	root.style.removeProperty('--beam-footer-height')
-}
+// Camera's FAB sits above the footer, outside this component, so the row count lives on :root.
+const setFooterRows = (rows: number) => document.documentElement.style.setProperty('--beam-footer-rows', String(rows))
 
-watch(showsFullWidthRow, hasFullRow => syncFooterCssVars(hasFullRow ? 2 : 1), { immediate: true })
+watch(footerRows, setFooterRows, { immediate: true })
 
-onUnmounted(() => syncFooterCssVars(1))
+onUnmounted(() => setFooterRows(1))
 </script>
 
 <style scoped>
 .control-buttons-spacer {
-	height: calc(var(--beam-footer-rows, 1) * 3.25rem + 1rem + env(safe-area-inset-bottom, 0px));
+	height: var(--beam-footer-height);
 }
 
 .control-buttons {
@@ -96,17 +87,5 @@ onUnmounted(() => syncFooterCssVars(1))
 .control-buttons > button.footer-full-row {
 	flex: 1 1 100%;
 	max-width: 100%;
-}
-</style>
-
-<style>
-/* Shared with Camera FAB — updated when footer uses two rows (visible full-width slot). */
-.control-buttons-footer {
-	--beam-footer-rows: 1;
-	--beam-footer-height: calc(var(--beam-footer-rows) * 3.25rem + 1rem + env(safe-area-inset-bottom, 0px));
-}
-
-.control-buttons-footer.has-full-row {
-	--beam-footer-rows: 2;
 }
 </style>

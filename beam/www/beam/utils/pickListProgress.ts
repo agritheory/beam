@@ -21,7 +21,3 @@ export function isPickListFullyPicked(locations: PickListLocation[] | undefined)
 	}
 	return locations.every(isPickLineComplete)
 }
-
-export function pickListHasProgress(locations: PickListLocation[] | undefined): boolean {
-	return (locations || []).some(row => (Number(row.picked_qty) || 0) > 0)
-}

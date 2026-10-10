@@ -132,24 +132,20 @@ def test_pick_list_submit_creates_material_transfer_for_manufacture():
 
 
 @pytest.mark.order(28)
-def test_get_open_pick_list_for_work_order():
+def test_get_open_pick_list_for_work_order(pie_crust_pick_demo_work_order):
 	from beam.beam.pick_list import get_open_pick_list_for_work_order
 
-	work_order = frappe.db.get_value(
-		"Work Order", {"production_item": "Pie Crust", "qty": 2, "docstatus": 1}
-	)
+	work_order = pie_crust_pick_demo_work_order
 	pick_list = frappe.db.get_value("Pick List", {"work_order": work_order, "docstatus": 0})
 	assert pick_list
 	assert get_open_pick_list_for_work_order(work_order) == pick_list
 
 
 @pytest.mark.order(29)
-def test_apply_pick_list_scan_warehouse_gate_and_handling_unit():
+def test_apply_pick_list_scan_warehouse_gate_and_handling_unit(pie_crust_pick_demo_work_order):
 	from beam.beam.pick_list import apply_pick_list_scan
 
-	work_order = frappe.db.get_value(
-		"Work Order", {"production_item": "Pie Crust", "qty": 2, "docstatus": 1}
-	)
+	work_order = pie_crust_pick_demo_work_order
 	pick_list = frappe.db.get_value("Pick List", {"work_order": work_order, "docstatus": 0})
 	refrigerator_barcode = frappe.db.get_value(
 		"Item Barcode", {"parenttype": "Warehouse", "parent": "Refrigerator - APC"}, "barcode"

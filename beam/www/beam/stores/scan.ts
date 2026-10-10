@@ -6,10 +6,7 @@ import { computed } from 'vue'
 
 import { useBeamStore } from '@/stores/beam.js'
 import type { PickList } from '@/types/frappe.js'
-
-declare const frappe: any
-
-const pickListWarehouseGates: Record<string, string | null> = {}
+import { defaultCompany } from '@/utils/company.js'
 import { useBeamToast } from '@/utils/toast.js'
 import type {
 	DeliveryNoteItem,
@@ -22,6 +19,10 @@ import type {
 	StockEntryItem,
 	StockReconciliation,
 } from '@/types/index.js'
+
+declare const frappe: any
+
+const pickListWarehouseGates: Record<string, string | null> = {}
 
 export const useScanStore = defineStore('scan', () => {
 	const store = useBeamStore()
@@ -44,7 +45,7 @@ export const useScanStore = defineStore('scan', () => {
 		if (!mapped) {
 			return base
 		}
-		// Plain JSON for frappe.xcall — reactive proxies often omit fields on CI.
+		// Send a plain copy: reactive proxies don't serialize every field.
 		const doc = JSON.parse(JSON.stringify(mapped)) as Record<string, unknown>
 		if (base.frm === 'Stock Entry') {
 			if (!doc.doctype) {
@@ -53,9 +54,8 @@ export const useScanStore = defineStore('scan', () => {
 			if (!doc.purpose && doc.stock_entry_type) {
 				doc.purpose = doc.stock_entry_type
 			}
-			if (!doc.company && typeof frappe !== 'undefined') {
-				doc.company =
-					frappe.defaults?.get_user_default?.('Company') || frappe.boot?.sysdefaults?.company
+			if (!doc.company) {
+				doc.company = defaultCompany()
 			}
 		}
 		const context: ScanContext = { ...base, doc }

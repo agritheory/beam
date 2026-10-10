@@ -1,8 +1,14 @@
 # Copyright (c) 2026, AgriTheory and contributors
 # For license information, please see license.txt
 
+import json
+from contextlib import contextmanager
+
 import frappe
-from frappe.utils import flt
+from erpnext.manufacturing.doctype.work_order.work_order import stop_unstop
+from frappe.utils import flt, now_datetime
+
+from beam.beam.pick_list import get_open_pick_list_for_work_order
 
 
 def check_manufacturing_permission() -> None:
@@ -21,17 +27,22 @@ def get_current_employee() -> str | None:
 	return employees[0] if employees else None
 
 
-def fetch_job_card(job_card_id: str):
+@contextmanager
+def ignoring_user_permissions():
 	frappe.flags.ignore_user_permissions = True
 	try:
-		doc = frappe.get_doc("Job Card", job_card_id)
+		yield
 	finally:
 		frappe.flags.ignore_user_permissions = False
-	return doc
+
+
+def fetch_job_card(job_card_id: str):
+	with ignoring_user_permissions():
+		return frappe.get_doc("Job Card", job_card_id)
 
 
 def overproduction_percentage() -> float:
-	return frappe.utils.flt(
+	return flt(
 		frappe.db.get_single_value("Manufacturing Settings", "overproduction_percentage_for_work_order")
 	)
 
@@ -42,19 +53,15 @@ def production_qty_limits(for_quantity: float) -> tuple[float, float]:
 	Manufacturing Settings has one allowance, Overproduction Percentage For Work Order.
 	The same percentage is the under floor and the over ceiling around Qty to Manufacture.
 	"""
-	target = frappe.utils.flt(for_quantity)
+	target = flt(for_quantity)
 	allowance = target * overproduction_percentage() / 100
 	return target - allowance, target + allowance
 
 
 def projected_completed_qty(doc, session_qty: float) -> float:
 	"""Completed qty after writing session_qty onto the open time log."""
-	open_qty = sum(frappe.utils.flt(log.completed_qty) for log in doc.time_logs if not log.to_time)
-	return (
-		frappe.utils.flt(doc.total_completed_qty)
-		- frappe.utils.flt(open_qty)
-		+ frappe.utils.flt(session_qty)
-	)
+	open_qty = sum(flt(log.completed_qty) for log in doc.time_logs if not log.to_time)
+	return flt(doc.total_completed_qty) - flt(open_qty) + flt(session_qty)
 
 
 def materials_in_wip(doc) -> bool:
@@ -123,15 +130,12 @@ def get_work_order_predecessors(work_order_id: str) -> list[dict]:
 	return predecessors
 
 
-def predecessors_block(work_order_id: str) -> bool:
-	for row in get_work_order_predecessors(work_order_id):
-		if flt(row["produced_qty"]) < flt(row["required_qty"]):
-			return True
-	return False
+def predecessors_block(predecessors: list[dict]) -> bool:
+	return any(flt(row["produced_qty"]) < flt(row["required_qty"]) for row in predecessors)
 
 
 def require_predecessors_met(work_order_id: str) -> None:
-	if predecessors_block(work_order_id):
+	if predecessors_block(get_work_order_predecessors(work_order_id)):
 		frappe.throw(
 			frappe._("Complete predecessor work orders before continuing."),
 			frappe.ValidationError,
@@ -164,15 +168,12 @@ def make_time_log(args: frappe._dict) -> None:
 	User Permissions on the employee link field don't block the save.
 	Business-logic validations (sequence, overlap, qty) are still executed by ERPNext.
 	"""
-	frappe.flags.ignore_user_permissions = True
-	try:
+	with ignoring_user_permissions():
 		doc = frappe.get_doc("Job Card", args.job_card_id)
 		doc.flags.ignore_permissions = True
 		doc.validate_sequence_id()
 		ensure_employee_on_job_card(doc, args)
 		doc.add_time_log(args)
-	finally:
-		frappe.flags.ignore_user_permissions = False
 
 
 def ensure_employee_on_job_card(doc, args: frappe._dict) -> None:
@@ -183,8 +184,6 @@ def ensure_employee_on_job_card(doc, args: frappe._dict) -> None:
 	"""
 	employees = args.get("employees") or []
 	if isinstance(employees, str):
-		import json
-
 		employees = json.loads(employees)
 
 	existing = {row.employee for row in doc.employee if row.employee}
@@ -197,15 +196,11 @@ def ensure_employee_on_job_card(doc, args: frappe._dict) -> None:
 
 @frappe.whitelist()
 def get_work_order_mobile_context(work_order_id: str) -> dict:
-	from beam.beam.pick_list import get_open_pick_list_for_work_order
-
 	check_manufacturing_permission()
 	predecessors = get_work_order_predecessors(work_order_id)
 	return {
 		"predecessors": predecessors,
-		"predecessors_block": any(
-			flt(row["produced_qty"]) < flt(row["required_qty"]) for row in predecessors
-		),
+		"predecessors_block": predecessors_block(predecessors),
 		"overproduction_percentage": overproduction_percentage(),
 		"pick_list": get_open_pick_list_for_work_order(work_order_id),
 	}
@@ -216,8 +211,6 @@ def set_work_order_status(work_order_id: str, status: str) -> str:
 	check_manufacturing_permission()
 	if status not in ("Stopped", "Resumed"):
 		frappe.throw(frappe._("Unsupported work order status change."), frappe.ValidationError)
-
-	from erpnext.manufacturing.doctype.work_order.work_order import stop_unstop
 
 	return stop_unstop(work_order_id, status)
 
@@ -254,7 +247,7 @@ def start_job_card(job_card_id: str) -> dict:
 
 	args = frappe._dict(
 		job_card_id=job_card_id,
-		start_time=frappe.utils.now_datetime(),
+		start_time=now_datetime(),
 		status="Work In Progress",
 	)
 	args.employees = [{"employee": current_employee}]
@@ -275,18 +268,16 @@ def pause_job_card(job_card_id: str, completed_qty: float = 0) -> dict:
 	projected = projected_completed_qty(doc, completed_qty)
 	if projected > max_qty:
 		frappe.throw(
-			frappe._("Completed quantity {0} cannot exceed {1}").format(
-				frappe.utils.flt(projected), frappe.utils.flt(max_qty)
-			),
+			frappe._("Completed quantity {0} cannot exceed {1}").format(flt(projected), flt(max_qty)),
 			frappe.ValidationError,
 		)
 
 	make_time_log(
 		frappe._dict(
 			job_card_id=job_card_id,
-			complete_time=frappe.utils.now_datetime(),
+			complete_time=now_datetime(),
 			status="On Hold",
-			completed_qty=frappe.utils.flt(completed_qty),
+			completed_qty=flt(completed_qty),
 		)
 	)
 	return get_job_card(job_card_id)
@@ -302,7 +293,7 @@ def finish_job_card(job_card_id: str, completed_qty: float) -> dict:
 	if projected < min_qty or projected > max_qty:
 		frappe.throw(
 			frappe._("Completed quantity {0} must be between {1} and {2}").format(
-				frappe.utils.flt(projected), frappe.utils.flt(min_qty), frappe.utils.flt(max_qty)
+				flt(projected), flt(min_qty), flt(max_qty)
 			),
 			frappe.ValidationError,
 		)
@@ -310,26 +301,23 @@ def finish_job_card(job_card_id: str, completed_qty: float) -> dict:
 	make_time_log(
 		frappe._dict(
 			job_card_id=job_card_id,
-			complete_time=frappe.utils.now_datetime(),
+			complete_time=now_datetime(),
 			status="Complete",
-			completed_qty=frappe.utils.flt(completed_qty),
+			completed_qty=flt(completed_qty),
 		)
 	)
 
-	frappe.flags.ignore_user_permissions = True
-	try:
+	with ignoring_user_permissions():
 		doc = frappe.get_doc("Job Card", job_card_id)
 		if doc.docstatus == 0:
 			doc.flags.ignore_permissions = True
-			completed = frappe.utils.flt(doc.total_completed_qty)
+			completed = flt(doc.total_completed_qty)
 			# Over the planned qty: raise Qty to Manufacture so submit can match it.
 			# Under the planned qty: book the shortfall as process loss.
-			if completed > frappe.utils.flt(doc.for_quantity):
+			if completed > flt(doc.for_quantity):
 				doc.for_quantity = completed
-			elif completed < frappe.utils.flt(doc.for_quantity):
-				doc.process_loss_qty = frappe.utils.flt(doc.for_quantity) - completed
+			elif completed < flt(doc.for_quantity):
+				doc.process_loss_qty = flt(doc.for_quantity) - completed
 			doc.submit()
-	finally:
-		frappe.flags.ignore_user_permissions = False
 
 	return get_job_card(job_card_id)

@@ -7,9 +7,11 @@ import re
 
 import frappe
 import pytest
-from playwright.sync_api import expect
+from playwright.sync_api import Page, expect
 
+from beam.tests.manufacturing_test_utils import pause_open_job_cards_for_user
 from beam.tests.playwright_utils import (
+	goto_beam_portal_route,
 	login_beam_portal_user,
 	open_first_beam_list_row,
 	use_current_db_transaction,
@@ -25,12 +27,15 @@ def login_as_jordan_mills(page, setup):
 	yield
 
 
-def open_first_operation_id_from_manufacture(page) -> str:
-	"""Navigate Home -> Manufacture -> Work Order -> first Operation.
+@pytest.fixture(autouse=True)
+def jordan_has_no_active_job_card():
+	pause_open_job_cards_for_user("jmills@cfc.co")
+	frappe.db.commit()
+	yield
 
-	Returns:
-	        str: operation_id
-	"""
+
+def open_first_operation_id_from_manufacture(page) -> str:
+	"""Navigate Home -> Manufacture -> Work Order -> first Operation."""
 	open_first_beam_list_row(page, "Manufacture", r"work_order/")
 
 	operation_link = page.locator("a[href*='/operation/']").first
@@ -41,6 +46,11 @@ def open_first_operation_id_from_manufacture(page) -> str:
 	match = re.search(r"#/work_order/([^/]+)/operation/([^/?#]+)", page.url)
 	assert match, f"Could not parse operation route from URL: {page.url}"
 	return match.group(2)
+
+
+def open_operation_page(page: Page, work_order: str, operation_id: str) -> None:
+	goto_beam_portal_route(page, f"work_order/{work_order}/operation/{operation_id}")
+	expect(page.locator(".operation-title")).to_be_visible(timeout=15000)
 
 
 def hms_to_seconds(value: str) -> int:
@@ -67,26 +77,6 @@ def pause_form_is_visible(page) -> bool:
 	return page.locator(".qty-input-row input").first.is_visible()
 
 
-def work_order_name_from_operation_page(page) -> str:
-	match = re.search(r"#/work_order/([^/]+)/operation/", page.url)
-	assert match, f"Could not parse work order from URL: {page.url}"
-	return match.group(1)
-
-
-def work_order_has_wip_material(work_order_name: str) -> bool:
-	row = frappe.get_value(
-		"Work Order",
-		work_order_name,
-		["skip_transfer", "status", "material_transferred_for_manufacturing"],
-		as_dict=True,
-	)
-	if not row:
-		return False
-	if row.skip_transfer or row.status == "In Process":
-		return True
-	return float(row.material_transferred_for_manufacturing or 0) > 0
-
-
 def assert_start_rejected_without_wip(page, toggle_button, job_card_name: str) -> None:
 	with use_current_db_transaction():
 		before = frappe.get_all("Job Card Time Log", filters={"parent": job_card_name}, pluck="name")
@@ -99,6 +89,34 @@ def assert_start_rejected_without_wip(page, toggle_button, job_card_name: str) -
 		after = frappe.get_all("Job Card Time Log", filters={"parent": job_card_name}, pluck="name")
 
 	assert after == before, "Start wrote a time log before materials were in WIP"
+
+
+def expected_toggle_label(job_card_name: str) -> str:
+	"""An open time log means the operation is running, unless the job card is On Hold."""
+	if frappe.get_value("Job Card", job_card_name, "status") == "On Hold":
+		return "Start"
+	last_log = frappe.get_all(
+		"Job Card Time Log",
+		filters={"parent": job_card_name},
+		fields=["from_time", "to_time"],
+		order_by="creation desc",
+		limit=1,
+	)
+	if last_log and last_log[0].from_time and not last_log[0].to_time:
+		return "Pause"
+	return "Start"
+
+
+def ensure_at_start(page, toggle_button):
+	label = toggle_button.inner_text().strip()
+	if label == "Start":
+		return
+	if label == "Pause":
+		toggle_button.click()
+		confirm_pause_with_qty(page)
+		expect(toggle_button).to_contain_text("Start", timeout=10000)
+		return
+	pytest.fail(f"Unexpected toggle label: {label}")
 
 
 def ensure_operation_running(page, toggle_button):
@@ -146,16 +164,42 @@ def test_operation_details_are_visible(page):
 
 
 @pytest.mark.order(356)
-def test_start_operation_starts_timer_and_toggles_buttons(page):
-	operation_id = open_first_operation_id_from_manufacture(page)
-	_, timer_text, toggle_button, _ = get_operation_elements(page)
+def test_start_rejected_without_wip_material(page, pie_crust_pick_demo_work_order):
+	with use_current_db_transaction():
+		operation_id = frappe.db.get_value(
+			"Job Card",
+			{"work_order": pie_crust_pick_demo_work_order},
+			"operation_id",
+			order_by="sequence_id asc",
+		)
+		job_card_name = frappe.db.get_value("Job Card", {"operation_id": operation_id}, "name")
+		transferred = frappe.db.get_value(
+			"Work Order", pie_crust_pick_demo_work_order, "material_transferred_for_manufacturing"
+		)
+
+	assert operation_id and job_card_name
+	assert float(transferred or 0) <= 0
+
+	open_operation_page(page, pie_crust_pick_demo_work_order, operation_id)
+	_, _, toggle_button, finish_button = get_operation_elements(page)
+	expect(toggle_button).to_contain_text("Start", timeout=15000)
+	expect(toggle_button).to_be_enabled(timeout=15000)
+	expect(finish_button).to_be_disabled()
+	assert_start_rejected_without_wip(page, toggle_button, job_card_name)
+
+
+@pytest.mark.order(357)
+def test_start_operation_starts_timer_and_toggles_buttons(page, job_card_operation_with_wip):
+	operation_id = job_card_operation_with_wip["operation_id"]
+	open_operation_page(page, job_card_operation_with_wip["work_order"], operation_id)
+	_, timer_text, toggle_button, finish_button = get_operation_elements(page)
 
 	expect(toggle_button).to_be_enabled(timeout=15000)
 	with use_current_db_transaction():
 		job_card = frappe.get_value(
 			"Job Card",
 			{"operation_id": operation_id},
-			["name", "status"],
+			["name", "status", "for_quantity", "total_completed_qty"],
 			as_dict=True,
 		)
 
@@ -163,106 +207,58 @@ def test_start_operation_starts_timer_and_toggles_buttons(page):
 		"name"
 	), f"Expected a Job Card linked to operation {operation_id}"
 
-	# Determine expected initial label from Job Card status and latest time log
-	expected_label = "Start"
-	# check latest time log first — an open time log means the operation is running
-	last_logs = frappe.get_all(
-		"Job Card Time Log",
-		filters={"parent": job_card.get("name")},
-		fields=["from_time", "to_time"],
-		order_by="creation desc",
-		limit=1,
-	)
-	if last_logs and last_logs[0].get("from_time") and not last_logs[0].get("to_time"):
-		expected_label = "Pause"
-	# if the job card is explicitly On Hold, treat as paused (Start)
-	if job_card.get("status") == "On Hold":
-		expected_label = "Start"
-
 	page.wait_for_timeout(1000)
 	with use_current_db_transaction():
-		job_card = frappe.get_value(
-			"Job Card",
-			{"operation_id": operation_id},
-			["name", "status"],
-			as_dict=True,
-		)
-		expected_label = "Start"
-		last_logs = frappe.get_all(
-			"Job Card Time Log",
-			filters={"parent": job_card.get("name")},
-			fields=["from_time", "to_time"],
-			order_by="creation desc",
-			limit=1,
-		)
-		if last_logs and last_logs[0].get("from_time") and not last_logs[0].get("to_time"):
-			expected_label = "Pause"
-		if job_card.get("status") == "On Hold":
-			expected_label = "Start"
+		expected_label = expected_toggle_label(job_card.get("name"))
 	label = toggle_button.inner_text().strip()
 	expect(toggle_button).to_contain_text(expected_label, timeout=15000)
-
-	if label == "Pause":
-		toggle_button.click()
-		confirm_pause_with_qty(page)
-		expect(toggle_button).to_contain_text("Start", timeout=10000)
-	elif label != "Start":
-		pytest.fail(f"Unexpected toggle label before start: {label}")
+	ensure_at_start(page, toggle_button)
+	expect(finish_button).to_be_disabled()
 
 	initial_elapsed = timer_text.inner_text().strip()
 	assert re.fullmatch(r"\d{2}:\d{2}:\d{2}", initial_elapsed)
 
-	with use_current_db_transaction():
-		ready = work_order_has_wip_material(work_order_name_from_operation_page(page))
-	if not ready:
-		assert_start_rejected_without_wip(page, toggle_button, job_card.get("name"))
-		return
-
 	toggle_button.click()
 	expect(toggle_button).to_be_enabled(timeout=10000)
 	expect(toggle_button).to_contain_text("Pause", timeout=10000)
+	expect(finish_button).to_be_disabled()
 
 	page.wait_for_timeout(1500)
 	updated_elapsed = timer_text.inner_text().strip()
 	assert re.fullmatch(r"\d{2}:\d{2}:\d{2}", updated_elapsed)
 	assert hms_to_seconds(updated_elapsed) > hms_to_seconds(initial_elapsed)
 
-	with use_current_db_transaction():
-		job_card_name = frappe.get_value("Job Card", {"operation_id": operation_id}, "name")
 
-	assert job_card_name, f"Expected a Job Card linked to operation {operation_id}"
-
-
-@pytest.mark.order(357)
-def test_stop_operation_stops_timer_and_records_time_log(page):
-	operation_id = open_first_operation_id_from_manufacture(page)
-	_, timer_text, toggle_button, _ = get_operation_elements(page)
+@pytest.mark.order(358)
+def test_stop_operation_stops_timer_and_records_time_log(page, job_card_operation_with_wip):
+	operation_id = job_card_operation_with_wip["operation_id"]
+	open_operation_page(page, job_card_operation_with_wip["work_order"], operation_id)
+	_, timer_text, toggle_button, finish_button = get_operation_elements(page)
 
 	with use_current_db_transaction():
 		job_card_name = frappe.get_value("Job Card", {"operation_id": operation_id}, "name")
+		for_quantity = frappe.get_value("Job Card", job_card_name, "for_quantity")
 		initial_logs = frappe.get_all(
 			"Job Card Time Log",
 			filters={"parent": job_card_name},
-			fields=["name", "from_time", "to_time", "time_in_mins"],
+			fields=["name", "from_time", "to_time", "time_in_mins", "completed_qty"],
 		)
 
 	assert job_card_name, f"Expected a Job Card linked to operation {operation_id}"
 	initial_closed_logs = len([log for log in initial_logs if log.to_time])
 
-	with use_current_db_transaction():
-		ready = work_order_has_wip_material(work_order_name_from_operation_page(page))
-	if not ready:
-		assert_start_rejected_without_wip(page, toggle_button, job_card_name)
-		return
-
+	ensure_at_start(page, toggle_button)
+	expect(finish_button).to_be_disabled()
 	ensure_operation_running(page, toggle_button)
+	expect(finish_button).to_be_disabled()
 
 	page.wait_for_timeout(1200)
 	timer_after_start = timer_text.inner_text().strip()
 
 	toggle_button.click()
-	confirm_pause_with_qty(page)
+	confirm_pause_with_qty(page, qty=str(for_quantity))
 	expect(toggle_button).to_contain_text("Start", timeout=10000)
+	expect(finish_button).to_be_enabled()
 
 	page.wait_for_timeout(1500)
 	timer_after_stop = timer_text.inner_text().strip()
@@ -281,11 +277,46 @@ def test_stop_operation_stops_timer_and_records_time_log(page):
 		final_logs = frappe.get_all(
 			"Job Card Time Log",
 			filters={"parent": job_card_name},
-			fields=["name", "from_time", "to_time", "time_in_mins"],
+			fields=["name", "from_time", "to_time", "time_in_mins", "completed_qty"],
+			order_by="creation desc",
 		)
 
 	final_closed_logs = len([log for log in final_logs if log.to_time])
 	assert final_closed_logs >= initial_closed_logs + 1
-	assert any(
-		log.to_time for log in final_logs
-	), "Expected the stopped job card to have a closed time log"
+	newest_closed = next(log for log in final_logs if log.to_time)
+	assert newest_closed.time_in_mins and newest_closed.time_in_mins > 0
+	assert float(newest_closed.completed_qty or 0) == float(for_quantity)
+
+
+@pytest.mark.order(359)
+def test_finish_operation_submits_job_card(page, job_card_operation_with_wip):
+	operation_id = job_card_operation_with_wip["operation_id"]
+	open_operation_page(page, job_card_operation_with_wip["work_order"], operation_id)
+	_, _, toggle_button, finish_button = get_operation_elements(page)
+
+	with use_current_db_transaction():
+		job_card_name = frappe.get_value("Job Card", {"operation_id": operation_id}, "name")
+		for_quantity = frappe.get_value("Job Card", job_card_name, "for_quantity")
+
+	assert job_card_name
+
+	ensure_at_start(page, toggle_button)
+	ensure_operation_running(page, toggle_button)
+	toggle_button.click()
+	confirm_pause_with_qty(page, qty=str(for_quantity))
+	expect(finish_button).to_be_enabled(timeout=10000)
+
+	finish_button.click()
+	expect(page.locator(".status-text")).to_contain_text(re.compile("Complete", re.I), timeout=15000)
+
+	with use_current_db_transaction():
+		job_card = frappe.get_doc("Job Card", job_card_name)
+		logs = frappe.get_all(
+			"Job Card Time Log",
+			filters={"parent": job_card_name},
+			fields=["to_time"],
+		)
+
+	assert job_card.docstatus == 1
+	assert float(job_card.total_completed_qty or 0) == float(for_quantity)
+	assert logs and all(log.to_time for log in logs)

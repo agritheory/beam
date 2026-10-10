@@ -39,6 +39,7 @@ import UserFilter from '@/components/UserFilter.vue'
 import ScanOutput from '@/components/ScanOutput.vue'
 
 import { useBeamStore } from '@/stores/beam'
+import { defaultCompany } from '@/utils/company'
 import { appendUomText } from '@/utils/itemListLine'
 import type { WorkOrder } from '@/types'
 
@@ -52,8 +53,8 @@ const store = useBeamStore()
 const listKey = ref(0)
 
 const showDraftWorkOrders = (): boolean => {
-	const company = frappe?.defaults?.get_user_default?.('Company') || frappe?.boot?.sysdefaults?.company
-	const settings = frappe?.boot?.beam?.settings?.[company]
+	const company = defaultCompany()
+	const settings = company ? frappe?.boot?.beam?.settings?.[company] : undefined
 	return Boolean(settings?.show_draft_work_orders)
 }
 

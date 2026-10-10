@@ -65,8 +65,8 @@ def before_test():
 	reset_build_receiving_map()
 
 
-def create_test_data():
-	settings = frappe._dict(
+def seed_settings():
+	return frappe._dict(
 		{
 			"day": datetime.date(
 				int(frappe.defaults.get_defaults().get("fiscal_year", datetime.datetime.now().year)), 1, 1
@@ -82,6 +82,10 @@ def create_test_data():
 			),
 		}
 	)
+
+
+def create_test_data():
+	settings = seed_settings()
 	company_address = frappe.new_doc("Address")
 	company_address.title = settings.company
 	company_address.address_type = "Office"
@@ -114,8 +118,6 @@ def create_test_data():
 	create_production_plan(settings, prod_plan_from_doc)
 	create_purchase_receipt_for_received_qty_test(settings)
 	create_network_printer_settings(settings)
-	create_pie_crust_pick_demo(settings)
-	create_delivery_ship_pick_demo(settings)
 
 
 def create_suppliers(settings):
@@ -874,7 +876,7 @@ def create_pie_crust_pick_demo(settings):
 	existing_wo = frappe.db.exists("Work Order", wo_filters)
 	if existing_wo:
 		if frappe.db.exists("Pick List", {"work_order": existing_wo, "docstatus": 0}):
-			return
+			return existing_wo
 
 	from erpnext.manufacturing.doctype.work_order.work_order import create_pick_list
 
@@ -884,7 +886,7 @@ def create_pie_crust_pick_demo(settings):
 		"name",
 	)
 	if not bom_no:
-		return
+		return None
 
 	wo = frappe.new_doc("Work Order")
 	wo.production_item = demo["work_order"]["production_item"]
@@ -923,8 +925,8 @@ def create_pie_crust_pick_demo(settings):
 	for location in pick_list.locations:
 		location.picked_qty = 0
 	pick_list.save()
-	# Submit hook ran before the pick list existed; drop any stray demand rows.
 	remove_demand_allocation(wo.name)
+	return wo.name
 
 
 def create_delivery_ship_pick_demo(settings):
@@ -942,7 +944,7 @@ def create_delivery_ship_pick_demo(settings):
 			"Pick List",
 			{"purpose": "Material Transfer", "docstatus": 0, "company": settings.company},
 		):
-			return
+			return so_name
 
 	from erpnext.selling.doctype.sales_order.sales_order import (
 		create_pick_list as create_delivery_pick_list,
@@ -997,6 +999,7 @@ def create_delivery_ship_pick_demo(settings):
 			},
 		)
 	staging_pick.save()
+	return so_name
 
 
 def create_employees(settings, only_create=None):

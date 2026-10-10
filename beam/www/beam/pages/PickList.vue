@@ -137,13 +137,6 @@ const controlButtons = computed((): ControlButton[] => {
 			color: { background: 'var(--sc-success)', text: 'var(--sc-btn-color)' },
 			action: submit,
 		},
-		{
-			label: 'CANCEL',
-			hidden: true,
-			disabled: true,
-			color: { background: 'var(--sc-beam-danger-fill)', text: 'var(--sc-btn-color)' },
-			action: () => {},
-		},
 	]
 })
 </script>

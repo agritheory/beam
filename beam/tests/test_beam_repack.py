@@ -49,6 +49,11 @@ def repack_bom_input(page):
 	return wrapper.locator("input")
 
 
+def repack_bom_results(page):
+	wrapper = page.locator(".input-wrapper", has=page.locator("label", has_text="BOM (Optional)"))
+	return wrapper.locator("li.autocomplete-result:not(.loading)")
+
+
 def scan_into_repack(page, barcode: str, item_code: str):
 	"""Scan an item and confirm the form actually consumed it.
 
@@ -157,7 +162,6 @@ def test_repack_items_manually(page):
 def test_repack_using_bom(page):
 	open_repack_page(page)
 
-	bom_name = "BOM-Gooseberry Pie Filling-001"
 	target_wh = "Refrigerator - APC"
 
 	with use_current_db_transaction():
@@ -168,6 +172,12 @@ def test_repack_using_bom(page):
 			limit=1,
 		)
 		assert finished_barcode, "Gooseberry Pie must have a barcode"
+		bom_name = frappe.db.get_value(
+			"BOM",
+			{"item": "Gooseberry Pie", "docstatus": 1, "is_active": 1},
+			"name",
+		)
+		assert bom_name, "Gooseberry Pie needs an active BOM"
 
 	scan_into_repack(page, finished_barcode[0], "Gooseberry Pie")
 
@@ -340,6 +350,8 @@ def test_repack_bom_disabled_until_item_set(page):
 	repack_item_results(page).filter(has_text=re.compile(r"^Gooseberry Pie$")).click()
 	expect(item_input).to_have_value("Gooseberry Pie")
 	expect(bom_input).to_be_enabled()
+	bom_input.click()
+	expect(repack_bom_results(page)).to_have_text([re.compile(r"^BOM-Gooseberry Pie")], timeout=10000)
 
 	item_row = page.locator(".dd-container", has=page.locator("label", has_text="Item to Repack"))
 	item_row.get_by_role("button", name="X").click()

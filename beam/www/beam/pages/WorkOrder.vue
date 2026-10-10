@@ -23,7 +23,7 @@
 						<p class="beam--normal">
 							{{ transferProgress.transferred }} / {{ transferProgress.total }} ({{ transferProgress.percent }}%)
 						</p>
-						<p v-if="stageLabel" class="beam--normal stage-label">{{ stageLabel }}</p>
+						<p v-if="stageText" class="beam--normal stage-label">{{ stageText }}</p>
 					</template>
 					<template #right>
 						<p class="beam--normal">{{ workOrder.planned_start_date }}</p>
@@ -71,7 +71,7 @@ import type {
 	WorkOrderOperation,
 } from '@/types'
 import { appendUomText, itemListLine } from '@/utils/itemListLine'
-import { computeWorkOrderStage, type WorkOrderStage } from '@/utils/workOrderStage'
+import { computeWorkOrderStage, stageLabel, type WorkOrderStage } from '@/utils/workOrderStage'
 
 type OrderItem = WorkOrderItem & StockEntryItem & ListViewItem
 type OrderOperation = WorkOrderOperation & ListViewItem
@@ -104,22 +104,7 @@ const usesPickList = computed(() => Boolean(pickListName.value))
 
 const stage = computed((): WorkOrderStage => computeWorkOrderStage(workOrder.value, overproductionPercentage.value))
 
-const stageLabel = computed((): string => {
-	switch (stage.value) {
-		case 'ready_to_transfer':
-			return 'Ready to transfer materials'
-		case 'in_operations':
-			return 'Operations in progress'
-		case 'ready_to_manufacture':
-			return 'Ready to manufacture'
-		case 'stopped':
-			return 'Stopped'
-		case 'draft':
-			return 'Draft'
-		default:
-			return workOrder.value.status || ''
-	}
-})
+const stageText = computed((): string => stageLabel(stage.value) ?? (workOrder.value.status || ''))
 
 const showScanSection = computed(
 	(): boolean => !usesPickList.value && (stage.value === 'ready_to_transfer' || stage.value === 'ready_to_manufacture')
@@ -181,7 +166,7 @@ const operations = computed((): OrderOperation[] => {
 			of: workOrder.value.qty,
 		},
 		linkComponent: 'ListAnchor',
-		description: appendUomText(`${operation.workstation} - ${operation.time_in_mins}:00`, workOrder.value),
+		description: `${operation.workstation} - ${operation.time_in_mins}:00`,
 		route: `#/work_order/${workOrder.value.name}/operation/${operation.name}`,
 	}))
 })
@@ -306,11 +291,8 @@ const controlButtons = computed((): ControlButton[] => {
 		}
 	}
 
-	// Always last: ControlButtons gives the last slot full width so hidden CANCEL keeps
-	// the visible actions on one 50/50 row (same pattern as Delivery Note / old Work Order).
 	buttons.push({
 		label: 'CANCEL',
-		disabled: !form?.name,
 		hidden: !form?.name || form.docstatus !== 1,
 		color: { background: 'var(--sc-beam-danger-fill)', text: 'var(--sc-btn-color)' },
 		action: async () => {
