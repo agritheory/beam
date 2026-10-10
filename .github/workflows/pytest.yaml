@@ -1,24 +1,14 @@
-name: Pytest CI
+name: Tests
 
 on:
   push:
-    branches:
-      - version-14
-      - version-15
+    branches: [ version-15 ]
   pull_request:
-    branches:
-      - version-14
-      - version-15
-env:
-    BRANCH_NAME: ${{ github.base_ref || github.ref_name }}
-
-# concurrency:
-#   group: develop-cloud_storage-${{ github.event.number }}
-#   cancel-in-progress: true
 
 jobs:
   build-cups:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
       packages: write
@@ -28,7 +18,7 @@ jobs:
       cups_admin_password: ${{ steps.creds.outputs.password }}
     steps:
       - name: Clone
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Resolve CUPS admin credentials
         id: creds
@@ -65,6 +55,7 @@ jobs:
   tests:
     needs: build-cups
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
     permissions:
       contents: read
       packages: read
@@ -113,35 +104,32 @@ jobs:
 
     steps:
       - name: Clone
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.10'
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: 18
+          node-version: 24
           check-latest: true
-          cache: 'yarn'  # Replaces `Get yarn cache directory path` and `yarn-cache` steps
+          cache: yarn
 
       - name: Add to Hosts
         if: ${{ !env.ACT }}
         run: echo "127.0.0.1 test_site" | sudo tee -a /etc/hosts
 
       - name: Cache pip
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/*requirements.txt', '**/pyproject.toml', '**/setup.py', '**/setup.cfg') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
           restore-keys: |
             ${{ runner.os }}-pip-
             ${{ runner.os }}-
-
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
 
       - name: Install JS Dependencies
         run: yarn --prefer-offline
@@ -153,22 +141,24 @@ jobs:
         env:
           MYSQL_HOST: 'localhost'
           MYSQL_PWD: 'admin'
-          BRANCH_NAME: ${{ env.BRANCH_NAME}}
-        run: |
-          bash ${{ github.workspace }}/.github/helper/install.sh
+        run: bash ${{ github.workspace }}/.github/helper/install.sh
 
       - name: Run Tests
-        working-directory: ${{ env.BENCH_ROOT }}
+        shell: bash
         env:
-          POETRY_VIRTUALENVS_CREATE: "false"
+          BENCH_ROOT: ${{ env.BENCH_ROOT }}
           BEAM_TEST_TELEMETRY: "true"
           BEAM_TEST_STACK_DUMP_SECONDS: "60"
         run: |
+          bash ${{ github.workspace }}/.github/helper/ensure_bench_web.sh
           set -o pipefail
+          cd "${BENCH_ROOT}"
           source env/bin/activate
+          python -m playwright install --with-deps chromium
           cd apps/beam
-          poetry install
-          pytest --cov=beam --cov-report=xml --cov-report=term-missing:skip-covered --disable-warnings -s | tee pytest-coverage.txt
+          pytest --cov=beam --cov-report=xml --cov-report=term-missing:skip-covered ./beam \
+            --browser chromium \
+            --disable-warnings -s | tee pytest-coverage.txt
 
       - name: Pytest coverage comment
         if: ${{ !env.ACT }}
@@ -179,3 +169,9 @@ jobs:
           default-branch: version-15
           report-only-changed-files: true
           xml-skip-covered: true
+
+      - uses: actions/upload-artifact@v6
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-traces
+          path: test-results/

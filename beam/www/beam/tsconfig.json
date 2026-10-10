@@ -1,0 +1,18 @@
+{
+	"compilerOptions": {
+		"target": "esnext",
+		"module": "nodenext",
+		"moduleResolution": "nodenext",
+		"lib": ["esnext", "DOM", "DOM.Iterable"],
+		"jsx": "preserve",
+		"isolatedModules": true,
+		"noEmit": true,
+		"resolveJsonModule": true,
+		"skipLibCheck": true,
+		"strictNullChecks": true,
+		"paths": {
+			"@/*": ["./*"]
+		}
+	},
+	"include": ["**/*.ts", "**/*.d.ts", "**/*.vue"]
+}

@@ -42,8 +42,7 @@ mysql --host 127.0.0.1 --port 3306 -u root -e "GRANT ALL PRIVILEGES ON \`test_si
 mysql --host 127.0.0.1 --port 3306 -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'root'"  # match site_cofig
 mysql --host 127.0.0.1 --port 3306 -u root -e "FLUSH PRIVILEGES"
 
-echo BRANCH_NAME: "${BRANCH_NAME}"
-git clone https://github.com/frappe/frappe --branch ${BRANCH_NAME}
+git clone https://github.com/frappe/frappe --branch "version-15"
 bench init frappe-bench --frappe-path ~/frappe --python "$(which python)" --skip-assets --ignore-exist
 
 cp "${GITHUB_WORKSPACE}/.github/helper/common_site_config.json" ~/frappe-bench/sites/common_site_config.json
@@ -72,7 +71,7 @@ wait_for_redis() {
 	return 1
 }
 
-bench get-app erpnext https://github.com/frappe/erpnext --branch ${BRANCH_NAME} --resolve-deps --skip-assets
+bench get-app erpnext https://github.com/frappe/erpnext --branch "version-15" --resolve-deps --skip-assets
 bench get-app beam "${GITHUB_WORKSPACE}" --skip-assets
 
 printf '%s\n' 'frappe' 'erpnext' 'beam' > ~/frappe-bench/sites/apps.txt
@@ -82,6 +81,12 @@ bench use test_site
 wait_for_redis
 bench --site test_site reinstall --yes --admin-password admin
 
+bench --site test_site migrate
+bench --site test_site build
+
+# Python test deps from each app's [tool.bench.dev-dependencies] (beam: pytest*, pycups, test_utils, pytest-playwright).
+# Playwright browser binaries still need `python -m playwright install`, which the
+# workflow's Run Tests step does.
 bench setup requirements --dev
 
 echo "BENCH VERSION NUMBERS:"

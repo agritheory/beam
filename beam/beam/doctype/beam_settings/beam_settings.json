@@ -1,14 +1,20 @@
 {
 	"actions": [],
 	"autoname": "field:company",
-	"creation": "2024-03-18 17:06:58.552999",
+	"creation": "2024-03-18 17:06:58.552900",
 	"doctype": "DocType",
 	"engine": "InnoDB",
 	"field_order": [
+		"general_tab",
+		"company",
+		"barcode_font_size",
 		"enable_handling_units",
 		"scan_serial_no",
-		"barcode_font_size",
-		"company",
+		"ignore_drop_shipped_items",
+		"column_break_twrc",
+		"receiving_workstation",
+		"shipping_workstation",
+		"shipping_warehouse",
 		"column_break_vhpb",
 		"qr_scale",
 		"qr_border",
@@ -17,9 +23,19 @@
 		"barcode_exclusions_html",
 		"column_break_barcode",
 		"auto_barcode_doctypes",
-		"section_break_scan_login",
+		"demand_tab",
+		"enable_demand",
+		"warehouse_types",
+		"mobile_tab",
+		"routes",
+		"manufacturing_section",
+		"show_draft_work_orders",
+		"create_stock_entry_on_pick_list_submit",
+		"section_break_yadp",
 		"enable_scan_to_login",
-		"restrict_ip"
+		"restrict_ip",
+		"column_break_lwuv",
+		"show_scan_output"
 	],
 	"fields": [
 		{
@@ -30,10 +46,137 @@
 			"label": "Enable Handling Units"
 		},
 		{
+			"default": "0",
+			"fieldname": "ignore_drop_shipped_items",
+			"fieldtype": "Check",
+			"label": "Ignore Drop Shipped Items in Demand"
+		},
+		{
 			"default": "12",
 			"fieldname": "barcode_font_size",
 			"fieldtype": "Int",
 			"label": "Barcode Font Size"
+		},
+		{
+			"depends_on": "enable_demand",
+			"description": "These Warehouse Types will be excluded when checking for inventory availability",
+			"fieldname": "warehouse_types",
+			"fieldtype": "Table MultiSelect",
+			"label": "Warehouse Types",
+			"options": "Warehouse Types"
+		},
+		{
+			"fieldname": "general_tab",
+			"fieldtype": "Tab Break",
+			"label": "General"
+		},
+		{
+			"fieldname": "column_break_twrc",
+			"fieldtype": "Column Break"
+		},
+		{
+			"fieldname": "receiving_workstation",
+			"fieldtype": "Link",
+			"label": "Receiving Workstation",
+			"options": "Workstation"
+		},
+		{
+			"fieldname": "shipping_workstation",
+			"fieldtype": "Link",
+			"label": "Shipping Workstation",
+			"options": "Workstation"
+		},
+		{
+			"description": "Target warehouse for Material Transfer pick lists staged for outbound shipping.",
+			"fieldname": "shipping_warehouse",
+			"fieldtype": "Link",
+			"label": "Shipping Warehouse",
+			"options": "Warehouse"
+		},
+		{
+			"fieldname": "demand_tab",
+			"fieldtype": "Tab Break",
+			"label": "Demand"
+		},
+		{
+			"fieldname": "mobile_tab",
+			"fieldtype": "Tab Break",
+			"label": "Mobile"
+		},
+		{
+			"fieldname": "routes",
+			"fieldtype": "Table",
+			"options": "BEAM Mobile Route"
+		},
+		{
+			"fieldname": "manufacturing_section",
+			"fieldtype": "Section Break",
+			"label": "Manufacturing"
+		},
+		{
+			"default": "0",
+			"description": "Include draft work orders on the Manufacture list",
+			"fieldname": "show_draft_work_orders",
+			"fieldtype": "Check",
+			"label": "Show Draft Work Orders"
+		},
+		{
+			"default": "0",
+			"description": "When enabled, submitting a Pick List for Material Transfer or Material Transfer for Manufacture creates and submits the linked Stock Entry.",
+			"fieldname": "create_stock_entry_on_pick_list_submit",
+			"fieldtype": "Check",
+			"label": "Create Stock Entry on Pick List Submit"
+		},
+		{
+			"default": "0",
+			"fieldname": "enable_demand",
+			"fieldtype": "Check",
+			"label": "Enable Demand"
+		},
+		{
+			"columns": 4,
+			"description": "Restrict user from this IP address only. Multiple IP addresses can be added by separating with commas. Also accepts partial IP addresses like (111.111.111)",
+			"fieldname": "restrict_ip",
+			"fieldtype": "Small Text",
+			"label": "Restrict IP"
+		},
+		{
+			"fieldname": "section_break_yadp",
+			"fieldtype": "Section Break"
+		},
+		{
+			"fieldname": "column_break_lwuv",
+			"fieldtype": "Column Break"
+		},
+		{
+			"default": "Not Allowed",
+			"fieldname": "enable_scan_to_login",
+			"fieldtype": "Select",
+			"label": "Enable Scan to Login",
+			"options": "Not Allowed\nMobile Users Only\nAll Users"
+		},
+		{
+			"default": "0",
+			"fieldname": "show_scan_output",
+			"fieldtype": "Check",
+			"label": "Show Scan Output in Mobile View"
+		},
+		{
+			"default": "0",
+			"fieldname": "scan_serial_no",
+			"fieldtype": "Check",
+			"label": "Enable Scanning of Serial Numbers"
+		},
+		{
+			"fieldname": "company",
+			"fieldtype": "Link",
+			"label": "Company",
+			"options": "Company",
+			"unique": 1
+		},
+		{
+			"fieldname": "column_break_vhpb",
+			"fieldtype": "Column Break"
 		},
 		{
 			"default": "8",
@@ -57,23 +200,6 @@
 			"options": "L\nM\nQ\nH"
 		},
 		{
-			"fieldname": "column_break_vhpb",
-			"fieldtype": "Column Break"
-		},
-		{
-			"default": "0",
-			"fieldname": "scan_serial_no",
-			"fieldtype": "Check",
-			"label": "Enable Scanning of Serial Numbers"
-		},
-		{
-			"fieldname": "company",
-			"fieldtype": "Link",
-			"label": "Company",
-			"options": "Company",
-			"unique": 1
-		},
-		{
 			"fieldname": "barcode_generation_section",
 			"fieldtype": "Section Break",
 			"label": "Barcode Generation"
@@ -88,29 +214,11 @@
 			"fieldtype": "Column Break"
 		},
 		{
+			"default": "[\"Item\", \"Warehouse\"]",
 			"fieldname": "auto_barcode_doctypes",
 			"fieldtype": "JSON",
 			"hidden": 1,
 			"label": "Auto Barcode Doctypes"
-		},
-		{
-			"fieldname": "section_break_scan_login",
-			"fieldtype": "Section Break",
-			"label": "Scan to Login"
-		},
-		{
-			"default": "Not Allowed",
-			"fieldname": "enable_scan_to_login",
-			"fieldtype": "Select",
-			"label": "Enable Scan to Login",
-			"options": "Not Allowed\nMobile Users Only\nAll Users"
-		},
-		{
-			"columns": 4,
-			"description": "Restrict user from this IP address only. Multiple IP addresses can be added by separating with commas. Also accepts partial IP addresses like (111.111.111)",
-			"fieldname": "restrict_ip",
-			"fieldtype": "Small Text",
-			"label": "Restrict IP"
 		}
 	],
 	"links": [],

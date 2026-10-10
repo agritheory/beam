@@ -33,7 +33,7 @@ Set up a new bench, substitute a path to the python version to use, which should
 
 ```
 # for linux development
-bench init --frappe-branch version-15 {{ bench name }} --python ~/.pyenv/versions/3.10.13/bin/python3
+bench init --frappe-branch version-15 {{ bench name }} --python python3
 ```
 Create a new site in that bench
 ```
@@ -74,18 +74,67 @@ bench build
 Setup test data
 ```shell
 bench execute 'beam.tests.setup.before_test'
-# for complete reset to run before tests:
+```
+
+For a complete database reset to re-run tests, run the following
+```shell
 bench reinstall --yes --admin-password admin --mariadb-root-password admin && bench execute 'beam.tests.setup.before_test'
 ```
 
-To run mypy and pytest
+To run backend tests
+
 ```shell
 source env/bin/activate
-mypy ./apps/beam/beam --ignore-missing-imports
-pytest ./apps/beam/beam/tests -s --disable-warnings
+pytest ./apps/beam/beam/tests --ignore=./apps/beam/beam/tests/mobile/ --disable-warnings -s --tracing=retain-on-failure
 ```
 
-CUPS integration tests (`test_printer_cups_integration.py`) talk to system cupsd on `:631` locally (Unix socket + loopback device URIs). CI uses the beam-cups workflow service on port `1631` with `BEAM_CUPS_HOST` / `BEAM_CUPS_PORT`. Override routing with `BEAM_CUPS_SAME_HOST` or `BEAM_CUPS_MOCK_HOST`.
+To run frontend tests
+
+Start bench in a separate terminal, then run:
+
+```shell
+source env/bin/activate
+pytest ./apps/beam/beam/tests/mobile --browser chromium --disable-warnings
+```
+
+### BEAM Portal setup
+
+<details>
+<summary>Development</summary>
+
+```shell
+# start the development server
+yarn dev
+```
+</details>
+
+<details>
+<summary>Production</summary>
+
+```shell
+# build assets for the portal page(s)
+bench build
+
+# visit `{server URL}/beam` to access the portal page.
+```
+</details>
+
+CUPS integration tests (`test_printer_cups_integration.py`) use the CUPS service container from the pytest workflow (built from [`cups/cups/Containerfile`](./cups/cups/Containerfile)). Locally, publish beam-cups (e.g. `-p 1631:631`, matching CI) and set both `BEAM_CUPS_HOST` and `BEAM_CUPS_PORT`. Without those env vars the tests skip — they must not target system cupsd on `:631` (that hangs).
+
+### Running tests
+
+From `apps/beam` with the bench virtualenv active:
+
+```shell
+# Full suite (unit story, then portal/Playwright at order 300+)
+python -m playwright install chromium   # once per env
+pytest beam/tests --browser chromium
+
+# Unit-only
+pytest beam/tests --ignore-glob='**/test_beam_*.py'
+```
+
+Portal tests (`test_beam_*.py`) start `bench serve` if needed and map the site hostname to `127.0.0.1` for Chromium (same approach as approvals). CI runs one pytest job from the Run Tests step in `.github/workflows/pytest.yaml`.
 
 ### Printer Server setup
 ```shell
@@ -96,9 +145,8 @@ sudo apt-get install gcc cups python3-dev libcups2-dev -y
 bench pip install pycups
 sudo usermod -a -G lpadmin {username} # the "frappe" user in most installations
 ```
-Go to `{server URL or localhost}:631` to access the CUPS web interface
-Configuration on a remote server will take extra steps to secure:
-https://askubuntu.com/questions/23936/how-do-you-administer-cups-remotely-using-the-web-interface
+
+Go to `{server URL or localhost}:631` to access the CUPS web interface. Configuration on a remote server will take [extra steps](https://askubuntu.com/questions/23936/how-do-you-administer-cups-remotely-using-the-web-interface) to secure.
 
 #### License
 

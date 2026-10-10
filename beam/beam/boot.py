@@ -19,10 +19,19 @@ def get_beam_settings():
 	settings = {}
 	beam_settings = frappe.get_all(
 		"BEAM Settings",
-		fields=["company", "enable_handling_units"],
+		fields=["company", "enable_handling_units", "show_draft_work_orders"],
 	)
 	for setting in beam_settings:
 		settings[setting.company] = {
 			"enable_handling_units": setting.enable_handling_units,
+			"show_draft_work_orders": setting.show_draft_work_orders,
 		}
 	return settings
+
+
+def redirect_to_beam():
+	user_roles = frappe.get_all(
+		"Has Role", fields=["role"], filters={"parent": frappe.session.user}, pluck="role"
+	)
+	if "BEAM Mobile User" in user_roles:
+		frappe.local.response["home_page"] = "/beam#/"

@@ -1,0 +1,575 @@
+// Copyright (c) 2024, AgriTheory and contributors
+// For license information, please see license.txt
+
+import { defineStore } from 'pinia'
+import { reactive, ref } from 'vue'
+import type { RouteLocationNormalized } from 'vue-router'
+
+import { useHttpStore } from '@/stores/http.js'
+import type {
+	BeamCache,
+	BeamHome,
+	BomItem,
+	DeliveryNoteItem,
+	Demand,
+	FormContext,
+	JobCard,
+	FrappeResponse,
+	ListContext,
+	ParentDoctypes,
+	ParentDoctypesForStockTransfer,
+	Receive,
+	ScanConfig,
+	ScanContext,
+	StockEntry,
+} from '@/types/index.js'
+import { handleErrors } from '@/utils/error.js'
+import { useBeamToast } from '@/utils/toast.js'
+import {
+	computeWorkOrderStage,
+	stockEntryPurposeForStage,
+	type WorkOrderMobileContext,
+} from '@/utils/workOrderStage.js'
+import type { WorkOrder } from '@/types/frappe.js'
+
+declare const frappe: any
+
+const BEAM_HOME_URL = '/api/method/beam.beam.doctype.beam_settings.beam_settings.get_beam_home'
+const LOGOUT_URL = '/api/method/logout'
+const MAPPED_STOCK_ENTRY_URL = '/api/method/erpnext.manufacturing.doctype.work_order.work_order.make_stock_entry'
+const NEW_DOC_URL = '/api/method/beam.www.beam.make_new_doc'
+const PURCHASE_DEMAND_URL = '/api/method/beam.beam.demand.receiving.get_receiving_demand'
+const SALES_DEMAND_URL = '/api/method/beam.beam.demand.demand.get_demand'
+const SCAN_CONFIG_URL = '/api/method/beam.beam.scan.config.get_scan_doctypes'
+const SCAN_URL = 'beam.beam.scan.scan' // frappe.xcall doesn't require prefix
+const JOB_CARD_URL = '/api/method/beam.beam.manufacturing.get_job_card'
+const JOB_CARD_START_URL = '/api/method/beam.beam.manufacturing.start_job_card'
+const JOB_CARD_PAUSE_URL = '/api/method/beam.beam.manufacturing.pause_job_card'
+const JOB_CARD_FINISH_URL = '/api/method/beam.beam.manufacturing.finish_job_card'
+const WORK_ORDER_CONTEXT_URL = '/api/method/beam.beam.manufacturing.get_work_order_mobile_context'
+const WORK_ORDER_STATUS_URL = '/api/method/beam.beam.manufacturing.set_work_order_status'
+
+// Route :id is a source document name (PO/SO), not the mapped form doc itself.
+const MAPPED_FORM_DOCTYPES = ['Purchase Receipt', 'Delivery Note']
+
+export type ReconciliationItemScanPayload = {
+	item_code: string
+	item_name?: string
+	stock_uom?: string
+	valuation_rate?: number
+	warehouse?: string
+}
+
+export const useBeamStore = defineStore('beam', () => {
+	const toast = useBeamToast()
+	const httpStore = useHttpStore()
+
+	const recordsPerPage = 20
+	const cache = ref<BeamCache>({ mappers: {} })
+	const form = ref<Partial<ParentDoctypes>>({})
+	const warehouseList = ref()
+
+	const reconciliationItemScan = ref<((payload: ReconciliationItemScanPayload) => void) | null>(null)
+
+	const setReconciliationItemScan = (handler: ((payload: ReconciliationItemScanPayload) => void) | null) => {
+		reconciliationItemScan.value = handler
+	}
+
+	const scanner = reactive({
+		config: {} as ScanConfig,
+		context: {} as ScanContext,
+		lastScan: '' as string,
+		lastDocType: '' as string,
+	})
+	const camera = reactive({
+		pendingPhotos: [] as File[],
+	})
+	const workOrderContext = reactive<Record<string, WorkOrderMobileContext>>({})
+
+	const getScanDoctypes = async () => {
+		const response = await httpStore.get(SCAN_CONFIG_URL)
+		const { message }: { message: ScanConfig } = await response.json()
+		scanner.config = message
+	}
+
+	// TODO: vue-router's useRoute() composable is not working as intended here, so accepting route input
+	const setForm = async (currentRoute: RouteLocationNormalized) => {
+		form.value = {}
+		if (!currentRoute.params.id) return
+
+		const meta = currentRoute.meta
+		if (!meta?.view || !meta?.doctype) return
+		if (meta.view === 'form' && scanner.config.frm.includes(meta.doctype)) {
+			if (MAPPED_FORM_DOCTYPES.includes(meta.doctype)) {
+				return
+			}
+			const docname = currentRoute.params.id.toString()
+			form.value = await getOne<ParentDoctypes>(meta.doctype, docname)
+			if (meta.doctype === 'Pick List') {
+				cache.value.mappers[docname] = form.value as ParentDoctypes
+			}
+		}
+	}
+
+	const setMappedDoc = async (currentRoute: RouteLocationNormalized) => {
+		const id = currentRoute.query.id || currentRoute.params.id
+		if (!id) return
+
+		const meta = currentRoute.meta
+		if (!meta?.view || !meta?.doctype) return
+		if (meta.view !== 'form' || !scanner.config.frm.includes(meta.doctype)) return
+
+		const docname = id.toString()
+		let newDoc: ParentDoctypesForStockTransfer | undefined
+
+		if (meta.doctype === 'Pick List') {
+			newDoc = await getOne<ParentDoctypes>('Pick List', docname)
+		} else if (meta.doctype === 'Work Order') {
+			let workOrderDoc =
+				(form.value as WorkOrder)?.name === docname ? (form.value as WorkOrder) : undefined
+			if (!workOrderDoc?.name) {
+				workOrderDoc = await getOne<WorkOrder>('Work Order', docname)
+			}
+			const woContext = await getWorkOrderMobileContext(docname)
+			if (woContext.pick_list) {
+				return
+			}
+			let purpose =
+				currentRoute.query.purpose === 'Manufacture'
+					? 'Manufacture'
+					: 'Material Transfer for Manufacture'
+
+			if (currentRoute.query.purpose !== 'Manufacture' && workOrderDoc?.name) {
+				const stage = computeWorkOrderStage(workOrderDoc, woContext.overproduction_percentage)
+				const stagePurpose = stockEntryPurposeForStage(stage)
+				if (stagePurpose) {
+					purpose = stagePurpose
+				}
+			}
+
+			const existingEntries = await getAll<ParentDoctypesForStockTransfer>('Stock Entry', {
+				filters: JSON.stringify({
+					docstatus: 0,
+					work_order: id,
+					purpose,
+				}),
+			})
+
+			if (existingEntries.length) {
+				newDoc = await getOne<ParentDoctypesForStockTransfer>('Stock Entry', existingEntries[0].name!)
+			} else {
+				newDoc = await getMappedStockEntry({
+					work_order_id: id,
+					purpose,
+				})
+			}
+		} else {
+			newDoc = await makeNewDoc<ParentDoctypesForStockTransfer>(meta.doctype, docname)
+			if (newDoc?.doctype === 'Delivery Note') {
+				for (const item of newDoc.items) {
+					;(item as DeliveryNoteItem).delivered_qty = 0
+				}
+			}
+		}
+
+		if (!newDoc) {
+			toast.error(`Could not load ${meta.doctype}`)
+			return
+		}
+
+		cache.value.mappers[docname] = newDoc
+	}
+
+	const setScanContext = async (currentRoute: RouteLocationNormalized) => {
+		const meta = currentRoute.meta
+		if (!meta?.view || !meta?.doctype) return
+		if (meta.view === 'list' && scanner.config.listview.includes(meta.doctype)) {
+			scanner.context = { listview: meta.doctype }
+		} else if (meta.view === 'form' && scanner.config.frm.includes(meta.doctype)) {
+			scanner.context = { frm: meta.doctype }
+		}
+	}
+
+	const setWarehouses = async () => {
+		if (warehouseList.value && warehouseList.value.length) return
+
+		try {
+			const warehouses = await getAll<{ name: string }[]>('Warehouse', {
+				fields: JSON.stringify(['company', 'disabled', 'is_group', 'name', 'warehouse_name']),
+			})
+			warehouseList.value = warehouses
+		} catch (error) {
+			console.error('Error fetching warehouses:', error)
+			warehouseList.value = []
+		}
+	}
+
+	const getOne = async <T>(doctype: string, name: string) => {
+		const url = `/api/resource/${doctype}/${name}`
+		const response = await httpStore.get(url)
+		const { data }: { data: T } = await response.json()
+		return data
+	}
+
+	const getAll = async <T>(doctype: string, params?: Record<string, any>, page?: number) => {
+		if (page) {
+			const start = (page - 1) * recordsPerPage
+			const end = start + recordsPerPage
+			params = { ...params, limit_start: start, limit_page_length: end }
+		}
+
+		const url = `/api/resource/${doctype}`
+		const response = await httpStore.get(url, params)
+		const { data }: { data: T[] } = await response.json()
+		return data
+	}
+
+	const getHome = async (params?: Record<string, any>) => {
+		const response = await httpStore.get(BEAM_HOME_URL, params)
+		const { message }: { message: BeamHome } = await response.json()
+		return { data: message }
+	}
+
+	const getDemand = async (params?: Record<string, any>) => {
+		// automatically fetch all pages of demand data based on parameters
+		const response = await httpStore.get(SALES_DEMAND_URL, params)
+		const { message }: { message: Demand[] } = await response.json()
+		return { data: message }
+	}
+
+	const getReceiving = async (params?: Record<string, any>) => {
+		// automatically fetch all pages of demand data based on parameters
+		const response = await httpStore.get(PURCHASE_DEMAND_URL, params)
+		const { message }: { message: Receive[] } = await response.json()
+		return { data: message }
+	}
+
+	const scan = async (
+		barcode: string,
+		qty: number,
+		context: ScanContext = scanner.context
+	): Promise<(FormContext | ListContext)[] | undefined> => {
+		try {
+			const response = await frappe.xcall(SCAN_URL, {
+				barcode,
+				current_qty: qty,
+				context,
+			})
+
+			if (!response) {
+				toast.error(`Barcode '${barcode}' not found`)
+				return
+			}
+
+			return response
+		} catch (error) {
+			// TODO: handle API error
+			console.error(error)
+		}
+
+		return []
+	}
+
+	const callMethod = async <T>(
+		request: { method: 'get' | 'post'; url: string; params: Record<string, unknown> },
+		failure: string,
+		success?: string
+	): Promise<T> => {
+		const response = await httpStore[request.method](request.url, request.params)
+		if (!response.ok) {
+			await handleErrors(response)
+			throw new Error(failure)
+		}
+		const { message }: { message: T } = await response.json()
+		if (success) toast.success(success)
+		return message
+	}
+
+	const getJobCard = (jobCardId: string) =>
+		callMethod<JobCard>(
+			{ method: 'get', url: JOB_CARD_URL, params: { job_card_id: jobCardId } },
+			'Failed to fetch job card'
+		)
+
+	const startJobCard = (jobCardId: string) =>
+		callMethod<JobCard>(
+			{ method: 'post', url: JOB_CARD_START_URL, params: { job_card_id: jobCardId } },
+			'Failed to start job card',
+			'Job started'
+		)
+
+	const pauseJobCard = (jobCardId: string, completedQty: number = 0) =>
+		callMethod<JobCard>(
+			{ method: 'post', url: JOB_CARD_PAUSE_URL, params: { job_card_id: jobCardId, completed_qty: completedQty } },
+			'Failed to pause job card',
+			'Job paused'
+		)
+
+	const finishJobCard = (jobCardId: string, completedQty: number) =>
+		callMethod<JobCard>(
+			{ method: 'post', url: JOB_CARD_FINISH_URL, params: { job_card_id: jobCardId, completed_qty: completedQty } },
+			'Failed to finish job card',
+			'Job finished'
+		)
+
+	const getWorkOrderMobileContext = async (workOrderId: string) => {
+		const context = await callMethod<WorkOrderMobileContext>(
+			{ method: 'get', url: WORK_ORDER_CONTEXT_URL, params: { work_order_id: workOrderId } },
+			'Failed to fetch work order context'
+		)
+		workOrderContext[workOrderId] = context
+		return context
+	}
+
+	const setWorkOrderStatus = (workOrderId: string, status: 'Stopped' | 'Resumed') =>
+		callMethod<string>(
+			{ method: 'post', url: WORK_ORDER_STATUS_URL, params: { work_order_id: workOrderId, status } },
+			'Failed to update work order status',
+			status === 'Stopped' ? 'Work order stopped' : 'Work order resumed'
+		)
+
+	const refreshWorkOrderForm = async (workOrderId: string): Promise<WorkOrder> => {
+		const data = await getOne<WorkOrder>('Work Order', workOrderId)
+		form.value = data
+		await getWorkOrderMobileContext(workOrderId)
+		return data
+	}
+
+	const insert = async <T extends Record<string, any>>(doctype: string, body: T) => {
+		const url = `/api/resource/${doctype}`
+		const response = await httpStore.post(url, body)
+		if (response.ok) {
+			toast.success('Document created')
+			const { data }: FrappeResponse<T> = await response.json()
+			return { data, response }
+		} else {
+			await handleErrors(response)
+			return { data: null, response }
+		}
+	}
+
+	const update = async <T>(doctype: string, name: string, body: Partial<T>) => {
+		const url = `/api/resource/${doctype}/${name}`
+		const response = await httpStore.put(url, body)
+		if (response.ok) {
+			toast.success('Document updated')
+			const { data }: FrappeResponse<T> = await response.json()
+			return { data, response }
+		} else {
+			await handleErrors(response)
+			return { data: null, response }
+		}
+	}
+
+	const submit = async <T>(doctype: string, name: string) => {
+		const url = `/api/resource/${doctype}/${name}`
+		const response = await httpStore.put(url, { docstatus: 1 })
+		if (response.ok) {
+			toast.success('Document status changed to Submitted')
+			const { data }: FrappeResponse<T> = await response.json()
+			return { data, response }
+		} else {
+			await handleErrors(response)
+			return { data: null, response }
+		}
+	}
+
+	const cancel = async <T>(doctype: string, name: string) => {
+		const url = `/api/resource/${doctype}/${name}`
+		const response = await httpStore.put(url, { docstatus: 2 })
+		if (response.ok) {
+			toast.success('Document status changed to Cancelled')
+			const { data }: FrappeResponse<T> = await response.json()
+			return { data, response }
+		} else {
+			await handleErrors(response)
+			return { data: null, response }
+		}
+	}
+
+	const makeNewDoc = async <T>(doctype: string, docname?: string) => {
+		const response = await httpStore.post(NEW_DOC_URL, { doctype, docname })
+		if (!response.ok) {
+			toast.error(`Could not create ${doctype}`)
+			return undefined
+		}
+		const { message }: { message: T } = await response.json()
+		return message
+	}
+
+	const getMappedStockEntry = async (data: Record<string, any>) => {
+		// return a work order object with attached stock entry/ies and job card(s)
+		const response = await httpStore.post(MAPPED_STOCK_ENTRY_URL, data)
+		const { message }: { message: StockEntry } = await response.json()
+		if (!message || !message.items || !message.items.length) {
+			toast.error('Error: Could not map Work Order to Stock Entry')
+			return
+		}
+		// initialize pending stock entry items with zero quantity
+		message.items.map(item => {
+			if (!item.is_finished_item) {
+				item.qty = 0
+			}
+		})
+		return message
+	}
+
+	const getStockEntryItems = async (bomName: string, qty = 1, purpose = 'Manufacture') => {
+		try {
+			const homeData = await getHome()
+			const company = homeData.data.company
+			const response = await httpStore.get('/api/method/erpnext.manufacturing.doctype.bom.bom.get_bom_items', {
+				bom: bomName,
+				company,
+				fetch_exploded: 1,
+				qty,
+				purpose,
+			})
+			const { message }: { message: BomItem[] } = await response.json()
+			if (!message) return []
+
+			return message
+		} catch (error) {
+			console.error(error)
+			return []
+		}
+	}
+
+	const getStockReconciliationItems = async (warehouse: string) => {
+		if (!warehouse) return []
+		try {
+			const homeData = await getHome()
+			const company = homeData.data.company
+			const response = await httpStore.get('/api/method/beam.beam.overrides.stock_reconciliation.get_items', {
+				warehouse,
+				company,
+				posting_date: new Date().toLocaleDateString(),
+				posting_time: new Date().toLocaleTimeString(),
+				ignore_empty_stock: true,
+			})
+
+			const { message } = await response.json()
+			return message
+		} catch (error) {
+			console.error(error)
+			return []
+		}
+	}
+
+	const logout = async () => {
+		await httpStore.get(LOGOUT_URL)
+		window.location.href = '/login?redirect-to=/beam#'
+	}
+
+	const setPendingPhotos = (files: File[]) => {
+		camera.pendingPhotos = files
+	}
+
+	const clearPendingPhotos = () => {
+		camera.pendingPhotos = []
+	}
+
+	const uploadFiles = async (doctype: string, docname: string, files: File[]) => {
+		const failed: File[] = []
+		if (files.length === 0) return { failed }
+
+		for (const file of files) {
+			const formData = new FormData()
+			formData.append('file', file, file.name)
+			formData.append('file_name', file.name)
+			formData.append('is_private', '0')
+			formData.append('doctype', doctype)
+			formData.append('docname', docname)
+			formData.append('fieldname', 'image')
+			formData.append('folder', 'Home')
+
+			try {
+				const response = await fetch('/api/method/upload_file', {
+					method: 'POST',
+					headers: {
+						'X-Frappe-CSRF-Token': frappe.csrf_token,
+						Accept: 'application/json',
+					},
+					body: formData,
+				})
+
+				if (response.ok) {
+					toast.success(`File ${file.name} attached successfully`)
+				} else {
+					const errorData = await response.json()
+					const errorMsg = errorData?.exception || errorData?.message || 'Unknown error'
+					toast.error(errorMsg)
+					failed.push(file)
+				}
+			} catch (error: any) {
+				const errorMsg = error?.message || 'Connection error'
+				toast.error(errorMsg)
+				failed.push(file)
+			}
+		}
+
+		return { failed }
+	}
+
+	const formatDate = (date: Date) => {
+		if (isNaN(Date.parse(date.toString()))) {
+			return ''
+		}
+
+		return date.toLocaleString(frappe.boot.time_zone, {
+			year: 'numeric',
+			month: 'numeric',
+			day: 'numeric',
+			hour: '2-digit',
+			minute: '2-digit',
+		})
+	}
+
+	return {
+		// state
+		cache,
+		form,
+		scanner,
+		camera,
+		workOrderContext,
+		warehouseList,
+		reconciliationItemScan,
+		setReconciliationItemScan,
+		// store context actions
+		getScanDoctypes,
+		setForm,
+		setMappedDoc,
+		setScanContext,
+		setWarehouses,
+
+		// document workflow actions
+		cancel,
+		insert,
+		update,
+		submit,
+
+		// other api actions
+		formatDate,
+		getAll,
+		getDemand,
+		getHome,
+		getMappedStockEntry,
+		getOne,
+		getReceiving,
+		getStockEntryItems,
+		getJobCard,
+		startJobCard,
+		pauseJobCard,
+		finishJobCard,
+		getWorkOrderMobileContext,
+		refreshWorkOrderForm,
+		setWorkOrderStatus,
+		getStockReconciliationItems,
+		logout,
+		makeNewDoc,
+		scan,
+		setPendingPhotos,
+		clearPendingPhotos,
+		uploadFiles,
+	}
+})

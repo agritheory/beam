@@ -4,7 +4,6 @@
 	"remoteUser": "frappe",
 	"shutdownAction": "stopCompose",
 	"postCreateCommand": "bash /workspace/.devcontainer/scripts/init.sh",
-
 	"dockerComposeFile": "./docker-compose.yml",
 	"service": "frappe",
 	"workspaceFolder": "/workspace/frappe-bench"
