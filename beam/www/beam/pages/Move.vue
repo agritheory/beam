@@ -29,14 +29,14 @@
 
 <script setup lang="ts">
 import type { ListViewItem } from '@stonecrop/beam'
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 
 import ControlButtons from '@/components/ControlButtons.vue'
+import { useLineInspections } from '@/composables/useLineInspections'
 import { useBeamStore } from '@/stores/beam'
 import type { ControlButton, DocActionResponse, StockEntry } from '@/types'
 import { itemListLine } from '@/utils/itemListLine'
-import { watch } from 'vue'
-
+import { applyInspectionLines } from '@/utils/inspectionList'
 const store = useBeamStore()
 const items = ref<ListViewItem[]>([])
 const stockEntry = computed(
@@ -50,6 +50,12 @@ const stockEntry = computed(
 		}
 )
 const componentKey = ref(0)
+
+const savedEntryName = computed(() => stockEntry.value?.name || undefined)
+const { byRow } = useLineInspections(
+	computed(() => 'Stock Entry'),
+	savedEntryName
+)
 
 const warehouseList = ref<string[]>([])
 
@@ -146,9 +152,10 @@ const controlButtons = computed((): ControlButton[] => {
 })
 
 watch(
-	() => store.cache.mappers['move']?.items,
-	newItems => {
-		items.value = (newItems || []).map(s => {
+	[() => store.cache.mappers['move']?.items, byRow],
+	() => {
+		const newItems = store.cache.mappers['move']?.items
+		const mapped = (newItems || []).map(s => {
 			const line = itemListLine({
 				...s,
 				warehouse: s.s_warehouse || s.t_warehouse,
@@ -160,6 +167,7 @@ watch(
 				count: { count: s.qty },
 			}
 		})
+		items.value = applyInspectionLines(mapped, byRow.value)
 		componentKey.value++
 	},
 	{ immediate: true, deep: true }
