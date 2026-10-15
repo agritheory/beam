@@ -10,7 +10,7 @@
 
 	<div class="reconciliation">
 		<div class="dropdown-container">
-			<ADropdown label="Warehouse" :items="warehouseList" v-model="reconciliation.set_warehouse" />
+			<ADropdown label="Warehouse" :options="warehouseList" v-model="reconciliation.set_warehouse" />
 			<BeamBtn class="clear-button" @click="clearField()"> X </BeamBtn>
 		</div>
 	</div>
@@ -44,7 +44,7 @@
 </template>
 
 <script setup lang="ts">
-import type { ListViewItem } from '@stonecrop/beam'
+import type { ListViewItem } from '@/types/stonecrop.js'
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 
 import ControlButtons from '@/components/ControlButtons.vue'

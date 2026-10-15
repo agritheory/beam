@@ -9,21 +9,13 @@
 	</Navbar>
 	<div class="move">
 		<FieldRow>
-			<ADropdown
-				:key="fromWarehouseKey"
-				label="Source Warehouse"
-				:options="warehouseList"
-				v-model="stockEntry.from_warehouse" />
+			<ADropdown label="Source Warehouse" :options="warehouseList" v-model="stockEntry.from_warehouse" />
 			<template #suffix>
 				<BeamBtn @click="clearField('from_warehouse')"> X </BeamBtn>
 			</template>
 		</FieldRow>
 		<FieldRow>
-			<ADropdown
-				:key="toWarehouseKey"
-				label="Target Warehouse"
-				:options="warehouseList"
-				v-model="stockEntry.to_warehouse" />
+			<ADropdown label="Target Warehouse" :options="warehouseList" v-model="stockEntry.to_warehouse" />
 			<template #suffix>
 				<BeamBtn @click="clearField('to_warehouse')"> X </BeamBtn>
 			</template>
@@ -40,7 +32,7 @@
 </template>
 
 <script setup lang="ts">
-import type { ListViewItem } from '@stonecrop/beam'
+import type { ListViewItem } from '@/types/stonecrop.js'
 import { ref, onMounted, computed } from 'vue'
 
 import ControlButtons from '@/components/ControlButtons.vue'
@@ -63,8 +55,6 @@ const stockEntry = computed(
 		}
 )
 const componentKey = ref(0)
-const fromWarehouseKey = ref(0)
-const toWarehouseKey = ref(0)
 
 const warehouseList = ref<string[]>([])
 
@@ -79,8 +69,6 @@ const clearField = (field: 'from_warehouse' | 'to_warehouse') => {
 		const mapper = state.cache.mappers['move']
 		if (mapper) mapper[field] = ''
 	})
-	if (field === 'from_warehouse') fromWarehouseKey.value++
-	else toWarehouseKey.value++
 }
 
 const update = () => {

@@ -40,17 +40,17 @@ def repack_item_input(page):
 
 
 def repack_item_results(page):
-	wrapper = page.locator(".input-wrapper", has=page.locator("label", has_text="Item to Repack"))
+	wrapper = page.locator(".autocomplete", has=page.locator("label", has_text="Item to Repack"))
 	return wrapper.locator("li.autocomplete-result:not(.loading)")
 
 
 def repack_bom_input(page):
-	wrapper = page.locator(".input-wrapper", has=page.locator("label", has_text="BOM (Optional)"))
+	wrapper = page.locator(".autocomplete", has=page.locator("label", has_text="BOM (Optional)"))
 	return wrapper.locator("input")
 
 
 def repack_bom_results(page):
-	wrapper = page.locator(".input-wrapper", has=page.locator("label", has_text="BOM (Optional)"))
+	wrapper = page.locator(".autocomplete", has=page.locator("label", has_text="BOM (Optional)"))
 	return wrapper.locator("li.autocomplete-result:not(.loading)")
 
 
@@ -353,7 +353,7 @@ def test_repack_bom_disabled_until_item_set(page):
 	bom_input.click()
 	expect(repack_bom_results(page)).to_have_text([re.compile(r"^BOM-Gooseberry Pie")], timeout=10000)
 
-	item_row = page.locator(".dd-container", has=page.locator("label", has_text="Item to Repack"))
+	item_row = page.locator(".field-row", has=page.locator("label", has_text="Item to Repack"))
 	item_row.get_by_role("button", name="X").click()
 	expect(item_input).to_have_value("")
 	expect(bom_input).to_be_disabled()

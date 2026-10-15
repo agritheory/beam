@@ -1,18 +1,17 @@
 // Copyright (c) 2024, AgriTheory and contributors
 // For license information, please see license.txt
 
-import '@stonecrop/themes/default.css'
-import '@stonecrop/aform/styles'
-import '@stonecrop/beam/styles'
+import '@/styles/default.css'
+import '@/styles/beam-theme.css'
+import '@/styles/aform-shared.css'
 
-import { install as BeamPlugin } from '@stonecrop/beam'
-import { install as AformPlugin } from '@stonecrop/aform'
 import { createPinia } from 'pinia'
 import { createApp, markRaw } from 'vue'
 import { createRouter, createWebHashHistory } from 'vue-router'
 import { routes, handleHotUpdate } from 'vue-router/auto-routes'
 
 import Beam from '@/Beam.vue'
+import { installStonecropComponents } from '@/components/install.js'
 import { useInitStore } from '@/stores/init.js'
 import { BeamWindow } from '@/types/index.js'
 
@@ -54,7 +53,6 @@ pinia.use(({ store }) => {
 
 const app = createApp(Beam)
 app.use(router)
-app.use(BeamPlugin)
-app.use(AformPlugin)
+installStonecropComponents(app)
 app.use(pinia)
 app.mount('#beam')

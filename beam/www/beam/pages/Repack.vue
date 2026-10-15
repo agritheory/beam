@@ -13,7 +13,6 @@
 			<template v-if="itemList">
 				<FieldRow>
 					<ADropdown
-						:key="itemCodeKey"
 						label="Item to Repack"
 						:options="itemList"
 						v-model="itemCodeModel"
@@ -34,7 +33,7 @@
 				</FieldRow>
 				<fieldset class="bom-field" :disabled="bomDisabled">
 					<FieldRow>
-						<ADropdown :key="bomKey" label="BOM (Optional)" :options="bomList" v-model="bomModel" />
+						<ADropdown label="BOM (Optional)" :options="bomList" v-model="bomModel" />
 						<template #suffix>
 							<BeamBtn @click="clearCurrentItem('bom')"> X </BeamBtn>
 						</template>
@@ -43,7 +42,6 @@
 			</template>
 			<FieldRow>
 				<ADropdown
-					:key="fromWarehouseKey"
 					label="Source Warehouse"
 					:options="warehouseList"
 					v-model="stockEntry.from_warehouse" />
@@ -53,7 +51,6 @@
 			</FieldRow>
 			<FieldRow>
 				<ADropdown
-					:key="toWarehouseKey"
 					label="Target Warehouse"
 					:options="warehouseList"
 					v-model="stockEntry.to_warehouse" />
@@ -72,7 +69,7 @@
 </template>
 
 <script setup lang="ts">
-import type { ListViewItem } from '@stonecrop/beam'
+import type { ListViewItem } from '@/types/stonecrop.js'
 import { ref, computed, onMounted, watch } from 'vue'
 
 import ControlButtons from '@/components/ControlButtons.vue'
@@ -124,10 +121,6 @@ const stockEntry = computed(() => (store.cache.mappers.repack as StockEntry | un
 const itemList = ref<string[]>([])
 const bomList = ref<string[]>([])
 const warehouseList = ref<string[]>([])
-const itemCodeKey = ref(0)
-const bomKey = ref(0)
-const fromWarehouseKey = ref(0)
-const toWarehouseKey = ref(0)
 
 onMounted(async () => {
 	store.$patch(state => (state.cache.mappers.repack = stockEntry.value))
@@ -206,16 +199,12 @@ const loadBOMs = async (itemCode: string) => {
 
 const clearField = (field: 'from_warehouse' | 'to_warehouse') => {
 	store.$patch(state => (state.cache.mappers.repack[field] = ''))
-	if (field === 'from_warehouse') fromWarehouseKey.value++
-	else toWarehouseKey.value++
 }
 
 const addCurrentItem = () => currentItem.value.qty++
 const substractCurrentItem = () => (currentItem.value.qty > 0 ? currentItem.value.qty-- : 0)
 const clearCurrentItem = (field: 'item_code' | 'bom') => {
 	currentItem.value[field] = ''
-	if (field === 'item_code') itemCodeKey.value++
-	else bomKey.value++
 }
 
 const create = async () => {

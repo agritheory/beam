@@ -14,9 +14,7 @@
 		"typecheck": "vue-tsc --noEmit -p ./beam/www/beam/tsconfig.json"
 	},
 	"dependencies": {
-		"@stonecrop/aform": "^0.40.0",
-		"@stonecrop/beam": "^0.40.0",
-		"@stonecrop/themes": "^0.40.0",
+		"@vueuse/components": "^14.2.1",
 		"@vueuse/core": "^14.2.1",
 		"acorn": "^8.14.1",
 		"barcode-detector": "^3.2.1",

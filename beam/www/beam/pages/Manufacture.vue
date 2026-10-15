@@ -32,7 +32,7 @@
 </template>
 
 <script setup lang="ts">
-import type { BeamFilterChoice, ListViewItem } from '@stonecrop/beam'
+import type { BeamFilterChoice, ListViewItem } from '@/types/stonecrop.js'
 import { computed, onMounted, ref } from 'vue'
 
 import UserFilter from '@/components/UserFilter.vue'

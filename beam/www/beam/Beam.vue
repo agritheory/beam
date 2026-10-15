@@ -108,10 +108,6 @@ const registerInstance = (instance: any) => (window.scanner = instance)
 	--beam-footer-height: calc(var(--beam-footer-rows) * 3.25rem + 1rem + env(safe-area-inset-bottom, 0px));
 }
 
-.autocomplete-results:empty {
-	display: none;
-}
-
 .beam_btn {
 	transition: background-color 120ms ease-out;
 }

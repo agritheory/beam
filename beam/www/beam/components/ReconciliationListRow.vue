@@ -28,8 +28,8 @@
 </template>
 
 <script setup lang="ts">
-import { ItemCount } from '@stonecrop/beam'
-import type { ListViewItem } from '@stonecrop/beam'
+import ItemCount from '@/components/ItemCount.vue'
+import type { ListViewItem } from '@/types/stonecrop.js'
 import { computed } from 'vue'
 
 import type { ReconciliationListRow as ReconciliationRow } from '@/utils/reconciliation'

@@ -20,7 +20,7 @@ RECONCILIATION_ROW = ".reconciliation-list-row"
 
 
 def fill_warehouse_dropdown(page, label: str, value: str):
-	wrapper = page.locator(".input-wrapper", has=page.locator("label", has_text=label))
+	wrapper = page.locator(".autocomplete", has=page.locator("label", has_text=label))
 	inp = wrapper.locator("input")
 	inp.click()
 	inp.fill(value)
