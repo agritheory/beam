@@ -122,6 +122,7 @@ extend_bootinfo = "beam.beam.boot.boot_session"
 override_doctype_class = {
 	"Sales Order": "beam.beam.overrides.sales_order.BEAMSalesOrder",
 	"Network Printer Settings": "beam.beam.overrides.network_printer_settings.BEAMNetworkPrinterSettings",
+	"Purchase Receipt": "beam.beam.overrides.purchase_receipt.BEAMPurchaseReceipt",
 	"Stock Entry": "beam.beam.overrides.stock_entry.BEAMStockEntry",
 	"Subcontracting Receipt": "beam.beam.overrides.subcontracting_receipt.BEAMSubcontractingReceipt",
 	"Work Order": "beam.beam.overrides.work_order.BEAMWorkOrder",
@@ -158,6 +159,9 @@ doc_events = {
 	},
 	("Purchase Receipt", "Purchase Invoice", "Subcontracting Receipt"): {
 		"before_submit": ["beam.beam.handling_unit.generate_handling_units"],
+	},
+	"Purchase Receipt": {
+		"before_validate": ["beam.beam.overrides.purchase_receipt.apply_rejected_inspection_from_qi"],
 	},
 	("Delivery Note", "Sales Invoice"): {
 		"before_submit": ["beam.beam.handling_unit.set_outbound_handling_units"],
@@ -582,6 +586,9 @@ beam_mobile = {
 		"Receive": "./beam/beam/www/beam/pages/Receive.vue",
 		"Repack": "./beam/beam/www/beam/pages/Repack.vue",
 		"Reconciliation": "./beam/beam/www/beam/pages/Reconciliation.vue",
+		"Inspect": "./beam/beam/www/beam/pages/Inspect.vue",
+		"QualityInspection": "./beam/beam/www/beam/pages/QualityInspection.vue",
+		"InspectionLine": "./beam/beam/www/beam/components/InspectionLine.vue",
 		"Ship": "./beam/beam/www/beam/pages/Ship.vue",
 		"WorkOrder": "./beam/beam/www/beam/pages/WorkOrder.vue",
 		"PickList": "./beam/beam/www/beam/pages/PickList.vue",
@@ -618,6 +625,23 @@ beam_mobile = {
 			"name": "operation",
 			"component": "Operation",
 			"meta": {"requiresAuth": True, "doctype": "Work Order", "view": "form"},
+		},
+		{
+			"path": "/inspect",
+			"name": "inspect",
+			"component": "Inspect",
+			"meta": {"requiresAuth": True, "doctype": "Quality Inspection", "view": "list"},
+		},
+		{
+			"path": "/inspect/:doctype/:name/:row",
+			"name": "quality_inspection",
+			"component": "QualityInspection",
+			"meta": {
+				"requiresAuth": True,
+				"doctype": "Quality Inspection",
+				"view": "form",
+				"cameraPhoto": True,
+			},
 		},
 		{
 			"path": "/receive",
