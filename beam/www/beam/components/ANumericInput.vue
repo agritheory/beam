@@ -41,7 +41,7 @@ const {
 	validation?: { errorMessage: string }
 }>()
 
-const errorText = computed(() => (errors?.length ? errors.join('; ') : (validation.errorMessage ?? '')))
+const errorText = computed(() => (errors?.length ? errors.join('; ') : validation.errorMessage ?? ''))
 const { errorId, describedBy, invalid } = fieldErrorA11y(uuid, errorText)
 
 const inputNumber = defineModel<number | null>()

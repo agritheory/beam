@@ -41,19 +41,13 @@
 				</fieldset>
 			</template>
 			<FieldRow>
-				<ADropdown
-					label="Source Warehouse"
-					:options="warehouseList"
-					v-model="stockEntry.from_warehouse" />
+				<ADropdown label="Source Warehouse" :options="warehouseList" v-model="stockEntry.from_warehouse" />
 				<template #suffix>
 					<BeamBtn @click="clearField('from_warehouse')"> X </BeamBtn>
 				</template>
 			</FieldRow>
 			<FieldRow>
-				<ADropdown
-					label="Target Warehouse"
-					:options="warehouseList"
-					v-model="stockEntry.to_warehouse" />
+				<ADropdown label="Target Warehouse" :options="warehouseList" v-model="stockEntry.to_warehouse" />
 				<template #suffix>
 					<BeamBtn @click="clearField('to_warehouse')"> X </BeamBtn>
 				</template>
@@ -410,7 +404,6 @@ watch(
 	padding: 1rem var(--sc-list-margin);
 	box-sizing: border-box;
 }
-
 
 .max-h-300 {
 	max-height: 300px;

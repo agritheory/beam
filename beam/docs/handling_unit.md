@@ -4,7 +4,7 @@ For license information, please see license.txt-->
 # Handling Unit
 
 <div class="byline">
-  Tyler Matteson 2026-02-23
+  Rohan Bansal, github-actions, Ishwarya, Lautaro Juarez, Heather Kusmierz, Tyler Matteson, and Francisco Roldán 2026-08-19
 </div>
 
 

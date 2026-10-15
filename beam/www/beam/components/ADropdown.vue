@@ -93,7 +93,7 @@ const listboxId = `${uuid ?? `aform-dropdown-${useId()}`}-listbox`
 
 const choiceList = computed(() => options)
 
-const errorText = computed(() => (errors?.length ? errors.join('; ') : (validation.errorMessage ?? '')))
+const errorText = computed(() => (errors?.length ? errors.join('; ') : validation.errorMessage ?? ''))
 const { errorId, describedBy, invalid } = fieldErrorA11y(uuid, errorText)
 
 const modelValue = defineModel<string>()

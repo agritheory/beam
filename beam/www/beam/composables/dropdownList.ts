@@ -1,3 +1,6 @@
+// Copyright (c) 2026, AgriTheory and contributors
+// For license information, please see license.txt
+
 import { nextTick, onBeforeUnmount, watch, type Ref } from 'vue'
 
 // Left between a shrunk list and the window's bottom.
