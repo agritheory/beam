@@ -4,7 +4,7 @@ For license information, please see license.txt-->
 # Handling Unit
 
 <div class="byline">
-  Rohan Bansal, github-actions, Ishwarya, Lautaro Juarez, Heather Kusmierz, Tyler Matteson, and Francisco Roldán 2026-08-10
+  Tyler Matteson 2026-02-23
 </div>
 
 
@@ -17,7 +17,7 @@ By assigning a unique ID to the Handling Unit, it is possible to capture via sca
 ## Listviews
 Generally scanning a Handling Unit in a list view will filter to show all the transactions of the doctype with the appropriate Handling Unit.
 
-## Purchase Receipt
+## Purchase Receipt 
 For Purchase Receipts, Handling Units are generated and cannot be supplied by the user.
 
 | Item             | Warehouse          | Handling Unit  |       Quantity |
@@ -103,7 +103,7 @@ The dialog shows each source handling unit along with its corresponding target h
 
 ### Repack and Manufacture
 
-In the case of a Repack, Material Issue or Material Consumption for Manufacture, a new Handling Unit is generated for the new quantities.
+In the case of a Repack, Material Issue or Material Consumption for Manufacture, a new Handling Unit is generated for the new quantities. 
 
 | Item             | Warehouse          | Handling Unit  |       Quantity |
 | ---------------- | ------------------ | -------------- | --------------:|
@@ -154,7 +154,7 @@ In both these cases, there is no offsetting movement or creation of items.
 | Cocoplum         | Work In Progress   |            123 |         -20 Ea |
 
 ### Material Receipt
-In the case of Material Receipt, a new Handling Unit is generated for each item.
+In the case of Material Receipt, a new Handling Unit is generated for each item. 
 
 | Item             | Warehouse          | Handling Unit  |       Quantity |
 | ---------------- | ------------------ | -------------- | --------------:|

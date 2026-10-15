@@ -28,6 +28,26 @@ def use_current_db_transaction():
 	yield
 
 
+def wait_for_work_order_stock_entry(work_order_id: str, timeout: float = 20.0) -> str:
+	"""Return the newest Stock Entry name for this work order after a portal TRANSFER."""
+	deadline = time.monotonic() + timeout
+	while True:
+		frappe.db.rollback()
+		frappe.db.begin()
+		entries = frappe.get_all(
+			"Stock Entry",
+			filters={"work_order": work_order_id},
+			pluck="name",
+			order_by="creation desc",
+			limit=1,
+		)
+		if entries:
+			return entries[0]
+		if time.monotonic() >= deadline:
+			raise AssertionError(f"No Stock Entry for Work Order {work_order_id} after {timeout}s")
+		time.sleep(0.25)
+
+
 def wait_for_docstatus(doctype: str, name: str, expected: int, timeout: float = 20.0) -> None:
 	"""Block until the live bench has committed `expected` for this document.
 
@@ -223,6 +243,45 @@ def get_playwright_base_url() -> str:
 	return frappe.utils.get_url().rstrip("/")
 
 
+def beam_portal_url(route: str = "") -> str:
+	"""Hash route under the Beam portal (``/beam#/…``), matching post-login navigation."""
+	base = get_playwright_base_url().rstrip("/")
+	if not base.endswith("/beam"):
+		base = f"{base}/beam"
+	route = route.strip()
+	if route.startswith("#"):
+		route = route[1:]
+	if route and not route.startswith("/"):
+		route = f"/{route}"
+	return f"{base}#{route}" if route else f"{base}#/"
+
+
+def goto_beam_portal_route(page, route: str = "", timeout: float = 15000):
+	"""Open a Beam hash route and wait until Vue Router has applied it.
+
+	Playwright sometimes completes ``goto`` without updating the hash when the Beam
+	app is already loaded (common on CI), which leaves tests on ``#/`` while they
+	expect a form or list page.
+	"""
+	import re
+
+	from playwright.sync_api import expect
+
+	route = route.strip()
+	if route.startswith("#"):
+		route = route[1:]
+	if route and not route.startswith("/"):
+		route = f"/{route}"
+
+	page.goto(beam_portal_url(route), wait_until="domcontentloaded", timeout=30000)
+	hash_pattern = re.compile(rf"beam#{re.escape(route)}")
+	try:
+		expect(page).to_have_url(hash_pattern, timeout=3000)
+	except AssertionError:
+		page.evaluate("(hashRoute) => { window.location.hash = hashRoute; }", route)
+		expect(page).to_have_url(hash_pattern, timeout=timeout)
+
+
 def login_playwright(page, email: str = "support@agritheory.dev", password: str = "admin"):
 	"""Fill the Frappe login form and wait until past /login."""
 	import re
@@ -236,6 +295,24 @@ def login_playwright(page, email: str = "support@agritheory.dev", password: str 
 	page.get_by_role("textbox", name="Password").fill(password)
 	page.get_by_role("button", name="Login").click()
 	expect(page).not_to_have_url(re.compile(r"/login"), timeout=20000)
+
+
+def login_beam_portal_user(page, email: str, password: str = "admin"):
+	"""Log out, sign in as ``email``, and land on the Beam home hash."""
+	import re
+
+	from playwright.sync_api import expect
+
+	base_url = get_playwright_base_url().rstrip("/")
+	page.context.clear_cookies()
+	page.goto(f"{base_url}/api/method/logout")
+	page.wait_for_timeout(500)
+	page.goto(f"{base_url}/login")
+	expect(page.get_by_role("textbox", name="Email")).to_be_visible(timeout=15000)
+	page.get_by_role("textbox", name="Email").fill(email)
+	page.get_by_role("textbox", name="Password").fill(password)
+	page.get_by_role("button", name="Login").click()
+	expect(page).to_have_url(re.compile(r"beam#/"), timeout=20000)
 
 
 def clear_beam_service_workers(page):

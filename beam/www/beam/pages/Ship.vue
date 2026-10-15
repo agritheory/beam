@@ -28,6 +28,7 @@ import DemandFilters from '@/components/DemandFilters.vue'
 import ScanOutput from '@/components/ScanOutput.vue'
 import { useBeamStore } from '@/stores/beam'
 import type { Demand, DemandFilter } from '@/types'
+import { appendUomText } from '@/utils/itemListLine'
 
 const store = useBeamStore()
 const dates = ref<(string | null)[]>([])
@@ -72,12 +73,15 @@ const appendShipments = (fromIndex: number) => {
 		shipList.value.push({
 			// ListView keys on barcode||label; keep stable unique keys per demand row.
 			barcode: row.name || row.key || `${row.parent}:${row.item_code}:${row.idx}`,
-			count: { count: row.allocated_qty, of: row.total_required_qty },
+			count: {
+				count: row.allocated_qty,
+				of: row.total_required_qty,
+			},
 			label: `${row.doctype} - ${row.parent}`,
 			linkComponent: 'ListAnchor',
 			description: `
 					Item: ${row.item_code}
-					Warehouse: ${row.warehouse}
+					Warehouse: ${appendUomText(row.warehouse, row)}
 					${row.customer ?? `Customer: ${row.customer}`}
 				`.trim(),
 			route: `#/delivery-note?id=${row.parent}`,

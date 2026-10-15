@@ -52,9 +52,6 @@ export const useHttpStore = defineStore('http', () => {
 	}
 
 	return {
-		// getters
-		headers,
-
 		// http actions
 		get,
 		post,

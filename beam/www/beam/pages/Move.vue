@@ -47,6 +47,7 @@ import ControlButtons from '@/components/ControlButtons.vue'
 import FieldRow from '@/components/FieldRow.vue'
 import { useBeamStore } from '@/stores/beam'
 import type { ControlButton, DocActionResponse, StockEntry, StockEntryItem } from '@/types'
+import { itemListLine } from '@/utils/itemListLine'
 import { watch } from 'vue'
 
 const store = useBeamStore()
@@ -149,7 +150,6 @@ const controlButtons = computed((): ControlButton[] => {
 		{
 			label: 'SAVE',
 			disabled: items.value.length === 0,
-			color: { background: '#4791FF', text: 'var(--sc-btn-color)' },
 			action: create,
 		},
 		{
@@ -165,11 +165,18 @@ const controlButtons = computed((): ControlButton[] => {
 watch(
 	() => store.cache.mappers['move']?.items,
 	newItems => {
-		items.value = (newItems || []).map(s => ({
-			...s,
-			label: s.item_code,
-			count: { count: s.qty ?? 0, of: 0 },
-		}))
+		items.value = (newItems || []).map(s => {
+			const line = itemListLine({
+				...s,
+				warehouse: s.s_warehouse || s.t_warehouse,
+			})
+			return {
+				...s,
+				label: line.label || s.item_code,
+				description: line.description,
+				count: { count: s.qty ?? 0, of: 0 },
+			}
+		})
 		componentKey.value++
 	},
 	{ immediate: true, deep: true }

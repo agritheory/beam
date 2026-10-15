@@ -4,7 +4,7 @@ For license information, please see license.txt-->
 # Listview Actions
 
 <div class="byline">
-  Rohan Bansal, Ishwarya, Lautaro Juarez, Tyler Matteson, and Francisco Roldán 2026-08-10
+  Tyler Matteson 2026-02-23
 </div>
 
 | Scanned Doctype | Listview              | Action | Target |
@@ -41,7 +41,7 @@ For license information, please see license.txt-->
 |Warehouse|Stock Reconciliation|filter|warehouse|
 |Warehouse|Warehouse|route|Warehouse|
 
- ---
+ --- 
 
 # Form Actions
 | Scanned Doctype | Form                  | Action | Target |

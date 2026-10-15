@@ -28,6 +28,7 @@ import ScanOutput from '@/components/ScanOutput.vue'
 import DemandFilters from '@/components/DemandFilters.vue'
 import { useBeamStore } from '@/stores/beam'
 import type { Demand, DemandFilter } from '@/types'
+import { appendUomText } from '@/utils/itemListLine'
 
 declare const frappe: any
 
@@ -79,6 +80,7 @@ const appendDemand = (fromIndex: number) => {
 			route: `#/${frappe.scrub(row.doctype)}/${row.parent}`,
 			description: `
 					[${row.parent}]
+					Warehouse: ${appendUomText(row.item_warehouse, row)}
 					Production Item: ${row.production_item}
 					BOM No: ${row.bom_no}
 				`.trim(),

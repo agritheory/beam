@@ -14,6 +14,7 @@
 		"column_break_twrc",
 		"receiving_workstation",
 		"shipping_workstation",
+		"shipping_warehouse",
 		"column_break_vhpb",
 		"qr_scale",
 		"qr_border",
@@ -27,6 +28,9 @@
 		"warehouse_types",
 		"mobile_tab",
 		"routes",
+		"manufacturing_section",
+		"show_draft_work_orders",
+		"create_stock_entry_on_pick_list_submit",
 		"section_break_yadp",
 		"enable_scan_to_login",
 		"restrict_ip",
@@ -83,6 +87,13 @@
 			"options": "Workstation"
 		},
 		{
+			"description": "Target warehouse for Material Transfer pick lists staged for outbound shipping.",
+			"fieldname": "shipping_warehouse",
+			"fieldtype": "Link",
+			"label": "Shipping Warehouse",
+			"options": "Warehouse"
+		},
+		{
 			"fieldname": "demand_tab",
 			"fieldtype": "Tab Break",
 			"label": "Demand"
@@ -96,6 +107,25 @@
 			"fieldname": "routes",
 			"fieldtype": "Table",
 			"options": "BEAM Mobile Route"
+		},
+		{
+			"fieldname": "manufacturing_section",
+			"fieldtype": "Section Break",
+			"label": "Manufacturing"
+		},
+		{
+			"default": "0",
+			"description": "Include draft work orders on the Manufacture list",
+			"fieldname": "show_draft_work_orders",
+			"fieldtype": "Check",
+			"label": "Show Draft Work Orders"
+		},
+		{
+			"default": "0",
+			"description": "When enabled, submitting a Pick List for Material Transfer or Material Transfer for Manufacture creates and submits the linked Stock Entry.",
+			"fieldname": "create_stock_entry_on_pick_list_submit",
+			"fieldtype": "Check",
+			"label": "Create Stock Entry on Pick List Submit"
 		},
 		{
 			"default": "0",

@@ -4,7 +4,7 @@ For license information, please see license.txt-->
 # Extending BEAM With Custom Hooks
 
 <div class="byline">
-  Rohan Bansal, Ishwarya, Lautaro Juarez, Heather Kusmierz, Tyler Matteson, and Francisco Roldán 2026-08-10
+  Tyler Matteson 2026-02-23
 </div>
 
 
@@ -45,7 +45,7 @@ beam_frm = {
 	}
 }
 ```
-To add a custom JavaScript function, add the following hook to your application's `hooks.py`. An example implementation is available in the source code.
+To add a custom JavaScript function, add the following hook to your application's `hooks.py`. An example implementation is available in the source code. 
 
 ```python
 # hooks.py

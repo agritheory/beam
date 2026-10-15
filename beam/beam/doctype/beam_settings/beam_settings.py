@@ -28,6 +28,9 @@ class BEAMSettings(Document):
 		routes: DF.Table[BEAMMobileRoute]
 		scan_serial_no: DF.Check
 		shipping_workstation: DF.Link | None
+		shipping_warehouse: DF.Link | None
+		show_draft_work_orders: DF.Check
+		create_stock_entry_on_pick_list_submit: DF.Check
 		show_scan_output: DF.Check
 		warehouse_types: DF.TableMultiSelect[WarehouseTypes]
 	# end: auto-generated types

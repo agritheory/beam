@@ -28,6 +28,7 @@ import ScanOutput from '@/components/ScanOutput.vue'
 import DemandFilters from '@/components/DemandFilters.vue'
 import { useBeamStore } from '@/stores/beam'
 import type { DemandFilter, Receive } from '@/types'
+import { appendUomText } from '@/utils/itemListLine'
 
 const store = useBeamStore()
 const dates = ref<(string | null)[]>([])
@@ -72,12 +73,15 @@ const appendReceive = (fromIndex: number) => {
 		receiveList.value.push({
 			// ListView keys on barcode||label; labels collide across PO lines.
 			barcode: row.name || row.key || `${row.parent}:${row.item_code}:${row.idx}`,
-			count: { count: row.received_qty, of: row.stock_qty },
+			count: {
+				count: row.received_qty,
+				of: row.stock_qty,
+			},
 			label: `${row.item_code} from ${row.warehouse}`,
 			linkComponent: 'ListAnchor',
 			description: `
 					[${row.parent}]
-					Warehouse: ${row.warehouse}
+					Warehouse: ${appendUomText(row.warehouse, row)}
 					Supplier: ${row.supplier}
 				`.trim(),
 			route: `#/purchase-receipt/${row.parent || 'new-purchase-receipt'}`,

@@ -1,2 +1,5 @@
-beam.patches.v15.create_beam_mobile_user_role # 11/01/24 Francisco Roldan
-beam.patches.v15.setup_beam_mobile_settings # 11/01/24 Tyler Matteson
+[pre_model_sync]
+
+[post_model_sync]
+beam.patches.v15.create_beam_mobile_user_role
+beam.patches.v15.setup_beam_mobile_settings

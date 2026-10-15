@@ -4,7 +4,7 @@ For license information, please see license.txt-->
 # Print Server
 
 <div class="byline">
-  Rohan Bansal, fproldan, Ishwarya, Lautaro Juarez, Heather Kusmierz, and Tyler Matteson 2026-08-11
+  Rohan Bansal, Heather Kusmierz, and Tyler Matteson 2026-06-25
 </div>
 
 
@@ -22,7 +22,7 @@ There are several steps to get a print server connected in ERPNext.
 
 ![Screen shot of the Network Printer Settings document fields, including Name, Printer Name, Server IP, and Port.](./assets/network_printer_settings.png)
 
-The friendly **Network Printer Settings** name (for example **Chelsea Receiving Labels**) is separate from the CUPS queue name (for example `ZD621`). The **Printer Name** field on the full form is an autocomplete that queries the configured CUPS server and displays available printers by their CUPS identifier, with the physical **Printer Location** and make/model shown as secondary text (location first when set). Selecting a printer automatically fills in **Printer Location** from CUPS. The location can be edited freely — saving the record pushes the updated value back to CUPS, keeping the two in sync. **Printer Location** also appears in the list view for fleet management. The **Printer Type** field (`General Purpose` or `Label / RAW`) distinguishes IPP or PDF printers from ZPL/raw label printers.
+The friendly **Network Printer Settings** name (for example **Chelsea Receiving Labels**) is separate from the CUPS queue name (for example `ZD621`). The **Printer Name** field on the full form is an autocomplete that queries the configured CUPS server and displays available printers by their CUPS identifier, with the physical **Printer Location** and make/model shown as secondary text (location first when set). Selecting a printer automatically fills in **Printer Location** from CUPS. The location can be edited freely — saving the record pushes the updated value back to CUPS, keeping the two in sync. **Printer Location** also appears in the list view for fleet management. The **Printer Type** field (`General Purpose` or `Label / RAW`) distinguishes PDF printers from ZPL/raw label printers.
 
 Saved records show a live **CUPS status** panel (idle/processing/offline indicator, make/model, CUPS description, accepting jobs).
 
@@ -48,9 +48,11 @@ pytest beam/beam/tests/test_printer_logic.py
 pytest beam/beam/tests/test_printer_cups_integration.py
 ```
 
-CI builds and runs `ghcr.io/agritheory/beam-cups:sha-<git-sha>` as a workflow service published on host port **1631** (`BEAM_CUPS_HOST` / `BEAM_CUPS_PORT`). Locally, run the image the same way (e.g. `-p 1631:631`) and set both env vars; without them the integration tests skip so they do not hang on system cupsd at `:631`. Optional: `CUPS_ADMIN_USER`, `CUPS_ADMIN_PASSWORD` (defaults match `cups/.env.example`).
+Locally, the integration tests use system cupsd on `:631` (user in `lpadmin`). Admin calls go through the Unix socket — HTTP to `127.0.0.1:631` hangs on `addPrinter`. Device URIs stay on `127.0.0.1` so cupsd can reach the mock printers.
 
-Pure logic tests run without CUPS. Integration tests use `test_utils.printers` mock servers (TCP raw + IPP) plus real pycups/CUPS queue creation against the container on a mapped HTTP port.
+CI builds and runs `ghcr.io/agritheory/beam-cups:sha-<git-sha>` as a workflow service published on host port **1631** (`BEAM_CUPS_HOST` / `BEAM_CUPS_PORT`). The container reaches mocks via the runner IP / `host.docker.internal`. Override with `BEAM_CUPS_SAME_HOST=1|0` or `BEAM_CUPS_MOCK_HOST=<ip>`. Optional: `CUPS_ADMIN_USER`, `CUPS_ADMIN_PASSWORD` (defaults match `cups/.env.example`).
+
+Pure logic tests run without CUPS. Integration tests use `test_utils.printers` mock servers (TCP raw + IPP) plus real pycups/CUPS queue creation.
 
 ---
 
