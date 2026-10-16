@@ -4,7 +4,7 @@ For license information, please see license.txt-->
 # Extending BEAM With Custom Hooks
 
 <div class="byline">
-  Rohan Bansal, Ishwarya, Lautaro Juarez, Heather Kusmierz, Tyler Matteson, and Francisco Roldán 2026-08-19
+  Rohan Bansal, Ishwarya, Lautaro Juarez, Heather Kusmierz, lauty95, Tyler Matteson, and Francisco Roldán 2026-10-15
 </div>
 
 

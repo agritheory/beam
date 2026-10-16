@@ -4,7 +4,7 @@ For license information, please see license.txt-->
 # Demand
 
 <div class="byline">
-  Rohan Bansal, Ishwarya, Lautaro Juarez, Myuddin Khatri, Tyler Matteson, Francisco Roldán, and ViralKansodiya-Fosserp 2026-08-11
+  Rohan Bansal, Ishwarya, Lautaro Juarez, Myuddin Khatri, lauty95, Tyler Matteson, Francisco Roldán, and ViralKansodiya-Fosserp 2026-10-15
 </div>
 
 
