@@ -262,6 +262,7 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 			"Item Price",
 			"Quality Inspection",
 			"Packing Slip",
+			"Stock Reconciliation",
 		):
 			target = frappe._dict(
 				{
@@ -309,6 +310,7 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 			"Item Price",
 			"Quality Inspection",
 			"Packing Slip",
+			"Stock Reconciliation",
 		):
 			target = frappe._dict(
 				{
@@ -368,6 +370,7 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 			"Item Price",
 			"Quality Inspection",
 			"Packing Slip",
+			"Stock Reconciliation",
 		):
 			target = frappe._dict(
 				{
