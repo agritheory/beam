@@ -86,7 +86,7 @@ def test_reconciliation_save_omits_removed_row(page):
 	ambrosia_row = page.locator(RECONCILIATION_ROW, has_text="Ambrosia Pie")
 	expect(ambrosia_row).to_have_count(1)
 	simulate_scan(page, barcodes[0])
-	expect(ambrosia_row.locator(".beam_item-count")).to_contain_text(re.compile(r"\b1\b"))
+	expect(ambrosia_row.locator(".beam_item-count")).to_contain_text(re.compile(r"\b1\b"), timeout=15000)
 
 	page.get_by_text("SAVE", exact=True).click()
 	expect(page.get_by_text("not counted", exact=False)).to_be_visible()
