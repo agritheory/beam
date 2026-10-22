@@ -32,7 +32,7 @@ def fill_warehouse_dropdown(page, label: str, value: str):
 
 def open_reconciliation_page(page):
 	open_beam_form_page(
-		page, "Reconciliation", r"#/stock-reconciliation", ".reconciliation .dropdown-container input"
+		page, "Reconciliation", r"#/stock-reconciliation", ".reconciliation .field-row input"
 	)
 
 
