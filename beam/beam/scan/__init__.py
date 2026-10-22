@@ -256,10 +256,16 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 				context.doc = {"doctype": "Stock Entry"}
 			target = get_stock_entry_item_details(context.doc, hu_details.item_code)
 			target.warehouse = hu_details.warehouse
-		elif context.frm in ("Putaway Rule", "Warranty Claim", "Item Price", "Quality Inspection"):
+		elif context.frm in (
+			"Putaway Rule",
+			"Warranty Claim",
+			"Item Price",
+			"Quality Inspection",
+			"Packing Slip",
+			"Stock Reconciliation",
+		):
 			target = frappe._dict(
 				{
-					"doctype": context.frm,
 					"item_code": hu_details.item_code,
 				}
 			)
@@ -297,11 +303,18 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 	elif barcode_doc.doc.doctype == "Item" and context.doc:
 		if context.frm == "Stock Entry":
 			target = get_stock_entry_item_details(context.doc, barcode_doc.doc.name)
-		elif context.frm in ("Putaway Rule", "Warranty Claim", "Item Price", "Quality Inspection"):
+		elif context.frm in (
+			"Putaway Rule",
+			"Warranty Claim",
+			"Item Price",
+			"Quality Inspection",
+			"Packing Slip",
+			"Stock Reconciliation",
+		):
 			target = frappe._dict(
 				{
-					"doctype": context.frm,
 					"item_code": barcode_doc.doc.name,
+					"qty": 1,
 				}
 			)
 		elif has_frm_override:
@@ -329,10 +342,9 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 			if valuation_rate.get("valuation_rate"):
 				target.valuation_rate = valuation_rate.valuation_rate
 		target.barcode = barcode_doc.barcode
-	elif barcode_doc.doc.doctype == "Warehouse" and context.frm == "Stock Reconciliation":
+	elif barcode_doc.doc.doctype == "Warehouse":
 		target = frappe._dict(
 			{
-				"doctype": context.frm,
 				"warehouse": barcode_doc.doc.name,
 			}
 		)
@@ -350,11 +362,18 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 		elif context.frm == "Stock Entry":
 			target = get_stock_entry_item_details(context.doc, serial_no_details.item_code)
 			target.warehouse = serial_no_details.warehouse
-		elif context.frm in ("Putaway Rule", "Warranty Claim", "Item Price", "Quality Inspection"):
+		elif context.frm in (
+			"Putaway Rule",
+			"Warranty Claim",
+			"Item Price",
+			"Quality Inspection",
+			"Packing Slip",
+			"Stock Reconciliation",
+		):
 			target = frappe._dict(
 				{
-					"doctype": context.frm,
 					"item_code": serial_no_details.item_code,
+					"qty": 1,
 				}
 			)
 		else:

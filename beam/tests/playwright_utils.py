@@ -256,7 +256,7 @@ def beam_portal_url(route: str = "") -> str:
 	return f"{base}#{route}" if route else f"{base}#/"
 
 
-def goto_beam_portal_route(page, route: str = "", timeout: float = 15000):
+def goto_beam_portal_route(page, route: str = "", timeout: float = 15000, attempts: int = 2):
 	"""Open a Beam hash route and wait until Vue Router has applied it.
 
 	Playwright sometimes completes ``goto`` without updating the hash when the Beam
@@ -273,13 +273,23 @@ def goto_beam_portal_route(page, route: str = "", timeout: float = 15000):
 	if route and not route.startswith("/"):
 		route = f"/{route}"
 
-	page.goto(beam_portal_url(route), wait_until="domcontentloaded", timeout=30000)
 	hash_pattern = re.compile(rf"beam#{re.escape(route)}")
-	try:
-		expect(page).to_have_url(hash_pattern, timeout=3000)
-	except AssertionError:
-		page.evaluate("(hashRoute) => { window.location.hash = hashRoute; }", route)
-		expect(page).to_have_url(hash_pattern, timeout=timeout)
+
+	for attempt in range(1, attempts + 1):
+		page.goto(beam_portal_url(route), wait_until="domcontentloaded", timeout=30000)
+		try:
+			expect(page).to_have_url(hash_pattern, timeout=3000)
+		except AssertionError:
+			page.evaluate("(hashRoute) => { window.location.hash = hashRoute; }", route)
+			expect(page).to_have_url(hash_pattern, timeout=timeout)
+
+		page.wait_for_timeout(750)
+		try:
+			expect(page).to_have_url(hash_pattern, timeout=1000)
+			return
+		except AssertionError:
+			if attempt == attempts:
+				raise
 
 
 def login_playwright(page, email: str = "support@agritheory.dev", password: str = "admin"):

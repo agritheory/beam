@@ -14,7 +14,7 @@
 </template>
 
 <script setup lang="ts">
-import type { ListViewItem } from '@stonecrop/beam'
+import type { ListViewItem } from '@/types/stonecrop.js'
 import { computed, ref, onMounted } from 'vue'
 
 import ScanOutput from '@/components/ScanOutput.vue'

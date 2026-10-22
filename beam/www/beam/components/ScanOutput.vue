@@ -12,7 +12,7 @@
 </template>
 
 <script setup lang="ts">
-import { SplitColumn } from '@stonecrop/beam'
+import SplitColumn from '@/components/SplitColumn.vue'
 import { useBeamStore } from '@/stores/beam'
 
 const store = useBeamStore()

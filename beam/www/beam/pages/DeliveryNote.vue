@@ -21,7 +21,7 @@
 </template>
 
 <script setup lang="ts">
-import type { ListViewItem } from '@stonecrop/beam'
+import type { ListViewItem } from '@/types/stonecrop.js'
 import { computed, ref } from 'vue'
 import { onBeforeRouteLeave, useRoute } from 'vue-router'
 
@@ -59,6 +59,8 @@ onBeforeRouteLeave((to, from, next) => {
 })
 
 const items = computed((): (DeliveryNoteItem & ListViewItem)[] => {
+	if (!deliveryNote.value?.items) return []
+
 	return deliveryNote.value.items.map(item => {
 		const line = itemListLine(item)
 		return {
@@ -66,7 +68,7 @@ const items = computed((): (DeliveryNoteItem & ListViewItem)[] => {
 			label: line.label,
 			description: line.description,
 			count: {
-				count: item.delivered_qty,
+				count: item.delivered_qty ?? 0,
 				of: item.qty,
 			},
 		}

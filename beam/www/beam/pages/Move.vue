@@ -8,14 +8,18 @@
 		</template>
 	</Navbar>
 	<div class="move">
-		<div class="dropdown-container">
-			<ADropdown label="Source Warehouse" :items="warehouseList" v-model="stockEntry.from_warehouse" />
-			<BeamBtn class="clear-button" @click="clearField('from_warehouse')"> X </BeamBtn>
-		</div>
-		<div class="dropdown-container">
-			<ADropdown label="Target Warehouse" :items="warehouseList" v-model="stockEntry.to_warehouse" />
-			<BeamBtn class="clear-button" @click="clearField('to_warehouse')"> X </BeamBtn>
-		</div>
+		<FieldRow>
+			<ADropdown label="Source Warehouse" :options="warehouseList" v-model="stockEntry.from_warehouse" />
+			<template #suffix>
+				<BeamBtn @click="clearField('from_warehouse')"> X </BeamBtn>
+			</template>
+		</FieldRow>
+		<FieldRow>
+			<ADropdown label="Target Warehouse" :options="warehouseList" v-model="stockEntry.to_warehouse" />
+			<template #suffix>
+				<BeamBtn @click="clearField('to_warehouse')"> X </BeamBtn>
+			</template>
+		</FieldRow>
 	</div>
 
 	<!-- body section -->
@@ -28,17 +32,18 @@
 </template>
 
 <script setup lang="ts">
-import type { ListViewItem } from '@stonecrop/beam'
+import type { ListViewItem } from '@/types/stonecrop.js'
 import { ref, onMounted, computed } from 'vue'
 
 import ControlButtons from '@/components/ControlButtons.vue'
+import FieldRow from '@/components/FieldRow.vue'
 import { useBeamStore } from '@/stores/beam'
-import type { ControlButton, DocActionResponse, StockEntry } from '@/types'
+import type { ControlButton, DocActionResponse, StockEntry, StockEntryItem } from '@/types'
 import { itemListLine } from '@/utils/itemListLine'
 import { watch } from 'vue'
 
 const store = useBeamStore()
-const items = ref<ListViewItem[]>([])
+const items = ref<(ListViewItem & Partial<StockEntryItem>)[]>([])
 const stockEntry = computed(
 	(): StockEntry =>
 		(store.cache.mappers['move'] as StockEntry) || {
@@ -157,7 +162,7 @@ watch(
 				...s,
 				label: line.label || s.item_code,
 				description: line.description,
-				count: { count: s.qty },
+				count: { count: s.qty ?? 0, of: 0 },
 			}
 		})
 		componentKey.value++
@@ -168,38 +173,22 @@ watch(
 
 <style>
 .move {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
 	margin-bottom: 1.5em;
+	padding: 20px;
 }
 
-.move .dropdown-container .autocomplete {
-	flex: 1 1 auto;
-	min-width: 0;
-	max-width: 50ch;
-	width: 100%;
+.autocomplete-results {
+	font-size: 150%;
+	padding-inline: 3px !important;
 }
 
-.move .clear-button {
-	align-self: stretch;
-	margin: 0;
-	padding: 0 0.75rem;
-	min-width: 2.75rem;
-}
-
-.move .begin {
+.begin {
 	width: 100%;
 	text-align: center;
 	font-size: 150%;
 	text-wrap: balance;
-}
-
-.move .dropdown-container {
-	display: flex;
-	align-items: flex-end;
-	justify-content: center;
-	position: relative;
-	margin-top: 1rem;
-	gap: 0.5rem;
-	padding: 0 var(--sc-list-margin);
-	box-sizing: border-box;
 }
 </style>
