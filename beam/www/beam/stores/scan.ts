@@ -5,7 +5,7 @@ import { defineStore } from 'pinia'
 import { computed } from 'vue'
 
 import { useBeamStore } from '@/stores/beam.js'
-import type { PickList } from '@/types/frappe.js'
+import type { ChildDoctype, PickList } from '@/types/frappe.js'
 import { defaultCompany } from '@/utils/company.js'
 import { useBeamToast } from '@/utils/toast.js'
 import type {
@@ -112,10 +112,13 @@ export const useScanStore = defineStore('scan', () => {
 		if (response && response.length > 0) {
 			let fn: Function
 			const action = response[0].action
-			if (response[0]?.context?.doc) {
-				store.scanner.lastDocType = `${response[0].context.doc.doctype}: ${response[0].context.doc.name}`
-			} else {
+			const ctx = response[0].context as ChildDoctype | undefined
+			if (ctx?.doc) {
+				store.scanner.lastDocType = `${ctx.doc.doctype}: ${ctx.doc.name}`
+			} else if (response[0].parenttype) {
 				store.scanner.lastDocType = `${response[0].parenttype}: ${response[0].parent}`
+			} else {
+				store.scanner.lastDocType = `${response[0].doctype}: ${ctx?.item_code ?? ctx?.warehouse ?? barcode}`
 			}
 
 			const scanHooks = store.scanner.config.client
@@ -312,12 +315,12 @@ export const useScanStore = defineStore('scan', () => {
 	const set_warehouse = (barcode_context: FormContext[]) => {
 		for (const action of barcode_context) {
 			if (action.doctype === 'Stock Reconciliation Item') {
-				const warehouse = action.context.doc.name
-				;(mappedDoc.value as StockReconciliation).set_warehouse = warehouse
+				;(mappedDoc.value as StockReconciliation).set_warehouse = action.context.warehouse
 				store.$patch(state => (state.cache.mappers[documentId.value] = mappedDoc.value))
+				continue
 			}
 
-			if (action.doctype !== 'Stock Entry') return
+			if (action.doctype !== 'Stock Entry' || !mappedDoc.value) continue
 
 			const source_warehouses = ['Material Consumption for Manufacture', 'Material Issue']
 			const target_warehouses = ['Material Receipt', 'Manufacture']
@@ -328,40 +331,29 @@ export const useScanStore = defineStore('scan', () => {
 				'Repack',
 			]
 
-			const entry_type = (store.form as StockEntry).stock_entry_type
-			if (entry_type) {
-				store.$patch(state => {
-					const form = state.form as StockEntry
-					if (source_warehouses.includes(entry_type)) {
-						form.from_warehouse = action.target
-						for (const row of form.items) {
-							row.s_warehouse = action.target
-						}
-					} else if (target_warehouses.includes(entry_type)) {
-						form.to_warehouse = action.target
-						for (const row of form.items) {
-							row.t_warehouse = action.target
-						}
-					} else if (both_warehouses.includes(entry_type)) {
-						form.from_warehouse = action.target
-						form.to_warehouse = action.target
-						for (const row of form.items) {
-							row.s_warehouse = action.target
-							row.t_warehouse = action.target
-						}
-					}
-				})
-			} else {
-				const warehouse = barcode_context[0].context.doc?.name
-				if (!mappedDoc.value) return
-				if (!(mappedDoc.value as StockEntry).from_warehouse) {
-					;(mappedDoc.value as StockEntry).from_warehouse = warehouse
-				} else if (!(mappedDoc.value as StockEntry).to_warehouse) {
-					;(mappedDoc.value as StockEntry).to_warehouse = warehouse
+			const entry = mappedDoc.value as StockEntry
+			const entry_type = entry.stock_entry_type
+			const warehouse = action.context.warehouse
+			if (entry_type && source_warehouses.includes(entry_type)) {
+				entry.from_warehouse = warehouse
+				for (const row of entry.items) row.s_warehouse = warehouse
+			} else if (entry_type && target_warehouses.includes(entry_type)) {
+				entry.to_warehouse = warehouse
+				for (const row of entry.items) row.t_warehouse = warehouse
+			} else if (entry_type && both_warehouses.includes(entry_type)) {
+				entry.from_warehouse = warehouse
+				entry.to_warehouse = warehouse
+				for (const row of entry.items) {
+					row.s_warehouse = warehouse
+					row.t_warehouse = warehouse
 				}
-
-				store.$patch(state => (state.cache.mappers[documentId.value] = mappedDoc.value))
+			} else if (!entry.from_warehouse) {
+				entry.from_warehouse = warehouse
+			} else if (!entry.to_warehouse) {
+				entry.to_warehouse = warehouse
 			}
+
+			store.$patch(state => (state.cache.mappers[documentId.value] = mappedDoc.value))
 		}
 	}
 
