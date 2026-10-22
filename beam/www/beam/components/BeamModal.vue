@@ -1,5 +1,5 @@
 <template>
-	<Teleport to="#beam_modal_outlet">
+	<Teleport to="#beam_modal_outlet" defer>
 		<div v-show="showModal" class="beam_modal">
 			<BeamBtn @click="$emit('closemodal')">Close Modal</BeamBtn>
 			<slot @closemodal="$emit('closemodal')" @confirmmodal="$emit('confirmmodal')"></slot>
