@@ -114,6 +114,7 @@ def test_serial_number_scan():
 					"warehouse": warehouse,
 					"serial_no": serials[1],
 					"use_serial_batch_fields": 1,
+					"handling_unit": pi.items[0].handling_unit,
 				}
 			],
 		}
