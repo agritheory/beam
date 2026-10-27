@@ -1,6 +1,7 @@
 # Copyright (c) 2025, AgriTheory and contributors
 # For license information, please see license.txt
 
+import copy
 import datetime
 import json
 from typing import Any
@@ -94,6 +95,9 @@ def get_barcode_context(barcode: str) -> frappe._dict | None:
 
 
 def get_handling_unit(handling_unit: str, parent_doctype: str | None = None) -> frappe._dict:
+	if not handling_unit:
+		return
+
 	sl_entries = frappe.get_all(
 		"Stock Ledger Entry",
 		filters={"handling_unit": handling_unit, "is_cancelled": 0},
@@ -212,14 +216,22 @@ def get_list_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 			override_action = override_doctype.get(context.listview)
 			if override_action:
 				for action in override_action:
+					if callable(action.get("target")):
+						target_fn = action.get("target")
+						target = target_fn(barcode_doc, context)
 					action["context"] = target
 					action["target"] = target
+					if action.get("action") == "route":
+						action["route"] = action.get("route").format(target=target)
 				return override_action
 
-	actions = listview.get(barcode_doc.doc.doctype, {}).get(context.listview, [])
+	list_actions = copy.deepcopy(listview)
+	actions = list_actions.get(barcode_doc.doc.doctype, {}).get(context.listview, [])
 	for action in actions:
 		action["context"] = target
 		action["target"] = target
+		action["parent"] = barcode_doc.doc.name
+		action["parenttype"] = barcode_doc.doc.doctype
 	return actions
 
 
@@ -240,12 +252,20 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 	if barcode_doc.doc.doctype == "Handling Unit":
 		hu_details = get_handling_unit(barcode_doc.doc.name, context.frm)
 		if context.frm == "Stock Entry":
+			if not context.doc:
+				context.doc = {"doctype": "Stock Entry"}
 			target = get_stock_entry_item_details(context.doc, hu_details.item_code)
 			target.warehouse = hu_details.warehouse
-		elif context.frm in ("Putaway Rule", "Warranty Claim", "Item Price", "Quality Inspection"):
+		elif context.frm in (
+			"Putaway Rule",
+			"Warranty Claim",
+			"Item Price",
+			"Quality Inspection",
+			"Packing Slip",
+			"Stock Reconciliation",
+		):
 			target = frappe._dict(
 				{
-					"doctype": context.frm,
 					"item_code": hu_details.item_code,
 				}
 			)
@@ -310,14 +330,21 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 				"dn_detail": hu_details.dn_detail,
 			}
 		)
-	elif barcode_doc.doc.doctype == "Item":
+	elif barcode_doc.doc.doctype == "Item" and context.doc:
 		if context.frm == "Stock Entry":
 			target = get_stock_entry_item_details(context.doc, barcode_doc.doc.name)
-		elif context.frm in ("Putaway Rule", "Warranty Claim", "Item Price", "Quality Inspection"):
+		elif context.frm in (
+			"Putaway Rule",
+			"Warranty Claim",
+			"Item Price",
+			"Quality Inspection",
+			"Packing Slip",
+			"Stock Reconciliation",
+		):
 			target = frappe._dict(
 				{
-					"doctype": context.frm,
 					"item_code": barcode_doc.doc.name,
+					"qty": 1,
 				}
 			)
 		elif has_frm_override:
@@ -345,10 +372,9 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 			if valuation_rate.get("valuation_rate"):
 				target.valuation_rate = valuation_rate.valuation_rate
 		target.barcode = barcode_doc.barcode
-	elif barcode_doc.doc.doctype == "Warehouse" and context.frm == "Stock Reconciliation":
+	elif barcode_doc.doc.doctype == "Warehouse":
 		target = frappe._dict(
 			{
-				"doctype": context.frm,
 				"warehouse": barcode_doc.doc.name,
 			}
 		)
@@ -366,11 +392,18 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 		elif context.frm == "Stock Entry":
 			target = get_stock_entry_item_details(context.doc, serial_no_details.item_code)
 			target.warehouse = serial_no_details.warehouse
-		elif context.frm in ("Putaway Rule", "Warranty Claim", "Item Price", "Quality Inspection"):
+		elif context.frm in (
+			"Putaway Rule",
+			"Warranty Claim",
+			"Item Price",
+			"Quality Inspection",
+			"Packing Slip",
+			"Stock Reconciliation",
+		):
 			target = frappe._dict(
 				{
-					"doctype": context.frm,
 					"item_code": serial_no_details.item_code,
+					"qty": 1,
 				}
 			)
 		else:
@@ -418,7 +451,8 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 						action["target"] = target.get(serialized_target[1])
 				return override_action
 
-	actions = frm.get(barcode_doc.doc.doctype, {}).get(context.frm, [])
+	form_actions = copy.deepcopy(frm)
+	actions = form_actions.get(barcode_doc.doc.doctype, {}).get(context.frm, [])
 	for action in actions:
 		action["context"] = target
 		target_value = action.get("target")
@@ -746,6 +780,22 @@ listview = {
 
 frm = {
 	"Handling Unit": {
+		"Work Order": [
+			{
+				"action": "add_or_associate",
+				"doctype": "Stock Entry",
+				"field": "handling_unit",
+				"target": "target.handling_unit",
+				"context": "target",
+			},
+			{
+				"action": "add_or_associate",
+				"doctype": "Stock Entry",
+				"field": "qty",
+				"target": "target.qty",
+				"context": "target",
+			},
+		],
 		"Delivery Note": [
 			{
 				"action": "add_or_associate",

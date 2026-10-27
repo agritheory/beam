@@ -22,7 +22,7 @@ repos:
     rev: v2.4.1
     hooks:
       - id: codespell
-        args: ["--ignore-words-list", "notin"]
+        args: ["--ignore-words-list", "notin,fo"]
         exclude: 'yarn.lock|poetry.lock'
         additional_dependencies:
           - tomli
@@ -36,7 +36,7 @@ repos:
         files: '\.md$'
 
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.19.1
+    rev: v3.20.0
     hooks:
       - id: pyupgrade
         args: ['--py310-plus']

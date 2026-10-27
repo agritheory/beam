@@ -1,0 +1,559 @@
+<template>
+	<Navbar>
+		<template #title>
+			<h1>Operation</h1>
+		</template>
+		<template #navbaraction>
+			<RouterLink :to="{ name: 'work_order', params: { id: workOrderId } }">Back</RouterLink>
+		</template>
+	</Navbar>
+	<div class="container">
+		<div class="box metadata-box">
+			<div class="metadata-header" @click="descriptionExpanded = !descriptionExpanded">
+				<p class="operation-title">{{ operation.operation || 'Operation' }}</p>
+				<ToggleArrow :open="descriptionExpanded" />
+			</div>
+			<div v-show="descriptionExpanded" class="metadata-details">
+				<p class="operation-station">{{ operation.workstation || 'Workstation not set' }}</p>
+				<p class="operation-description">{{ operation.description || 'No operation description.' }}</p>
+			</div>
+			<p v-if="sequenceBlockedBy" class="sequence-warning">
+				Complete more of {{ sequenceBlockedBy }} before continuing.
+			</p>
+			<p v-if="predecessorsBlock" class="sequence-warning">Complete predecessor work orders before continuing.</p>
+		</div>
+		<div class="box timer-box">
+			<b class="timer-value">{{ elapsedTime }}</b>
+			<p class="status-text">{{ statusLabel }}</p>
+			<p class="qty-info">To complete: {{ remainingQty }} units</p>
+			<p v-if="hasActiveConflict" class="sequence-warning">
+				You already have an active job: {{ activeJobCardForEmployee }}
+			</p>
+			<p v-if="lockedByEmployee" class="sequence-warning">In progress by: {{ lockedByEmployee }}</p>
+			<p v-if="actionError" class="action-error">{{ actionError }}</p>
+			<div v-if="showQtyInput" class="qty-input-row">
+				<ANumericInput label="Qty completed this session" v-model="pendingQty" />
+				<div class="qty-input-actions">
+					<button type="button" class="operation-action-btn" @click="confirmPause">Confirm</button>
+					<button type="button" class="operation-action-btn" @click="cancelPause">Cancel</button>
+				</div>
+			</div>
+			<div v-else-if="isCompleted" class="actions actions-single">
+				<button v-if="nextOperation" type="button" class="operation-action-btn" @click="goToNextOperation">
+					Next Operation
+				</button>
+				<button v-else-if="isLastOperation" type="button" class="operation-action-btn" @click="goToComplete">
+					Complete
+				</button>
+			</div>
+			<div v-else class="actions">
+				<button
+					type="button"
+					class="operation-action-btn"
+					:disabled="
+						actionsDisabled ||
+						workOrder.status === 'Stopped' ||
+						Boolean(sequenceBlockedBy) ||
+						predecessorsBlock ||
+						hasActiveConflict ||
+						Boolean(lockedByEmployee) ||
+						!canToggle
+					"
+					@click="toggleOperation">
+					{{ toggleLabel }}
+				</button>
+				<button
+					type="button"
+					class="operation-action-btn"
+					:disabled="actionsDisabled || !isQtyCompleted"
+					@click="finishOperation">
+					Finish
+				</button>
+			</div>
+		</div>
+	</div>
+</template>
+
+<script setup lang="ts">
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+
+import { useBeamStore } from '@/stores/beam'
+import { useBeamToast } from '@/utils/toast'
+import { parseFrappeDatetime } from '@/utils/parseFrappeDatetime'
+import { productionQtyLimits } from '@/utils/workOrderStage'
+import type { JobCard, JobCardTimeLog, WorkOrder, WorkOrderOperation } from '@/types'
+
+declare const frappe: any
+
+interface RouteParams {
+	id?: string
+	operationId?: string
+}
+
+const route = useRoute()
+const router = useRouter()
+const store = useBeamStore()
+const toast = useBeamToast()
+const workOrderId = computed((): string => String((route.params as RouteParams).id || ''))
+const operationId = computed((): string => String((route.params as RouteParams).operationId || ''))
+const workOrder = computed(() => store.form as Partial<WorkOrder>)
+const predecessorsBlock = computed((): boolean =>
+	Boolean(store.workOrderContext[workOrderId.value]?.predecessors_block)
+)
+
+const operation = ref<Partial<WorkOrderOperation>>({})
+const jobCard = ref<Partial<JobCard>>({})
+const jobCardName = ref<string>('')
+const elapsedSeconds = ref<number>(0)
+const isBusy = ref<boolean>(false)
+const isRefreshing = ref<boolean>(false)
+const actionError = ref<string>('')
+const hasLoadError = ref<boolean>(false)
+const descriptionExpanded = ref<boolean>(false)
+const showQtyInput = ref<boolean>(false)
+const pendingQty = ref<number>(0)
+let timerHandle: ReturnType<typeof setInterval> | null = null
+
+const isCompleted = computed((): boolean => (jobCard.value.status || '') === 'Completed')
+
+const activeTimeLog = computed((): JobCardTimeLog | null => {
+	const logs: JobCardTimeLog[] = jobCard.value.time_logs || []
+	const last = logs[logs.length - 1]
+	return last && !last.to_time ? last : null
+})
+
+const isRunning = computed((): boolean => {
+	if (isCompleted.value) return false
+	return (jobCard.value.status || '') === 'Work In Progress' && Boolean(activeTimeLog.value)
+})
+
+const sequenceBlockedBy = computed((): string => {
+	const operations: Partial<WorkOrderOperation>[] = workOrder.value.operations || []
+	if (!operations.length) return ''
+
+	const current = operations.find((op: Partial<WorkOrderOperation>) => op.name === operationId.value)
+	if (!current || !current.idx) return ''
+
+	const previous = operations
+		.filter((op: Partial<WorkOrderOperation>) => Number(op.idx || 0) < Number(current.idx || 0))
+		.find(
+			(op: Partial<WorkOrderOperation>) =>
+				Number(op.completed_qty || 0) <=
+				Math.max(Number(current.completed_qty || 0), Number(jobCard.value.total_completed_qty || 0))
+		)
+
+	return previous?.operation || ''
+})
+
+const elapsedTime = computed((): string => {
+	const date = new Date(0)
+	date.setSeconds(Math.max(0, Math.floor(elapsedSeconds.value)))
+	return isNaN(date.getTime()) ? '00:00:00' : date.toISOString().substring(11, 19)
+})
+
+const statusLabel = computed((): string => jobCard.value.status || '')
+const activeJobCardForEmployee = computed((): string => jobCard.value.active_job_card_for_employee || '')
+const hasActiveConflict = computed((): boolean => Boolean(jobCard.value.active_job_card_for_employee))
+const lockedByEmployee = computed((): string => jobCard.value.locked_by_employee || '')
+const isSubmitted = computed((): boolean => jobCard.value.docstatus !== 0)
+const plannedQty = computed((): number => Number(jobCard.value.for_quantity || 0))
+const overproductionPercentage = computed((): number => Number(jobCard.value.overproduction_percentage || 0))
+const finishQtyLimits = computed(() => productionQtyLimits(plannedQty.value, overproductionPercentage.value))
+const completedQty = computed((): number => Number(jobCard.value.total_completed_qty || 0))
+const isQtyCompleted = computed((): boolean => plannedQty.value > 0 && completedQty.value >= finishQtyLimits.value.min)
+const atMaxQty = computed((): boolean => plannedQty.value > 0 && completedQty.value >= finishQtyLimits.value.max)
+
+const actionsDisabled = computed(
+	(): boolean => isBusy.value || hasLoadError.value || !jobCardName.value || isSubmitted.value
+)
+const toggleLabel = computed((): string => (isRunning.value ? 'Pause' : 'Start'))
+const canToggle = computed((): boolean => isRunning.value || !atMaxQty.value)
+const remainingQty = computed((): number => Math.max(0, plannedQty.value - completedQty.value))
+const orderedOperations = computed((): Partial<WorkOrderOperation>[] =>
+	[...(workOrder.value.operations || [])].sort(
+		(a: Partial<WorkOrderOperation>, b: Partial<WorkOrderOperation>) => Number(a.idx || 0) - Number(b.idx || 0)
+	)
+)
+const currentOperationIndex = computed((): number =>
+	orderedOperations.value.findIndex((op: Partial<WorkOrderOperation>) => op.name === operationId.value)
+)
+const nextOperation = computed((): Partial<WorkOrderOperation> | undefined => {
+	if (currentOperationIndex.value < 0) return undefined
+	return orderedOperations.value[currentOperationIndex.value + 1]
+})
+const isLastOperation = computed(
+	(): boolean => currentOperationIndex.value >= 0 && currentOperationIndex.value === orderedOperations.value.length - 1
+)
+const availableQty = computed((): number => {
+	const qtyRoom = Math.max(0, finishQtyLimits.value.max - completedQty.value)
+	const operations: Partial<WorkOrderOperation>[] = workOrder.value.operations || []
+	const current = operations.find((op: Partial<WorkOrderOperation>) => op.name === operationId.value)
+	if (!current || !current.idx) return qtyRoom
+
+	const previousOperations = operations.filter(
+		(op: Partial<WorkOrderOperation>) => Number(op.idx || 0) < Number(current.idx || 0)
+	)
+	if (!previousOperations.length) return qtyRoom
+
+	const currentCompleted = Math.max(Number(current.completed_qty || 0), completedQty.value)
+	const previousCompletedQty = Math.min(
+		...previousOperations.map((op: Partial<WorkOrderOperation>) => Number(op.completed_qty || 0))
+	)
+	return Math.max(0, Math.min(qtyRoom, previousCompletedQty - currentCompleted))
+})
+
+const startTicking = (): void => {
+	if (timerHandle) return
+	timerHandle = setInterval((): void => {
+		elapsedSeconds.value += 1
+	}, 1000)
+}
+
+const stopTicking = () => {
+	if (!timerHandle) return
+	clearInterval(timerHandle)
+	timerHandle = null
+}
+
+const applyJobCard = (card: Partial<JobCard> | null | undefined): void => {
+	if (!card) {
+		jobCard.value = {}
+		elapsedSeconds.value = 0
+		stopTicking()
+		return
+	}
+
+	jobCard.value = card
+	if (isRunning.value && !hasActiveConflict.value) {
+		const closedMins = (jobCard.value.time_logs || [])
+			.filter((log: JobCardTimeLog) => log.to_time)
+			.reduce((sum: number, log: JobCardTimeLog) => sum + (log.time_in_mins || 0), 0)
+
+		let activeMins = 0
+		if (activeTimeLog.value?.from_time) {
+			const fromTime = parseFrappeDatetime(activeTimeLog.value.from_time)
+			const serverNowMs = parseFrappeDatetime(frappe.datetime.now_datetime())
+			activeMins = (serverNowMs - fromTime) / (1000 * 60)
+		}
+
+		const totalMins = closedMins + activeMins
+		elapsedSeconds.value = Math.max(0, Math.floor(totalMins * 60))
+		startTicking()
+	} else {
+		const totalMins = (jobCard.value.time_logs || []).reduce(
+			(sum: number, log: JobCardTimeLog) => sum + (log.time_in_mins || 0),
+			0
+		)
+		elapsedSeconds.value = hasActiveConflict.value ? 0 : Math.max(0, Math.floor(totalMins * 60))
+		stopTicking()
+	}
+}
+
+const clearJobCard = (): void => {
+	jobCardName.value = ''
+	applyJobCard(null)
+}
+
+const showError = (message: string): void => {
+	actionError.value = message
+	toast.error(message)
+}
+
+const errorMessage = (error: unknown): string => (error as Error)?.message || 'Unknown error'
+
+const runJobCardAction = async (action: () => Promise<void>): Promise<void> => {
+	isBusy.value = true
+	actionError.value = ''
+	try {
+		await action()
+	} catch (error) {
+		showError(errorMessage(error))
+	} finally {
+		isBusy.value = false
+	}
+}
+
+const refreshJobCard = async (): Promise<void> => {
+	if (isRefreshing.value) return
+	isRefreshing.value = true
+	hasLoadError.value = false
+	actionError.value = ''
+
+	try {
+		const jobList = await store.getAll<Partial<JobCard>>('Job Card', {
+			filters: JSON.stringify([
+				['operation_id', '=', operationId.value],
+				['work_order', '=', workOrderId.value],
+			]),
+		})
+		if (!jobList) throw new Error('Unknown error')
+
+		const name = jobList[0]?.name
+		if (!name) {
+			clearJobCard()
+			return
+		}
+
+		jobCardName.value = name
+		const card = await store.getJobCard(name)
+		if (!card) throw new Error('Unknown error')
+		applyJobCard(card)
+	} catch (error) {
+		hasLoadError.value = true
+		clearJobCard()
+		showError(errorMessage(error))
+	} finally {
+		isRefreshing.value = false
+	}
+}
+
+const syncFromBackendOnReturn = async (): Promise<void> => {
+	if (document.visibilityState !== 'visible') return
+	if (isBusy.value) return
+	await refreshJobCard()
+}
+
+const loadOperation = async (): Promise<void> => {
+	showQtyInput.value = false
+	pendingQty.value = 0
+	actionError.value = ''
+	operation.value =
+		workOrder.value.operations?.find((op: Partial<WorkOrderOperation>) => op.name === operationId.value) || {}
+	clearJobCard()
+	await store.getWorkOrderMobileContext(workOrderId.value)
+	await refreshJobCard()
+}
+
+watch(operationId, (): void => {
+	void loadOperation()
+})
+
+onMounted(async (): Promise<void> => {
+	await loadOperation()
+	document.addEventListener('visibilitychange', syncFromBackendOnReturn)
+	window.addEventListener('focus', syncFromBackendOnReturn)
+})
+
+onUnmounted((): void => {
+	document.removeEventListener('visibilitychange', syncFromBackendOnReturn)
+	window.removeEventListener('focus', syncFromBackendOnReturn)
+	stopTicking()
+})
+
+const toggleOperation = async (): Promise<void> => {
+	if (!jobCardName.value || isBusy.value || isCompleted.value) return
+
+	actionError.value = ''
+
+	if (isRunning.value) {
+		pendingQty.value = availableQty.value
+		showQtyInput.value = true
+		return
+	}
+
+	await runJobCardAction(async () => {
+		await refreshJobCard()
+		if (!jobCardName.value || isCompleted.value) return
+		applyJobCard(await store.startJobCard(jobCardName.value))
+	})
+}
+
+const confirmPause = async (): Promise<void> => {
+	if (!Number.isFinite(pendingQty.value) || pendingQty.value < 0) {
+		showError('Invalid quantity')
+		return
+	}
+	if (pendingQty.value > availableQty.value) {
+		showError(`Quantity cannot exceed ${availableQty.value}`)
+		return
+	}
+
+	showQtyInput.value = false
+	await runJobCardAction(async () => {
+		await refreshJobCard()
+		if (!jobCardName.value || isCompleted.value) return
+		applyJobCard(await store.pauseJobCard(jobCardName.value, pendingQty.value))
+	})
+}
+
+const cancelPause = (): void => {
+	showQtyInput.value = false
+	pendingQty.value = 0
+}
+
+const goToNextOperation = async (): Promise<void> => {
+	const next = nextOperation.value
+	if (!next?.name) return
+	await router.push({
+		name: 'operation',
+		params: { id: workOrderId.value, operationId: next.name },
+	})
+}
+
+const goToComplete = async (): Promise<void> => {
+	await router.push({
+		name: 'work_order',
+		params: { id: workOrderId.value },
+		query: { purpose: 'Manufacture' },
+	})
+}
+
+const finishOperation = async (): Promise<void> => {
+	if (!jobCardName.value || isBusy.value || !isQtyCompleted.value) return
+
+	await runJobCardAction(async () => {
+		applyJobCard(await store.finishJobCard(jobCardName.value, 0))
+	})
+}
+</script>
+
+<style scoped>
+.container {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 0.5rem;
+	padding: 0.25rem 0.5rem;
+	width: 100%;
+	box-sizing: border-box;
+}
+
+.box {
+	padding: 0.9rem;
+	margin: 0;
+	font-size: 1rem;
+	border: 1px solid var(--sc-row-border-color);
+	border-radius: 0;
+	outline: 2px solid transparent;
+	min-width: 0;
+	box-sizing: border-box;
+}
+
+.metadata-box {
+	display: grid;
+	gap: 0.5rem;
+}
+
+.metadata-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	cursor: pointer;
+	user-select: none;
+}
+
+.metadata-details {
+	display: grid;
+	gap: 0.5rem;
+}
+
+.qty-input-row {
+	display: grid;
+	gap: 0.4rem;
+}
+
+.qty-input-actions {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 0.4rem;
+}
+
+.operation-title {
+	margin: 0;
+	font-weight: 700;
+	font-size: 1.1rem;
+}
+
+.operation-station {
+	margin: 0;
+	font-size: 0.9rem;
+	opacity: 0.8;
+}
+
+.operation-description {
+	margin: 0;
+	line-height: 1.35;
+}
+
+.sequence-warning {
+	margin: 0;
+	font-size: 0.85rem;
+	color: var(--sc-beam-warning-text);
+}
+
+.timer-box {
+	text-align: center;
+	display: grid;
+	gap: 0.45rem;
+}
+
+.timer-value {
+	margin: 0;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	font-size: clamp(1.75rem, 10vw, 2.25rem);
+	letter-spacing: 0.08em;
+}
+
+.status-text {
+	margin: 0;
+	font-size: 0.85rem;
+	opacity: 0.8;
+}
+
+.qty-info {
+	margin: 0;
+	font-size: 0.9rem;
+	font-weight: 600;
+	color: var(--sc-primary-text-color);
+}
+
+.action-error {
+	margin: 0;
+	font-size: 0.85rem;
+	color: var(--sc-beam-danger-fill);
+}
+
+.actions {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 0.4rem;
+}
+
+.operation-action-btn {
+	width: 100%;
+	padding: 0.9rem 0.8rem;
+	font-size: 1rem;
+	border: 1px solid var(--sc-btn-border);
+	background: var(--sc-btn-color);
+	color: var(--sc-btn-label-color);
+	cursor: pointer;
+	transition: background-color 120ms ease-out;
+}
+
+.operation-action-btn:hover:not(:disabled),
+.operation-action-btn:active:not(:disabled) {
+	background: var(--sc-btn-hover);
+}
+
+.operation-action-btn:focus-visible {
+	outline: 2px solid var(--sc-focus-cell-outline);
+	outline-offset: 2px;
+}
+
+.operation-action-btn:disabled {
+	opacity: 0.55;
+	cursor: not-allowed;
+}
+
+@media (min-width: 760px) {
+	.actions {
+		grid-template-columns: repeat(3, 1fr);
+	}
+
+	.actions.actions-single {
+		grid-template-columns: 1fr;
+	}
+}
+</style>

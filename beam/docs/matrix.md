@@ -4,7 +4,7 @@ For license information, please see license.txt-->
 # Listview Actions
 
 <div class="byline">
-  Tyler Matteson 2026-02-23
+  Rohan Bansal, Ishwarya, Lautaro Juarez, lauty95, Tyler Matteson, and Francisco Roldán 2026-10-15
 </div>
 
 | Scanned Doctype | Listview              | Action | Target |

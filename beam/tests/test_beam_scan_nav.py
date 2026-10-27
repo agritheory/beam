@@ -1,0 +1,48 @@
+# Copyright (c) 2024, AgriTheory and contributors
+# For license information, please see license.txt
+
+pytest_plugins = ["beam.tests.playwright_fixtures"]
+
+# To test locally:
+#  active the virtual environment
+#  bench start, and then run:
+#  pytest ./beam/tests/test_beam_scan_nav.py --browser firefox --headed --disable-warnings
+
+import re
+
+import frappe
+import pytest
+from playwright.sync_api import expect
+
+from beam.tests.playwright_utils import open_first_beam_list_row
+
+# NOTE: any navigation tests should be done using `expect(page).to_have_url` since
+# `page.expect_navigation()` since the latter won't work with Beam's hash-based routes
+
+
+@pytest.mark.order(301)
+@pytest.mark.parametrize("route", ["Ship"])
+def test_scan_item_barcode(page, route):
+	# navigate in the following order: Home -> List -> Form
+	open_first_beam_list_row(page, route, r"delivery-note")
+
+	# wait for items to load after navigation
+	expect(page.locator("css=.box .beam_list-item").first).to_be_visible()
+	# find the first item in the list
+	item = page.locator("css=.box .beam_list-item").first
+	item_name, *others = item.inner_text().split("\n")
+	item_count = page.locator("css=.box .beam_item-count").first
+	expect(item_count).to_have_text(re.compile("0/"))
+
+	# ensure that the item has barcodes
+	barcodes = frappe.get_all(
+		"Item Barcode", filters={"parenttype": "Item", "parent": item_name}, pluck="barcode"
+	)
+	assert len(barcodes) > 0
+
+	# scan barcode and expect increment by 1
+	with page.expect_request(
+		lambda request: request.headers.get("x-frappe-cmd") == "beam.beam.scan.scan"
+	):
+		page.evaluate("barcode => scanner.simulate(window, barcode)", barcodes[0])
+		expect(item_count).to_have_text(re.compile("1/"))

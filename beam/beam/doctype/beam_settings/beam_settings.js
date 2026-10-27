@@ -1,6 +1,11 @@
 // Copyright (c) 2024, AgriTheory and contributors
 // For license information, please see license.txt
 
+frappe.ui.form.on('BEAM Mobile Route', {
+	routes_add: frm => {
+		frm.fields_dict.routes.grid.update_docfield_property('component', 'options', frm.doc.__onload.components)
+	},
+})
 frappe.dom.set_style(`
 	.barcode-auto-generate-editor input[type="checkbox"]:not(:checked) + .label-area {
 		text-decoration: line-through;
@@ -18,6 +23,9 @@ frappe.ui.form.on('BEAM Settings', {
 			padding: 'var(--padding-md)',
 		})
 		frm.barcode_exclusions_editor = new BEAMBarcodeAutoGenerateEditor(wrapper, frm)
+	},
+	onload_post_render: frm => {
+		frm.fields_dict.routes.grid.update_docfield_property('component', 'options', frm.doc.__onload.components)
 	},
 })
 

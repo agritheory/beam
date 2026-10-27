@@ -9,15 +9,17 @@ function waitForElement(selector) {
 	return new Promise(resolve => {
 		if (isLoginPath) return resolve(document.body)
 
-		if (document.querySelector(selector)) {
-			return resolve(document.querySelector(selector))
-		}
-		const observer = new MutationObserver(mutations => {
-			if (document.querySelector(selector)) {
-				resolve(document.querySelector(selector))
+		const element = document.querySelector(selector)
+		if (element) return resolve(element)
+
+		const observer = new MutationObserver(() => {
+			const element = document.querySelector(selector)
+			if (element) {
+				resolve(element)
 				observer.disconnect()
 			}
 		})
+
 		observer.observe(document.body, {
 			childList: true,
 			subtree: true,
@@ -33,9 +35,10 @@ function initScanHandler() {
 waitForElement('[data-route]').then(element => {
 	initScanHandler()
 
-	let observer = new MutationObserver(() => {
+	const observer = new MutationObserver(() => {
 		initScanHandler()
 	})
+
 	const config = { attributes: true, childList: false, characterData: true }
 	observer.observe(element, config)
 })
@@ -79,18 +82,23 @@ class ScanHandler {
 		return new Promise(resolve => {
 			if (isLoginPath) {
 				if (typeof frappe === 'undefined' || typeof frappe.call !== 'function') {
-					return
+					return resolve()
 				}
 				frappe.call({
 					method: 'beam.beam.scan.user_login.scan_login',
 					args: { barcode: sCode },
 					callback: function (r) {
-						if (r?.exc_type || !r?.message?.success) return
-						const redirect =
+						if (r?.exc_type || !r?.message?.success) return resolve()
+						let redirect =
 							frappe.utils.sanitise_redirect(frappe.utils.get_url_arg('redirect-to')) ||
 							r.message.redirect_to ||
-							r.message.home_page
+							r.message.home_page ||
+							'/beam'
+						if (redirect.startsWith('/app')) {
+							redirect = '/beam'
+						}
 						window.location.href = redirect
+						resolve()
 					},
 				})
 			} else {

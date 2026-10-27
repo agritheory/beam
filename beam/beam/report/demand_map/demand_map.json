@@ -1,0 +1,50 @@
+{
+	"add_total_row": 0,
+	"columns": [],
+	"creation": "2024-07-22 10:40:58.797332",
+	"disabled": 0,
+	"docstatus": 0,
+	"doctype": "Report",
+	"filters": [],
+	"idx": 0,
+	"is_standard": "Yes",
+	"letterhead": null,
+	"modified": "2024-07-22 10:40:58.797332",
+	"modified_by": "Administrator",
+	"module": "BEAM",
+	"name": "Demand Map",
+	"owner": "Administrator",
+	"prepared_report": 0,
+	"ref_doctype": "Item",
+	"report_name": "Demand Map",
+	"report_type": "Script Report",
+	"roles": [
+		{
+			"role": "Item Manager"
+		},
+		{
+			"role": "Stock Manager"
+		},
+		{
+			"role": "Stock User"
+		},
+		{
+			"role": "Sales User"
+		},
+		{
+			"role": "Purchase User"
+		},
+		{
+			"role": "Maintenance User"
+		},
+		{
+			"role": "Accounts User"
+		},
+		{
+			"role": "Manufacturing User"
+		},
+		{
+			"role": "All"
+		}
+	]
+}

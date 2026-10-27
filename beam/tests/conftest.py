@@ -17,9 +17,15 @@
 # 166–168 | Printer setup — wizard API permissions
 # 170–200 | Print queue panel — job snapshots, client polling, permissions
 # 210–220 | Live CUPS — ZD621 at Chelsea dock (workflow CUPS service container)
+# 300–354 | BEAM portal (Playwright) — manufacture, receive, repack, reconciliation, login, ship, camera
 #
 # Manual testing helpers
 # ----------------------
+# Re-runs: MariaDB is transactional (frappe.db.commit is mocked), but demand.db
+# is plain SQLite that hooks write to unconditionally, so it drifts out of sync
+# every run. db_instance rebuilds it from MariaDB in a finally block at session
+# teardown, and portal modules rebuild again on entry, so no manual step.
+#
 # Prerequisites (local print server):
 #   sudo apt-get install -y gcc cups python3-dev libcups2-dev printer-driver-cups-pdf
 #   bench pip install pycups
@@ -36,7 +42,7 @@
 #   queue name PDF, PPD "everywhere". Use Print Test or print_by_server from a document.
 #
 # Label / RAW testing without hardware (mock-printer CLI or sync wrapper):
-#   pip install "git+https://github.com/agritheory/test_utils.git@v1.28.0"
+#   pip install "git+https://github.com/agritheory/test_utils.git@v1.30.1"
 #   mock-printer raw --save-dir /tmp/prints
 #   mock-printer ipp --save-dir /tmp/prints
 #   mock-printer both --save-dir /tmp/prints
@@ -62,17 +68,19 @@
 #   /app/query-report/Printer Fleet Status
 #   http://localhost:631        — CUPS admin (remote admin needs extra cupsd.conf rules)
 #
-# Automated tests (pytest from bench root):
-#   pytest apps/beam/beam/tests/test_printer_logic.py -v          # no CUPS required
-#   pytest apps/beam/beam/tests/test_printer_wizard.py -v       # mocked CUPS
-#   pytest apps/beam/beam/tests/test_printer_queue.py -v         # mocked CUPS
-#   pytest apps/beam/beam/tests/test_printer_cups_integration.py -v
+# Automated tests (pytest from apps/beam, bench env active):
+#   pytest beam/tests --browser chromium
+#     One suite: unit story (orders 10–220) then portal/Playwright (test_beam_*, 300+).
+#     Requires: python -m playwright install chromium (once). Bench serve auto-starts.
+#   pytest beam/tests --ignore-glob='**/test_beam_*.py'   # unit only
+#   pytest beam/tests/test_printer_logic.py -v            # no CUPS required
+#   pytest beam/tests/test_printer_cups_integration.py -v
 #     Local (no Docker): system cupsd on :631, user in lpadmin. Admin calls use the
 #     Unix socket (HTTP to 127.0.0.1:631 hangs on addPrinter). Device URIs stay on
 #     127.0.0.1. CI: BEAM_CUPS_HOST/PORT → beam-cups container (port 1631).
 #     Force same-host / container mock routing: BEAM_CUPS_SAME_HOST=1|0,
 #     BEAM_CUPS_MOCK_HOST=<ip>.
-#   bench --site pinyon set-config allow_tests true             # if bench run-tests is used
+#   bench --site pinyon set-config allow_tests true       # if bench run-tests is used
 
 import json
 import os
@@ -84,6 +92,16 @@ import frappe
 import pytest
 from frappe.utils import get_bench_path
 
+from beam.beam.demand.demand import build_demand_allocation_map
+from beam.beam.demand.receiving import reset_build_receiving_map
+from beam.tests.fixtures import DELIVERY_PICK_DEMO_PO
+from beam.tests.setup import (
+	create_delivery_ship_pick_demo,
+	create_pie_crust_pick_demo,
+	seed_settings,
+)
+from beam.tests.manufacturing_test_utils import submit_material_transfer_for_manufacture
+from erpnext.manufacturing.doctype.work_order.work_order import stop_unstop
 from cups_test_utils import (
 	configure_pycups_credentials,
 	cups_runs_on_same_host,
@@ -93,11 +111,105 @@ from cups_test_utils import (
 from test_telemetry import emit as telemetry
 
 TESTS_DIR = Path(__file__).resolve().parent
+
 if str(TESTS_DIR) not in sys.path:
 	sys.path.insert(0, str(TESTS_DIR))
 
 DEFAULT_CUPS_ADMIN_USER = os.environ.get("CUPS_ADMIN_USER", "admin")
 DEFAULT_CUPS_ADMIN_PASSWORD = os.environ.get("CUPS_ADMIN_PASSWORD", "root")
+
+
+def rebuild_demand_databases():
+	"""Rebuild demand.db (demand, allocation, receiving) from MariaDB.
+
+	MariaDB stays clean on its own because frappe.db.commit is mocked, but
+	SQLite has no transaction tied to it: every on_submit hook writes to
+	demand.db and those rows survive the rollback. Rebuilding from MariaDB is
+	the only thing that clears that drift.
+
+	Two calls because demand/allocation and receiving are rebuilt by separate
+	entry points; they are independent, so the order does not matter.
+	"""
+	build_demand_allocation_map()
+	reset_build_receiving_map()
+
+
+@pytest.fixture(scope="module")
+def pie_crust_pick_demo_work_order():
+	"""Qty-2 Pie Crust work order with a draft Material Transfer for Manufacture pick list.
+
+	Stopped on teardown so it leaves manufacturing demand; the demand and allocation
+	asserts elsewhere are written against the seeded orders only.
+	"""
+	work_order = create_pie_crust_pick_demo(seed_settings())
+	assert work_order, "Pie Crust needs an active BOM for the pick demo"
+	wo = frappe.get_doc("Work Order", work_order)
+	if wo.status == "Stopped":
+		stop_unstop(work_order, "Resumed")
+		wo.reload()
+	wo.update_status()
+	wo.update_planned_qty()
+	frappe.db.commit()
+
+	yield work_order
+
+	wo.reload()
+	wo.update_status("Stopped")
+	wo.update_planned_qty()
+	frappe.db.commit()
+	rebuild_demand_databases()
+
+
+@pytest.fixture(scope="module")
+def delivery_pick_demo_sales_order():
+	"""Sales order with a draft Delivery pick list, plus a draft staging Material Transfer pick.
+
+	Closed on teardown so it leaves sales demand; reopened before reuse because a
+	closed order can't take a pick list.
+	"""
+	existing = frappe.db.get_value("Sales Order", {"po_no": DELIVERY_PICK_DEMO_PO}, "name")
+	if existing and frappe.db.get_value("Sales Order", existing, "status") == "Closed":
+		frappe.get_doc("Sales Order", existing).update_status("Draft")
+	sales_order = create_delivery_ship_pick_demo(seed_settings())
+	frappe.db.commit()
+
+	yield sales_order
+
+	frappe.get_doc("Sales Order", sales_order).update_status("Closed")
+	frappe.db.commit()
+	rebuild_demand_databases()
+
+
+@pytest.fixture(scope="module")
+def job_card_operation_with_wip(pie_crust_pick_demo_work_order):
+	"""First Pie Crust operation with material in WIP for Start/Pause/Finish portal tests."""
+	work_order = pie_crust_pick_demo_work_order
+	operation_id = frappe.db.get_value(
+		"Job Card",
+		{"work_order": work_order},
+		"operation_id",
+		order_by="sequence_id asc",
+	)
+	assert operation_id, f"Expected a Job Card operation on {work_order}"
+
+	wo = frappe.get_doc("Work Order", work_order)
+	stock_entry_name = None
+	if not wo.skip_transfer and float(wo.material_transferred_for_manufacturing or 0) <= 0:
+		stock_entry_name = submit_material_transfer_for_manufacture(work_order, wo.qty)
+		frappe.db.commit()
+
+	yield {
+		"work_order": work_order,
+		"operation_id": operation_id,
+		"stock_entry_name": stock_entry_name,
+	}
+
+	if stock_entry_name:
+		se = frappe.get_doc("Stock Entry", stock_entry_name)
+		if se.docstatus == 1:
+			se.cancel()
+		frappe.db.commit()
+	rebuild_demand_databases()
 
 
 def _get_logger(*args, **kwargs):
@@ -129,10 +241,19 @@ def db_instance():
 	if (sites / "common_site_config.json").is_file():
 		currentsite = json.loads((sites / "common_site_config.json").read_text()).get("default_site")
 
-	frappe.init(site=currentsite, sites_path=sites)
+	frappe.init(site=currentsite, sites_path=sites, force=True)
 	frappe.connect()
+	# Unit tests stay transactional; portal modules (playwright_fixtures) swap in real commits.
 	frappe.db.commit = MagicMock()
-	yield frappe.db
+
+	rebuild_demand_databases()
+	try:
+		yield frappe.db
+	finally:
+		# finally, not a plain post-yield teardown: an interrupted or erroring
+		# session would otherwise leave demand.db holding rows for documents
+		# MariaDB rolled back, and the next run would read them as real.
+		rebuild_demand_databases()
 
 
 @pytest.fixture(scope="module")
