@@ -259,6 +259,35 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 				}
 			)
 			set_item_stock_uom(target, hu_details.item_code)
+		elif context.frm == "Packing Slip":
+			# Packing Slips use the linked delivery's values, not a pricing context.
+			delivery_note = frappe.get_doc("Delivery Note", context.doc.get("delivery_note"))
+			item = next(
+				(
+					row
+					for row in delivery_note.items
+					if row.handling_unit == hu_details.handling_unit and row.item_code == hu_details.item_code
+				),
+				None,
+			)
+			if not item:
+				frappe.throw(frappe._("Handling Unit is not present in the selected Delivery Note"))
+			target = frappe._dict(
+				{
+					field: item.get(field)
+					for field in (
+						"item_code",
+						"item_name",
+						"description",
+						"uom",
+						"stock_uom",
+						"conversion_factor",
+						"rate",
+						"warehouse",
+					)
+				}
+			)
+			hu_details.dn_detail = item.name
 		else:
 			target = get_item_details(
 				{
