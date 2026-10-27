@@ -309,7 +309,9 @@ def test_delivery_pick_list_opens_from_queue(page, delivery_pick_demo_sales_orde
 	assert delivery_pick
 
 	goto_beam_portal_route(page, "/pick-list")
-	page.get_by_text(delivery_pick, exact=True).click()
+	queue_entry = page.get_by_text(delivery_pick, exact=True)
+	expect(queue_entry).to_be_visible(timeout=15000)
+	queue_entry.click()
 	expect(page).to_have_url(re.compile(rf"pick-list/{re.escape(delivery_pick)}"), timeout=15000)
 	expect(page.get_by_role("heading", name="Pick List", exact=True)).to_be_visible()
 	expect(page.get_by_text("Ambrosia Pie", exact=False)).to_be_visible()

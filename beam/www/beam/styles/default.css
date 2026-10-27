@@ -1,0 +1,177 @@
+@import url('https://fonts.googleapis.com/css2?family=Arimo:ital,wght@0,400..700;1,400..700&display=swap');
+
+/*
+The Stonecrop token floor: the single definition of every --sc-* variable the
+component packages consume. There is one stylesheet, not a theme to choose between;
+hosts restyle by overriding these names in their own CSS.
+
+Everything lives in the `stonecrop.tokens` cascade layer. An unlayered declaration
+beats a layered one regardless of specificity or source order, so a host's plain
+`:root { --sc-primary-color: … }` always wins without depending on which sheet
+loaded first. Keep the declarations on :root — scoping them to a container would
+out-specify a host's :root and silently break overriding.
+
+The Arimo @import must stay the first rule in this file; CSS requires @import
+before all other rules.
+*/
+
+@layer stonecrop.tokens {
+	:root {
+		/* Primitive: gray ramp */
+		--sc-gray-0: #ffffff;
+		--sc-gray-2: #fafafa;
+		--sc-gray-5: #f2f2f2;
+		--sc-gray-10: #e6e6e6;
+		--sc-gray-20: #cccccc;
+		--sc-gray-50: #808080;
+		--sc-gray-60: #666666;
+		--sc-gray-70: #4d4d4d; /* the ramp is token = 100 − lightness%, so 70 → 30% */
+		--sc-gray-80: #333333;
+
+		/* Primitive: color (alerts, brand, on-color text). Not surfaces. */
+		--sc-color-primary: var(--sc-gray-80);
+		--sc-color-on-primary: #ffffff;
+		--sc-color-brand: var(--sc-gray-80);
+		--sc-color-danger: #c02718;
+		--sc-color-success: #155724;
+		--sc-color-warning: #b99d3e;
+		--sc-color-gold: #e6a92d;
+		--sc-color-changed: #d8edff;
+
+		/* Primitive: type */
+		--sc-font-family: 'Arimo', Arial, sans-serif;
+		--sc-font-size: 1rem;
+		--sc-font-size-table: 1rem;
+
+		/* Primitive: space and measure */
+		--sc-space-1: 0.125rem;
+		--sc-space-2: 0.5rem;
+		--sc-space-3: 1rem;
+		--sc-border-radius: 0;
+		--sc-form-field-max-width: 50ch;
+		--sc-form-label-offset: var(--sc-space-2);
+		--sc-dropdown-max-height: 17rem; /* about ten rows */
+		/* Dropdown lists sit on --sc-overlay-background (white). Pointer and keyboard highlight share one fill. */
+		--sc-dropdown-option-hover-background: color-mix(in srgb, var(--sc-gray-50) 28%, var(--sc-overlay-background));
+		--sc-dropdown-option-active-background: var(--sc-dropdown-option-hover-background);
+		/* Same family as ATable row borders; softened on white overlay (full gray-50 reads heavy). */
+		--sc-dropdown-option-selected-accent: color-mix(
+			in srgb,
+			var(--sc-row-border-color) 45%,
+			var(--sc-overlay-background)
+		);
+
+		/* Semantic: brand aliases */
+		--sc-primary-color: var(--sc-color-primary);
+		--sc-primary-text-color: var(--sc-color-on-primary);
+		--sc-brand-color: var(--sc-color-brand);
+		--sc-brand-danger: var(--sc-color-danger);
+		--sc-brand-success: var(--sc-color-success);
+		--sc-brand-warning: var(--sc-color-warning);
+
+		/* Semantic: badges — table cell fill (bg/text) and form input accent (left border) */
+		--sc-badge-neutral-bg: var(--sc-gray-10);
+		--sc-badge-neutral-text: var(--sc-gray-80);
+		--sc-badge-neutral-accent: var(--sc-gray-50);
+
+		--sc-badge-success-bg: color-mix(in srgb, var(--sc-brand-success) 14%, white);
+		--sc-badge-success-text: var(--sc-brand-success);
+		--sc-badge-success-accent: var(--sc-brand-success);
+
+		--sc-badge-warning-bg: color-mix(in srgb, var(--sc-brand-warning) 18%, white);
+		--sc-badge-warning-text: color-mix(in srgb, var(--sc-brand-warning) 70%, black);
+		--sc-badge-warning-accent: var(--sc-brand-warning);
+
+		--sc-badge-danger-bg: color-mix(in srgb, var(--sc-brand-danger) 12%, white);
+		--sc-badge-danger-text: var(--sc-brand-danger);
+		--sc-badge-danger-accent: var(--sc-brand-danger);
+
+		--sc-badge-brand-bg: color-mix(in srgb, var(--sc-primary-color) 14%, white);
+		--sc-badge-brand-text: var(--sc-brand-color);
+		--sc-badge-brand-accent: var(--sc-primary-color);
+
+		/* Semantic: surfaces (gray-on-gray) */
+		--sc-page-background: var(--sc-gray-2);
+		--sc-form-background: var(--sc-gray-2);
+		--sc-input-field-background: var(--sc-gray-5);
+		--sc-input-addon-background: var(--sc-gray-10);
+		--sc-input-field-disabled-background: var(--sc-gray-2);
+		--sc-overlay-background: var(--sc-gray-0);
+		--sc-overlay-shadow: 0 2px 4px rgba(0, 0, 0, 0.12), 0 8px 20px rgba(0, 0, 0, 0.16);
+		--sc-cell-background: var(--sc-form-background);
+
+		/* Semantic: text */
+		--sc-cell-text-color: #3a3c41;
+		--sc-input-label-color: var(--sc-gray-60);
+		--sc-input-active-label-color: var(--sc-gray-80);
+		--sc-header-text-color: var(--sc-gray-60);
+
+		/* Semantic: borders */
+		--sc-form-border: var(--sc-gray-50);
+		--sc-input-border-color: var(--sc-gray-50);
+		--sc-input-active-border-color: var(--sc-gray-80);
+		--sc-required-border: var(--sc-color-danger);
+
+		/* Semantic: table */
+		--sc-active-cell-background: var(--sc-input-field-background);
+		--sc-active-cell-outline: var(--sc-focus-cell-outline);
+		--sc-focus-cell-background: var(--sc-input-field-background);
+		--sc-focus-cell-outline: var(--sc-gray-80);
+		--sc-cell-border-color: var(--sc-form-background);
+		--sc-header-border-color: var(--sc-form-background);
+		--sc-row-border-color: var(--sc-gray-50);
+		--sc-row-color-zebra-light: var(--sc-form-background);
+		--sc-row-color-zebra-dark: var(--sc-gray-5);
+		--sc-row-number-background-color: var(--sc-form-background);
+		--sc-row-hover-color: var(--sc-gray-10);
+		--sc-cell-changed-color: var(--sc-color-changed);
+		--sc-atable-row-padding: var(--sc-space-1);
+		--sc-atable-row-height: 1.5em;
+		--sc-atable-cell-border-width: 2px;
+		--sc-table-loading-color: 204, 204, 204;
+		--sc-table-font-size: var(--sc-font-size-table);
+		--sc-atable-font-family: var(--sc-font-family);
+
+		/* Semantic: buttons */
+		--sc-btn-border: var(--sc-gray-50);
+		--sc-btn-color: var(--sc-gray-2);
+		--sc-btn-hover: var(--sc-gray-5);
+		--sc-btn-label-color: var(--sc-gray-80);
+
+		/* Semantic: action set */
+		--sc-action-set-drawer-width: 380px;
+		--sc-action-set-offset-top: 35vh;
+		--sc-action-set-tile-gap: 4px;
+		--sc-action-set-rail-width: calc(2.75rem + 10px);
+	}
+
+	/*
+	Browsers exclude form controls (button/input/select/textarea) and code elements
+	from font inheritance, giving them their own defaults (Arial, monospace) while every
+	other element inherits the document font. Normalizing them to inherit means the font
+	applied below governs the whole page — no per-app or per-component overrides required.
+
+	This pairs with the body rule that follows: the normalization only makes sense because
+	something sets a document font. Remove that rule and these controls inherit the
+	browser's default serif instead of the sensible defaults this strips away.
+	*/
+	button,
+	input,
+	select,
+	textarea,
+	optgroup,
+	code,
+	kbd,
+	samp,
+	pre {
+		font-family: inherit;
+	}
+
+	/* Applies the font and page surface here, not in each consuming app, so a host
+	   gets them by loading this sheet. */
+	body {
+		font-family: var(--sc-font-family);
+		background: var(--sc-page-background);
+		color: var(--sc-cell-text-color);
+	}
+}

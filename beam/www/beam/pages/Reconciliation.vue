@@ -9,10 +9,12 @@
 	</Navbar>
 
 	<div class="reconciliation">
-		<div class="dropdown-container">
-			<ADropdown label="Warehouse" :items="warehouseList" v-model="reconciliation.set_warehouse" />
-			<BeamBtn class="clear-button" @click="clearField()"> X </BeamBtn>
-		</div>
+		<FieldRow>
+			<ADropdown label="Warehouse" :options="warehouseList" v-model="reconciliation.set_warehouse" />
+			<template #suffix>
+				<BeamBtn @click="clearField()"> X </BeamBtn>
+			</template>
+		</FieldRow>
 	</div>
 
 	<!-- body section -->
@@ -44,10 +46,11 @@
 </template>
 
 <script setup lang="ts">
-import type { ListViewItem } from '@stonecrop/beam'
+import type { ListViewItem } from '@/types/stonecrop.js'
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 
 import ControlButtons from '@/components/ControlButtons.vue'
+import FieldRow from '@/components/FieldRow.vue'
 import ReconciliationListRow from '@/components/ReconciliationListRow.vue'
 import { useBeamStore, type ReconciliationItemScanPayload } from '@/stores/beam'
 import type { ControlButton, StockReconciliation, StockEntryItem } from '@/types'
@@ -323,25 +326,13 @@ onUnmounted(() => {
 	list-style-type: none;
 }
 
-.reconciliation .clear-button {
-	align-self: stretch;
-	margin: 0;
-	padding: 0 0.75rem;
-	min-width: 2.75rem;
-}
-
-.reconciliation .dropdown-container {
-	display: flex;
-	align-items: flex-end;
-	justify-content: center;
-	position: relative;
+.reconciliation .field-row {
 	margin-top: 1rem;
-	gap: 0.5rem;
 	padding: 0 var(--sc-list-margin);
 	box-sizing: border-box;
 }
 
-.reconciliation .dropdown-container .autocomplete {
+.reconciliation .field-row .autocomplete {
 	flex: 1 1 auto;
 	min-width: 0;
 	max-width: 50ch;

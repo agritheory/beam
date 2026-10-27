@@ -24,7 +24,7 @@
 </template>
 
 <script setup lang="ts">
-import type { BeamFilterChoice } from '@stonecrop/beam'
+import type { BeamFilterChoice } from '@/types/stonecrop.js'
 import { ref } from 'vue'
 
 import UserFilter from '@/components/UserFilter.vue'

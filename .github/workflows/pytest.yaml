@@ -62,7 +62,7 @@ jobs:
       pull-requests: write
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-24.04]
       fail-fast: false
     name: Server
     env:
