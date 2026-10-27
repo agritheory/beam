@@ -270,8 +270,9 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 				),
 				None,
 			)
-			if not item:
+			if item is None:
 				frappe.throw(frappe._("Handling Unit is not present in the selected Delivery Note"))
+				return []
 			target = frappe._dict(
 				{
 					field: item.get(field)
