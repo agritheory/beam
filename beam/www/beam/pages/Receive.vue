@@ -84,7 +84,7 @@ const appendReceive = (fromIndex: number) => {
 					Warehouse: ${appendUomText(row.warehouse, row)}
 					Supplier: ${row.supplier}
 				`.trim(),
-			route: `#/purchase-receipt/${row.parent || 'new-purchase-receipt'}`,
+			route: `#/purchase-receipt/${row.receive_route_id || row.parent || 'new-purchase-receipt'}`,
 		})
 	}
 }

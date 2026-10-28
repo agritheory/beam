@@ -14,11 +14,17 @@ from erpnext.manufacturing.doctype.production_plan.production_plan import (
 )
 from erpnext.manufacturing.doctype.work_order.work_order import get_default_warehouse
 from erpnext.setup.utils import enable_all_roles_and_domains, set_defaults_for_tests
+from frappe.permissions import add_permission, update_permission_property
 from erpnext.stock.get_item_details import get_item_details
 from frappe.desk.page.setup_wizard.setup_wizard import setup_complete
 
 from beam.beam.demand.demand import build_demand_allocation_map, remove_demand_allocation
 from beam.beam.demand.receiving import reset_build_receiving_map
+from beam.beam.mobile_access import ensure_beam_quality_inspection_permissions
+from beam.tests.quality_inspection_fixtures import (
+	ensure_beam_qi_template,
+	setup_beam_quality_inspection_fixtures,
+)
 from beam.tests.fixtures import (
 	boms,
 	customers,
@@ -84,8 +90,18 @@ def seed_settings():
 	)
 
 
+def ensure_stock_user_address_permissions() -> None:
+	role = "Stock User"
+	if not frappe.db.get_value("Custom DocPerm", {"parent": "Address", "role": role, "permlevel": 0}):
+		add_permission("Address", role, 0, "read")
+	update_permission_property("Address", role, 0, "read", 1)
+	update_permission_property("Address", role, 0, "select", 1)
+
+
 def create_test_data():
 	settings = seed_settings()
+	ensure_stock_user_address_permissions()
+	ensure_beam_quality_inspection_permissions()
 	company_address = frappe.new_doc("Address")
 	company_address.title = settings.company
 	company_address.address_type = "Office"
@@ -99,6 +115,7 @@ def create_test_data():
 	frappe.set_value("Company", settings.company, "tax_id", "04-1871930")
 	create_warehouses(settings)
 	ensure_shipping_warehouse(settings)
+	ensure_receiving_warehouse(settings)
 	setup_manufacturing_settings(settings)
 	create_workstations()
 	setup_beam_settings(settings)
@@ -107,7 +124,10 @@ def create_test_data():
 	create_suppliers(settings)
 	create_customers(settings)
 	create_employees(settings)
+	sync_fixture_user_roles()
+	ensure_beam_qi_template()
 	create_items(settings)
+	setup_beam_quality_inspection_fixtures(settings)
 	create_boms(settings)
 	create_finished_goods_stock(settings)
 	prod_plan_from_doc = "Sales Order"
@@ -230,6 +250,7 @@ def setup_beam_settings(settings):
 			{"label": "Demand", "route": "#/demand", "dt": "Stock Entry", "component": "Demand"},
 			{"label": "Move", "route": "#/move", "dt": "Stock Entry", "component": "Demand"},
 			{"label": "Receive", "route": "#/receive", "dt": "Purchase Receipt", "component": "Receive"},
+			{"label": "Inspect", "route": "#/inspect", "dt": "Quality Inspection", "component": "Inspect"},
 			{"label": "Ship", "route": "#/ship", "dt": "Delivery Note", "component": "Ship"},
 			{"label": "Repack", "route": "#/repack", "dt": "Stock Entry", "component": "Repack"},
 			{"label": "Pick", "route": "#/pick-list", "dt": "Pick List", "component": "Pick"},
@@ -349,6 +370,12 @@ def create_items(settings):
 			i.purchase_uom = "Gallon Liquid (US)"
 			i.valuation_rate = 0.01 if i.item_code == "Water" else 0.02
 
+		if item.get("inspection_required_before_purchase"):
+			from beam.tests.quality_inspection_fixtures import BEAM_QI_TEMPLATE
+
+			i.inspection_required_before_purchase = 1
+			i.quality_inspection_template = BEAM_QI_TEMPLATE
+
 		i.has_serial_no = item.get("has_serial_no", 0) or 0
 		i.serial_no_series = item.get("serial_no_series", "") or ""
 		i.save()
@@ -445,6 +472,19 @@ def ensure_shipping_warehouse(settings):
 	root_wh = frappe.get_value("Warehouse", {"company": settings.company, "is_group": 1})
 	wh = frappe.new_doc("Warehouse")
 	wh.warehouse_name = "Shipping"
+	wh.parent_warehouse = root_wh
+	wh.company = settings.company
+	wh.save()
+	return warehouse_name
+
+
+def ensure_receiving_warehouse(settings):
+	warehouse_name = "Receiving - APC"
+	if frappe.db.exists("Warehouse", warehouse_name):
+		return warehouse_name
+	root_wh = frappe.get_value("Warehouse", {"company": settings.company, "is_group": 1})
+	wh = frappe.new_doc("Warehouse")
+	wh.warehouse_name = "Receiving"
 	wh.parent_warehouse = root_wh
 	wh.company = settings.company
 	wh.save()
@@ -1002,6 +1042,32 @@ def create_delivery_ship_pick_demo(settings):
 	return so_name
 
 
+def fixture_user_email(display_name: str) -> str:
+	first, last = display_name.split(" ", 1)
+	return f"{first[0].lower()}{last.lower()}@cfc.co"
+
+
+def sync_fixture_user_roles() -> None:
+	for employee in employees:
+		display_name = employee.get("name")
+		if not display_name:
+			continue
+		roles = employee.get("roles") or []
+		if not roles:
+			continue
+		email = fixture_user_email(display_name)
+		if not frappe.db.exists("User", email):
+			continue
+		user = frappe.get_doc("User", email)
+		have = {row.role for row in user.roles}
+		missing = [role for role in roles if role not in have]
+		if not missing:
+			continue
+		for role in missing:
+			user.append("roles", {"role": role})
+		user.save()
+
+
 def create_employees(settings, only_create=None):
 	departments = {employee.get("department") for employee in employees if employee.get("department")}
 	for department in departments:
@@ -1009,6 +1075,10 @@ def create_employees(settings, only_create=None):
 
 	for employee in employees:
 		if only_create and employee.get("employee_name") not in only_create:
+			continue
+
+		display_name = employee.get("name")
+		if not display_name:
 			continue
 
 		if frappe.db.exists("Employee", {"employee_name": employee.get("employee_name")}):
@@ -1020,10 +1090,9 @@ def create_employees(settings, only_create=None):
 			desg.save()
 
 		empl = frappe.new_doc("Employee")
-		name = employee.pop("name")
-		empl.first_name = name.split(" ")[0]
-		empl.last_name = name.split(" ")[1]
-		empl.update(employee)
+		empl.first_name = display_name.split(" ")[0]
+		empl.last_name = display_name.split(" ")[1]
+		empl.update({key: value for key, value in employee.items() if key != "name"})
 		empl.reports_to = None
 		if settings.company:
 			empl.company = settings.company

@@ -27,9 +27,11 @@ import { onBeforeRouteLeave, useRoute } from 'vue-router'
 
 import ControlButtons from '@/components/ControlButtons.vue'
 import ScanOutput from '@/components/ScanOutput.vue'
+import { useLineInspections } from '@/composables/useLineInspections'
 import { useBeamStore } from '@/stores/beam'
 import type { ControlButton, DeliveryNote, DeliveryNoteItem } from '@/types'
 import { itemListLine } from '@/utils/itemListLine'
+import { applyInspectionLines } from '@/utils/inspectionList'
 
 const route = useRoute()
 const store = useBeamStore()
@@ -38,10 +40,19 @@ const salesOrderId = route.query.id.toString()
 const deliveryNote = ref(store.cache.mappers[salesOrderId] as DeliveryNote)
 const refreshKey = ref(0)
 
+const savedNoteName = computed(() =>
+	deliveryNote.value?.name && !deliveryNote.value.__islocal ? deliveryNote.value.name : undefined
+)
+const { byRow, reload: reloadInspections } = useLineInspections(
+	computed(() => 'Delivery Note'),
+	savedNoteName
+)
+
 // hack: since array reactivity is not present in Vue 3, force-refresh the listviews on store update
 store.$subscribe(mutation => {
 	if (['patch function', 'patch object'].includes(mutation.type)) {
 		refreshKey.value++
+		reloadInspections()
 	}
 })
 
@@ -61,7 +72,7 @@ onBeforeRouteLeave((to, from, next) => {
 const items = computed((): (DeliveryNoteItem & ListViewItem)[] => {
 	if (!deliveryNote.value?.items) return []
 
-	return deliveryNote.value.items.map(item => {
+	const mapped = deliveryNote.value.items.map(item => {
 		const line = itemListLine(item)
 		return {
 			...item,
@@ -73,6 +84,7 @@ const items = computed((): (DeliveryNoteItem & ListViewItem)[] => {
 			},
 		}
 	})
+	return applyInspectionLines(mapped, byRow.value)
 })
 
 const create = async () => {
