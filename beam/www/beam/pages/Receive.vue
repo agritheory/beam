@@ -20,7 +20,7 @@
 </template>
 
 <script setup lang="ts">
-import type { ListViewItem } from '@stonecrop/beam'
+import type { ListViewItem } from '@/types/stonecrop.js'
 import { useInfiniteScroll } from '@vueuse/core'
 import { ref } from 'vue'
 

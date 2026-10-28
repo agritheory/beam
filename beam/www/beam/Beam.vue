@@ -91,6 +91,7 @@ const registerInstance = (instance: any) => (window.scanner = instance)
 	--sc-input-active-border-color: #333333;
 	--sc-input-border-color: #cccccc;
 	--sc-row-color-zebra-light: #f2f2f2;
+	--sc-border-radius: 0.25rem;
 	--sc-focus-cell-outline: #333333;
 	--sc-focus-cell-background: #f2f2f2;
 	--sc-beam-danger-fill: #c02718;

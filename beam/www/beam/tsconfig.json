@@ -1,9 +1,13 @@
 {
 	"compilerOptions": {
 		"target": "esnext",
-		"module": "nodenext",
-		"moduleResolution": "nodenext",
-		"lib": ["esnext", "DOM", "DOM.Iterable"],
+		"module": "esnext",
+		"moduleResolution": "bundler",
+		"lib": [
+			"esnext",
+			"DOM",
+			"DOM.Iterable"
+		],
 		"jsx": "preserve",
 		"isolatedModules": true,
 		"noEmit": true,
@@ -11,8 +15,17 @@
 		"skipLibCheck": true,
 		"strictNullChecks": true,
 		"paths": {
-			"@/*": ["./*"]
+			"@/*": [
+				"./*"
+			]
 		}
 	},
-	"include": ["**/*.ts", "**/*.d.ts", "**/*.vue"]
+	"include": [
+		"**/*.ts",
+		"**/*.d.ts",
+		"**/*.vue"
+	],
+	"vueCompilerOptions": {
+		"strictTemplates": true
+	}
 }

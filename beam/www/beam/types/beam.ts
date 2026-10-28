@@ -1,7 +1,7 @@
 // Copyright (c) 2024, AgriTheory and contributors
 // For license information, please see license.txt
 
-import type { ListViewItem } from '@stonecrop/beam'
+import type { ListViewItem } from '@/types/stonecrop.js'
 import type { ButtonHTMLAttributes, CSSProperties, HTMLAttributes } from 'vue'
 
 import type { ParentDoctypesForStockTransfer, StockEntry } from '@/types/frappe.js'

@@ -12,7 +12,7 @@
 </template>
 
 <script setup lang="ts">
-import type { ListViewItem } from '@stonecrop/beam'
+import type { ListViewItem } from '@/types/stonecrop.js'
 import { onMounted, ref } from 'vue'
 
 import { useBeamStore } from '@/stores/beam'

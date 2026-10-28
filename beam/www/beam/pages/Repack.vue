@@ -11,33 +11,47 @@
 	<div class="repack">
 		<div class="container">
 			<template v-if="itemList">
-				<div class="dd-container">
+				<FieldRow>
 					<ADropdown
 						label="Item to Repack"
-						:items="itemList"
-						v-model="currentItem.item_code"
+						:options="itemList"
+						v-model="itemCodeModel"
 						:isAsync="true"
 						:filterFunction="loadItems" />
-					<BeamBtn class="clear-button" @click="clearCurrentItem('item_code')"> X </BeamBtn>
-				</div>
-				<div class="dd-container">
-					<BeamBtn class="clear-button" @click="substractCurrentItem"> - </BeamBtn>
-					<ANumericInput label="Quantity" v-model="currentItem.qty" />
-					<BeamBtn class="clear-button" @click="addCurrentItem"> + </BeamBtn>
-				</div>
-				<fieldset class="dd-container bom-field" :disabled="bomDisabled">
-					<ADropdown label="BOM (Optional)" :items="bomList" v-model="currentItem.bom" />
-					<BeamBtn class="clear-button" @click="clearCurrentItem('bom')"> X </BeamBtn>
+					<template #suffix>
+						<BeamBtn @click="clearCurrentItem('item_code')"> X </BeamBtn>
+					</template>
+				</FieldRow>
+				<FieldRow>
+					<template #prefix>
+						<BeamBtn @click="substractCurrentItem"> - </BeamBtn>
+					</template>
+					<ANumericInput label="Quantity" v-model="qtyModel" />
+					<template #suffix>
+						<BeamBtn @click="addCurrentItem"> + </BeamBtn>
+					</template>
+				</FieldRow>
+				<fieldset class="bom-field" :disabled="bomDisabled">
+					<FieldRow>
+						<ADropdown label="BOM (Optional)" :options="bomList" v-model="bomModel" />
+						<template #suffix>
+							<BeamBtn @click="clearCurrentItem('bom')"> X </BeamBtn>
+						</template>
+					</FieldRow>
 				</fieldset>
 			</template>
-			<div class="dd-container">
-				<ADropdown label="Source Warehouse" :items="warehouseList" v-model="stockEntry.from_warehouse" />
-				<BeamBtn class="clear-button" @click="clearField('from_warehouse')"> X </BeamBtn>
-			</div>
-			<div class="dd-container">
-				<ADropdown label="Target Warehouse" :items="warehouseList" v-model="stockEntry.to_warehouse" />
-				<BeamBtn class="clear-button" @click="clearField('to_warehouse')"> X </BeamBtn>
-			</div>
+			<FieldRow>
+				<ADropdown label="Source Warehouse" :options="warehouseList" v-model="stockEntry.from_warehouse" />
+				<template #suffix>
+					<BeamBtn @click="clearField('from_warehouse')"> X </BeamBtn>
+				</template>
+			</FieldRow>
+			<FieldRow>
+				<ADropdown label="Target Warehouse" :options="warehouseList" v-model="stockEntry.to_warehouse" />
+				<template #suffix>
+					<BeamBtn @click="clearField('to_warehouse')"> X </BeamBtn>
+				</template>
+			</FieldRow>
 		</div>
 	</div>
 
@@ -49,10 +63,11 @@
 </template>
 
 <script setup lang="ts">
-import type { ListViewItem } from '@stonecrop/beam'
+import type { ListViewItem } from '@/types/stonecrop.js'
 import { ref, computed, onMounted, watch } from 'vue'
 
 import ControlButtons from '@/components/ControlButtons.vue'
+import FieldRow from '@/components/FieldRow.vue'
 import { useBeamStore } from '@/stores/beam'
 import type { ControlButton, DocActionResponse, StockEntry } from '@/types'
 import { appendUomText, itemListLine } from '@/utils/itemListLine'
@@ -63,6 +78,28 @@ const store = useBeamStore()
 const currentItem = ref({ item_code: '', qty: 0, bom: '', stock_uom: '', uom: '' })
 const items = ref([])
 const componentKey = ref(0)
+
+const itemCodeModel = computed<string | undefined>({
+	get: () => currentItem.value.item_code,
+	set: value => {
+		currentItem.value.item_code = value ?? ''
+	},
+})
+
+const bomModel = computed<string | undefined>({
+	get: () => currentItem.value.bom,
+	set: value => {
+		currentItem.value.bom = value ?? ''
+	},
+})
+
+const qtyModel = computed<number | null | undefined>({
+	get: () => currentItem.value.qty,
+	set: value => {
+		currentItem.value.qty = value ?? 0
+	},
+})
+
 const defaultRepackEntry = (): StockEntry => ({
 	doctype: 'Stock Entry',
 	name: '',
@@ -154,12 +191,15 @@ const loadBOMs = async (itemCode: string) => {
 	}
 }
 
-const clearField = (field: 'from_warehouse' | 'to_warehouse') =>
+const clearField = (field: 'from_warehouse' | 'to_warehouse') => {
 	store.$patch(state => (state.cache.mappers.repack[field] = ''))
+}
 
 const addCurrentItem = () => currentItem.value.qty++
 const substractCurrentItem = () => (currentItem.value.qty > 0 ? currentItem.value.qty-- : 0)
-const clearCurrentItem = (field: 'item_code' | 'bom') => (currentItem.value[field] = '')
+const clearCurrentItem = (field: 'item_code' | 'bom') => {
+	currentItem.value[field] = ''
+}
 
 const create = async () => {
 	const body: StockEntry = {
@@ -279,7 +319,7 @@ function flattenItems(items: ListViewItem[]): ListViewItem[] {
 				from_warehouse: item.s_warehouse || '',
 			})
 		} else {
-			mergedMap.set(item.item_code, { ...item })
+			mergedMap.set(item.item_code, { ...item, from_warehouse: item.s_warehouse || '' })
 		}
 	})
 
@@ -352,6 +392,10 @@ watch(
 	box-sizing: border-box;
 }
 
+.autocomplete-results {
+	font-size: 150%;
+}
+
 .repack .begin {
 	width: 100%;
 	text-align: center;
@@ -359,12 +403,6 @@ watch(
 	color: var(--sc-primary-text-color);
 	padding: 1rem var(--sc-list-margin);
 	box-sizing: border-box;
-}
-
-.repack .autocomplete {
-	flex: 1 1 auto;
-	min-width: 0;
-	width: 100%;
 }
 
 .max-h-300 {
@@ -378,21 +416,9 @@ watch(
 	flex-direction: column;
 	width: min(80vh, 100%);
 	max-width: 100%;
+	gap: 1rem;
 	padding: 0;
 	box-sizing: border-box;
-}
-
-.repack .dd-container {
-	display: flex;
-	align-items: flex-end;
-	width: 100%;
-	margin-top: 1rem;
-	gap: 0.5rem;
-	justify-content: space-between;
-}
-
-.repack .dd-container .aform_form-element {
-	margin: 0;
 }
 
 .repack fieldset.bom-field {
@@ -410,12 +436,5 @@ watch(
 .repack fieldset.bom-field:disabled input,
 .repack fieldset.bom-field:disabled button {
 	cursor: not-allowed;
-}
-
-.repack .clear-button {
-	align-self: stretch;
-	margin: 0;
-	padding: 0 0.75rem;
-	min-width: 2.75rem;
 }
 </style>

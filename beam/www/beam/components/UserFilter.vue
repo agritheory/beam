@@ -3,7 +3,7 @@
 </template>
 
 <script setup lang="ts">
-import type { BeamFilterChoice } from '@stonecrop/beam'
+import type { BeamFilterChoice } from '@/types/stonecrop.js'
 import { onMounted, ref } from 'vue'
 
 import { useBeamStore } from '@/stores/beam'

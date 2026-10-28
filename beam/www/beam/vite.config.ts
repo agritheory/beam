@@ -133,7 +133,6 @@ export default defineConfig({
 					'vue-router': 'VueRouter',
 					pinia: 'Pinia',
 					'@vueuse/core': 'VueUse',
-					'@stonecrop/beam': 'Beam',
 					'onscan.js': 'onScan',
 					'vue-toast-notification': 'VueToast',
 					typescript: 'ts',

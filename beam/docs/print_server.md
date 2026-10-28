@@ -4,7 +4,7 @@ For license information, please see license.txt-->
 # Print Server
 
 <div class="byline">
-  Rohan Bansal, Heather Kusmierz, and Tyler Matteson 2026-06-25
+  Rohan Bansal, Ishwarya, Lautaro Juarez, Heather Kusmierz, lauty95, Tyler Matteson, and Francisco Roldán 2026-10-15
 </div>
 
 

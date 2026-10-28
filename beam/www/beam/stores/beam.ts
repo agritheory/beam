@@ -344,7 +344,7 @@ export const useBeamStore = defineStore('beam', () => {
 			return { data, response }
 		} else {
 			await handleErrors(response)
-			return { data: null, response }
+			return { data: undefined, response }
 		}
 	}
 
@@ -357,7 +357,7 @@ export const useBeamStore = defineStore('beam', () => {
 			return { data, response }
 		} else {
 			await handleErrors(response)
-			return { data: null, response }
+			return { data: undefined, response }
 		}
 	}
 
@@ -370,7 +370,7 @@ export const useBeamStore = defineStore('beam', () => {
 			return { data, response }
 		} else {
 			await handleErrors(response)
-			return { data: null, response }
+			return { data: undefined, response }
 		}
 	}
 
@@ -383,7 +383,7 @@ export const useBeamStore = defineStore('beam', () => {
 			return { data, response }
 		} else {
 			await handleErrors(response)
-			return { data: null, response }
+			return { data: undefined, response }
 		}
 	}
 

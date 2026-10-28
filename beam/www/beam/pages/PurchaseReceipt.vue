@@ -20,7 +20,7 @@
 </template>
 
 <script setup lang="ts">
-import type { ListViewItem } from '@stonecrop/beam'
+import type { ListViewItem } from '@/types/stonecrop.js'
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -123,7 +123,7 @@ const items = computed((): (PurchaseReceiptItem & ListViewItem)[] => {
 				barcode: item.name,
 				count: {
 					count: item.received_qty,
-					of: item.qty,
+					of: item.qty ?? 0,
 				},
 			}
 		})

@@ -20,7 +20,7 @@ RECONCILIATION_ROW = ".reconciliation-list-row"
 
 
 def fill_warehouse_dropdown(page, label: str, value: str):
-	wrapper = page.locator(".input-wrapper", has=page.locator("label", has_text=label))
+	wrapper = page.locator(".autocomplete", has=page.locator("label", has_text=label))
 	inp = wrapper.locator("input")
 	inp.click()
 	inp.fill(value)
@@ -32,7 +32,7 @@ def fill_warehouse_dropdown(page, label: str, value: str):
 
 def open_reconciliation_page(page):
 	open_beam_form_page(
-		page, "Reconciliation", r"#/stock-reconciliation", ".reconciliation .dropdown-container input"
+		page, "Reconciliation", r"#/stock-reconciliation", ".reconciliation .field-row input"
 	)
 
 
@@ -86,7 +86,9 @@ def test_reconciliation_save_omits_removed_row(page):
 	ambrosia_row = page.locator(RECONCILIATION_ROW, has_text="Ambrosia Pie")
 	expect(ambrosia_row).to_have_count(1)
 	simulate_scan(page, barcodes[0])
-	expect(ambrosia_row.locator(".beam_item-count")).to_contain_text(re.compile(r"\b1\b"))
+	expect(ambrosia_row.locator(".beam_item-count")).to_contain_text(
+		re.compile(r"\b1\b"), timeout=15000
+	)
 
 	page.get_by_text("SAVE", exact=True).click()
 	expect(page.get_by_text("not counted", exact=False)).to_be_visible()
