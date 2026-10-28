@@ -90,7 +90,6 @@
 </template>
 
 <script setup lang="ts">
-import { BeamBtn, ToggleArrow } from '@stonecrop/beam'
 import { computed } from 'vue'
 
 import type { InspectionReading } from '@/types/inspection'

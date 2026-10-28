@@ -1,7 +1,7 @@
 // Copyright (c) 2026, AgriTheory and contributors
 // For license information, please see license.txt
 
-import type { ListViewItem } from '@stonecrop/beam'
+import type { ListViewItem } from '@/types/stonecrop.js'
 
 import type { LineInspection } from '@/types/inspection'
 import { useInspectionStore } from '@/stores/inspection'

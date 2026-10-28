@@ -22,7 +22,7 @@
 </template>
 
 <script setup lang="ts">
-import { BeamDayDivider, ListAnchor, ListItem, type ListViewItem } from '@stonecrop/beam'
+import type { ListViewItem } from '@/types/stonecrop.js'
 
 import InspectionLine from '@/components/InspectionLine.vue'
 
