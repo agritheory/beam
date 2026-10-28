@@ -94,7 +94,9 @@ function custom_print_button(frm) {
 					fieldname: 'printer_setting',
 					fieldtype: 'Link',
 					options: 'Network Printer Settings',
-					default: frappe.defaults.get_user_default('Network Printer Settings'),
+					default:
+						frappe.defaults.get_user_default('Network Printer Settings') ||
+						frappe.boot.beam?.default_network_printer_settings,
 					onchange() {
 						update_printer_default_checks(d)
 					},
