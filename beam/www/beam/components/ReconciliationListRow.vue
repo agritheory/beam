@@ -1,5 +1,5 @@
 <template>
-	<li :tabindex="item.count ? -1 : 0" class="beam_list-item reconciliation-list-row" @click="itemCount?.focus()">
+	<li :tabindex="item.count ? -1 : 0" class="beam_list-item reconciliation-list-row" @click="onRowClick">
 		<div class="beam_list-text">
 			<label class="beam--bold">{{ item.label || item.item_code }}</label>
 			<p v-if="item.description">{{ item.description }}</p>
@@ -30,13 +30,21 @@
 <script setup lang="ts">
 import ItemCount from '@/components/ItemCount.vue'
 import type { ListViewItem } from '@/types/stonecrop.js'
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 
 import type { ReconciliationListRow as ReconciliationRow } from '@/utils/reconciliation'
 
 const props = defineProps<{ item: ReconciliationRow & ListViewItem }>()
 const emit = defineEmits<{ remove: []; update: [item: ReconciliationRow & ListViewItem] }>()
 const itemCount = ref<InstanceType<typeof ItemCount> | null>(null)
+
+const onRowClick = async () => {
+	if (props.item.count && props.item.count.count == null) {
+		emit('update', { ...props.item, count: { ...props.item.count, count: 0 } })
+		await nextTick()
+	}
+	itemCount.value?.focus()
+}
 
 const onCountChange = (value: number) => {
 	if (!props.item.count) return
