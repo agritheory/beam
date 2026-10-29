@@ -5,7 +5,7 @@
 			:contenteditable="editable"
 			inputmode="decimal"
 			:class="{ 'beam--alert': !isCountComplete }"
-			@click.stop.prevent="validate"
+			@click="onClick"
 			@input.stop.prevent="debouncedValidate"
 			@paste="validate"
 			@beforeinput="preventLineBreak"
@@ -35,11 +35,19 @@ const {
 	uom?: string
 }>()
 
+const isEditable = computed(() => editable !== false && editable !== 'false')
 const isCountComplete = computed(() => denominator !== 0 && count.value === denominator)
 
 const validate = (payload: ClipboardEvent | InputEvent | MouseEvent | FocusEvent) => {
 	const newValue = Number((payload.target as HTMLElement).textContent) || 0
 	count.value = denominator ? Math.min(newValue, denominator) : newValue
+}
+
+const onClick = (payload: MouseEvent) => {
+	if (!isEditable.value) return
+	payload.stopPropagation()
+	payload.preventDefault()
+	validate(payload)
 }
 
 const onBlur = (payload: FocusEvent) => {
@@ -100,7 +108,7 @@ watch(count, sync)
 
 const focus = () => {
 	const el = countEl.value
-	if (!el) return
+	if (!el || !isEditable.value) return
 	el.focus()
 	selectContents(el)
 }

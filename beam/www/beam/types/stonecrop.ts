@@ -14,6 +14,7 @@ export type ListViewItem = {
 		count: number
 		of: number
 		uom?: string
+		editable?: boolean
 	}
 	date?: string
 	dateFormat?: string

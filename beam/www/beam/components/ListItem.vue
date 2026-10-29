@@ -12,7 +12,7 @@
 			@update:model-value="onCountUpdate"
 			:debounce="listItem.debounce"
 			:denominator="listItem.count.of"
-			:editable="true"
+			:editable="countEditable"
 			:uom="listItem.count.uom" />
 		<ItemCheck
 			v-if="listItem.hasOwnProperty('checked')"
@@ -22,7 +22,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import ItemCount from './ItemCount.vue'
 import ItemCheck from './ItemCheck.vue'
@@ -33,6 +33,7 @@ const emit = defineEmits<{ update: [item: ListViewItem] }>()
 
 const listItem = ref(item)
 const itemCount = ref<InstanceType<typeof ItemCount> | null>(null)
+const countEditable = computed(() => listItem.value.count?.editable ?? !listItem.value.linkComponent)
 
 const focusCount = (event: MouseEvent) => {
 	if ((event.currentTarget as HTMLElement).closest('a')) return
