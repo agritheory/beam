@@ -3,6 +3,7 @@
 
 import frappe
 
+from beam.beam.printer_defaults import add_network_printer_to_session_defaults
 from beam.beam.scan.config import get_scan_doctypes
 
 
@@ -15,6 +16,8 @@ def create_beam_mobile_user_role():
 
 
 def after_install():
+	add_network_printer_to_session_defaults()
+
 	print("Setting up Handling Unit Inventory Dimension")
 	if frappe.db.exists("Inventory Dimension", "Handling Unit"):
 		return

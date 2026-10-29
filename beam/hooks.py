@@ -97,6 +97,10 @@ after_migrate = "beam.install.after_install"
 # Boot
 extend_bootinfo = "beam.beam.boot.boot_session"
 
+on_session_creation = [
+	"beam.beam.printer_defaults.seed_session_printer",
+]
+
 
 # Desk Notifications
 # ------------------
