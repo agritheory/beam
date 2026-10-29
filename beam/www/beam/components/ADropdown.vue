@@ -8,6 +8,7 @@
 			<div v-on-click-outside="onClickOutside" class="autocomplete" :class="{ isOpen: dropdown.open }">
 				<input
 					:id="uuid"
+					ref="inputRef"
 					v-model="search"
 					type="text"
 					role="combobox"
@@ -52,6 +53,20 @@
 						@mouseenter="dropdown.activeItemIndex = i">
 						{{ result }}
 					</li>
+					<li
+						v-if="showHint"
+						role="presentation"
+						class="autocomplete-result autocomplete-hint"
+						@mousedown.prevent="dismissHint">
+						{{ hint }}
+					</li>
+					<li
+						v-if="showEmptyText"
+						role="presentation"
+						class="autocomplete-result autocomplete-hint"
+						@mousedown.prevent>
+						{{ emptyText }}
+					</li>
 				</ul>
 				<label class="aform_field-label" :for="uuid">{{ label }}</label>
 			</div>
@@ -73,6 +88,8 @@ const {
 	options = [],
 	isAsync = false,
 	filterFunction = undefined,
+	hint = '',
+	emptyText = '',
 	mode,
 	uuid,
 	errors,
@@ -83,6 +100,8 @@ const {
 	options?: string[]
 	isAsync?: boolean
 	filterFunction?: (search: string) => string[] | Promise<string[]>
+	hint?: string
+	emptyText?: string
 	mode?: 'edit' | 'read' | 'display'
 	uuid?: string
 	errors?: string[]
@@ -102,10 +121,16 @@ const dropdown = reactive({
 	activeItemIndex: null as number | null,
 	open: false,
 	loading: false,
+	searched: false,
 	results: [] as string[],
 })
 
 const resultsRef = useTemplateRef<HTMLElement>('resultsRef')
+const inputRef = useTemplateRef<HTMLInputElement>('inputRef')
+
+const noResults = computed(() => !dropdown.loading && dropdown.results.length === 0)
+const showHint = computed(() => !!hint && noResults.value && (!dropdown.searched || !search.value))
+const showEmptyText = computed(() => !!emptyText && noResults.value && dropdown.searched && !!search.value)
 
 fitDropdownList(resultsRef, {
 	isOpen: () => dropdown.open,
@@ -145,6 +170,7 @@ const filterResults = () => {
 const filter = async () => {
 	dropdown.open = true
 	dropdown.activeItemIndex = null
+	dropdown.searched = false
 	if (filterFunction) {
 		if (isAsync) dropdown.loading = true
 		try {
@@ -154,6 +180,7 @@ const filter = async () => {
 			dropdown.results = []
 		} finally {
 			if (isAsync) dropdown.loading = false
+			dropdown.searched = true
 		}
 	} else {
 		filterResults()
@@ -176,6 +203,7 @@ const openDropdown = () => {
 	const idx = choiceList.value.indexOf(search.value)
 	dropdown.activeItemIndex = isAsync ? null : idx >= 0 ? idx : null
 	dropdown.open = true
+	dropdown.searched = false
 	dropdown.results = isAsync ? [] : choiceList.value
 }
 
@@ -192,6 +220,11 @@ const closeDropdown = (result?: string) => {
 		search.value = committedValue.value
 		modelValue.value = committedValue.value
 	}
+}
+
+const dismissHint = () => {
+	closeDropdown()
+	inputRef.value?.blur()
 }
 
 const selectNextResult = () => {
@@ -284,6 +317,10 @@ watch(
 .autocomplete-result.is-active {
 	background-color: var(--sc-dropdown-option-hover-background);
 	color: var(--sc-cell-text-color);
+}
+
+.autocomplete-hint {
+	color: var(--sc-input-label-color);
 }
 
 .autocomplete-result.is-selected {

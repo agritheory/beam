@@ -17,7 +17,9 @@
 						:options="itemList"
 						v-model="itemCodeModel"
 						:isAsync="true"
-						:filterFunction="loadItems" />
+						:filterFunction="loadItems"
+						hint="Type to search for an item"
+						emptyText="No items found" />
 					<template #suffix>
 						<BeamBtn @click="clearCurrentItem('item_code')"> X </BeamBtn>
 					</template>
