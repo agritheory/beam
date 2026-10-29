@@ -39,7 +39,7 @@
 		</div>
 		<p v-if="predecessorsBlock" class="predecessor-warning">Complete predecessor work orders before continuing.</p>
 		<div class="box" v-show="items.length">
-			<ListView :items="items" @update="updateItem" :key="refreshKey" />
+			<ListView :items="items" @update="updateItem" />
 			<div class="pick-list-link" v-if="pickListName">
 				<RouterLink :to="{ name: 'pick_list', params: { id: pickListName } }">View Pick List</RouterLink>
 			</div>

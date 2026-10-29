@@ -1,5 +1,5 @@
 <template>
-	<li tabindex="0" class="beam_list-item reconciliation-list-row">
+	<li :tabindex="item.count ? -1 : 0" class="beam_list-item reconciliation-list-row" @click="itemCount?.focus()">
 		<div class="beam_list-text">
 			<label class="beam--bold">{{ item.label || item.item_code }}</label>
 			<p v-if="item.description">{{ item.description }}</p>
@@ -10,7 +10,7 @@
 		</div>
 		<ItemCount
 			v-else-if="item.count"
-			:key="countRenderKey"
+			ref="itemCount"
 			:model-value="item.count.count as number"
 			:debounce="item.debounce"
 			:denominator="0"
@@ -30,14 +30,13 @@
 <script setup lang="ts">
 import ItemCount from '@/components/ItemCount.vue'
 import type { ListViewItem } from '@/types/stonecrop.js'
-import { computed } from 'vue'
+import { ref } from 'vue'
 
 import type { ReconciliationListRow as ReconciliationRow } from '@/utils/reconciliation'
 
 const props = defineProps<{ item: ReconciliationRow & ListViewItem }>()
 const emit = defineEmits<{ remove: []; update: [item: ReconciliationRow & ListViewItem] }>()
-
-const countRenderKey = computed(() => `${props.item.item_code}:${props.item.count?.count ?? 'blank'}`)
+const itemCount = ref<InstanceType<typeof ItemCount> | null>(null)
 
 const onCountChange = (value: number) => {
 	if (!props.item.count) return
@@ -68,7 +67,8 @@ const onCountChange = (value: number) => {
 	list-style: none;
 }
 
-.beam_list-item.reconciliation-list-row:focus {
+.beam_list-item.reconciliation-list-row:focus,
+.beam_list-item.reconciliation-list-row:focus-within {
 	outline: 2px solid var(--sc-focus-cell-outline);
 	background-color: var(--sc-focus-cell-background);
 }

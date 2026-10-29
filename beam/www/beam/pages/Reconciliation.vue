@@ -21,7 +21,7 @@
 	<ul v-if="items.length > 0" class="beam_list-view reconciliation-list" :key="componentKey">
 		<ReconciliationListRow
 			v-for="row in items"
-			:key="`${row.item_code}-${row.count?.count ?? 'blank'}`"
+			:key="row.item_code"
 			:item="row"
 			@update="handleItemUpdate"
 			@remove="removeRow(row.item_code)" />

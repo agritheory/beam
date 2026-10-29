@@ -1,5 +1,5 @@
 <template>
-	<li tabindex="0" class="beam_list-item">
+	<li :tabindex="listItem.count ? -1 : 0" class="beam_list-item" @click="focusCount">
 		<div class="beam_list-text">
 			<label class="beam--bold">{{ listItem.label }}</label>
 			<p>{{ listItem.description }}</p>
@@ -7,12 +7,17 @@
 
 		<ItemCount
 			v-if="listItem.count"
-			v-model="listItem.count.count"
+			ref="itemCount"
+			:model-value="listItem.count.count"
+			@update:model-value="onCountUpdate"
 			:debounce="listItem.debounce"
 			:denominator="listItem.count.of"
 			:editable="true"
 			:uom="listItem.count.uom" />
-		<ItemCheck v-if="listItem.hasOwnProperty('checked')" v-model="listItem.checked" />
+		<ItemCheck
+			v-if="listItem.hasOwnProperty('checked')"
+			:model-value="listItem.checked"
+			@update:model-value="onCheckedUpdate" />
 	</li>
 </template>
 
@@ -27,14 +32,30 @@ const { item } = defineProps<{ item: ListViewItem }>()
 const emit = defineEmits<{ update: [item: ListViewItem] }>()
 
 const listItem = ref(item)
+const itemCount = ref<InstanceType<typeof ItemCount> | null>(null)
+
+const focusCount = (event: MouseEvent) => {
+	if ((event.currentTarget as HTMLElement).closest('a')) return
+	itemCount.value?.focus()
+}
 
 watch(
-	listItem,
+	() => item,
 	value => {
-		emit('update', value)
-	},
-	{ deep: true }
+		listItem.value = value
+	}
 )
+
+const onCountUpdate = (count: number) => {
+	if (!listItem.value.count) return
+	listItem.value.count.count = count
+	emit('update', listItem.value)
+}
+
+const onCheckedUpdate = (checked: boolean) => {
+	listItem.value.checked = checked
+	emit('update', listItem.value)
+}
 </script>
 
 <style scoped>
@@ -51,7 +72,8 @@ watch(
 	outline: 2px solid transparent;
 	outline-offset: -1px;
 
-	&:focus {
+	&:focus,
+	&:focus-within {
 		outline: 2px solid var(--sc-focus-cell-outline);
 		background-color: var(--sc-focus-cell-background);
 	}
