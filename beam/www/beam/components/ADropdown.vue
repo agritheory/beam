@@ -60,11 +60,7 @@
 						@mousedown.prevent="dismissHint">
 						{{ hint }}
 					</li>
-					<li
-						v-if="showEmptyText"
-						role="presentation"
-						class="autocomplete-result autocomplete-hint"
-						@mousedown.prevent>
+					<li v-if="showEmptyText" role="presentation" class="autocomplete-result autocomplete-hint" @mousedown.prevent>
 						{{ emptyText }}
 					</li>
 				</ul>
