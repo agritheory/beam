@@ -56,11 +56,11 @@
 					<li
 						v-if="showHint"
 						role="presentation"
-						class="autocomplete-result autocomplete-hint"
+						class="autocomplete-hint"
 						@mousedown.prevent="dismissHint">
 						{{ hint }}
 					</li>
-					<li v-if="showEmptyText" role="presentation" class="autocomplete-result autocomplete-hint" @mousedown.prevent>
+					<li v-if="showEmptyText" role="presentation" class="autocomplete-empty" @mousedown.prevent>
 						{{ emptyText }}
 					</li>
 				</ul>
@@ -315,7 +315,12 @@ watch(
 	color: var(--sc-cell-text-color);
 }
 
-.autocomplete-hint {
+.autocomplete-hint,
+.autocomplete-empty {
+	text-align: left;
+	box-sizing: border-box;
+	border-left: 2px solid transparent;
+	padding: 0.35rem 0.75ch 0.35rem 0.25ch;
 	color: var(--sc-input-label-color);
 }
 

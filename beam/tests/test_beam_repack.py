@@ -358,3 +358,66 @@ def test_repack_bom_disabled_until_item_set(page):
 	expect(item_input).to_have_value("")
 	expect(bom_input).to_be_disabled()
 	expect(bom_input).to_have_value("")
+
+
+ITEM_SEARCH_HINT = "Type to search for an item"
+ITEM_SEARCH_EMPTY = "No items found"
+
+
+def repack_item_wrapper(page):
+	return page.locator(".autocomplete", has=page.locator("label", has_text="Item to Repack"))
+
+
+@pytest.mark.order(329)
+def test_repack_item_hint_is_a_message_not_an_option(page):
+	open_repack_page(page)
+	wrapper = repack_item_wrapper(page)
+	item_input = repack_item_input(page)
+	hint = wrapper.get_by_text(ITEM_SEARCH_HINT, exact=True)
+
+	expect(hint).to_be_hidden()
+	item_input.click()
+	expect(hint).to_be_visible()
+	expect(repack_item_results(page)).to_have_count(0)
+
+	# the keyboard cannot select it
+	item_input.press("ArrowDown")
+	item_input.press("Enter")
+	expect(item_input).to_have_value("")
+
+	# tapping it closes the list and leaves the field empty
+	hint.click()
+	expect(hint).to_be_hidden()
+	expect(item_input).to_have_value("")
+	expect(item_input).not_to_be_focused()
+
+	# focusing again shows it again
+	item_input.click()
+	expect(hint).to_be_visible()
+
+
+@pytest.mark.order(338)
+def test_repack_item_search_without_matches_shows_message(page):
+	open_repack_page(page)
+	wrapper = repack_item_wrapper(page)
+	item_input = repack_item_input(page)
+	hint = wrapper.get_by_text(ITEM_SEARCH_HINT, exact=True)
+	no_items = wrapper.get_by_text(ITEM_SEARCH_EMPTY, exact=True)
+
+	item_input.click()
+	item_input.press_sequentially("zzzq", delay=100)
+	expect(no_items).to_be_visible()
+	expect(hint).to_be_hidden()
+	expect(repack_item_results(page)).to_have_count(0)
+
+	# clearing the text goes back to the hint
+	item_input.press("Control+A")
+	item_input.press("Backspace")
+	expect(hint).to_be_visible()
+	expect(no_items).to_be_hidden()
+
+	# matches replace both messages
+	item_input.press_sequentially("Gooseberry", delay=100)
+	expect(repack_item_results(page).first).to_have_text(re.compile(r"^Gooseberry"))
+	expect(hint).to_be_hidden()
+	expect(no_items).to_be_hidden()
