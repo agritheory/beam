@@ -53,11 +53,7 @@
 						@mouseenter="dropdown.activeItemIndex = i">
 						{{ result }}
 					</li>
-					<li
-						v-if="showHint"
-						role="presentation"
-						class="autocomplete-hint"
-						@mousedown.prevent="dismissHint">
+					<li v-if="showHint" role="presentation" class="autocomplete-hint" @mousedown.prevent="dismissHint">
 						{{ hint }}
 					</li>
 					<li v-if="showEmptyText" role="presentation" class="autocomplete-empty" @mousedown.prevent>
