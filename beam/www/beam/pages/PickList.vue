@@ -15,7 +15,7 @@
 	<ScanOutput />
 
 	<div class="box" v-show="items.length">
-		<ListView :items="items" :key="refreshKey" @update="updateItem" />
+		<ListView :items="items" @update="updateItem" />
 	</div>
 
 	<ControlButtons :buttons="controlButtons" />
@@ -38,11 +38,9 @@ const store = useBeamStore()
 const pickListId = route.params.id.toString()
 
 const pickList = ref(store.cache.mappers[pickListId] as PickList)
-const refreshKey = ref(0)
 
 store.$subscribe(mutation => {
 	if (['patch function', 'patch object'].includes(mutation.type)) {
-		refreshKey.value++
 		pickList.value = store.cache.mappers[pickListId] as PickList
 	}
 })

@@ -11,6 +11,9 @@
 	<ScanOutput v-show="store.scanner.config.show_scan_output" />
 
 	<ListView :items="items" :key="listKey" />
+	<div class="begin" v-if="loaded && items.length == 0">
+		<span>No open pick lists</span>
+	</div>
 </template>
 
 <script setup lang="ts">
@@ -32,6 +35,7 @@ type PickListRow = {
 const store = useBeamStore()
 const items = ref<ListViewItem[]>([])
 const listKey = ref(0)
+const loaded = ref(false)
 
 const loadPickLists = async () => {
 	const rows = await store.getAll<PickListRow[]>('Pick List', {
@@ -56,6 +60,7 @@ const loadPickLists = async () => {
 		}
 	})
 	listKey.value++
+	loaded.value = true
 }
 
 onMounted(loadPickLists)

@@ -296,6 +296,7 @@ def test_pick_queue_lists_open_pick_lists(page):
 	assert draft_names
 	for name in draft_names[:2]:
 		expect(page.get_by_text(name, exact=True)).to_be_visible(timeout=15000)
+	expect(page.get_by_text("No open pick lists", exact=True)).to_have_count(0)
 
 
 @pytest.mark.order(318)
@@ -327,3 +328,7 @@ def test_work_order_with_pick_list_shows_read_only_material_counts(
 	butter_line = page.locator(".box .beam_list-item").filter(has_text="Butter").first
 	expect(butter_line.locator(".beam_item-count")).to_be_visible()
 	expect(page.get_by_text("TRANSFER", exact=True)).to_have_count(0)
+	# progress counts are derived from other documents, so they can't be edited or focused
+	expect(page.locator(".box .beam_item-count [contenteditable='true']")).to_have_count(0)
+	butter_line.get_by_text("Butter").first.click()
+	expect(page.locator("[contenteditable='true']:focus")).to_have_count(0)

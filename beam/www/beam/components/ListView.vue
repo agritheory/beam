@@ -1,6 +1,6 @@
 <template>
 	<ul class="beam_list-view">
-		<li v-for="item in items" :key="item.barcode || item.label">
+		<li v-for="{ item, key } in rows" :key="key">
 			<template v-if="item.linkComponent == 'BeamDayDivider'">
 				<BeamDayDivider :item="item"></BeamDayDivider>
 			</template>
@@ -19,14 +19,24 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 
 import BeamDayDivider from './BeamDayDivider.vue'
 import ListItem from './ListItem.vue'
 import type { ListViewItem } from '@/types/stonecrop.js'
 
-defineProps<{ items: ListViewItem[] }>()
+const props = defineProps<{ items: ListViewItem[] }>()
 const emit = defineEmits<{ update: [item: ListViewItem]; scrollbottom: [] }>()
+
+const rows = computed(() => {
+	const seen = new Map<string, number>()
+	return props.items.map(item => {
+		const base = String(item.barcode || item.label || '')
+		const occurrence = seen.get(base) ?? 0
+		seen.set(base, occurrence + 1)
+		return { item, key: occurrence ? `${base}#${occurrence}` : base }
+	})
+})
 
 onMounted(() => {
 	window.addEventListener('scroll', handleScroll)

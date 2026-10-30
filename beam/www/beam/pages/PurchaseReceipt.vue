@@ -12,7 +12,7 @@
 
 	<!-- body section -->
 	<div class="box" v-show="items.length">
-		<ListView :items="items" :key="refreshKey" @update="handleItemUpdate" />
+		<ListView :items="items" @update="handleItemUpdate" />
 	</div>
 
 	<!-- footer section -->
@@ -21,7 +21,7 @@
 
 <script setup lang="ts">
 import type { ListViewItem } from '@/types/stonecrop.js'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 import ControlButtons from '@/components/ControlButtons.vue'
@@ -31,7 +31,6 @@ import { itemListLine } from '@/utils/itemListLine'
 
 const route = useRoute()
 const store = useBeamStore()
-const refreshKey = ref(0)
 
 const purchaseOrderId = computed(() => route.params.id?.toString() || 'new-purchase-receipt')
 
@@ -51,13 +50,6 @@ const handleItemUpdate = (updatedItem: PurchaseReceiptItem & ListViewItem) => {
 		doc.dirty = true
 	}
 }
-
-// hack: since array reactivity is not present in Vue 3, force-refresh the listviews on store update
-store.$subscribe(mutation => {
-	if (['patch function', 'patch object'].includes(mutation.type)) {
-		refreshKey.value++
-	}
-})
 
 const items = computed((): (PurchaseReceiptItem & ListViewItem)[] => {
 	if (!purchaseReceipt.value?.items) return []
