@@ -1,7 +1,8 @@
 FROM debian:testing-slim
 
-# Install Packages (basic tools, cups, basic drivers, HP drivers)
+# Install Packages (basic tools, cups, basic drivers, HP PPDs)
 # printer-driver-all and printer-driver-gutenprint omitted (unavailable on Debian arm64)
+# hpijs-ppds and hplip have no installation candidate on Debian testing
 RUN apt-get update \
     && apt-get install -y \
         sudo \
@@ -13,12 +14,9 @@ RUN apt-get update \
         cups-filters \
         foomatic-db-compressed-ppds \
         openprinting-ppds \
-        hpijs-ppds \
         hp-ppd \
-        hplip \
         smbclient \
         printer-driver-cups-pdf \
-        hplip \
         avahi-daemon \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
