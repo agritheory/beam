@@ -17,12 +17,15 @@
 
 	<!-- body section -->
 	<ListView :items="shipList" :key="listKey" />
+	<div class="begin" v-if="loaded && shipList.length == 0">
+		<span>{{ hasFilters ? 'No results for these filters' : 'Nothing to ship' }}</span>
+	</div>
 </template>
 
 <script setup lang="ts">
 import type { ListViewItem } from '@/types/stonecrop.js'
 import { useInfiniteScroll } from '@vueuse/core'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import DemandFilters from '@/components/DemandFilters.vue'
 import ScanOutput from '@/components/ScanOutput.vue'
@@ -39,6 +42,8 @@ const canLoadMore = ref(true)
 const page = ref(1)
 const listKey = ref(0)
 const loading = ref(false)
+const loaded = ref(false)
+const hasFilters = computed(() => Object.keys(filters.value).some(key => key !== 'doctype'))
 
 const getShipments = async () => {
 	if (loading.value || !canLoadMore.value) {
@@ -51,6 +56,8 @@ const getShipments = async () => {
 			...(Object.keys(filters.value).length && { filters: JSON.stringify(filters.value) }),
 			page: page.value,
 		})
+
+		loaded.value = true
 
 		if (!data || data.length === 0) {
 			canLoadMore.value = false
@@ -113,6 +120,7 @@ const addDivider = (date: string | null) => {
 }
 
 const resetShipments = () => {
+	loaded.value = false
 	page.value = 1
 	ship.value = []
 	shipList.value = []
