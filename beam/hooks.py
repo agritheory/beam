@@ -10,6 +10,15 @@ app_email = "support@agritheory.dev"
 app_license = "MIT"
 required_apps = ["erpnext"]
 
+add_to_apps_screen = [
+	{
+		"name": "beam",
+		"logo": "/beam/icon/beam_icon-192x192.png",
+		"title": "BEAM",
+		"route": "/beam",
+	}
+]
+
 # Includes in <head>
 # ------------------
 
