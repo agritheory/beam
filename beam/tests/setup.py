@@ -678,6 +678,7 @@ def create_production_plan(settings, prod_plan_from_doc):
 	pp.po_items = sorted(pp.po_items, key=lambda x: x.get("item_code"))
 
 	for idx, item in enumerate(pp.po_items):
+		item.idx = idx + 1
 		item.planned_start_date = settings.day + datetime.timedelta(days=idx)
 
 	pp.get_sub_assembly_items()
@@ -688,6 +689,8 @@ def create_production_plan(settings, prod_plan_from_doc):
 		start_time += datetime.timedelta(minutes=time + 2)
 	pp.for_warehouse = "Storeroom - APC"
 	pp.sub_assembly_items = sorted(pp.sub_assembly_items, key=lambda x: x.get("production_item"))
+	for idx, item in enumerate(pp.sub_assembly_items, start=1):
+		item.idx = idx
 	raw_materials = get_items_for_material_requests(
 		pp.as_dict(), warehouses=None, get_parent_warehouse_data=None
 	)
