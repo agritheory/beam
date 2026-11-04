@@ -17,12 +17,15 @@
 
 	<!-- body section -->
 	<ListView :items="receiveList" :key="listKey" />
+	<div class="begin" v-if="loaded && receiveList.length == 0">
+		<span>{{ hasFilters ? 'No results for these filters' : 'Nothing to receive' }}</span>
+	</div>
 </template>
 
 <script setup lang="ts">
 import type { ListViewItem } from '@/types/stonecrop.js'
 import { useInfiniteScroll } from '@vueuse/core'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import ScanOutput from '@/components/ScanOutput.vue'
 import DemandFilters from '@/components/DemandFilters.vue'
@@ -39,6 +42,8 @@ const canLoadMore = ref(true)
 const page = ref(1)
 const listKey = ref(0)
 const loading = ref(false)
+const loaded = ref(false)
+const hasFilters = computed(() => Object.keys(filters.value).length > 0)
 
 const getReceive = async () => {
 	if (loading.value || !canLoadMore.value) {
@@ -51,6 +56,8 @@ const getReceive = async () => {
 			...(Object.keys(filters.value).length && { filters: JSON.stringify(filters.value) }),
 			page: page.value,
 		})
+
+		loaded.value = true
 
 		if (!data || data.length === 0) {
 			canLoadMore.value = false
@@ -113,6 +120,7 @@ const addDivider = (date: string | null) => {
 }
 
 const resetReceive = () => {
+	loaded.value = false
 	page.value = 1
 	receive.value = []
 	receiveList.value = []

@@ -29,6 +29,9 @@
 
 	<!-- body section -->
 	<ListView :items="items" :key="listKey" />
+	<div class="begin" v-if="loaded && items.length == 0">
+		<span>{{ hasFilters ? 'No results for these filters' : 'No work orders' }}</span>
+	</div>
 </template>
 
 <script setup lang="ts">
@@ -51,6 +54,8 @@ const items = ref<ListViewItem[]>([])
 const orders = ref<WorkOrder[]>([])
 const store = useBeamStore()
 const listKey = ref(0)
+const loaded = ref(false)
+const hasFilters = computed(() => Object.keys(filters.value).length > 0)
 
 const showDraftWorkOrders = (): boolean => {
 	const company = defaultCompany()
@@ -96,6 +101,7 @@ const getItems = async () => {
 		order_by: 'creation asc',
 	})
 
+	loaded.value = true
 	setItems(orders.value)
 }
 
