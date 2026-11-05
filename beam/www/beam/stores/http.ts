@@ -3,8 +3,20 @@
 
 import { defineStore } from 'pinia'
 
+import { handleErrors } from '@/utils/error.js'
+
 declare const frappe: {
-	csrf_token: string
+	csrf_token?: string
+}
+
+function csrfToken(): string {
+	if (typeof frappe !== 'undefined' && frappe.csrf_token) {
+		return frappe.csrf_token
+	}
+	if (typeof window !== 'undefined' && (window as { csrf_token?: string }).csrf_token) {
+		return (window as { csrf_token?: string }).csrf_token!
+	}
+	return ''
 }
 
 export const useHttpStore = defineStore('http', () => {
@@ -26,7 +38,7 @@ export const useHttpStore = defineStore('http', () => {
 			method: 'GET',
 			headers: {
 				'Content-Type': 'application/json',
-				'X-Frappe-CSRF-Token': frappe.csrf_token,
+				'X-Frappe-CSRF-Token': csrfToken(),
 			},
 		})
 	}
@@ -37,7 +49,7 @@ export const useHttpStore = defineStore('http', () => {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
-				'X-Frappe-CSRF-Token': frappe.csrf_token,
+				'X-Frappe-CSRF-Token': csrfToken(),
 			},
 			body: JSON.stringify(data),
 		})
@@ -49,10 +61,21 @@ export const useHttpStore = defineStore('http', () => {
 			method: 'PUT',
 			headers: {
 				'Content-Type': 'application/json',
-				'X-Frappe-CSRF-Token': frappe.csrf_token,
+				'X-Frappe-CSRF-Token': csrfToken(),
 			},
 			body: JSON.stringify(data),
 		})
+	}
+
+	const callMethod = async <T>(method: string, args: Record<string, unknown> = {}): Promise<T> => {
+		const url = `/api/method/${method}`
+		const response = await post(url, args)
+		if (!response.ok) {
+			await handleErrors(response)
+			throw new Error(method)
+		}
+		const { message }: { message: T } = await response.json()
+		return message
 	}
 
 	return {
@@ -60,5 +83,6 @@ export const useHttpStore = defineStore('http', () => {
 		get,
 		post,
 		put,
+		callMethod,
 	}
 })

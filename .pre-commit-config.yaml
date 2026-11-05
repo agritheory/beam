@@ -30,10 +30,20 @@ repos:
   - repo: local
     hooks:
       - id: no-titled-beam
-        name: "Use 'BEAM' not 'Beam'"
+        name: "Use 'BEAM' not 'Beam' (markdown)"
         language: pygrep
         entry: '\bBeam\b'
         files: '\.md$'
+      - id: beam-wrong-app-title
+        name: "hooks.py app_title must be BEAM"
+        language: pygrep
+        entry: 'app_title = "(beam|Beam)"'
+        files: 'hooks\.py$'
+      - id: beam-wrong-apps-screen-title
+        name: "hooks.py add_to_apps_screen title must be BEAM"
+        language: pygrep
+        entry: '"title": "(beam|Beam)"'
+        files: 'hooks\.py$'
 
   - repo: https://github.com/asottile/pyupgrade
     rev: v3.20.0

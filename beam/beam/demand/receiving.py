@@ -11,6 +11,7 @@ from pypika import Query, Table
 from pypika.terms import ValueWrapper
 
 from beam.beam.demand.sqlite import get_demand_db, reset_receiving_db
+from beam.beam.mobile_purchase_receipt import receive_form_route_id
 from beam.beam.demand.utils import (
 	Receiving,
 	get_datetime_from_epoch,
@@ -289,6 +290,7 @@ def get_receiving_demand(*args, **kwargs) -> list[Receiving]:
 	with get_demand_db() as conn:
 		cursor = conn.cursor()
 		rows: list[Receiving] = cursor.execute(query).fetchall()
+		po_route_cache: dict[str, str] = {}
 		for row in rows:
 			row.update(
 				{
@@ -300,4 +302,11 @@ def get_receiving_demand(*args, **kwargs) -> list[Receiving]:
 					"creation": get_datetime_from_epoch(row.creation),
 				}
 			)
+			if row.get("doctype") == "Purchase Order":
+				parent = row.get("parent")
+				if parent not in po_route_cache:
+					po_route_cache[parent] = receive_form_route_id(parent)
+				row["receive_route_id"] = po_route_cache[parent]
+			else:
+				row["receive_route_id"] = row.get("parent")
 		return rows
