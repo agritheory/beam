@@ -77,6 +77,84 @@ function apply_printer_defaults(selection) {
 	return Promise.all(calls)
 }
 
+frappe.provide('beam')
+
+/**
+ * Open the Network Printer Settings dialog with default-printer handling.
+ *
+ * @param {object} frm - the current form
+ * @param {object} opts
+ * @param {string} opts.method - whitelisted method that prints; receives `args` plus
+ *   `printer_setting` and `print_format` from the dialog
+ * @param {object} [opts.args] - extra arguments for `method`
+ * @param {string} [opts.print_format_doctype] - limits Print Format choices to this DocType
+ * @param {string} [opts.default_print_format] - preselected Print Format
+ */
+beam.print_dialog = function (frm, { method, args = {}, print_format_doctype, default_print_format } = {}) {
+	if (!method) {
+		frappe.throw(__('beam.print_dialog requires a method'))
+	}
+	let d = new frappe.ui.Dialog({
+		title: __('Select Printer Setting'),
+		fields: [
+			{
+				label: __('Printer Setting'),
+				fieldname: 'printer_setting',
+				fieldtype: 'Link',
+				options: 'Network Printer Settings',
+				default:
+					frappe.defaults.get_user_default('Network Printer Settings') ||
+					frappe.boot.beam?.default_network_printer_settings,
+				onchange() {
+					update_printer_default_checks(d)
+				},
+			},
+			{
+				label: __('Print Format'),
+				fieldname: 'print_format',
+				fieldtype: 'Link',
+				options: 'Print Format',
+				default: default_print_format,
+				get_query: function () {
+					return {
+						filters: print_format_doctype ? { doc_type: print_format_doctype } : {},
+					}
+				},
+			},
+			{
+				label: __('Save as my default printer'),
+				fieldname: 'save_as_default',
+				fieldtype: 'Check',
+				default: 0,
+			},
+			{
+				label: __('Set as session default'),
+				fieldname: 'set_session_default',
+				fieldtype: 'Check',
+				default: 0,
+			},
+		],
+		primary_action_label: 'Select',
+		primary_action(selection) {
+			d.hide()
+			frappe.call({
+				method: method,
+				args: {
+					...args,
+					printer_setting: selection.printer_setting,
+					print_format: selection.print_format,
+				},
+				callback() {
+					apply_printer_defaults(selection)
+				},
+			})
+		},
+	})
+	d.show()
+	update_printer_default_checks(d)
+	return d
+}
+
 function custom_print_button(frm) {
 	if (frm.doc.docstatus != 1) {
 		return
@@ -86,65 +164,15 @@ function custom_print_button(frm) {
 		return
 	}
 	frm.add_custom_button(__('<span class="fa fa-print"></span> Print Handling Unit'), () => {
-		let d = new frappe.ui.Dialog({
-			title: __('Select Printer Setting'),
-			fields: [
-				{
-					label: __('Printer Setting'),
-					fieldname: 'printer_setting',
-					fieldtype: 'Link',
-					options: 'Network Printer Settings',
-					default:
-						frappe.defaults.get_user_default('Network Printer Settings') ||
-						frappe.boot.beam?.default_network_printer_settings,
-					onchange() {
-						update_printer_default_checks(d)
-					},
-				},
-				{
-					label: __('Print Format'),
-					fieldname: 'print_format',
-					fieldtype: 'Link',
-					options: 'Print Format',
-					default: frappe.boot.beam?.default_hu_print_format,
-					get_query: function () {
-						return {
-							filters: { doc_type: 'Handling Unit' },
-						}
-					},
-				},
-				{
-					label: __('Save as my default printer'),
-					fieldname: 'save_as_default',
-					fieldtype: 'Check',
-					default: 0,
-				},
-				{
-					label: __('Set as session default'),
-					fieldname: 'set_session_default',
-					fieldtype: 'Check',
-					default: 0,
-				},
-			],
-			primary_action_label: 'Select',
-			primary_action(selection) {
-				d.hide()
-				frappe.call({
-					method: 'beam.beam.printing.print_handling_units',
-					args: {
-						doctype: frm.doc.doctype,
-						name: frm.doc.name,
-						printer_setting: selection.printer_setting,
-						print_format: selection.print_format,
-						doc: frm.doc,
-					},
-					callback() {
-						apply_printer_defaults(selection)
-					},
-				})
+		beam.print_dialog(frm, {
+			method: 'beam.beam.printing.print_handling_units',
+			args: {
+				doctype: frm.doc.doctype,
+				name: frm.doc.name,
+				doc: frm.doc,
 			},
+			print_format_doctype: 'Handling Unit',
+			default_print_format: frappe.boot.beam?.default_hu_print_format,
 		})
-		d.show()
-		update_printer_default_checks(d)
 	})
 }

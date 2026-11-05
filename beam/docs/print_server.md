@@ -63,3 +63,18 @@ A convenient Print Handling Unit button on relevant doctypes enables the user to
 Any configured network printers will display as options in the Select Printer Setting dialog.
 
 ![Screen shot of the Select Printer Setting dialog with two example printer options displaying as options.](./assets/select_printer_dialog.png)
+
+## Reusing the printer dialog from another app
+
+Other apps can open the same Select Printer Setting dialog, including the per-user and session default printer handling, with `beam.print_dialog`:
+
+```js
+beam.print_dialog(frm, {
+	method: 'my_app.printing.print_labels', // whitelisted method that prints
+	args: { name: frm.doc.name }, // extra arguments for `method`
+	print_format_doctype: 'My DocType', // optional, limits Print Format choices
+	default_print_format: 'My Label Format', // optional, preselected Print Format
+})
+```
+
+`method` is called with `args` plus the `printer_setting` and `print_format` chosen in the dialog. When the call succeeds, the **Save as my default printer** and **Set as session default** choices are applied.
