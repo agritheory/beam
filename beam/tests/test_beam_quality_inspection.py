@@ -16,12 +16,26 @@ from beam.beam.quality_inspection import (
 	save_inspection_draft,
 	submit_inspection,
 )
-from beam.tests.playwright_utils import use_current_db_transaction
+from beam.tests.playwright_utils import goto_beam_portal_route, use_current_db_transaction
 from beam.tests.quality_inspection_fixtures import (
 	BEAM_QI_ITEM,
+	disable_flour_incoming_inspection,
+	enable_flour_incoming_inspection,
 	ensure_beam_qi_draft_receipt,
-	ensure_beam_qi_purchase_order,
+	ensure_beam_qi_draft_receipt_committed,
+	purchase_order_for_receipt,
 )
+
+
+@pytest.fixture(scope="module", autouse=True)
+def flour_requires_inspection_for_qi_tests():
+	"""Flour incoming inspection applies only during this module (not global fixtures)."""
+	enable_flour_incoming_inspection()
+	frappe.db.commit()
+	yield
+	disable_flour_incoming_inspection()
+	frappe.db.commit()
+
 
 MOCK_CAMERA = (
 	"""
@@ -50,8 +64,44 @@ def apply_init_script(page, script):
 	page.reload()
 
 
+def expand_inspection_parameter(page, parameter: str) -> None:
+	section = page.locator(f'[data-inspection-parameter="{parameter}"]')
+	expect(section).to_be_visible()
+	body = section.locator(".inspection-parameter-body")
+	if not body.is_visible():
+		section.locator("button.inspection-parameter-header").click()
+	expect(body).to_be_visible()
+
+
+def fill_numeric_parameter(page, parameter: str, values: list[str]) -> None:
+	expand_inspection_parameter(page, parameter)
+	section = page.locator(f'[data-inspection-parameter="{parameter}"]')
+	for index, value in enumerate(values, start=1):
+		field = section.locator(f"#qi-{parameter}-{index}")
+		while field.count() == 0:
+			section.get_by_role("button", name="Add a reading").click()
+			field = section.locator(f"#qi-{parameter}-{index}")
+		field.fill(value)
+
+
+def fill_text_parameter(page, parameter: str, value: str) -> None:
+	expand_inspection_parameter(page, parameter)
+	page.locator(f"#qi-{parameter}-1").fill(value)
+
+
+def choose_passfail(page, parameter: str, choice: str) -> None:
+	expand_inspection_parameter(page, parameter)
+	page.locator(f'[data-inspection-parameter="{parameter}"]').get_by_role(
+		"button", name=choice
+	).click()
+
+
 @pytest.mark.order(360)
 def test_awaiting_inspection_list(page, setup):
+	with use_current_db_transaction():
+		from beam.tests.setup import seed_settings
+
+		ensure_beam_qi_draft_receipt_committed(seed_settings())
 	page.get_by_text("Inspect").click()
 	page.wait_for_url("**/beam#/inspect")
 	expect(page.get_by_text(BEAM_QI_ITEM).first).to_be_visible()
@@ -59,33 +109,35 @@ def test_awaiting_inspection_list(page, setup):
 
 @pytest.mark.order(361)
 def test_quality_inspection_accept_with_samples(page, setup):
+	# Login fixture loads /beam over HTTP first; Camera.vue hides the FAB unless
+	# isSecureContext is true at mount. Reload after registering the mock (same as test_beam_camera).
+	apply_init_script(page, MOCK_CAMERA)
+
 	with use_current_db_transaction():
 		from beam.tests.setup import seed_settings
 
 		settings = seed_settings()
-		pr_name = ensure_beam_qi_draft_receipt(settings)
-		po_name = ensure_beam_qi_purchase_order(settings)
+		pr_name = ensure_beam_qi_draft_receipt_committed(settings)
+		po_name = purchase_order_for_receipt(pr_name)
 
-	page.goto(f"/beam#/purchase-receipt/{po_name}")
+	goto_beam_portal_route(page, f"purchase-receipt/{po_name}")
 	page.wait_for_timeout(1000)
 
 	inspect_link = page.get_by_role("link", name="Inspection required").first
 	expect(inspect_link).to_be_visible()
 	inspect_link.click()
 	page.wait_for_url("**/inspect/**")
+	expect(page.locator(".inspection-shell").first).to_be_visible(timeout=15000)
 
-	page.locator("#sample-size").fill("3")
-	page.get_by_label("Diameter sample 1").fill("11")
-	page.get_by_label("Diameter sample 2").fill("11.2")
-	page.get_by_label("Diameter sample 3").fill("10.9")
-	page.get_by_label("Weight sample 1").fill("4.6")
-	page.get_by_label("Weight sample 2").fill("4.7")
-	page.get_by_label("Weight sample 3").fill("4.8")
-	page.get_by_label("Color reading").fill("Natural")
-	page.get_by_role("button", name="Accept").click()
+	fill_numeric_parameter(page, "Diameter", ["11", "11.2", "10.9"])
+	fill_numeric_parameter(page, "Weight", ["4.6", "4.7", "4.8"])
+	fill_text_parameter(page, "Color", "Natural")
+	choose_passfail(page, "Visual", "Accept")
 
-	apply_init_script(page, MOCK_CAMERA)
+	expect(page.locator(".camera-panel")).to_be_visible(timeout=10000)
 	page.get_by_role("button", name="Open camera").click()
+	expect(page.get_by_role("dialog", name="Camera")).to_be_visible()
+	page.get_by_role("tab", name="Photo").click()
 	page.get_by_role("button", name="Take photo").click()
 	page.get_by_role("button", name="Attach (1)").click()
 
@@ -105,12 +157,14 @@ def test_quality_inspection_formula_reject(page, setup):
 
 		pr_name = ensure_beam_qi_draft_receipt(seed_settings())
 		lines = get_line_inspections("Purchase Receipt", pr_name)
-		second_row = [line for line in lines if line["state"] == "needed"][0]
+		needed = [line for line in lines if line["state"] == "needed"]
+		assert needed, lines
+		row = needed[0]["row"]
 
 		submit_inspection(
 			"Purchase Receipt",
 			pr_name,
-			second_row["row"],
+			row,
 			3,
 			{
 				"Diameter": ["11", "11", "11"],
@@ -120,7 +174,6 @@ def test_quality_inspection_formula_reject(page, setup):
 			},
 		)
 
-	with use_current_db_transaction():
 		lines = get_line_inspections("Purchase Receipt", pr_name)
 		rejected = [line for line in lines if line["state"] == "Rejected"]
 		assert rejected
@@ -132,7 +185,10 @@ def test_purchase_receipt_submit_after_rejected_qi(setup):
 		from beam.tests.setup import create_quarantine_warehouse, seed_settings
 
 		settings = seed_settings()
-		create_quarantine_warehouse(settings)
+		if not frappe.db.exists(
+			"Warehouse", {"company": settings.company, "is_rejected_warehouse": 1, "disabled": 0}
+		):
+			create_quarantine_warehouse(settings)
 		pr_name = ensure_beam_qi_draft_receipt(settings)
 		lines = get_line_inspections("Purchase Receipt", pr_name)
 		row = lines[0]["row"]
@@ -244,7 +300,7 @@ def test_save_inspection_draft_incremental_then_discard(setup):
 
 
 @pytest.mark.order(363)
-def test_submitted_pr_blocks_qi_cancel(page, setup):
+def test_qi_cancel_after_pr_submit_clears_line_link(setup):
 	with use_current_db_transaction():
 		from beam.tests.setup import seed_settings
 
@@ -265,9 +321,14 @@ def test_submitted_pr_blocks_qi_cancel(page, setup):
 		)
 		pr = frappe.get_doc("Purchase Receipt", pr_name)
 		pr.submit()
+		assert frappe.db.get_value("Purchase Receipt Item", row, "quality_inspection") == result["name"]
+
 		qi = frappe.get_doc("Quality Inspection", result["name"])
-		with pytest.raises(Exception):
-			qi.cancel()
+		qi.cancel()
+
+		assert frappe.db.get_value("Quality Inspection", qi.name, "docstatus") == 2
+		assert not frappe.db.get_value("Purchase Receipt Item", row, "quality_inspection")
+		assert frappe.db.get_value("Purchase Receipt", pr_name, "docstatus") == 1
 
 
 @pytest.mark.order(364)

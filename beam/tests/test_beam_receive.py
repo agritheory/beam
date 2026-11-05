@@ -15,9 +15,13 @@ import pytest
 from playwright.sync_api import expect
 
 from beam.tests.playwright_utils import (
+	error_toast_text,
 	open_first_beam_list_row,
+	open_receive_row_for_item,
 	order_id_from_beam_url,
 	use_current_db_transaction,
+	wait_for_docstatus,
+	wait_for_purchase_receipt_items,
 )
 
 # NOTE: any navigation tests should be done using `expect(page).to_have_url` since
@@ -160,35 +164,28 @@ def test_complete_partial_receipt(page):
 		page.evaluate("barcode => scanner.simulate(window, barcode)", barcodes[0])
 		expect(item_count).to_have_text(re.compile("1/"))
 
-	# ensure there are no existing Purchase Receipts against this Purchase Order
-	receipt = frappe.db.exists(
-		"Purchase Receipt Item",
-		{
-			"docstatus": 0,
-			"purchase_order": order_id,
-			"item_code": item_code,
-			"owner": "support@agritheory.dev",
-		},
-	)
-	assert not receipt
-
-	# check that a draft Purchase Receipt is created
-	page.get_by_text("SAVE", exact=True).click()
-	page.wait_for_timeout(1000)
 	with use_current_db_transaction():
-		receipts = frappe.get_all(
+		receipt = frappe.db.exists(
 			"Purchase Receipt Item",
-			filters={"purchase_order": order_id, "item_code": item_code},
-			fields=["docstatus", "received_qty", "creation", "parent"],
-			order_by="creation desc",
+			{
+				"docstatus": 0,
+				"purchase_order": order_id,
+				"item_code": item_code,
+				"owner": "support@agritheory.dev",
+			},
 		)
-	assert len(receipts) >= 1
+		assert not receipt
+
+	page.get_by_text("SAVE", exact=True).click()
+	assert not error_toast_text(page), "SAVE failed on Purchase Receipt"
+	receipts = wait_for_purchase_receipt_items(order_id, item_code, min_count=1)
 	assert receipts[0]["docstatus"] == 0
 	assert receipts[0]["received_qty"] == 1
+	pr_name = receipts[0]["parent"]
 
-	# check that the draft Purchase Receipt is submitted
-	page.get_by_text("RECEIVE", exact=True).click()
-	page.wait_for_timeout(1500)
+	page.get_by_role("button", name="SUBMIT", exact=True).click()
+	assert not error_toast_text(page), "SUBMIT failed on Purchase Receipt"
+	wait_for_docstatus("Purchase Receipt", pr_name, 1)
 	with use_current_db_transaction():
 		receipts = frappe.get_all(
 			"Purchase Receipt Item",
@@ -205,15 +202,14 @@ def test_complete_partial_receipt(page):
 @pytest.mark.order(313)
 def test_rapid_barcode_scanning(page):
 	"""Test scanning multiple barcodes quickly"""
-	open_first_beam_list_row(page, "Receive", r"purchase-receipt/")
+	open_receive_row_for_item(page, "Cloudberry", r"purchase-receipt/")
 	order_id = order_id_from_beam_url(page.url)
 	assert order_id
 
-	# wait for items to load after navigation
 	expect(page.locator("css=.box .beam_list-item").first).to_be_visible()
-	# find the first item in the list
 	item = page.locator("css=.box .beam_list-item").first
 	item_code, *others = item.inner_text().split("\n")
+	assert item_code == "Cloudberry"
 	item_count = page.locator("css=.box .beam_item-count").first
 	expect(item_count).to_have_text(re.compile("0/"))
 
@@ -236,16 +232,14 @@ def test_rapid_barcode_scanning(page):
 	expect(item_count).to_have_text(re.compile(f"{scan_count}/"))
 
 	page.get_by_text("SAVE", exact=True).click()
-	page.wait_for_timeout(1000)
-
-	with use_current_db_transaction():
-		receipts = frappe.get_all(
-			"Purchase Receipt Item",
-			filters={"purchase_order": order_id, "item_code": item_code},
-			fields=["docstatus", "received_qty"],
-			order_by="creation desc",
-			limit=1,
-		)
+	assert not error_toast_text(page), "SAVE failed on Purchase Receipt"
+	receipts = wait_for_purchase_receipt_items(
+		order_id,
+		item_code,
+		min_count=1,
+		docstatus=0,
+		received_qty=scan_count,
+	)
 	assert len(receipts) == 1
 	assert receipts[0]["docstatus"] == 0
 	assert receipts[0]["received_qty"] == scan_count

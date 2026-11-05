@@ -85,24 +85,9 @@ def remove_legacy_qi_demo_item() -> None:
 	frappe.delete_doc("Item", LEGACY_QI_DEMO_ITEM, force=True)
 
 
-def find_beam_qi_purchase_order() -> str | None:
-	for po_name in frappe.get_all(
-		"Purchase Order",
-		filters={"supplier": BEAM_QI_SUPPLIER, "docstatus": 1},
-		pluck="name",
-		order_by="creation desc",
-	):
-		if frappe.db.count("Purchase Order Item", {"parent": po_name, "item_code": BEAM_QI_ITEM}) >= 1:
-			return po_name
-	return None
-
-
-def ensure_beam_qi_purchase_order(settings) -> str:
+def create_beam_qi_purchase_order(settings, qty: float = 10) -> str:
+	"""New submitted PO with open Flour qty (never reuse production-plan POs)."""
 	configure_beam_qi_item()
-	existing = find_beam_qi_purchase_order()
-	if existing:
-		return existing
-
 	po = frappe.new_doc("Purchase Order")
 	po.supplier = BEAM_QI_SUPPLIER
 	po.company = settings.company
@@ -111,7 +96,7 @@ def ensure_beam_qi_purchase_order(settings) -> str:
 		"items",
 		{
 			"item_code": BEAM_QI_ITEM,
-			"qty": 2,
+			"qty": qty,
 			"rate": 1,
 			"warehouse": BEAM_QI_WAREHOUSE,
 		},
@@ -121,19 +106,43 @@ def ensure_beam_qi_purchase_order(settings) -> str:
 	return po.name
 
 
-def ensure_beam_qi_draft_receipt(settings) -> str:
-	po_name = ensure_beam_qi_purchase_order(settings)
-	for pr in frappe.get_all("Purchase Receipt", filters={"docstatus": 0}, pluck="name"):
-		if frappe.db.exists("Purchase Receipt Item", {"parent": pr, "item_code": BEAM_QI_ITEM}):
-			return pr
+def purchase_order_for_receipt(pr_name: str) -> str:
+	po = frappe.db.get_value("Purchase Receipt Item", {"parent": pr_name}, "purchase_order")
+	if not po:
+		frappe.throw(f"No purchase order on Purchase Receipt {pr_name}")
+	return po
 
+
+def ensure_beam_qi_draft_receipt(settings) -> str:
+	"""Fresh draft PR for QI tests (avoid reusing rows with submitted inspections)."""
+	po_name = create_beam_qi_purchase_order(settings)
 	pr = make_purchase_receipt(po_name)
 	pr.insert()
 	return pr.name
 
 
-def setup_beam_quality_inspection_fixtures(settings) -> None:
-	remove_legacy_qi_demo_item()
-	configure_beam_qi_item()
-	ensure_beam_qi_draft_receipt(settings)
+def ensure_beam_qi_draft_receipt_committed(settings) -> str:
+	"""Draft receipt visible to bench serve (Playwright)."""
+	pr_name = ensure_beam_qi_draft_receipt(settings)
 	frappe.db.commit()
+	return pr_name
+
+
+def setup_beam_quality_inspection_fixtures(settings) -> None:
+	"""Global setup: template + legacy cleanup only (Flour gate is enabled in QI tests)."""
+	remove_legacy_qi_demo_item()
+	frappe.db.commit()
+
+
+def enable_flour_incoming_inspection() -> None:
+	configure_beam_qi_item(BEAM_QI_ITEM)
+
+
+def disable_flour_incoming_inspection() -> None:
+	if not frappe.db.exists("Item", BEAM_QI_ITEM):
+		return
+	frappe.db.set_value(
+		"Item",
+		BEAM_QI_ITEM,
+		{"inspection_required_before_purchase": 0, "quality_inspection_template": None},
+	)

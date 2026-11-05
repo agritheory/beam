@@ -315,7 +315,6 @@ items = [
 		"item_price": 0.66,
 		"default_warehouse": "Storeroom - APC",
 		"supplier": "Freedom Provisions",
-		"inspection_required_before_purchase": 1,
 	},
 	{
 		"item_code": "Pie Box",

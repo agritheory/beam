@@ -12,7 +12,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 import frappe
-from frappe.utils import get_bench_path
+from frappe.utils import flt, get_bench_path
 
 
 @contextmanager
@@ -45,6 +45,44 @@ def wait_for_work_order_stock_entry(work_order_id: str, timeout: float = 20.0) -
 			return entries[0]
 		if time.monotonic() >= deadline:
 			raise AssertionError(f"No Stock Entry for Work Order {work_order_id} after {timeout}s")
+		time.sleep(0.25)
+
+
+def wait_for_purchase_receipt_items(
+	purchase_order: str,
+	item_code: str,
+	*,
+	min_count: int = 1,
+	docstatus: int | None = None,
+	received_qty: float | None = None,
+	timeout: float = 20.0,
+) -> list[dict]:
+	"""Poll until the bench has committed Purchase Receipt Item rows for this PO line."""
+	deadline = time.monotonic() + timeout
+	last: list[dict] = []
+	while True:
+		frappe.db.rollback()
+		frappe.db.begin()
+		last = frappe.get_all(
+			"Purchase Receipt Item",
+			filters={"purchase_order": purchase_order, "item_code": item_code},
+			fields=["docstatus", "received_qty", "creation", "parent"],
+			order_by="creation desc",
+		)
+		matching = last
+		if docstatus is not None:
+			matching = [row for row in matching if row["docstatus"] == docstatus]
+		if received_qty is not None:
+			want_qty = flt(received_qty)
+			matching = [row for row in matching if flt(row["received_qty"]) == want_qty]
+		if len(matching) >= min_count:
+			return matching
+		if time.monotonic() >= deadline:
+			raise AssertionError(
+				f"Expected >={min_count} Purchase Receipt Item row(s) for PO {purchase_order} "
+				f"item {item_code} after {timeout}s (docstatus={docstatus}, "
+				f"received_qty={received_qty}), saw {last!r}"
+			)
 		time.sleep(0.25)
 
 
@@ -375,6 +413,21 @@ def wait_for_beam_list_stable(page, timeout_ms: int = 5000):
 	return count
 
 
+def open_receive_row_for_item(page, item_code: str, url_pattern: str):
+	"""Receive home → list row for ``item_code`` (not necessarily the first row)."""
+	import re
+
+	from playwright.sync_api import expect
+
+	page.get_by_text("Receive", exact=True).click()
+	expect(page.locator("css=a.beam_list-anchor").first).to_be_visible()
+	wait_for_beam_list_stable(page)
+	row = page.locator("css=a.beam_list-anchor").filter(has_text=item_code).first
+	expect(row).to_be_visible(timeout=10000)
+	row.click()
+	expect(page).to_have_url(re.compile(url_pattern), timeout=10000)
+
+
 def open_first_beam_list_row(page, home_label: str, url_pattern: str):
 	"""Home tile → first real list row (anchor) → wait for hash route."""
 	import re
@@ -389,19 +442,21 @@ def open_first_beam_list_row(page, home_label: str, url_pattern: str):
 
 
 def open_beam_form_page(page, home_label: str, url_pattern: str, ready_selector: str):
-	"""Home tile → form page, blocking until the page can accept a scan.
+	"""Open a Beam form hash route and wait until the page can accept input.
 
-	Beam routes on the hash, so clicking a tile causes no document load and
-	wait_for_load_state can settle before Vue mounts the page. The store slot the
-	scanner writes into is created by the page's own mount hook, and a scan that
-	lands before that is dropped without an error, so wait on a control the page
-	renders rather than on the network going quiet.
+	Prefer direct hash navigation over clicking a home tile: the previous test
+	often leaves the browser on another route (e.g. still on ``#/repack``), where
+	the home label is not in the DOM.
 	"""
 	import re
 
 	from playwright.sync_api import expect
 
-	page.get_by_text(home_label).click()
+	route_match = re.search(r"#/([^$]+)", url_pattern)
+	if not route_match:
+		raise ValueError(f"Expected url_pattern like r'#/repack', got {url_pattern!r}")
+	route = route_match.group(1).rstrip("/")
+	goto_beam_portal_route(page, route)
 	expect(page).to_have_url(re.compile(url_pattern), timeout=15000)
 	expect(page.locator(ready_selector).first).to_be_visible(timeout=15000)
 

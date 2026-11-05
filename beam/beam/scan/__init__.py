@@ -251,6 +251,11 @@ def get_form_action(barcode_doc: frappe._dict, context: frappe._dict) -> list[di
 
 	if barcode_doc.doc.doctype == "Handling Unit":
 		hu_details = get_handling_unit(barcode_doc.doc.name, context.frm)
+		if not hu_details:
+			frappe.throw(
+				frappe._("Handling Unit {0} has no stock on hand").format(barcode_doc.doc.name),
+				title=frappe._("Handling Unit"),
+			)
 		if context.frm == "Stock Entry":
 			if not context.doc:
 				context.doc = {"doctype": "Stock Entry"}
