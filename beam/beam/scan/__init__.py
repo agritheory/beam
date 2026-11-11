@@ -125,9 +125,6 @@ def get_handling_unit(handling_unit: str, parent_doctype: str | None = None) -> 
 
 	child_doctype_fields = ["uom", "qty", "conversion_factor", "idx", "item_name", "name"]
 
-	if child_doctype == "Purchase Receipt Item":
-		child_doctype_fields.append("stock_qty")
-
 	item = frappe.db.get_value(
 		child_doctype,
 		sle.voucher_detail_no,

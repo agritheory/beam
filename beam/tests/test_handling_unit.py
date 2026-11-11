@@ -116,6 +116,41 @@ def test_purchase_receipt_handling_unit_generation():
 				assert hu.stock_qty == row.stock_qty
 
 
+@pytest.mark.order(61)
+def test_handling_unit_scan_after_partial_consumption():
+	# a unit received on a Purchase Receipt and partly consumed where it lies holds what is left,
+	# not what was received
+	pr = frappe.new_doc("Purchase Receipt")
+	pr.company = frappe.get_value("Warehouse", "Refrigerator - APC", "company")
+	pr.supplier = "Freedom Provisions"
+	pr.buying_price_list = "Bakery Buying"
+	pr.append(
+		"items", {"item_code": "Gooseberry", "warehouse": "Refrigerator - APC", "qty": 10, "rate": 5}
+	)
+	pr.save()
+	pr.submit()
+	received = pr.items[0]
+
+	se = frappe.new_doc("Stock Entry")
+	se.stock_entry_type = se.purpose = "Material Issue"
+	se.company = pr.company
+	se.append(
+		"items",
+		{
+			"item_code": "Gooseberry",
+			"qty": 4,
+			"s_warehouse": "Refrigerator - APC",
+			"handling_unit": received.handling_unit,
+		},
+	)
+	se.save()
+	se.submit()
+
+	hu = get_handling_unit(received.handling_unit)
+	assert hu.stock_qty == received.stock_qty - se.items[0].transfer_qty
+	assert hu.qty == hu.stock_qty / hu.conversion_factor
+
+
 @pytest.mark.order(62)
 def test_purchase_invoice():
 	for pi in frappe.get_all("Purchase Invoice"):
