@@ -35,8 +35,12 @@ def append_pending_order_lines(purchase_receipt: Document) -> Document:
 	if purchase_receipt.docstatus != 0:
 		return purchase_receipt
 
-	mapped_order_items = {row.purchase_order_item for row in purchase_receipt.items if row.purchase_order_item}
-	purchase_orders = sorted({row.purchase_order for row in purchase_receipt.items if row.purchase_order})
+	mapped_order_items = {
+		row.purchase_order_item for row in purchase_receipt.items if row.purchase_order_item
+	}
+	purchase_orders = sorted(
+		{row.purchase_order for row in purchase_receipt.items if row.purchase_order}
+	)
 
 	if not purchase_orders:
 		return purchase_receipt
