@@ -175,10 +175,9 @@ const create = async () => {
 	}
 
 	const document: PurchaseReceipt = { ...doc }
-	document.items = document.items.filter(item => item.received_qty > 0)
-	for (const item of document.items) {
-		item.qty = item.received_qty
-	}
+	document.items = document.items
+		.filter(item => item.received_qty > 0)
+		.map((item, index) => ({ ...item, qty: item.received_qty, idx: index + 1 }))
 
 	const isExisting = Boolean(document.name) && !document.__islocal && !String(document.name).startsWith('new-')
 	const { data, response } = isExisting
