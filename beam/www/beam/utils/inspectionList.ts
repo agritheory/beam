@@ -53,11 +53,6 @@ export function applyInspectionLines<T extends ListViewItem>(
 			inspectionState: inspection.state,
 		}
 		if (inspection.reference_name) {
-			// ERPNext lets the received qty change after inspecting, so the count stays editable;
-			// tapping the rest of the line opens the inspection.
-			if (item.count) {
-				updated.count = { ...item.count, editable: item.count.editable ?? true }
-			}
 			updated.linkComponent = 'ListAnchor'
 			updated.route = inspectionStore.inspectionHash(
 				inspection.reference_type,

@@ -125,6 +125,7 @@ const items = computed((): (PurchaseReceiptItem & ListViewItem)[] => {
 				count: {
 					count: item.received_qty,
 					of: item.qty ?? 0,
+					editable: true,
 				},
 			}
 		})
