@@ -67,15 +67,12 @@ def append_pending_order_lines(purchase_receipt: Document) -> Document:
 		if not missing:
 			continue
 
-		existing_rows = len(purchase_receipt.items)
-		map_with_ignore_permissions(
-			make_purchase_receipt,
-			purchase_order,
-			target_doc=purchase_receipt,
-			args={"filtered_children": missing},
+		pending = map_with_ignore_permissions(
+			make_purchase_receipt, purchase_order, args={"filtered_children": missing}
 		)
-		for row in purchase_receipt.items[existing_rows:]:
+		for row in pending.items:
 			row.received_qty = 0
+			purchase_receipt.append("items", row)
 
 	# Keep the Purchase Order line order, so appended lines don't end up after the counted ones.
 	order_lines = frappe.get_all(
