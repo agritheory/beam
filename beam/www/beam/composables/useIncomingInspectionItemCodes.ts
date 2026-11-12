@@ -11,8 +11,11 @@ export function useIncomingInspectionItemCodes(lineItems: Ref<{ item_code?: stri
 	const httpStore = useHttpStore()
 	const itemCodes = ref<Set<string>>(new Set())
 
+	const distinctItemCodes = () =>
+		[...new Set((lineItems.value || []).map(row => row.item_code).filter(Boolean) as string[])].sort()
+
 	const reload = async () => {
-		const codes = [...new Set((lineItems.value || []).map(row => row.item_code).filter(Boolean) as string[])]
+		const codes = distinctItemCodes()
 		if (!codes.length) {
 			itemCodes.value = new Set()
 			return
@@ -28,7 +31,7 @@ export function useIncomingInspectionItemCodes(lineItems: Ref<{ item_code?: stri
 		}
 	}
 
-	watch(lineItems, reload, { immediate: true, deep: true })
+	watch(() => distinctItemCodes().join(','), reload, { immediate: true })
 
 	return { itemCodes, reload }
 }
