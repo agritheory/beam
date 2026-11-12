@@ -120,7 +120,8 @@ export function firstPendingGateInspection(
 
 	if (!items?.length || !incomingInspectionItemCodes?.size) return null
 	for (const item of items) {
-		if (item.item_code && incomingInspectionItemCodes.has(item.item_code) && item.name) {
+		if (!item.name || byRow[item.name]) continue
+		if (item.item_code && incomingInspectionItemCodes.has(item.item_code)) {
 			return {
 				reference_type: 'Purchase Receipt',
 				reference_name: receiptName,
