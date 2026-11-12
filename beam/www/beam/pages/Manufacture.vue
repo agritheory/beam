@@ -28,10 +28,7 @@
 	</BeamFilter>
 
 	<!-- body section -->
-	<ListView :items="items" :key="listKey" />
-	<div class="begin" v-if="loaded && items.length == 0">
-		<span>{{ hasFilters ? 'No results for these filters' : 'No work orders' }}</span>
-	</div>
+	<ListView :items="items" :key="listKey" :loaded="loaded" :filtered="hasFilters" empty-text="No work orders" />
 </template>
 
 <script setup lang="ts">

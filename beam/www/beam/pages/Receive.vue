@@ -16,10 +16,12 @@
 	<DemandFilters @filter="filterReceive" />
 
 	<!-- body section -->
-	<ListView :items="receiveList" :key="listKey" />
-	<div class="begin" v-if="loaded && receiveList.length == 0">
-		<span>{{ hasFilters ? 'No results for these filters' : 'Nothing to receive' }}</span>
-	</div>
+	<ListView
+		:items="receiveList"
+		:key="listKey"
+		:loaded="loaded"
+		:filtered="hasFilters"
+		empty-text="Nothing to receive" />
 </template>
 
 <script setup lang="ts">
