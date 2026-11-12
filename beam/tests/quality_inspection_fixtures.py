@@ -60,13 +60,6 @@ def ensure_beam_qi_template() -> str:
 			"value": "Natural",
 		},
 	)
-	template.append(
-		"item_quality_inspection_parameter",
-		{
-			"specification": "Visual",
-			"numeric": 0,
-		},
-	)
 	template.insert()
 	return template.name
 
