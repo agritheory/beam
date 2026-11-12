@@ -28,21 +28,13 @@ export function applyInspectionLines<T extends ListViewItem>(
 		const rowIdx = (item as { idx?: number }).idx
 		const itemCode = (item as { item_code?: string }).item_code
 		let inspection = rowName ? byKey[rowName] : undefined
-		if (!inspection && rowIdx != null) {
-			inspection = byKey[`idx:${rowIdx}`]
+		if (!inspection && !rowName && rowIdx != null) {
+			const preview = byKey[`idx:${rowIdx}`]
+			if (preview && !preview.reference_name) inspection = preview
 		}
 		if (!inspection) {
 			const key = itemKey(item)
 			if (key) inspection = byKey[key]
-		}
-		if (!inspection && itemCode) {
-			const matches = Object.values(byKey).filter(line => line.item_code === itemCode)
-			if (matches.length === 1) {
-				inspection = matches[0]
-			} else if (matches.length > 1) {
-				inspection =
-					matches.find(line => line.row === rowName || line.idx === rowIdx) ?? matches[0]
-			}
 		}
 		if (!inspection && itemCode && incomingInspectionItemCodes?.has(itemCode)) {
 			const hint = inspectionStatusHint('needed')
@@ -61,6 +53,11 @@ export function applyInspectionLines<T extends ListViewItem>(
 			inspectionState: inspection.state,
 		}
 		if (inspection.reference_name) {
+			// ERPNext lets the received qty change after inspecting, so the count stays editable;
+			// tapping the rest of the line opens the inspection.
+			if (item.count) {
+				updated.count = { ...item.count, editable: item.count.editable ?? true }
+			}
 			updated.linkComponent = 'ListAnchor'
 			updated.route = inspectionStore.inspectionHash(
 				inspection.reference_type,
