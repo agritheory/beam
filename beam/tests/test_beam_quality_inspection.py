@@ -339,3 +339,33 @@ def test_qi_cancel_after_pr_submit_clears_line_link(setup):
 def test_quarantine_release_when_inventory_tools_installed(page, setup):
 	if not frappe.db.exists("DocType", "Inventory Tools Settings"):
 		pytest.skip("Inventory Tools not installed on this bench")
+
+
+@pytest.mark.order(379)
+def test_submit_shows_once_every_line_has_a_submitted_inspection(page, setup):
+	with use_current_db_transaction():
+		from beam.tests.setup import seed_settings
+
+		pr_name = ensure_beam_qi_draft_receipt_committed(seed_settings())
+
+	goto_beam_portal_route(page, f"purchase-receipt/{pr_name}")
+	expect(page.get_by_role("button", name="INSPECT", exact=True)).to_be_visible(timeout=15000)
+	expect(page.get_by_role("button", name="SUBMIT", exact=True)).to_have_count(0)
+
+	with use_current_db_transaction():
+		row = get_line_inspections("Purchase Receipt", pr_name)[0]["row"]
+		submit_inspection(
+			"Purchase Receipt",
+			pr_name,
+			row,
+			1,
+			{"Diameter": ["11"], "Weight": ["5"], "Color": ["Natural"]},
+		)
+		frappe.db.commit()
+
+	page.reload()
+	# Wait for the line inspections and the incoming inspection item codes before checking the footer.
+	expect(page.get_by_text("Inspection accepted")).to_be_visible(timeout=15000)
+	page.wait_for_load_state("networkidle")
+	expect(page.get_by_role("button", name="SUBMIT", exact=True)).to_be_visible()
+	expect(page.get_by_role("button", name="INSPECT", exact=True)).to_have_count(0)

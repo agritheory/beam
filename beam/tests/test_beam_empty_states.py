@@ -38,6 +38,12 @@ EMPTY_LISTS = {
 		"No open demand",
 		"Unallocated",
 	),
+	"inspect": (
+		"inspect",
+		re.compile(r"/api/method/beam\.beam\.quality_inspection\.list_awaiting_inspection"),
+		"Nothing to inspect",
+		"Unallocated",
+	),
 	"manufacture": (
 		"manufacture",
 		re.compile(r"/api/resource/Work(%20| )Order(\?|$)"),
