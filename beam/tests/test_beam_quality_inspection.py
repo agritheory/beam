@@ -49,6 +49,12 @@ MOCK_CAMERA = (
 				const canvas = document.createElement('canvas');
 				canvas.width = 640;
 				canvas.height = 480;
+				// captureStream only emits frames when the canvas is painted.
+				const context = canvas.getContext('2d');
+				setInterval(() => {
+					context.fillStyle = '#888';
+					context.fillRect(0, 0, canvas.width, canvas.height);
+				}, 100);
 				return canvas.captureStream(30);
 			}
 		},
@@ -89,14 +95,7 @@ def fill_text_parameter(page, parameter: str, value: str) -> None:
 	page.locator(f"#qi-{parameter}-1").fill(value)
 
 
-def choose_passfail(page, parameter: str, choice: str) -> None:
-	expand_inspection_parameter(page, parameter)
-	page.locator(f'[data-inspection-parameter="{parameter}"]').get_by_role(
-		"button", name=choice
-	).click()
-
-
-@pytest.mark.order(360)
+@pytest.mark.order(374)
 def test_awaiting_inspection_list(page, setup):
 	with use_current_db_transaction():
 		from beam.tests.setup import seed_settings
@@ -107,7 +106,7 @@ def test_awaiting_inspection_list(page, setup):
 	expect(page.get_by_text(BEAM_QI_ITEM).first).to_be_visible()
 
 
-@pytest.mark.order(361)
+@pytest.mark.order(375)
 def test_quality_inspection_accept_with_samples(page, setup):
 	# Login fixture loads /beam over HTTP first; Camera.vue hides the FAB unless
 	# isSecureContext is true at mount. Reload after registering the mock (same as test_beam_camera).
@@ -132,16 +131,17 @@ def test_quality_inspection_accept_with_samples(page, setup):
 	fill_numeric_parameter(page, "Diameter", ["11", "11.2", "10.9"])
 	fill_numeric_parameter(page, "Weight", ["4.6", "4.7", "4.8"])
 	fill_text_parameter(page, "Color", "Natural")
-	choose_passfail(page, "Visual", "Accept")
 
-	expect(page.locator(".camera-panel")).to_be_visible(timeout=10000)
-	page.get_by_role("button", name="Open camera").click()
+	camera_button = page.get_by_role("button", name="Open camera")
+	expect(camera_button).to_be_visible(timeout=10000)
+	camera_button.click()
 	expect(page.get_by_role("dialog", name="Camera")).to_be_visible()
 	page.get_by_role("tab", name="Photo").click()
+	page.wait_for_function("() => document.querySelector('video.camera-video')?.videoWidth > 0")
 	page.get_by_role("button", name="Take photo").click()
 	page.get_by_role("button", name="Attach (1)").click()
 
-	page.get_by_role("button", name="SUBMIT").click()
+	page.get_by_role("button", name="SUBMIT", exact=True).click()
 	page.wait_for_timeout(1500)
 	expect(page.get_by_text("Accepted")).to_be_visible()
 
@@ -150,7 +150,7 @@ def test_quality_inspection_accept_with_samples(page, setup):
 		assert any(line["state"] == "Accepted" for line in lines)
 
 
-@pytest.mark.order(362)
+@pytest.mark.order(376)
 def test_quality_inspection_formula_reject(page, setup):
 	with use_current_db_transaction():
 		from beam.tests.setup import seed_settings
@@ -170,7 +170,6 @@ def test_quality_inspection_formula_reject(page, setup):
 				"Diameter": ["11", "11", "11"],
 				"Weight": ["1", "1", "1"],
 				"Color": ["Natural"],
-				"Visual": ["Accepted"],
 			},
 		)
 
@@ -179,7 +178,7 @@ def test_quality_inspection_formula_reject(page, setup):
 		assert rejected
 
 
-@pytest.mark.order(356)
+@pytest.mark.order(370)
 def test_purchase_receipt_submit_after_rejected_qi(setup):
 	with use_current_db_transaction():
 		from beam.tests.setup import create_quarantine_warehouse, seed_settings
@@ -201,7 +200,6 @@ def test_purchase_receipt_submit_after_rejected_qi(setup):
 				"Diameter": ["11"],
 				"Weight": ["1"],
 				"Color": ["Natural"],
-				"Visual": ["Accepted"],
 			},
 		)
 		pr = frappe.get_doc("Purchase Receipt", pr_name)
@@ -218,7 +216,7 @@ def test_purchase_receipt_submit_after_rejected_qi(setup):
 		assert line.rejected_warehouse
 
 
-@pytest.mark.order(357)
+@pytest.mark.order(371)
 def test_qi_state_reflects_submitted_document(setup):
 	with use_current_db_transaction():
 		from beam.tests.setup import seed_settings
@@ -235,7 +233,6 @@ def test_qi_state_reflects_submitted_document(setup):
 				"Diameter": ["11"],
 				"Weight": ["5.1"],
 				"Color": ["Natural"],
-				"Visual": ["Accepted"],
 			},
 		)
 		state, qi_status = qi_state(result["name"])
@@ -247,7 +244,7 @@ def test_qi_state_reflects_submitted_document(setup):
 		assert line["state"] == "Accepted"
 
 
-@pytest.mark.order(358)
+@pytest.mark.order(372)
 def test_save_inspection_draft_reuses_same_qi(setup):
 	with use_current_db_transaction():
 		from beam.tests.setup import seed_settings
@@ -262,7 +259,7 @@ def test_save_inspection_draft_reuses_same_qi(setup):
 			pr_name,
 			row,
 			1,
-			{**answers, "Weight": ["5.1"], "Visual": ["Accepted"]},
+			{**answers, "Weight": ["5.1"]},
 		)
 		assert first["name"] == second["name"]
 		qi = frappe.get_doc("Quality Inspection", first["name"])
@@ -272,11 +269,9 @@ def test_save_inspection_draft_reuses_same_qi(setup):
 		assert flt(diameter.reading_1) == 11
 		color = next(r for r in qi.readings if r.specification == "Color")
 		assert color.reading_value == "Natural"
-		visual = next(r for r in qi.readings if r.specification == "Visual")
-		assert visual.status == "Accepted"
 
 
-@pytest.mark.order(359)
+@pytest.mark.order(373)
 def test_save_inspection_draft_incremental_then_discard(setup):
 	with use_current_db_transaction():
 		from beam.tests.setup import seed_settings
@@ -299,7 +294,7 @@ def test_save_inspection_draft_incremental_then_discard(setup):
 		assert not opened.get("quality_inspection")
 
 
-@pytest.mark.order(363)
+@pytest.mark.order(377)
 def test_qi_cancel_after_pr_submit_clears_line_link(setup):
 	with use_current_db_transaction():
 		from beam.tests.setup import seed_settings
@@ -316,22 +311,31 @@ def test_qi_cancel_after_pr_submit_clears_line_link(setup):
 				"Diameter": ["11"],
 				"Weight": ["5"],
 				"Color": ["Natural"],
-				"Visual": ["Accepted"],
 			},
 		)
 		pr = frappe.get_doc("Purchase Receipt", pr_name)
 		pr.submit()
 		assert frappe.db.get_value("Purchase Receipt Item", row, "quality_inspection") == result["name"]
 
+		# ERPNext blocks cancelling a QI used by a submitted document unless Stock Settings allow it.
 		qi = frappe.get_doc("Quality Inspection", result["name"])
-		qi.cancel()
+		with pytest.raises(frappe.ValidationError):
+			qi.cancel()
 
-		assert frappe.db.get_value("Quality Inspection", qi.name, "docstatus") == 2
-		assert not frappe.db.get_value("Purchase Receipt Item", row, "quality_inspection")
-		assert frappe.db.get_value("Purchase Receipt", pr_name, "docstatus") == 1
+		setting = "allow_to_make_quality_inspection_after_purchase_or_delivery"
+		frappe.db.set_single_value("Stock Settings", setting, 1)
+		try:
+			qi = frappe.get_doc("Quality Inspection", result["name"])
+			qi.cancel()
+
+			assert frappe.db.get_value("Quality Inspection", qi.name, "docstatus") == 2
+			assert not frappe.db.get_value("Purchase Receipt Item", row, "quality_inspection")
+			assert frappe.db.get_value("Purchase Receipt", pr_name, "docstatus") == 1
+		finally:
+			frappe.db.set_single_value("Stock Settings", setting, 0)
 
 
-@pytest.mark.order(364)
+@pytest.mark.order(378)
 def test_quarantine_release_when_inventory_tools_installed(page, setup):
 	if not frappe.db.exists("DocType", "Inventory Tools Settings"):
 		pytest.skip("Inventory Tools not installed on this bench")
