@@ -57,10 +57,11 @@
 		</div>
 	</div>
 
-	<ListView v-if="items.length > 0" :items="items" :key="componentKey" class="max-h-300" />
-	<div class="begin" v-else>
-		<span>Scan Items, Select Warehouses, and Set Qty to Begin</span>
-	</div>
+	<ListView
+		:items="items"
+		:key="componentKey"
+		class="max-h-300"
+		empty-text="Scan Items, Select Warehouses, and Set Qty to Begin" />
 	<ControlButtons :buttons="controlButtons" />
 </template>
 
@@ -396,15 +397,6 @@ watch(
 
 .autocomplete-results {
 	font-size: 150%;
-}
-
-.repack .begin {
-	width: 100%;
-	text-align: center;
-	font-size: 1rem;
-	color: var(--sc-primary-text-color);
-	padding: 1rem var(--sc-list-margin);
-	box-sizing: border-box;
 }
 
 .max-h-300 {

@@ -16,6 +16,7 @@ from playwright.sync_api import expect
 
 from beam.tests.playwright_utils import (
 	error_toast_text,
+	goto_beam_portal_route,
 	open_first_beam_list_row,
 	open_receive_row_for_item,
 	order_id_from_beam_url,
@@ -243,3 +244,52 @@ def test_rapid_barcode_scanning(page):
 	assert len(receipts) == 1
 	assert receipts[0]["docstatus"] == 0
 	assert receipts[0]["received_qty"] == scan_count
+
+
+@pytest.mark.order(339)
+def test_edit_repeated_item_on_unsaved_receipt(page):
+	"""Lines mapped from a Purchase Order have no name until saved; editing one must not update another."""
+	with use_current_db_transaction():
+		po = frappe.new_doc("Purchase Order")
+		po.supplier = "Freedom Provisions"
+		po.company = "Ambrosia Pie Company"
+		po.schedule_date = frappe.utils.today()
+		for _ in range(2):
+			po.append("items", {"item_code": "Butter", "qty": 4, "rate": 1, "warehouse": "Receiving - APC"})
+		po.insert()
+		po.submit()
+		frappe.db.commit()
+		second_line = po.items[1].name
+
+	pr_name = None
+	try:
+		goto_beam_portal_route(page, f"purchase-receipt/{po.name}")
+		counts = page.locator(".box .beam_item-count")
+		expect(counts).to_have_count(2)
+
+		second = counts.nth(1).locator("[contenteditable]")
+		second.click()
+		page.keyboard.press("ControlOrMeta+A")
+		page.keyboard.type("3", delay=150)
+		page.keyboard.press("Enter")
+
+		expect(counts.nth(0)).to_have_text(re.compile(r"^0/4"))
+		expect(counts.nth(1)).to_have_text(re.compile(r"^3/4"))
+
+		page.get_by_text("SAVE", exact=True).click()
+		assert not error_toast_text(page), "SAVE failed on Purchase Receipt"
+		receipts = wait_for_purchase_receipt_items(po.name, "Butter", min_count=1)
+		pr_name = receipts[0]["parent"]
+		with use_current_db_transaction():
+			rows = frappe.get_all(
+				"Purchase Receipt Item",
+				filters={"parent": pr_name},
+				fields=["purchase_order_item", "received_qty"],
+			)
+		assert [(row.purchase_order_item, row.received_qty) for row in rows] == [(second_line, 3)]
+	finally:
+		with use_current_db_transaction():
+			if pr_name:
+				frappe.delete_doc("Purchase Receipt", pr_name, force=True)
+			frappe.get_doc("Purchase Order", po.name).cancel()
+			frappe.db.commit()

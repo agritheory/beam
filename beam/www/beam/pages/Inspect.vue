@@ -10,12 +10,12 @@
 
 	<DemandFilters @filter="filterAwaiting" />
 
-	<ListView :items="awaitingList" />
+	<ListView :items="awaitingList" :loaded="loaded" :filtered="hasFilters" empty-text="Nothing to inspect" />
 </template>
 
 <script setup lang="ts">
 import type { ListViewItem } from '@/types/stonecrop.js'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useInfiniteScroll } from '@vueuse/core'
 
 import DemandFilters from '@/components/DemandFilters.vue'
@@ -29,6 +29,8 @@ const filters = ref<DemandFilter>({})
 const page = ref(1)
 const canLoadMore = ref(true)
 const loading = ref(false)
+const loaded = ref(false)
+const hasFilters = computed(() => Object.keys(filters.value).length > 0)
 const dates = ref<(string | null)[]>([])
 
 const appendRows = (rows: AwaitingLine[], fromIndex: number) => {
@@ -64,6 +66,7 @@ const loadAwaiting = async () => {
 	try {
 		const startLen = awaitingList.value.length
 		const rows = await inspectionStore.awaiting(filters.value, page.value)
+		loaded.value = true
 		if (!rows.length) {
 			canLoadMore.value = false
 			return
@@ -77,6 +80,7 @@ const loadAwaiting = async () => {
 }
 
 const reset = () => {
+	loaded.value = false
 	page.value = 1
 	canLoadMore.value = true
 	awaitingList.value = []
@@ -84,7 +88,7 @@ const reset = () => {
 }
 
 const filterAwaiting = async (demandFilters: DemandFilter) => {
-	filters.value = demandFilters
+	filters.value = { ...demandFilters }
 	reset()
 	await loadAwaiting()
 }

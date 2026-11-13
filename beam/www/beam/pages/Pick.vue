@@ -10,10 +10,7 @@
 
 	<ScanOutput v-show="store.scanner.config.show_scan_output" />
 
-	<ListView :items="items" :key="listKey" />
-	<div class="begin" v-if="loaded && items.length == 0">
-		<span>No open pick lists</span>
-	</div>
+	<ListView :items="items" :key="listKey" :loaded="loaded" empty-text="No open pick lists" />
 </template>
 
 <script setup lang="ts">

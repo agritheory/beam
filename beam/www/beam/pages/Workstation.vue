@@ -8,7 +8,7 @@
 		</template>
 	</Navbar>
 
-	<ListView :items="workstations" />
+	<ListView :items="workstations" :loaded="loaded" />
 </template>
 
 <script setup lang="ts">
@@ -20,6 +20,7 @@ import type { Workstation } from '@/types'
 
 const store = useBeamStore()
 const workstations = ref<Partial<ListViewItem>[]>([])
+const loaded = ref(false)
 
 onMounted(async () => {
 	const stations = await store.getAll<Workstation>('Workstation', {
@@ -36,6 +37,7 @@ onMounted(async () => {
 			route: `#/workstation/${row.name}`,
 		}
 	})
+	loaded.value = true
 })
 
 const handlePrimaryAction = () => {}

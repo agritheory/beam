@@ -38,6 +38,12 @@ EMPTY_LISTS = {
 		"No open demand",
 		"Unallocated",
 	),
+	"inspect": (
+		"inspect",
+		re.compile(r"/api/method/beam\.beam\.quality_inspection\.list_awaiting_inspection"),
+		"Nothing to inspect",
+		"Unallocated",
+	),
 	"manufacture": (
 		"manufacture",
 		re.compile(r"/api/resource/Work(%20| )Order(\?|$)"),
@@ -55,7 +61,7 @@ def answer_with_no_rows(page, request_pattern):
 	page.route(request_pattern, respond)
 
 
-@pytest.mark.order(360)
+@pytest.mark.order(380)
 @pytest.mark.parametrize("name", list(EMPTY_LISTS))
 def test_empty_list_says_why_it_is_empty(page, name):
 	route, request_pattern, message, _ = EMPTY_LISTS[name]
@@ -67,7 +73,7 @@ def test_empty_list_says_why_it_is_empty(page, name):
 	expect(page.locator(".beam_list-item")).to_have_count(0)
 
 
-@pytest.mark.order(361)
+@pytest.mark.order(381)
 @pytest.mark.parametrize("name", [name for name, spec in EMPTY_LISTS.items() if spec[3]])
 def test_empty_filtered_list_says_no_results_for_filters(page, name):
 	route, request_pattern, message, choice = EMPTY_LISTS[name]
@@ -84,7 +90,7 @@ def test_empty_filtered_list_says_no_results_for_filters(page, name):
 	expect(page.get_by_text(message, exact=True)).to_have_count(0)
 
 
-@pytest.mark.order(362)
+@pytest.mark.order(382)
 @pytest.mark.parametrize("name", ["receive", "ship", "demand", "manufacture"])
 def test_list_with_rows_does_not_show_empty_message(page, name):
 	route, _, message, _ = EMPTY_LISTS[name]
