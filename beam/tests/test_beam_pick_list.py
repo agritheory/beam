@@ -56,7 +56,7 @@ def create_isolated_butter_pick_list():
 	wo.company = COMPANY
 	wo.wip_warehouse = "Kitchen - APC"
 	wo.fg_warehouse = frappe.db.get_single_value("Manufacturing Settings", "default_fg_warehouse")
-	wo.planned_start_date = frappe.utils.getdate()
+	wo.planned_start_date = frappe.utils.get_datetime(frappe.utils.today())
 	wo.get_items_and_operations_from_bom()
 	wo.save()
 	wo.submit()
