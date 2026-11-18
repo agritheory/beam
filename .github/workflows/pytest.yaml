@@ -86,13 +86,13 @@ jobs:
 
     services:
       mariadb:
-        image: mariadb:10.6
+        image: mariadb:11.8
         env:
           MYSQL_ALLOW_EMPTY_PASSWORD: YES
           MYSQL_ROOT_PASSWORD: 'admin'
         ports:
           - 3306:3306
-        options: --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -padmin" --health-interval=5s --health-timeout=2s --health-retries=3
+        options: --health-cmd="mariadb-admin ping -u root --password=admin --silent" --health-interval=1s --health-timeout=5s --health-retries=10
 
       redis:
         image: redis:7
