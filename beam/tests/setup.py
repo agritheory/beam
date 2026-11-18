@@ -898,7 +898,7 @@ def create_pie_crust_pick_demo(settings):
 	wo.company = settings.company
 	wo.wip_warehouse = demo["work_order"]["wip_warehouse"]
 	wo.fg_warehouse = frappe.db.get_single_value("Manufacturing Settings", "default_fg_warehouse")
-	wo.planned_start_date = settings.day
+	wo.planned_start_date = frappe.utils.get_datetime(settings.day)
 	wo.get_items_and_operations_from_bom()
 	wo.save()
 	wo.submit()
