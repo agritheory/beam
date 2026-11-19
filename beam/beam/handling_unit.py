@@ -54,7 +54,11 @@ def generate_handling_units(doc, method=None):
 			handling_unit.save()
 			row.handling_unit = handling_unit.name
 
-		if doc.doctype == "Stock Entry" and doc.purpose == "Manufacture" and row.secondary_item_type == "Scrap":
+		if (
+			doc.doctype == "Stock Entry"
+			and doc.purpose == "Manufacture"
+			and row.secondary_item_type == "Scrap"
+		):
 			create_handling_unit = frappe.get_value(
 				"BOM Secondary Item",
 				{"item_code": row.item_code, "parent": doc.bom_no, "secondary_item_type": "Scrap"},
@@ -70,7 +74,9 @@ def generate_handling_units(doc, method=None):
 			continue
 
 		if doc.doctype == "Stock Entry" and not (
-			any([row.is_finished_item, doc.purpose == "Material Receipt", row.secondary_item_type == "Scrap"])
+			any(
+				[row.is_finished_item, doc.purpose == "Material Receipt", row.secondary_item_type == "Scrap"]
+			)
 		):
 			continue
 
