@@ -16,10 +16,7 @@
 	<DemandFilters @filter="filterDemand" />
 
 	<!-- body section -->
-	<ListView :items="demandList" :key="listKey" />
-	<div class="begin" v-if="loaded && demandList.length == 0">
-		<span>{{ hasFilters ? 'No results for these filters' : 'No open demand' }}</span>
-	</div>
+	<ListView :items="demandList" :key="listKey" :loaded="loaded" :filtered="hasFilters" empty-text="No open demand" />
 </template>
 
 <script setup lang="ts">

@@ -44,7 +44,12 @@ export function useLineInspections(
 		}
 	}
 
-	watch([doctype, docname, () => lineItems?.value], reload, { immediate: true, deep: true })
+	// Inspection state depends on which lines exist, not on their quantities; a deep watch
+	// reloaded on every count edit and remounted the list while the user was typing.
+	const lineSignature = () =>
+		(lineItems?.value || []).map(row => `${row.name ?? ''}|${row.idx ?? ''}|${row.item_code ?? ''}`).join(',')
+
+	watch([doctype, docname, lineSignature], reload, { immediate: true })
 
 	return { byRow, reload }
 }

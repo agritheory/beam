@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any
+from typing import Any, cast
 
 import frappe
 from frappe import _
@@ -124,7 +124,9 @@ def gate_candidates_for_doc(doctype: str, docstatus: int, items_payload: list[di
 	checked = call_check_item_quality_inspection(doctype, docstatus, items_payload)
 	if checked or doctype not in ("Purchase Receipt", "Purchase Invoice", "Subcontracting Receipt"):
 		return checked
-	codes = incoming_inspection_item_codes([row.get("item_code") for row in items_payload])
+	codes = incoming_inspection_item_codes(
+		[row["item_code"] for row in items_payload if row.get("item_code")]
+	)
 	return [row for row in items_payload if row.get("item_code") in codes]
 
 
@@ -182,7 +184,7 @@ def qi_state(quality_inspection: str | None) -> tuple[str, str | None]:
 	return "needed", None
 
 
-def quality_inspection_released(quality_inspection: str) -> bool:
+def quality_inspection_released(quality_inspection: str | None) -> bool:
 	if not quality_inspection or not row_has_qi_reference("Stock Entry"):
 		return False
 	StockEntry = frappe.qb.DocType("Stock Entry")
@@ -252,16 +254,15 @@ def list_incoming_inspection_item_codes(item_codes: str | list | None = None) ->
 @frappe.whitelist()
 def preview_line_inspections(doctype: str, items: str | list | None = None) -> list[dict]:
 	"""Gate lines for a mapped receipt that is not saved yet (no document name)."""
-	if isinstance(items, str):
-		items = json.loads(items)
-	if not items:
+	rows = json.loads(items) if isinstance(items, str) else items
+	if not rows:
 		return []
 
 	pseudo = frappe._dict({"doctype": doctype})
 	if not gate_applies(pseudo):
 		return []
 
-	items_payload = [row if isinstance(row, dict) else row.as_dict() for row in items]
+	items_payload = [row if isinstance(row, dict) else row.as_dict() for row in rows]
 	checked = gate_candidates_for_doc(doctype, 0, items_payload)
 	results: list[dict] = []
 	for item in checked:
@@ -524,7 +525,7 @@ def parse_inspection_answers(answers: str | dict | None) -> dict[str, list[str]]
 	if not isinstance(answers, dict):
 		frappe.throw(_("Invalid inspection answers"))
 	out: dict[str, list[str]] = {}
-	for key, values in answers.items():
+	for key, values in cast(dict, answers).items():
 		if isinstance(values, list):
 			out[str(key)] = [str(v) for v in values]
 		elif values is None:
@@ -606,16 +607,21 @@ def serialize_readings(qi: frappe.Document) -> list[dict]:
 	return out
 
 
+def get_line(doc, row: str, message: str | None = None) -> Any:
+	line = next((r for r in doc.items if r.name == row), None)
+	if not line:
+		frappe.throw(message or _("Line not found"))
+	return line
+
+
 @frappe.whitelist()
 def open_inspection(doctype: str, name: str, row: str) -> dict:
 	ensure_document_access(doctype, name, "read")
 	doc = frappe.get_doc(doctype, name)
-	line = next((r for r in doc.items if r.name == row), None)
-	if not line:
-		frappe.throw(_("Line not found"))
+	line = get_line(doc, row)
 
 	lines = get_line_inspections(doctype, name)
-	info = next((entry for entry in lines if entry["row"] == row), None)
+	info: dict = next((entry for entry in lines if entry["row"] == row), {})
 	if not info:
 		frappe.throw(_("This line does not require inspection"))
 
@@ -755,9 +761,7 @@ def upsert_quality_inspection_for_line(
 
 	with mobile_quality_inspection_write():
 		doc = frappe.get_doc(doctype, name)
-		line = next((r for r in doc.items if r.name == row), None)
-		if not line:
-			frappe.throw(_("Line not found"))
+		line = get_line(doc, row)
 
 		form = open_inspection(doctype, name, row)
 		if not form.get("editable"):
@@ -830,9 +834,7 @@ def discard_inspection_draft(doctype: str, name: str, row: str) -> dict:
 
 	with mobile_quality_inspection_write():
 		doc = frappe.get_doc(doctype, name)
-		line = next((r for r in doc.items if r.name == row), None)
-		if not line:
-			frappe.throw(_("Line not found"))
+		line = get_line(doc, row)
 
 		qi_name = quality_inspection_name_for_line(
 			doctype, name, line.name, line.quality_inspection, draft_only=True
@@ -879,6 +881,9 @@ def submit_inspection(
 def reinspect(quality_inspection: str) -> dict:
 	qi = frappe.get_doc("Quality Inspection", quality_inspection)
 	mode = correction_mode(qi.reference_type, qi.reference_name, qi.child_row_reference, qi.name)
+	if mode not in ("amend", "reinspect"):
+		frappe.throw(_("This inspection cannot be corrected on mobile"))
+
 	if mode == "amend":
 		if qi.docstatus != 1:
 			frappe.throw(_("Only submitted inspections can be amended"))
@@ -889,15 +894,10 @@ def reinspect(quality_inspection: str) -> dict:
 		amended.insert()
 		return open_inspection(qi.reference_type, qi.reference_name, qi.child_row_reference)
 
-	if mode == "reinspect":
-		doc = frappe.get_doc(qi.reference_type, qi.reference_name)
-		line = next((r for r in doc.items if r.name == qi.child_row_reference), None)
-		if not line:
-			frappe.throw(_("Source line not found"))
-		line.db_set("quality_inspection", None)
-		return open_inspection(qi.reference_type, qi.reference_name, qi.child_row_reference)
-
-	frappe.throw(_("This inspection cannot be corrected on mobile"))
+	doc = frappe.get_doc(qi.reference_type, qi.reference_name)
+	line = get_line(doc, qi.child_row_reference, _("Source line not found"))
+	line.db_set("quality_inspection", None)
+	return open_inspection(qi.reference_type, qi.reference_name, qi.child_row_reference)
 
 
 @frappe.whitelist()

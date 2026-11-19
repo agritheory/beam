@@ -1052,7 +1052,7 @@ def fixture_user_email(display_name: str) -> str:
 
 def sync_fixture_user_roles() -> None:
 	for employee in employees:
-		display_name = employee.get("name")
+		display_name = str(employee.get("name") or "")
 		if not display_name:
 			continue
 		roles = employee.get("roles") or []

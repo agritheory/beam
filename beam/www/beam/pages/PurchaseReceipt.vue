@@ -84,13 +84,14 @@ watch([byRow, incomingInspectionItemCodes], () => {
 	refreshKey.value++
 })
 
+// Lines mapped from a Purchase Order have no name until the receipt is saved.
+const rowKey = (item: Pick<PurchaseReceiptItem, 'name' | 'idx'>) => item.name || `idx:${item.idx}`
+
 const handleItemUpdate = (updatedItem: PurchaseReceiptItem & ListViewItem) => {
 	const doc = purchaseReceipt.value
 	if (!doc?.items) return
 
-	const itemIndex = doc.items.findIndex(item =>
-		updatedItem.name ? item.name === updatedItem.name : item.item_code === updatedItem.item_code
-	)
+	const itemIndex = doc.items.findIndex(item => rowKey(item) === rowKey(updatedItem))
 
 	if (itemIndex !== -1) {
 		if (updatedItem.count?.count !== undefined) {
@@ -120,10 +121,11 @@ const items = computed((): (PurchaseReceiptItem & ListViewItem)[] => {
 				...item,
 				label: line.label,
 				description: line.description,
-				barcode: item.name,
+				barcode: rowKey(item),
 				count: {
 					count: item.received_qty,
 					of: item.qty ?? 0,
+					editable: true,
 				},
 			}
 		})
@@ -174,10 +176,9 @@ const create = async () => {
 	}
 
 	const document: PurchaseReceipt = { ...doc }
-	document.items = document.items.filter(item => item.received_qty > 0)
-	for (const item of document.items) {
-		item.qty = item.received_qty
-	}
+	document.items = document.items
+		.filter(item => item.received_qty > 0)
+		.map((item, index) => ({ ...item, qty: item.received_qty, idx: index + 1 }))
 
 	const isExisting = Boolean(document.name) && !document.__islocal && !String(document.name).startsWith('new-')
 	const { data, response } = isExisting

@@ -28,21 +28,13 @@ export function applyInspectionLines<T extends ListViewItem>(
 		const rowIdx = (item as { idx?: number }).idx
 		const itemCode = (item as { item_code?: string }).item_code
 		let inspection = rowName ? byKey[rowName] : undefined
-		if (!inspection && rowIdx != null) {
-			inspection = byKey[`idx:${rowIdx}`]
+		if (!inspection && !rowName && rowIdx != null) {
+			const preview = byKey[`idx:${rowIdx}`]
+			if (preview && !preview.reference_name) inspection = preview
 		}
 		if (!inspection) {
 			const key = itemKey(item)
 			if (key) inspection = byKey[key]
-		}
-		if (!inspection && itemCode) {
-			const matches = Object.values(byKey).filter(line => line.item_code === itemCode)
-			if (matches.length === 1) {
-				inspection = matches[0]
-			} else if (matches.length > 1) {
-				inspection =
-					matches.find(line => line.row === rowName || line.idx === rowIdx) ?? matches[0]
-			}
 		}
 		if (!inspection && itemCode && incomingInspectionItemCodes?.has(itemCode)) {
 			const hint = inspectionStatusHint('needed')
@@ -123,7 +115,8 @@ export function firstPendingGateInspection(
 
 	if (!items?.length || !incomingInspectionItemCodes?.size) return null
 	for (const item of items) {
-		if (item.item_code && incomingInspectionItemCodes.has(item.item_code) && item.name) {
+		if (!item.name || byRow[item.name]) continue
+		if (item.item_code && incomingInspectionItemCodes.has(item.item_code)) {
 			return {
 				reference_type: 'Purchase Receipt',
 				reference_name: receiptName,

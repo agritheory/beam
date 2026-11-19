@@ -23,10 +23,11 @@
 	</div>
 
 	<!-- body section -->
-	<ListView :items="items" :key="componentKey" @update="update" />
-	<div class="begin" v-if="items.length == 0">
-		<span>Scan Items and Scan or Select Warehouses to Begin</span>
-	</div>
+	<ListView
+		:items="items"
+		:key="componentKey"
+		empty-text="Scan Items and Scan or Select Warehouses to Begin"
+		@update="update" />
 	<!-- footer section -->
 	<ControlButtons :buttons="controlButtons" />
 </template>
@@ -191,12 +192,5 @@ watch(
 .autocomplete-results {
 	font-size: 150%;
 	padding-inline: 3px !important;
-}
-
-.begin {
-	width: 100%;
-	text-align: center;
-	font-size: 150%;
-	text-wrap: balance;
 }
 </style>
