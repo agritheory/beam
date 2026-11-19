@@ -346,6 +346,7 @@ onUnmounted(() => {
 	color: var(--sc-primary-text-color);
 	padding: 1rem var(--sc-list-margin);
 	box-sizing: border-box;
+	text-wrap: balance;
 }
 
 .reconciliation .beam_item-count {

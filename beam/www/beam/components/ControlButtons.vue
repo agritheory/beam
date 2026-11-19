@@ -1,5 +1,8 @@
 <template>
 	<div class="control-buttons-footer">
+		<Teleport to="body">
+			<div v-if="busy" class="control-buttons-busy-overlay" aria-busy="true" />
+		</Teleport>
 		<div class="control-buttons-spacer" aria-hidden="true" />
 		<div class="control-buttons">
 			<BeamBtn
@@ -7,12 +10,12 @@
 				v-show="!button.hidden"
 				:key="index"
 				:class="{ 'footer-full-row': index === fullWidthIndex }"
-				@click="button.action"
-				:disabled="button.disabled"
+				@click="event => runAction(event, button)"
+				:disabled="isDisabled(button)"
 				:style="{
-					'background-color': !button.disabled ? button.color?.background || 'inherit' : 'inherit',
-					color: !button.disabled ? button.color?.text || 'inherit' : 'inherit',
-					cursor: !button.disabled ? 'auto' : 'not-allowed',
+					'background-color': !isDisabled(button) ? button.color?.background || 'inherit' : 'inherit',
+					color: !isDisabled(button) ? button.color?.text || 'inherit' : 'inherit',
+					cursor: !isDisabled(button) ? 'auto' : 'not-allowed',
 				}">
 				{{ button.label }}
 			</BeamBtn>
@@ -21,11 +24,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onUnmounted, watch } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 
 import type { ControlButton } from '@/types'
 
 const props = defineProps<{ buttons: ControlButton[] }>()
+
+const busy = ref(false)
 
 const visibleIndexes = computed(() => props.buttons.flatMap((button, index) => (button.hidden ? [] : [index])))
 
@@ -37,6 +42,23 @@ const fullWidthIndex = computed(() => {
 
 const footerRows = computed(() => Math.max(1, Math.ceil(visibleIndexes.value.length / 2)))
 
+const isDisabled = (button: ControlButton) => busy.value || Boolean(button.disabled)
+
+const runAction = async (event: MouseEvent, button: ControlButton) => {
+	if (isDisabled(button) || !button.action) {
+		return
+	}
+
+	busy.value = true
+
+	try {
+		const result = button.action(event)
+		await Promise.resolve(result)
+	} finally {
+		busy.value = false
+	}
+}
+
 // Camera's FAB sits above the footer, outside this component, so the row count lives on :root.
 const setFooterRows = (rows: number) => document.documentElement.style.setProperty('--beam-footer-rows', String(rows))
 
@@ -46,6 +68,13 @@ onUnmounted(() => setFooterRows(1))
 </script>
 
 <style scoped>
+.control-buttons-busy-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 160; /* above camera FAB (150), below camera modal (250) */
+	pointer-events: all;
+}
+
 .control-buttons-spacer {
 	height: var(--beam-footer-height);
 }

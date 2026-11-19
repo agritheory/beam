@@ -79,6 +79,8 @@ export type Receive = {
 	modified: string
 	name: string
 	parent: string
+	/** PO name or draft Purchase Receipt to open in BEAM receive form */
+	receive_route_id?: string
 	received_qty: number
 	rejected_qty: number
 	schedule_date: string

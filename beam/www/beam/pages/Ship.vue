@@ -16,10 +16,7 @@
 	<DemandFilters @filter="filterShipments" />
 
 	<!-- body section -->
-	<ListView :items="shipList" :key="listKey" />
-	<div class="begin" v-if="loaded && shipList.length == 0">
-		<span>{{ hasFilters ? 'No results for these filters' : 'Nothing to ship' }}</span>
-	</div>
+	<ListView :items="shipList" :key="listKey" :loaded="loaded" :filtered="hasFilters" empty-text="Nothing to ship" />
 </template>
 
 <script setup lang="ts">

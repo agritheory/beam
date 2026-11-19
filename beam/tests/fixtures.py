@@ -1051,7 +1051,7 @@ employees = [
 			"postal_code": "03060",
 		},
 		"phone": "(603) 555-0134",
-		"roles": ["BEAM Mobile User", "Employee", "Manufacturing User"],
+		"roles": ["Stock User", "BEAM Mobile User", "Employee", "Manufacturing User"],
 		"reports_to": "Tristan Hawkins",
 		"department": "Management - APC",
 		"designation": "Baker",

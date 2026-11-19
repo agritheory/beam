@@ -23,25 +23,26 @@
 	</div>
 
 	<!-- body section -->
-	<ListView :items="items" :key="componentKey" @update="update" />
-	<div class="begin" v-if="items.length == 0">
-		<span>Scan Items and Scan or Select Warehouses to Begin</span>
-	</div>
+	<ListView
+		:items="items"
+		:key="componentKey"
+		empty-text="Scan Items and Scan or Select Warehouses to Begin"
+		@update="update" />
 	<!-- footer section -->
 	<ControlButtons :buttons="controlButtons" />
 </template>
 
 <script setup lang="ts">
 import type { ListViewItem } from '@/types/stonecrop.js'
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 
 import ControlButtons from '@/components/ControlButtons.vue'
+import { useLineInspections } from '@/composables/useLineInspections'
 import FieldRow from '@/components/FieldRow.vue'
 import { useBeamStore } from '@/stores/beam'
 import type { ControlButton, DocActionResponse, StockEntry, StockEntryItem } from '@/types'
 import { itemListLine } from '@/utils/itemListLine'
-import { watch } from 'vue'
-
+import { applyInspectionLines } from '@/utils/inspectionList'
 const store = useBeamStore()
 const items = ref<(ListViewItem & Partial<StockEntryItem>)[]>([])
 const stockEntry = computed(
@@ -55,6 +56,12 @@ const stockEntry = computed(
 		}
 )
 const componentKey = ref(0)
+
+const savedEntryName = computed(() => stockEntry.value?.name || undefined)
+const { byRow } = useLineInspections(
+	computed(() => 'Stock Entry'),
+	savedEntryName
+)
 
 const warehouseList = ref<string[]>([])
 
@@ -151,9 +158,10 @@ const controlButtons = computed((): ControlButton[] => {
 })
 
 watch(
-	() => store.cache.mappers['move']?.items,
-	newItems => {
-		items.value = (newItems || []).map(s => {
+	[() => store.cache.mappers['move']?.items, byRow],
+	() => {
+		const newItems = store.cache.mappers['move']?.items
+		const mapped = (newItems || []).map(s => {
 			const line = itemListLine({
 				...s,
 				warehouse: s.s_warehouse || s.t_warehouse,
@@ -165,6 +173,7 @@ watch(
 				count: { count: s.qty ?? 0, of: 0 },
 			}
 		})
+		items.value = applyInspectionLines(mapped, byRow.value)
 		componentKey.value++
 	},
 	{ immediate: true, deep: true }
@@ -183,12 +192,5 @@ watch(
 .autocomplete-results {
 	font-size: 150%;
 	padding-inline: 3px !important;
-}
-
-.begin {
-	width: 100%;
-	text-align: center;
-	font-size: 150%;
-	text-wrap: balance;
 }
 </style>

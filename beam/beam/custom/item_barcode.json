@@ -1,18 +1,17 @@
 {
-	"custom_fields": [],
-	"doctype": "Item Barcode",
-	"property_setters": [
-		{
-			"doc_type": "Item Barcode",
-			"doctype_or_field": "DocField",
-			"field_name": "barcode_type",
-			"idx": 0,
-			"module": "BEAM",
-			"name": "Item Barcode-barcode_type-options",
-			"property": "options",
-			"property_type": "Text",
-			"value": "\nEAN\nUPC-A\nCode128"
-		}
-	],
-	"sync_on_migrate": 1
+  "custom_fields": [],
+  "doctype": "Item Barcode",
+  "property_setters": [
+    {
+      "doc_type": "Item Barcode",
+      "doctype_or_field": "DocField",
+      "field_name": "barcode_type",
+      "module": "BEAM",
+      "name": "Item Barcode-barcode_type-options",
+      "property": "options",
+      "property_type": "Text",
+      "value": "\nEAN\nUPC-A\nCode128"
+    }
+  ],
+  "sync_on_migrate": 1
 }

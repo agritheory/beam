@@ -9,7 +9,7 @@
 	<ScanOutput v-show="store.scanner.config.show_scan_output" />
 
 	<nav>
-		<ListView :items="homeList" />
+		<ListView :items="homeList" :loaded="loaded" />
 	</nav>
 </template>
 
@@ -24,11 +24,13 @@ const store = useBeamStore()
 
 const companyName = ref('')
 const home = ref<ListViewItem[]>([])
+const loaded = ref(false)
 
 onMounted(async () => {
 	const getHome = await store.getHome()
 	home.value = getHome.data.routes
 	companyName.value = getHome.data.company
+	loaded.value = true
 })
 
 const homeList = computed(() => {

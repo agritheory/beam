@@ -100,7 +100,10 @@ from beam.tests.setup import (
 	create_pie_crust_pick_demo,
 	seed_settings,
 )
-from beam.tests.manufacturing_test_utils import submit_material_transfer_for_manufacture
+from beam.tests.manufacturing_test_utils import (
+	replenish_work_order_handling_unit_stock,
+	submit_material_transfer_for_manufacture,
+)
 from erpnext.manufacturing.doctype.work_order.work_order import stop_unstop
 from cups_test_utils import (
 	configure_pycups_credentials,
@@ -195,6 +198,8 @@ def job_card_operation_with_wip(pie_crust_pick_demo_work_order):
 	wo = frappe.get_doc("Work Order", work_order)
 	stock_entry_name = None
 	if not wo.skip_transfer and float(wo.material_transferred_for_manufacturing or 0) <= 0:
+		replenish_work_order_handling_unit_stock(work_order)
+		frappe.db.commit()
 		stock_entry_name = submit_material_transfer_for_manufacture(work_order, wo.qty)
 		frappe.db.commit()
 

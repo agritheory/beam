@@ -60,6 +60,7 @@ import { useRoute } from 'vue-router'
 
 import ControlButtons from '@/components/ControlButtons.vue'
 import ScanOutput from '@/components/ScanOutput.vue'
+import { useInspectionStore } from '@/stores/inspection'
 import { useBeamStore } from '@/stores/beam'
 import type {
 	ControlButton,
@@ -71,6 +72,8 @@ import type {
 	WorkOrderOperation,
 } from '@/types'
 import { appendUomText, itemListLine } from '@/utils/itemListLine'
+import { applyInspectionLines, indexInspectionsByItemCode } from '@/utils/inspectionList'
+import type { LineInspection } from '@/types/inspection'
 import { computeWorkOrderStage, stageLabel, type WorkOrderStage } from '@/utils/workOrderStage'
 
 type OrderItem = WorkOrderItem & StockEntryItem & ListViewItem
@@ -83,6 +86,13 @@ const workOrderId = route.params.id.toString()
 const stockEntry = ref<StockEntry | undefined>(store.cache.mappers[workOrderId] as StockEntry)
 const workOrder = ref(store.form as WorkOrder)
 const refreshKey = ref(0)
+const inspectionStore = useInspectionStore()
+const inspectionByItem = ref<Record<string, LineInspection>>({})
+
+const reloadWorkOrderInspections = async () => {
+	const lines = await inspectionStore.workOrderLines(workOrderId)
+	inspectionByItem.value = indexInspectionsByItemCode(lines)
+}
 
 store.$subscribe(mutation => {
 	if (['patch function', 'patch object'].includes(mutation.type)) {
@@ -94,6 +104,7 @@ store.$subscribe(mutation => {
 
 onMounted(async () => {
 	await store.getWorkOrderMobileContext(workOrderId)
+	await reloadWorkOrderInspections()
 })
 
 const mobileContext = computed(() => store.workOrderContext[workOrderId])
@@ -126,7 +137,7 @@ const predecessorItems = computed((): ListViewItem[] => {
 
 const items = computed((): OrderItem[] => {
 	if (usesPickList.value) {
-		return (workOrder.value.required_items || []).map(item => {
+		const mapped = (workOrder.value.required_items || []).map(item => {
 			const line = itemListLine(item)
 			return {
 				...item,
@@ -139,9 +150,10 @@ const items = computed((): OrderItem[] => {
 				},
 			}
 		})
+		return applyInspectionLines(mapped, inspectionByItem.value, item => item.item_code)
 	}
 	if (!stockEntry.value) return []
-	return (workOrder.value.required_items || []).map(item => {
+	const mapped = (workOrder.value.required_items || []).map(item => {
 		const stockEntryItem = stockEntry.value?.items.find(i => i.item_code === item.item_code)
 		const line = itemListLine(item)
 		return {
@@ -155,6 +167,7 @@ const items = computed((): OrderItem[] => {
 			},
 		}
 	})
+	return applyInspectionLines(mapped, inspectionByItem.value, item => item.item_code)
 })
 
 const operations = computed((): OrderOperation[] => {

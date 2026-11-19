@@ -1,5 +1,5 @@
 <template>
-	<ul class="beam_list-view">
+	<ul class="beam_list-view" v-bind="$attrs">
 		<li v-for="{ item, key } in rows" :key="key">
 			<template v-if="item.linkComponent == 'BeamDayDivider'">
 				<BeamDayDivider :item="item"></BeamDayDivider>
@@ -16,6 +16,9 @@
 			</template>
 		</li>
 	</ul>
+	<div class="begin" v-if="showEmpty">
+		<span>{{ filtered ? filteredText : emptyText }}</span>
+	</div>
 </template>
 
 <script setup lang="ts">
@@ -25,8 +28,26 @@ import BeamDayDivider from './BeamDayDivider.vue'
 import ListItem from './ListItem.vue'
 import type { ListViewItem } from '@/types/stonecrop.js'
 
-const props = defineProps<{ items: ListViewItem[] }>()
+defineOptions({ inheritAttrs: false })
+
+const props = withDefaults(
+	defineProps<{
+		items: ListViewItem[]
+		emptyText?: string
+		filteredText?: string
+		filtered?: boolean
+		loaded?: boolean
+	}>(),
+	{
+		emptyText: 'Nothing to show',
+		filteredText: 'No results for these filters',
+		filtered: false,
+		loaded: true,
+	}
+)
 const emit = defineEmits<{ update: [item: ListViewItem]; scrollbottom: [] }>()
+
+const showEmpty = computed(() => props.loaded && props.items.length === 0)
 
 const rows = computed(() => {
 	const seen = new Map<string, number>()
@@ -68,5 +89,15 @@ const handleScroll = () => {
 
 ul.beam_list-view:last-of-type {
 	padding-bottom: 2.5em;
+}
+
+.begin {
+	width: 100%;
+	text-align: center;
+	font-size: 1rem;
+	color: var(--sc-primary-text-color);
+	padding: 1rem var(--sc-list-margin);
+	box-sizing: border-box;
+	text-wrap: balance;
 }
 </style>
