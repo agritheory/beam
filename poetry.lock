@@ -1600,26 +1600,27 @@ files = [
 
 [[package]]
 name = "sqlglot"
-version = "25.34.1"
+version = "30.33.0"
 description = "An easily customizable SQL parser and transpiler"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.9"
 groups = ["dev"]
 files = [
-    {file = "sqlglot-25.34.1-py3-none-any.whl", hash = "sha256:15099f8af832e6f5593fb92211d8b3f0810744ac0dc443fb70010fa38dc2562b"},
-    {file = "sqlglot-25.34.1.tar.gz", hash = "sha256:6952c083c4a8b8de3c09c10b262a03c6853071bd397f05759c08f1e2f3c683cb"},
+    {file = "sqlglot-30.33.0-py3-none-any.whl", hash = "sha256:a5b279fe7397a9fb6cdd0274a13a5fcee0fa83ac6ff617083f1f2832031e90bc"},
+    {file = "sqlglot-30.33.0.tar.gz", hash = "sha256:9c007e0471c93e778d8613f25853543b959a3f793d9dadf1341b3d6bd53246a8"},
 ]
 
 [package.extras]
-dev = ["duckdb (>=0.6)", "maturin (>=1.4,<2.0)", "mypy", "pandas", "pandas-stubs", "pdoc", "pre-commit", "python-dateutil", "pytz", "ruff (==0.7.2)", "types-python-dateutil", "types-pytz", "typing-extensions"]
-rs = ["sqlglotrs (==0.3.0)"]
+c = ["sqlglotc (==30.33.0) ; python_version >= \"3.10\""]
+dev = ["duckdb (>=0.6)", "mypy (>=2.4.0) ; python_version >= \"3.10\"", "mypy ; python_version < \"3.10\"", "pandas", "pandas-stubs", "pdoc", "pre-commit", "pyperf", "python-dateutil", "pytz", "ruff (==0.15.6)", "setuptools_scm (>=10.2)", "types-python-dateutil", "types-pytz", "typing_extensions"]
+rs = ["sqlglotc (==30.33.0) ; python_version >= \"3.10\"", "sqlglotrs (==0.13.0)"]
 
 [[package]]
 name = "test-utils"
-version = "1.28.0"
+version = "1.31.1"
 description = "AgriTheory Test Utilities and Fixtures"
 optional = false
-python-versions = ">=3.10,<3.15"
+python-versions = ">=3.10,<4"
 groups = ["dev"]
 files = []
 develop = false
@@ -1633,7 +1634,7 @@ mypy = "^1.15.0"
 openai = "^2.34.0"
 pygithub = "^2.9.1"
 requests = "^2.32.3"
-sqlglot = "^25.33.0"
+sqlglot = ">=30.12,<31"
 toml = "^0.10.2"
 tree-sitter = "^0.25.2"
 tree-sitter-javascript = "^0.25.0"
@@ -1643,8 +1644,8 @@ vulture = ">=2.0"
 [package.source]
 type = "git"
 url = "https://github.com/agritheory/test_utils.git"
-reference = "v1.28.0"
-resolved_reference = "e412232b6896637cb26645b96c24afa6b8472911"
+reference = "v1.31.1"
+resolved_reference = "9ee472bce96d79f9db11a1af2be19d79b3a3838f"
 
 [[package]]
 name = "toml"
@@ -1848,4 +1849,4 @@ resolved_reference = "45ffc60638814df575d9fe11c7504b1a533e4ecb"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.14,<3.15"
-content-hash = "5b84327d44d5c770614c223d28894257dacd4a6f5973dce17d90104e9b504bf8"
+content-hash = "f769ea1d6151b8f0543eef846a225dd19a5a1ed86a5a1862bc2af78b27d8da91"

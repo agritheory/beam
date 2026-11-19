@@ -3,6 +3,7 @@
 
 import frappe
 
+from beam.beam.printer_defaults import configured_printer
 from beam.beam.scan.config import get_scan_doctypes
 
 
@@ -12,6 +13,7 @@ def boot_session(bootinfo):
 	bootinfo.beam["default_hu_print_format"] = frappe.get_meta("Handling Unit").get(
 		"default_print_format"
 	)
+	bootinfo.beam["default_network_printer_settings"] = configured_printer()
 
 
 def get_beam_settings():

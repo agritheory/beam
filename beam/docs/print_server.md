@@ -4,7 +4,7 @@ For license information, please see license.txt-->
 # Print Server
 
 <div class="byline">
-  Rohan Bansal, Heather Kusmierz, and Tyler Matteson 2026-06-23
+  Rohan Bansal, Heather Kusmierz, and Tyler Matteson 2026-06-25
 </div>
 
 
@@ -48,9 +48,11 @@ pytest beam/beam/tests/test_printer_logic.py
 pytest beam/beam/tests/test_printer_cups_integration.py
 ```
 
-CI builds and runs `ghcr.io/agritheory/beam-cups:sha-<git-sha>` as a workflow service on port 631. Locally, run the image with `-p 631:631` and set `BEAM_CUPS_HOST` / `BEAM_CUPS_PORT`. Optional env vars: `CUPS_ADMIN_USER`, `CUPS_ADMIN_PASSWORD` (defaults match `cups/.env.example`).
+Locally, the integration tests use system cupsd on `:631` (user in `lpadmin`). Admin calls go through the Unix socket — HTTP to `127.0.0.1:631` hangs on `addPrinter`. Device URIs stay on `127.0.0.1` so cupsd can reach the mock printers.
 
-Pure logic tests run without CUPS. Integration tests use `test_utils.printers` mock servers (TCP raw + IPP) plus real pycups/CUPS queue creation against the container on a mapped HTTP port.
+CI builds and runs `ghcr.io/agritheory/beam-cups:sha-<git-sha>` as a workflow service published on host port **1631** (`BEAM_CUPS_HOST` / `BEAM_CUPS_PORT`). The container reaches mocks via the runner IP / `host.docker.internal`. Override with `BEAM_CUPS_SAME_HOST=1|0` or `BEAM_CUPS_MOCK_HOST=<ip>`. Optional: `CUPS_ADMIN_USER`, `CUPS_ADMIN_PASSWORD` (defaults match `cups/.env.example`).
+
+Pure logic tests run without CUPS. Integration tests use `test_utils.printers` mock servers (TCP raw + IPP) plus real pycups/CUPS queue creation.
 
 ---
 
@@ -61,3 +63,18 @@ A convenient Print Handling Unit button on relevant doctypes enables the user to
 Any configured network printers will display as options in the Select Printer Setting dialog.
 
 ![Screen shot of the Select Printer Setting dialog with two example printer options displaying as options.](./assets/select_printer_dialog.png)
+
+## Reusing the printer dialog from another app
+
+Other apps can open the same Select Printer Setting dialog, including the per-user and session default printer handling, with `beam.print_dialog`:
+
+```js
+beam.print_dialog(frm, {
+	method: 'my_app.printing.print_labels', // whitelisted method that prints
+	args: { name: frm.doc.name }, // extra arguments for `method`
+	print_format_doctype: 'My DocType', // optional, limits Print Format choices
+	default_print_format: 'My Label Format', // optional, preselected Print Format
+})
+```
+
+`method` is called with `args` plus the `printer_setting` and `print_format` chosen in the dialog. When the call succeeds, the **Save as my default printer** and **Set as session default** choices are applied.

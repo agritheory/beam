@@ -67,4 +67,4 @@ pycups = "^2.0.4"
 
 [tool.poetry.group.dev.dependencies.test_utils]
 git = "https://github.com/agritheory/test_utils.git"
-tag = "v1.28.0"
+tag = "v1.31.1"
