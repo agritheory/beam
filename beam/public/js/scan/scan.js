@@ -3,7 +3,9 @@
 
 import onScan from 'onscan.js'
 
-const isLoginPath = window.location.pathname === '/login'
+const isLoginPath = window.location.pathname === '/login' || document.body?.dataset.path === 'login'
+
+const ignoreIfFocusOn = isLoginPath ? 'input:not(#login_email), textarea, [contenteditable=true]' : '.frappe-input'
 
 function waitForElement(selector) {
 	return new Promise(resolve => {
@@ -52,7 +54,7 @@ class ScanHandler {
 				onScan: async function (sCode, iQty) {
 					await me.get_scanned_context(sCode, iQty)
 				},
-				ignoreIfFocusOn: '.frappe-input',
+				ignoreIfFocusOn,
 			})
 			window.scanHandler = me
 		}
