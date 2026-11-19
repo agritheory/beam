@@ -938,7 +938,8 @@ def create_pie_crust_pick_demo(settings):
 	wo.company = settings.company
 	wo.wip_warehouse = demo["work_order"]["wip_warehouse"]
 	wo.fg_warehouse = frappe.db.get_single_value("Manufacturing Settings", "default_fg_warehouse")
-	wo.planned_start_date = settings.day
+	# Job card scheduling calls get_time() on this. A bare date is not a time.
+	wo.planned_start_date = datetime.datetime(settings.day.year, settings.day.month, settings.day.day)
 	wo.get_items_and_operations_from_bom()
 	wo.save()
 	wo.submit()

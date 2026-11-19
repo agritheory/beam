@@ -48,8 +48,7 @@ const savedReceiptName = computed(() => {
 })
 const receiptLineItems = computed(() => purchaseReceipt.value?.items)
 
-const { itemCodes: incomingInspectionItemCodes, reload: reloadIncomingInspectionCodes } =
-	useIncomingInspectionItemCodes(receiptLineItems)
+const { itemCodes: incomingInspectionItemCodes } = useIncomingInspectionItemCodes(receiptLineItems)
 
 const { byRow, reload: reloadInspections } = useLineInspections(
 	computed(() => 'Purchase Receipt'),
@@ -75,8 +74,6 @@ watch(
 	name => {
 		if (!name || name.startsWith('new-')) return
 		syncRouteToSavedReceipt(name)
-		reloadInspections()
-		reloadIncomingInspectionCodes()
 	}
 )
 
@@ -102,12 +99,11 @@ const handleItemUpdate = (updatedItem: PurchaseReceiptItem & ListViewItem) => {
 	}
 }
 
-// hack: since array reactivity is not present in Vue 3, force-refresh the listviews on store update
+// Remount the list when a scan patches the cached document. Inspection queries stay on
+// the line-signature watches; refetching them here ran once per patch and stampeded.
 store.$subscribe(mutation => {
 	if (['patch function', 'patch object'].includes(mutation.type)) {
 		refreshKey.value++
-		reloadInspections()
-		reloadIncomingInspectionCodes()
 	}
 })
 

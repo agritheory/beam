@@ -43,16 +43,16 @@ const refreshKey = ref(0)
 const savedNoteName = computed(() =>
 	deliveryNote.value?.name && !deliveryNote.value.__islocal ? deliveryNote.value.name : undefined
 )
-const { byRow, reload: reloadInspections } = useLineInspections(
+const { byRow } = useLineInspections(
 	computed(() => 'Delivery Note'),
 	savedNoteName
 )
 
-// hack: since array reactivity is not present in Vue 3, force-refresh the listviews on store update
+// Remount the list when a scan patches the cached document. Line inspections reload from
+// their own watch; calling that here refetched on every patch.
 store.$subscribe(mutation => {
 	if (['patch function', 'patch object'].includes(mutation.type)) {
 		refreshKey.value++
-		reloadInspections()
 	}
 })
 
