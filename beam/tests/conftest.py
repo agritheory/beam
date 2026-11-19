@@ -75,6 +75,7 @@ import sys
 from pathlib import Path
 from unittest.mock import MagicMock
 
+os.environ.setdefault("FRAPPE_STREAM_LOGGING", "1")
 import frappe
 import pytest
 from frappe.utils import get_bench_path

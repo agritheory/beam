@@ -54,10 +54,14 @@ def generate_handling_units(doc, method=None):
 			handling_unit.save()
 			row.handling_unit = handling_unit.name
 
-		if doc.doctype == "Stock Entry" and doc.purpose == "Manufacture" and row.type == "Scrap":
+		if (
+			doc.doctype == "Stock Entry"
+			and doc.purpose == "Manufacture"
+			and row.secondary_item_type == "Scrap"
+		):
 			create_handling_unit = frappe.get_value(
 				"BOM Secondary Item",
-				{"item_code": row.item_code, "parent": doc.bom_no, "type": "Scrap"},
+				{"item_code": row.item_code, "parent": doc.bom_no, "secondary_item_type": "Scrap"},
 				"create_handling_unit",
 			)
 			if bool(create_handling_unit):
@@ -70,7 +74,9 @@ def generate_handling_units(doc, method=None):
 			continue
 
 		if doc.doctype == "Stock Entry" and not (
-			any([row.is_finished_item, doc.purpose == "Material Receipt", row.type == "Scrap"])
+			any(
+				[row.is_finished_item, doc.purpose == "Material Receipt", row.secondary_item_type == "Scrap"]
+			)
 		):
 			continue
 
@@ -121,7 +127,7 @@ def validate_handling_unit_overconsumption(doc, method=None):
 				if (
 					abs(hu.stock_qty - row.get(qty_field)) > 0.0
 					and (hu.stock_qty - row.get(qty_field) > precision_denominator)
-					and row.type != "Scrap"
+					and row.secondary_item_type != "Scrap"
 				):
 					error = True
 			else:  # incoming and transfer / same warehouse
