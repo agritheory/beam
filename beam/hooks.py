@@ -618,6 +618,12 @@ beam_mobile = {
 			"meta": {"requiresAuth": True, "doctype": "Workstation", "view": "list"},
 		},
 		{
+			"path": "/workstation/:station",
+			"name": "workstation_queue",
+			"component": "Workstation",
+			"meta": {"requiresAuth": True, "doctype": "Job Card", "view": "list"},
+		},
+		{
 			"path": "/work_order/:id/",
 			"name": "work_order",
 			"component": "WorkOrder",

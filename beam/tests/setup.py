@@ -242,6 +242,12 @@ def setup_beam_settings(settings):
 		"routes",
 		[
 			{
+				"label": "Workstation",
+				"route": "#/workstation",
+				"dt": "Job Card",
+				"component": "Workstation",
+			},
+			{
 				"label": "Manufacture",
 				"route": "#/manufacture",
 				"dt": "Stock Entry",
@@ -266,12 +272,20 @@ def setup_beam_settings(settings):
 
 
 def create_workstations():
+	if not frappe.get_meta("Workstation").has_field("require_user_scan"):
+		from beam.patches.v15.workstation_tablet_fields import execute as sync_workstation_tablet_fields
+
+		sync_workstation_tablet_fields()
 	for ws in workstations:
 		if frappe.db.exists("Workstation", ws[0]):
-			continue
-		work = frappe.new_doc("Workstation")
-		work.workstation_name = ws[0]
-		work.production_capacity = ws[1]
+			work = frappe.get_doc("Workstation", ws[0])
+		else:
+			work = frappe.new_doc("Workstation")
+			work.workstation_name = ws[0]
+			work.production_capacity = ws[1]
+		if ws[0] == "Oven Station":
+			work.require_user_scan = 1
+			work.user_scan_idle_minutes = 15
 		work.save()
 
 

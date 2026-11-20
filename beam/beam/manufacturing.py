@@ -224,6 +224,74 @@ def ensure_employee_on_job_card(doc, args: frappe._dict) -> None:
 
 
 @frappe.whitelist()
+def get_workstation_tablet_settings(workstation: str) -> dict:
+	check_manufacturing_permission()
+	if not frappe.db.exists("Workstation", workstation):
+		frappe.throw(frappe._("Workstation {0} not found").format(workstation), frappe.DoesNotExistError)
+	require_scan = frappe.db.get_value("Workstation", workstation, "require_user_scan")
+	idle = frappe.db.get_value("Workstation", workstation, "user_scan_idle_minutes")
+	return {
+		"require_user_scan": int(require_scan or 0),
+		"user_scan_idle_minutes": int(idle or 15),
+	}
+
+
+WORKSTATION_QUEUE_JOB_CARD_STATUSES = (
+	"Open",
+	"Work In Progress",
+	"On Hold",
+	"Material Transferred",
+	"Partially Transferred",
+)
+
+INACTIVE_WORK_ORDER_STATUSES = frozenset({"Completed", "Cancelled", "Closed", "Stopped"})
+
+
+@frappe.whitelist()
+def get_workstation_queue(workstation: str) -> list[dict]:
+	check_manufacturing_permission()
+	if not frappe.db.exists("Workstation", workstation):
+		frappe.throw(frappe._("Workstation {0} not found").format(workstation), frappe.DoesNotExistError)
+
+	job_cards = frappe.get_all(
+		"Job Card",
+		filters={
+			"workstation": workstation,
+			"docstatus": 0,
+			"status": ["in", WORKSTATION_QUEUE_JOB_CARD_STATUSES],
+		},
+		fields=["name", "operation", "work_order", "for_quantity", "total_completed_qty", "status"],
+		order_by="modified asc",
+	)
+	rows: list[dict] = []
+	for card in job_cards:
+		wo = frappe.db.get_value(
+			"Work Order",
+			card.work_order,
+			["name", "production_item", "item_name", "qty", "stock_uom", "status", "docstatus"],
+			as_dict=True,
+		)
+		if not wo or wo.docstatus != 1 or wo.status in INACTIVE_WORK_ORDER_STATUSES:
+			continue
+		min_qty, max_qty = production_qty_limits(flt(card.for_quantity))
+		if flt(card.total_completed_qty) >= max_qty:
+			continue
+		rows.append(
+			{
+				"job_card": card.name,
+				"operation": card.operation,
+				"work_order": card.work_order,
+				"for_quantity": flt(card.for_quantity),
+				"production_item": wo.production_item,
+				"item_name": wo.item_name or wo.production_item,
+				"work_order_qty": flt(wo.qty),
+				"stock_uom": wo.stock_uom,
+			}
+		)
+	return rows
+
+
+@frappe.whitelist()
 def get_work_order_mobile_context(work_order_id: str) -> dict:
 	check_manufacturing_permission()
 	predecessors = get_work_order_predecessors(work_order_id)

@@ -30,6 +30,7 @@
 				You already have an active job: {{ activeJobCardForEmployee }}
 			</p>
 			<p v-if="lockedByEmployee" class="sequence-warning">In progress by: {{ lockedByEmployee }}</p>
+			<p v-if="scanGateActive" class="tablet-scan-notice">{{ scanGateMessage }}</p>
 			<p v-if="actionError" class="action-error">{{ actionError }}</p>
 			<div v-if="showQtyInput" class="qty-input-row">
 				<ANumericInput label="Qty completed this session" v-model="pendingQty" />
@@ -81,6 +82,12 @@ import { useRoute, useRouter } from 'vue-router'
 import { useBeamStore } from '@/stores/beam'
 import { useBeamToast } from '@/utils/toast'
 import { parseFrappeDatetime } from '@/utils/parseFrappeDatetime'
+import {
+	getSelectedWorkstation,
+	runWithTabletScanGate,
+	scanGateActive,
+	scanGateMessage,
+} from '@/composables/useWorkstationTablet'
 import { productionQtyLimits } from '@/utils/workOrderStage'
 import type { JobCard, JobCardTimeLog, WorkOrder, WorkOrderOperation } from '@/types'
 
@@ -352,10 +359,12 @@ const toggleOperation = async (): Promise<void> => {
 		return
 	}
 
-	await runJobCardAction(async () => {
-		await refreshJobCard()
-		if (!jobCardName.value || isCompleted.value) return
-		applyJobCard(await store.startJobCard(jobCardName.value))
+	await runWithTabletScanGate(getSelectedWorkstation(), async () => {
+		await runJobCardAction(async () => {
+			await refreshJobCard()
+			if (!jobCardName.value || isCompleted.value) return
+			applyJobCard(await store.startJobCard(jobCardName.value))
+		})
 	})
 }
 
@@ -402,8 +411,10 @@ const goToComplete = async (): Promise<void> => {
 const finishOperation = async (): Promise<void> => {
 	if (!jobCardName.value || isBusy.value || !isQtyCompleted.value) return
 
-	await runJobCardAction(async () => {
-		applyJobCard(await store.finishJobCard(jobCardName.value, 0))
+	await runWithTabletScanGate(getSelectedWorkstation(), async () => {
+		await runJobCardAction(async () => {
+			applyJobCard(await store.finishJobCard(jobCardName.value, 0))
+		})
 	})
 }
 </script>
@@ -513,6 +524,14 @@ const finishOperation = async (): Promise<void> => {
 	margin: 0;
 	font-size: 0.85rem;
 	color: var(--sc-beam-danger-fill);
+}
+
+.tablet-scan-notice {
+	margin: 0;
+	padding: 0.5rem;
+	font-size: 0.9rem;
+	font-weight: 600;
+	color: var(--sc-beam-warning-text);
 }
 
 .actions {

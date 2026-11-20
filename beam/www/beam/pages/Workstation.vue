@@ -1,44 +1,129 @@
 <template>
-	<Navbar @click="handlePrimaryAction">
+	<Navbar @click="onNavbarPrimary">
 		<template #title>
-			<h1>Workstations</h1>
+			<h1>{{ titleText }}</h1>
 		</template>
 		<template #navbaraction>
-			<RouterLink :to="{ name: 'demand' }">Done</RouterLink>
+			<span v-if="selectedStation">Change station</span>
+			<RouterLink v-else :to="{ name: 'home' }">Home</RouterLink>
 		</template>
 	</Navbar>
 
-	<ListView :items="workstations" :loaded="loaded" />
+	<template v-if="selectedStation">
+		<ListView :items="queueItems" :loaded="queueLoaded" empty-text="Nothing to run at this station" />
+	</template>
+	<template v-else>
+		<ListView :items="pickerItems" :loaded="pickerLoaded" empty-text="No workstations" @select="onPickStation" />
+	</template>
 </template>
 
 <script setup lang="ts">
 import type { ListViewItem } from '@/types/stonecrop.js'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
+import { getSelectedWorkstation, setSelectedWorkstation } from '@/composables/useWorkstationTablet'
 import { useBeamStore } from '@/stores/beam'
 import type { Workstation } from '@/types'
 
+const route = useRoute()
+const router = useRouter()
 const store = useBeamStore()
-const workstations = ref<Partial<ListViewItem>[]>([])
-const loaded = ref(false)
+const selectedStation = ref<string | null>(getSelectedWorkstation())
 
-onMounted(async () => {
+const stationFromRoute = (): string | null => {
+	const raw = route.params.station
+	if (typeof raw !== 'string' || !raw.trim()) return null
+	try {
+		return decodeURIComponent(raw)
+	} catch {
+		return raw
+	}
+}
+
+const applySelectedStation = (name: string | null) => {
+	selectedStation.value = name
+	if (name) setSelectedWorkstation(name)
+	else setSelectedWorkstation(null)
+}
+const pickerItems = ref<ListViewItem[]>([])
+const pickerLoaded = ref(false)
+const queueItems = ref<ListViewItem[]>([])
+const queueLoaded = ref(false)
+
+const titleText = computed(() => selectedStation.value || 'Workstations')
+
+const loadPicker = async () => {
+	pickerLoaded.value = false
 	const stations = await store.getAll<Workstation>('Workstation', {
 		fields: JSON.stringify(['name', 'workstation_type', 'plant_floor']),
 		order_by: 'creation asc',
 	})
 
-	workstations.value = stations.map(row => {
-		return {
-			...row,
-			// count: { count: row.produced_qty, of: row.qty },
-			label: row.name,
-			linkComponent: 'ListAnchor',
-			route: `#/workstation/${row.name}`,
-		}
-	})
-	loaded.value = true
+	pickerItems.value = stations.map(row => ({
+		...row,
+		barcode: row.name,
+		label: row.name,
+		description: [row.workstation_type, row.plant_floor].filter(Boolean).join(' · '),
+	}))
+	pickerLoaded.value = true
+}
+
+const loadQueue = async () => {
+	if (!selectedStation.value) return
+	queueLoaded.value = false
+	const rows = await store.getWorkstationQueue(selectedStation.value)
+	queueItems.value = rows.map(row => ({
+		barcode: row.job_card,
+		label: row.operation,
+		description: `${row.item_name} · qty ${row.work_order_qty}`,
+		linkComponent: 'ListAnchor',
+		route: `#/work_order/${row.work_order}`,
+	}))
+	queueLoaded.value = true
+}
+
+const onPickStation = (item: ListViewItem) => {
+	const name = String(item.barcode || item.label || '')
+	if (!name) return
+	void router.push({ name: 'workstation_queue', params: { station: name } })
+}
+
+const changeStation = async (): Promise<void> => {
+	queueItems.value = []
+	applySelectedStation(null)
+	await router.push({ name: 'workstation' })
+	await loadPicker()
+}
+
+const onNavbarPrimary = (): void => {
+	if (selectedStation.value) void changeStation()
+}
+
+const syncStationView = async () => {
+	const fromRoute = stationFromRoute()
+	if (fromRoute) {
+		applySelectedStation(fromRoute)
+		await loadQueue()
+		return
+	}
+	const saved = getSelectedWorkstation()
+	if (saved) {
+		await router.replace({ name: 'workstation_queue', params: { station: saved } })
+		return
+	}
+	applySelectedStation(null)
+	await loadPicker()
+}
+
+onMounted(() => {
+	void syncStationView()
 })
 
-const handlePrimaryAction = () => {}
+watch(
+	() => [route.name, route.params.station] as const,
+	() => {
+		void syncStationView()
+	}
+)
 </script>
