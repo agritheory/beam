@@ -27,6 +27,12 @@ def execute(company=None):
 
 	default_config = [
 		{
+			"label": "Workstation",
+			"route": "#/workstation",
+			"dt": "Job Card",
+			"component": "Workstation",
+		},
+		{
 			"label": "Manufacture",
 			"route": "#/manufacture",
 			"dt": "Stock Entry",

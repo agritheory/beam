@@ -1,0 +1,40 @@
+{
+  "custom_fields": [
+    {
+      "dt": "Workstation",
+      "fieldname": "beam_tablet_section",
+      "fieldtype": "Section Break",
+      "idx": 1,
+      "insert_after": "plant_floor",
+      "label": "BEAM Tablet",
+      "module": "BEAM",
+      "name": "Workstation-beam_tablet_section"
+    },
+    {
+      "default": "0",
+      "dt": "Workstation",
+      "fieldname": "require_user_scan",
+      "fieldtype": "Check",
+      "idx": 2,
+      "insert_after": "beam_tablet_section",
+      "label": "Require User Scan",
+      "module": "BEAM",
+      "name": "Workstation-require_user_scan"
+    },
+    {
+      "default": "15",
+      "dt": "Workstation",
+      "fieldname": "user_scan_idle_minutes",
+      "fieldtype": "Int",
+      "idx": 3,
+      "insert_after": "require_user_scan",
+      "label": "User Scan Idle Minutes",
+      "module": "BEAM",
+      "name": "Workstation-user_scan_idle_minutes",
+      "non_negative": 1
+    }
+  ],
+  "doctype": "Workstation",
+  "property_setters": [],
+  "sync_on_migrate": 1
+}

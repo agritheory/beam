@@ -48,6 +48,8 @@ const JOB_CARD_PAUSE_URL = '/api/method/beam.beam.manufacturing.pause_job_card'
 const JOB_CARD_FINISH_URL = '/api/method/beam.beam.manufacturing.finish_job_card'
 const WORK_ORDER_CONTEXT_URL = '/api/method/beam.beam.manufacturing.get_work_order_mobile_context'
 const WORK_ORDER_STATUS_URL = '/api/method/beam.beam.manufacturing.set_work_order_status'
+const WORKSTATION_QUEUE_URL = '/api/method/beam.beam.manufacturing.get_workstation_queue'
+const WORKSTATION_TABLET_URL = '/api/method/beam.beam.manufacturing.get_workstation_tablet_settings'
 
 // Route :id is a source document name (PO/SO), not the mapped form doc itself.
 const MAPPED_FORM_DOCTYPES = ['Purchase Receipt', 'Delivery Note']
@@ -321,6 +323,34 @@ export const useBeamStore = defineStore('beam', () => {
 		return context
 	}
 
+	type WorkstationQueueRow = {
+		job_card: string
+		operation: string
+		work_order: string
+		for_quantity: number
+		production_item: string
+		item_name: string
+		work_order_qty: number
+		stock_uom?: string
+	}
+
+	type WorkstationTabletSettings = {
+		require_user_scan: number
+		user_scan_idle_minutes: number
+	}
+
+	const getWorkstationQueue = (workstation: string) =>
+		callMethod<WorkstationQueueRow[]>(
+			{ method: 'get', url: WORKSTATION_QUEUE_URL, params: { workstation } },
+			'Failed to fetch workstation queue'
+		)
+
+	const getWorkstationTabletSettings = (workstation: string) =>
+		callMethod<WorkstationTabletSettings>(
+			{ method: 'get', url: WORKSTATION_TABLET_URL, params: { workstation } },
+			'Failed to fetch workstation settings'
+		)
+
 	const setWorkOrderStatus = (workOrderId: string, status: 'Stopped' | 'Resumed') =>
 		callMethod<string>(
 			{ method: 'post', url: WORK_ORDER_STATUS_URL, params: { work_order_id: workOrderId, status } },
@@ -562,6 +592,8 @@ export const useBeamStore = defineStore('beam', () => {
 		pauseJobCard,
 		finishJobCard,
 		getWorkOrderMobileContext,
+		getWorkstationQueue,
+		getWorkstationTabletSettings,
 		refreshWorkOrderForm,
 		setWorkOrderStatus,
 		getStockReconciliationItems,

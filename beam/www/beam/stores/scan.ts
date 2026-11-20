@@ -66,6 +66,11 @@ export const useScanStore = defineStore('scan', () => {
 	}
 
 	const scan = async (barcode: string, qty: number) => {
+		const { handleTabletUserScan } = await import('@/composables/useWorkstationTablet.js')
+		if (await handleTabletUserScan(barcode)) {
+			return
+		}
+
 		store.scanner.lastScan = barcode
 		store.scanner.lastDocType = ''
 		const currentRoute = store.router.currentRoute.value

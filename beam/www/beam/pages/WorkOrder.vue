@@ -38,14 +38,19 @@
 			<ListView :items="predecessorItems" :key="refreshKey" />
 		</div>
 		<p v-if="predecessorsBlock" class="predecessor-warning">Complete predecessor work orders before continuing.</p>
-		<div class="box" v-show="items.length">
-			<ListView :items="items" @update="updateItem" />
-			<div class="pick-list-link" v-if="pickListName">
-				<RouterLink :to="{ name: 'pick_list', params: { id: pickListName } }">View Pick List</RouterLink>
+		<p v-if="scanGateActive" class="tablet-scan-notice">{{ scanGateMessage }}</p>
+		<div class="work-order-columns">
+			<div class="box materials-box" v-show="items.length">
+				<h2 class="column-heading">Materials</h2>
+				<ListView :items="items" @update="updateItem" />
+				<div class="pick-list-link" v-if="pickListName">
+					<RouterLink :to="{ name: 'pick_list', params: { id: pickListName } }">View Pick List</RouterLink>
+				</div>
 			</div>
-		</div>
-		<div class="box" v-show="operations.length">
-			<ListView :items="operations" :key="refreshKey" />
+			<div class="box operations-box" v-show="operations.length">
+				<h2 class="column-heading">Operations</h2>
+				<ListView :items="operations" :key="refreshKey" />
+			</div>
 		</div>
 
 		<!-- footer section -->
@@ -74,6 +79,12 @@ import type {
 import { appendUomText, itemListLine } from '@/utils/itemListLine'
 import { applyInspectionLines, indexInspectionsByItemCode } from '@/utils/inspectionList'
 import type { LineInspection } from '@/types/inspection'
+import {
+	scanGateActive,
+	scanGateMessage,
+	runWithTabletScanGate,
+	getSelectedWorkstation,
+} from '@/composables/useWorkstationTablet'
 import { computeWorkOrderStage, stageLabel, type WorkOrderStage } from '@/utils/workOrderStage'
 
 type OrderItem = WorkOrderItem & StockEntryItem & ListViewItem
@@ -260,6 +271,10 @@ const submitStageStockEntry = async (): Promise<void> => {
 	await reloadAfterWorkOrderChange()
 }
 
+const gatedSubmitStageStockEntry = async (): Promise<void> => {
+	await runWithTabletScanGate(getSelectedWorkstation(), submitStageStockEntry)
+}
+
 const controlButtons = computed((): ControlButton[] => {
 	const form = stockEntry.value as StockEntry
 	const buttons: ControlButton[] = []
@@ -278,14 +293,14 @@ const controlButtons = computed((): ControlButton[] => {
 				label: 'TRANSFER',
 				disabled: items.value.length === 0 || predecessorsBlock.value,
 				color: { background: 'var(--sc-success)', text: 'var(--sc-btn-color)' },
-				action: submitStageStockEntry,
+				action: gatedSubmitStageStockEntry,
 			})
 		} else if (stage.value === 'ready_to_manufacture') {
 			buttons.push({
 				label: 'MANUFACTURE',
 				disabled: !form?.items?.length || predecessorsBlock.value,
 				color: { background: 'var(--sc-success)', text: 'var(--sc-btn-color)' },
-				action: submitStageStockEntry,
+				action: gatedSubmitStageStockEntry,
 			})
 		}
 
@@ -410,5 +425,47 @@ b {
 .pick-list-link a {
 	font-size: 1.1rem;
 	font-weight: 600;
+}
+
+.work-order-columns {
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+}
+
+@media (min-width: 960px) {
+	.work-order-columns {
+		flex-direction: row;
+		align-items: flex-start;
+		gap: 0.5rem;
+		padding: 0 0.25rem;
+	}
+
+	.work-order-columns .box {
+		flex: 1 1 0;
+		margin: 0.5rem 0.25rem;
+	}
+
+	.column-heading {
+		display: block;
+		margin: 0;
+		padding: 0.75rem 1rem 0;
+		font-size: 1rem;
+		font-weight: 700;
+	}
+}
+
+.column-heading {
+	display: none;
+}
+
+.tablet-scan-notice {
+	margin: 0 0.75rem 0.5rem;
+	padding: 0.75rem;
+	text-align: center;
+	font-weight: 600;
+	color: var(--sc-beam-warning-text);
+	border: 1px solid var(--sc-row-border-color);
+	background: var(--sc-form-background);
 }
 </style>

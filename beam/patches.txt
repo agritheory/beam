@@ -4,3 +4,4 @@
 beam.patches.v15.create_beam_mobile_user_role
 beam.patches.v15.setup_beam_mobile_settings
 beam.patches.v15.ensure_beam_mobile_quality_inspection_permissions
+beam.patches.v15.workstation_tablet_fields

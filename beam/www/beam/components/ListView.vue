@@ -12,7 +12,14 @@
 			</template>
 
 			<template v-else>
-				<ListItem :item="item" @update="handleUpdate"></ListItem>
+				<div
+					class="beam_list-selectable"
+					role="button"
+					tabindex="0"
+					@click="handleSelect(item)"
+					@keyup.enter="handleSelect(item)">
+					<ListItem :item="item" @update="handleUpdate"></ListItem>
+				</div>
 			</template>
 		</li>
 	</ul>
@@ -45,7 +52,7 @@ const props = withDefaults(
 		loaded: true,
 	}
 )
-const emit = defineEmits<{ update: [item: ListViewItem]; scrollbottom: [] }>()
+const emit = defineEmits<{ update: [item: ListViewItem]; scrollbottom: []; select: [item: ListViewItem] }>()
 
 const showEmpty = computed(() => props.loaded && props.items.length === 0)
 
@@ -68,6 +75,7 @@ onUnmounted(() => {
 })
 
 const handleUpdate = (item: ListViewItem) => emit('update', item)
+const handleSelect = (item: ListViewItem) => emit('select', item)
 const handleScroll = () => {
 	const scrollHeightDifference = document.documentElement.scrollHeight - window.innerHeight
 	const scrollposition = document.documentElement.scrollTop
@@ -89,6 +97,10 @@ const handleScroll = () => {
 
 ul.beam_list-view:last-of-type {
 	padding-bottom: 2.5em;
+}
+
+.beam_list-selectable {
+	cursor: pointer;
 }
 
 .begin {
